@@ -1,9 +1,6 @@
-import ComparisonClient from "./ComparisonClient";
+import ComparisonWrapper from "./ComparisonWrapper";
 
-export default function VergleichPage() {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <ComparisonClient />
-    </div>
-  );
+export default function VergleichPage({ searchParams }) {
+  const ids = searchParams?.ids?.split(",").filter(Boolean) || [];
+  return <ComparisonWrapper ids={ids} />;
 }

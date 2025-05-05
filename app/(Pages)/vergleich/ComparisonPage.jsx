@@ -1,5 +1,7 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   FaGasPump,
@@ -19,14 +21,14 @@ import {
 import { GiCarWheel } from "react-icons/gi";
 import { IoMdSpeedometer } from "react-icons/io";
 import { MdAirlineSeatReclineNormal } from "react-icons/md";
-import { useSearchParams, useRouter } from "next/navigation";
 
 const fetchCarById = async (id) => {
   const res = await fetch(`/api/cars/${id}`);
   if (!res.ok) return null;
   return await res.json();
 };
-const ComparisonClient = () => {
+
+export default function ComparisonPage({ idsFromUrl }) {
   const [carsToCompare, setCarsToCompare] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedSections, setExpandedSections] = useState({
@@ -35,25 +37,25 @@ const ComparisonClient = () => {
     safety: false,
     exterior: false,
   });
-  const searchParams = useSearchParams();
+
   const router = useRouter();
 
-  // Load compared car IDs from URL or localStorage
   useEffect(() => {
-    let ids = [];
-    if (searchParams.has("ids")) {
-      ids = searchParams.get("ids").split(",").filter(Boolean);
+    let ids = [...idsFromUrl];
+
+    if (ids.length) {
       localStorage.setItem("comparedCars", JSON.stringify(ids));
     } else if (typeof window !== "undefined") {
-      const local = localStorage.getItem("comparedCars");
-      if (local) ids = JSON.parse(local);
+      const stored = localStorage.getItem("comparedCars");
+      if (stored) ids = JSON.parse(stored);
     }
+
     if (!ids.length) {
-      setLoading(false);
       setCarsToCompare([]);
+      setLoading(false);
       return;
     }
-    // Fetch all cars by ID from API
+
     (async () => {
       setLoading(true);
       const cars = await Promise.all(ids.map((id) => fetchCarById(id)));
@@ -68,7 +70,6 @@ const ComparisonClient = () => {
           registration: car.registration || "N/A",
           image: car.images?.[0] || "/default-car.jpg",
           features: car.features || [],
-          // Adapt below for your schema/fields
           technicalSpecs: {
             engine: car.displacement,
             transmission: car.transmission,
@@ -100,64 +101,56 @@ const ComparisonClient = () => {
       );
       setLoading(false);
     })();
-  }, [searchParams]);
+  }, [idsFromUrl]);
 
   const toggleSection = (section) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
+    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
   const handleRemoveCar = (id) => {
-    const newCars = carsToCompare.filter((car) => car.id !== id);
-    setCarsToCompare(newCars);
-    // Update localStorage
+    const updated = carsToCompare.filter((car) => car.id !== id);
+    setCarsToCompare(updated);
     localStorage.setItem(
       "comparedCars",
-      JSON.stringify(newCars.map((car) => car.id))
+      JSON.stringify(updated.map((c) => c.id))
     );
-    // Update URL
-    if (newCars.length) {
-      router.replace(
-        `/vergleich?ids=${newCars.map((car) => car.id).join(",")}`
-      );
+    if (updated.length) {
+      router.replace(`/vergleich?ids=${updated.map((c) => c.id).join(",")}`);
     } else {
       router.replace("/gebrauchtwagen");
     }
   };
 
-  // Utility: green/red text if higher/lower
   const getComparisonColor = (value1, value2, isHigherBetter = true) => {
     if (value1 === value2) return "";
-    const comparison = isHigherBetter
+    return isHigherBetter
       ? value1 > value2
         ? "text-emerald-500"
         : "text-rose-500"
       : value1 < value2
       ? "text-emerald-500"
       : "text-rose-500";
-    return comparison;
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
       </div>
     );
-  if (!carsToCompare.length)
+  }
+
+  if (!carsToCompare.length) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center text-gray-500">
         <p>Keine Fahrzeuge ausgewählt.</p>
       </div>
     );
+  }
 
-  // Get technical spec keys for rendering (so it works for any car)
   const specKeys = Object.keys(carsToCompare[0]?.technicalSpecs || {}).filter(
     Boolean
   );
-
   return (
     <div className="min-h-screen bg-gray-50 mt-15">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -182,8 +175,7 @@ const ComparisonClient = () => {
                   className="relative group flex flex-col h-full"
                 >
                   <button
-                    className="absolute -top-7 -right-4 p-1 bg-red-200 rounded-full shadow-md
-  +              text-white hover:bg-red-600 transition-colors"
+                    className="absolute -top-7 -right-4 p-1 bg-red-200 rounded-full shadow-md text-white hover:bg-red-600 transition-colors"
                     onClick={() => handleRemoveCar(car.id)}
                   >
                     <FiX className="w-4 h-4" />
@@ -573,6 +565,4 @@ const ComparisonClient = () => {
       </div>
     </div>
   );
-};
-
-export default ComparisonClient;
+}
