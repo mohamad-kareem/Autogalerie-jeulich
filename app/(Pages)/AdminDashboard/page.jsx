@@ -88,6 +88,14 @@ export default function Dashboard() {
             iconBgColor="bg-indigo-700"
           />
           <NavigationCard
+            href="/trello"
+            icon={<FiCheckSquare />}
+            title="Trello-Board"
+            description="Projektübersicht & Status"
+            bgColor="bg-gradient-to-br from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700"
+            iconBgColor="bg-blue-500"
+          />
+          <NavigationCard
             href="/Reg"
             icon={<FiUserPlus />}
             title="Admin hinzufügen"
