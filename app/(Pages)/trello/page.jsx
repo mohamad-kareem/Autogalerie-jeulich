@@ -76,61 +76,18 @@ export default function TrelloClone() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Simulated API calls - replace with actual API calls
-        const adminData = [
-          { name: "Admin 1", image: "/default-avatar.png" },
-          { name: "Admin 2", image: "/default-avatar.png" },
-        ];
+        // Fetch admins
+        const adminResponse = await fetch("/api/admins");
+        const adminData = await adminResponse.json();
         setAdmins(adminData);
 
-        // Sample board data
-        const boardData = {
-          columns: [
-            {
-              name: "To Do",
-              tasks: [
-                {
-                  _id: "1",
-                  title: "Design UI mockups",
-                  description: "Create Figma designs for all pages",
-                  position: 0,
-                  completed: false,
-                },
-                {
-                  _id: "2",
-                  title: "Set up database",
-                  description: "Configure MongoDB Atlas",
-                  position: 1,
-                  completed: false,
-                },
-              ],
-            },
-            {
-              name: "In Progress",
-              tasks: [
-                {
-                  _id: "3",
-                  title: "Implement authentication",
-                  description: "Add JWT auth with NextAuth.js",
-                  position: 0,
-                  completed: false,
-                },
-              ],
-            },
-            {
-              name: "Done",
-              tasks: [
-                {
-                  _id: "4",
-                  title: "Project setup",
-                  description: "Initialize Next.js project",
-                  position: 0,
-                  completed: true,
-                },
-              ],
-            },
-          ],
-        };
+        // Fetch board
+        const boardResponse = await fetch("/api/board");
+        const boardData = await boardResponse.json();
+        setBoard(boardData);
+
+        setAdmins(adminData);
+
         setBoard(boardData);
       } catch (error) {
         console.error("Failed to fetch data:", error);
@@ -143,40 +100,14 @@ export default function TrelloClone() {
 
   const updateBoard = async (action, payload) => {
     try {
-      // Simulate API call - replace with actual API call
-      console.log("Updating board:", action, payload);
-
-      // For demo purposes, we'll update the state directly
-      let updatedBoard = { ...board };
-
-      switch (action) {
-        case "UPDATE_COLUMNS":
-          updatedBoard.columns = payload.columns;
-          break;
-        case "ADD_TASK":
-          const col = updatedBoard.columns.find(
-            (c) => c.name === payload.columnName
-          );
-          if (col) {
-            col.tasks.push({
-              _id: `task-${Date.now()}`,
-              title: payload.title,
-              description: payload.description,
-              position: col.tasks.length,
-              completed: false,
-            });
-          }
-          break;
-        case "UPDATE_TASK":
-        case "REMOVE_TASK":
-        case "ADD_COLUMN":
-        case "DELETE_COLUMN":
-          // Implement other actions as needed
-          break;
-        default:
-          break;
-      }
-
+      const response = await fetch("/api/board", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action, payload }),
+      });
+      const updatedBoard = await response.json();
       setBoard(updatedBoard);
       return updatedBoard;
     } catch (error) {
@@ -391,7 +322,7 @@ export default function TrelloClone() {
   if (!board) {
     return (
       <div
-        className={`min-h-screen ${colors.background} ${colors.text} p-4 flex items-center justify-center `}
+        className={`min-h-screen ${colors.background} ${colors.text} p-4 flex items-center justify-center`}
       >
         <div className="text-center">
           <div className="text-rose-500 mb-2">⚠️</div>
@@ -407,12 +338,16 @@ export default function TrelloClone() {
     >
       {/* Header with Admin Avatars */}
       <div className="sticky top-0 z-10 mb-6 p-4 bg-gray-850/95 backdrop-blur-sm rounded-lg shadow-lg border-b border-gray-800">
-        <div className="max-w-7xl mx-auto flex flex-col items-center space-y-3">
-          <h1 className="text-xl md:text-2xl font-bold text-indigo-300 text-center">
-            بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيم
-          </h1>
+        <div className="max-w-7xl mx-auto relative flex flex-col items-center md:h-16">
+          {/* Centered H1 */}
+          <div className="w-full flex justify-center">
+            <h1 className="text-xl md:text-2xl font-bold text-indigo-300 text-center">
+              بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيم
+            </h1>
+          </div>
 
-          <div className="flex -space-x-2">
+          {/* Avatars on right (top-right on large screens, below on small screens) */}
+          <div className="flex -space-x-2 mt-4 md:mt-0 md:absolute md:top-1/2 md:right-4 md:-translate-y-1/2">
             {admins.map((admin, index) => (
               <div
                 key={index}
@@ -424,7 +359,7 @@ export default function TrelloClone() {
                   alt={admin.name}
                   className="w-8 h-8 rounded-full border-2 border-gray-700 hover:border-indigo-500 transition-all"
                 />
-                <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity">
                   {admin.name}
                 </span>
               </div>
