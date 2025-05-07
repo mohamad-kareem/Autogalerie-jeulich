@@ -18,5 +18,18 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/admin/:path*", "/addcar/:path*", "/excel/:path*", "/Reg/:path*"],
+  matcher: [
+    "/admin/:path*",
+    "/Aufgaben/:path*",
+    "/forgotpassword/:path*",
+    "/forms/:path*",
+    "/forms/:path*",
+    "/addcar/:path*",
+    "/excel/:path*",
+    "/Reg/:path*",
+    "/reset-password/:path*",
+    "/schlussel/:path*",
+    "/trello/:path*",
+    "/AdminDashboard/:path*",
+  ],
 };
