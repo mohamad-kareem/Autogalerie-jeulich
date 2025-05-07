@@ -31,12 +31,12 @@ export default function TrelloClone() {
 
   // Enhanced color palette with better contrast
   const colors = {
-    background: "bg-gray-900",
+    background: "bg-gradient-to-r from-blue-900 to-gray-800",
     columnBg: "bg-gray-800/90",
     columnHeaderBg: "bg-gray-800",
     cardBg: "bg-gray-750",
-    cardHover: "hover:bg-gray-700",
-    cardBorder: "border-gray-700",
+    cardHover: "hover:bg-gradient-to-r from-blue-900 to-gray-800",
+    cardBorder: "border-blue-900",
     primary: "bg-indigo-600 hover:bg-indigo-500",
     secondary: "bg-gray-700 hover:bg-gray-600",
     danger: "bg-rose-600 hover:bg-rose-500",
@@ -337,7 +337,7 @@ export default function TrelloClone() {
       className={`min-h-screen ${colors.background} ${colors.text} p-4 pb-8 mt-15`}
     >
       {/* Header with Admin Avatars */}
-      <div className="sticky top-0 z-10 mb-6 p-4 bg-gray-850/95 backdrop-blur-sm rounded-lg shadow-lg border-b border-gray-800">
+      <div className="sticky top-0 z-10 mb-6  bg-gray-850/95 backdrop-blur-sm rounded-lg shadow-lg border-b border-gray-700">
         <div className="max-w-7xl mx-auto relative flex flex-col items-center md:h-16">
           {/* Centered H1 */}
           <div className="w-full flex justify-center">
@@ -540,7 +540,7 @@ export default function TrelloClone() {
                                           className="mr-2 mt-0.5"
                                         >
                                           <FiCheck
-                                            size={16}
+                                            size={18}
                                             className={`rounded-full p-0.5 ${
                                               task.completed
                                                 ? "bg-emerald-500 text-white"
