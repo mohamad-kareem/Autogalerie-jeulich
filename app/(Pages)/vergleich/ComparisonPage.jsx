@@ -153,7 +153,7 @@ export default function ComparisonPage({ idsFromUrl }) {
   );
   return (
     <div className="min-h-screen bg-gray-50 mt-15">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Comparison Grid */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
           {/* Cars Header Row */}
@@ -185,7 +185,7 @@ export default function ComparisonPage({ idsFromUrl }) {
                       src={car.image}
                       alt={car.name}
                       fill
-                      className="object-cover"
+                      className="object-fill"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   </div>

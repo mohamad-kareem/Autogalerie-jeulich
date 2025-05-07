@@ -31,7 +31,7 @@ const AdminAddCarPage = () => {
 
   return (
     <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto">
         <AdminCarForm />
       </div>
     </main>

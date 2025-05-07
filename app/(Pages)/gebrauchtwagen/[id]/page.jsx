@@ -114,7 +114,7 @@ const CarDetailsPage = () => {
     <div className="bg-gray-50 min-h-screen mt-15">
       {/* Sticky header */}
       <header className="sticky top-0 z-20  border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <Link
               href="/gebrauchtwagen"
@@ -160,7 +160,7 @@ const CarDetailsPage = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Vehicle header */}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start gap-6">

@@ -29,22 +29,22 @@ export default function TrelloClone() {
   const [isMobile, setIsMobile] = useState(false);
   const menuRef = useRef(null);
 
-  // Enhanced color palette with better contrast
+  // Vibrant color palette with better contrast
   const colors = {
-    background: "bg-gradient-to-r from-blue-900 to-gray-800",
-    columnBg: "bg-gray-800/90",
-    columnHeaderBg: "bg-gray-800",
-    cardBg: "bg-gray-750",
-    cardHover: "hover:bg-gradient-to-r from-blue-900 to-gray-800",
-    cardBorder: "border-blue-900",
+    background: "bg-gradient-to-br from-indigo-900 to-gray-900",
+    columnBg: "bg-gray-800/80",
+    columnHeaderBg: "bg-gray-800/90",
+    cardBg: "bg-gray-700/80",
+    cardHover: "hover:bg-gray-700",
+    cardBorder: "border-gray-600",
     primary: "bg-indigo-600 hover:bg-indigo-500",
-    secondary: "bg-gray-700 hover:bg-gray-600",
+    secondary: "bg-gray-600 hover:bg-gray-500",
     danger: "bg-rose-600 hover:bg-rose-500",
     success: "bg-emerald-600 hover:bg-emerald-500",
     text: "text-gray-100",
-    textSecondary: "text-gray-400",
-    accent: "border-indigo-500",
-    completed: "border-emerald-500",
+    textSecondary: "text-gray-300",
+    accent: "border-indigo-400",
+    completed: "border-emerald-400",
     scrollbar:
       "scrollbar-thumb-gray-600 scrollbar-track-gray-800 scrollbar-thin",
   };
@@ -333,7 +333,7 @@ export default function TrelloClone() {
       className={`min-h-screen ${colors.background} ${colors.text} p-4 pb-8`}
     >
       {/* Header with Admin Avatars */}
-      <div className="sticky top-0 z-10 mb-6 bg-gray-850/95 backdrop-blur-sm rounded-lg shadow-lg border-b border-gray-700">
+      <div className="mt-15 sticky top-0 z-10 mb-6 bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-lg border-b border-gray-700">
         <div className="w-full max-w-[95%] xl:max-w-[90%] 2xl:max-w-[1800px] mx-auto relative flex flex-col items-center md:h-16">
           {/* Centered H1 */}
           <div className="w-full flex justify-center">
@@ -374,15 +374,15 @@ export default function TrelloClone() {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`${colors.columnBg} w-72 min-w-[18rem] flex-shrink-0 rounded-lg shadow-lg border ${colors.columnBorder} relative transition-all hover:shadow-indigo-500/10`}
+                    className={`${colors.columnBg} w-64 min-w-[16rem] flex-shrink-0 rounded-lg shadow-lg border ${colors.cardBorder} relative transition-all hover:shadow-indigo-500/10`}
                   >
                     {/* Column Header */}
                     <div
                       className={`${colors.columnHeaderBg} p-3 rounded-t-lg flex justify-between items-center sticky top-0 z-10 border-b ${colors.cardBorder}`}
                     >
-                      <h2 className="text-sm font-semibold truncate max-w-[180px] text-indigo-200">
+                      <h2 className="text-sm font-semibold truncate max-w-[140px] text-indigo-200">
                         {column.name}{" "}
-                        <span className="text-gray-500">
+                        <span className="text-gray-400">
                           ({column.tasks.length})
                         </span>
                       </h2>
@@ -456,7 +456,7 @@ export default function TrelloClone() {
                     {/* Tasks List */}
                     <div
                       className={`p-2 overflow-y-auto ${colors.scrollbar}`}
-                      style={{ height: "calc(100vh - 200px)" }}
+                      style={{ maxHeight: "calc(100vh - 180px)" }}
                     >
                       {column.tasks
                         .sort((a, b) => a.position - b.position)
@@ -540,15 +540,15 @@ export default function TrelloClone() {
                                             className={`rounded-full p-0.5 ${
                                               task.completed
                                                 ? "bg-emerald-500 text-white"
-                                                : "text-gray-500 hover:text-emerald-400 border border-gray-500 hover:border-emerald-400"
+                                                : "text-gray-400 hover:text-emerald-400 border border-gray-400 hover:border-emerald-400"
                                             }`}
                                           />
                                         </button>
-                                        <div>
+                                        <div className="w-full">
                                           <h3
                                             className={`text-sm font-medium ${
                                               task.completed
-                                                ? "line-through text-gray-500"
+                                                ? "line-through text-gray-400"
                                                 : colors.text
                                             }`}
                                           >
@@ -556,7 +556,7 @@ export default function TrelloClone() {
                                           </h3>
                                           {task.description && (
                                             <p
-                                              className={`text-xs ${colors.textSecondary} mt-1`}
+                                              className={`text-xs ${colors.textSecondary} mt-1 line-clamp-2`}
                                             >
                                               {task.description}
                                             </p>
@@ -657,7 +657,7 @@ export default function TrelloClone() {
             ))}
 
             {/* Add New List Section */}
-            <div className="min-w-[18rem] w-72">
+            <div className="min-w-[16rem] w-64">
               {showAddListInput ? (
                 <div
                   className={`${colors.columnBg} border ${colors.cardBorder} p-3 rounded-lg shadow-md`}
@@ -688,7 +688,7 @@ export default function TrelloClone() {
               ) : (
                 <button
                   onClick={() => setShowAddListInput(true)}
-                  className={`w-full ${colors.columnBg} border-2 border-dashed ${colors.cardBorder} ${colors.text} p-3 rounded-lg hover:bg-gray-750 transition-all flex items-center justify-center space-x-2 h-12`}
+                  className={`w-full ${colors.columnBg} border-2 border-dashed ${colors.cardBorder} ${colors.text} p-3 rounded-lg hover:bg-gray-700/50 transition-all flex items-center justify-center space-x-2 h-12`}
                 >
                   <FiPlus size={16} className="text-indigo-400" />
                   <span className="text-sm">Add another list</span>
