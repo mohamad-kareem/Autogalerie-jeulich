@@ -35,7 +35,7 @@ export default function TrelloClone() {
     columnBg: "bg-gray-800/80",
     columnHeaderBg: "bg-gray-800/90",
     cardBg: "bg-gray-700/80",
-    cardHover: "hover:bg-gray-700",
+    cardHover: "hover:bg-gray-700 ",
     cardBorder: "border-gray-600",
     primary: "bg-indigo-600 hover:bg-indigo-500",
     secondary: "bg-gray-600 hover:bg-gray-500",
@@ -44,9 +44,9 @@ export default function TrelloClone() {
     text: "text-gray-100",
     textSecondary: "text-gray-300",
     accent: "border-indigo-400",
-    completed: "border-emerald-400",
+    completed: "border-emerald-500 ",
     scrollbar:
-      "scrollbar-thumb-gray-600 scrollbar-track-gray-800 scrollbar-thin",
+      "scrollbar-thumb-red-500 scrollbar-track-gray-800 scrollbar-thin",
   };
 
   useEffect(() => {
@@ -113,14 +113,33 @@ export default function TrelloClone() {
   };
 
   const onDragEnd = async (result) => {
-    const { source, destination } = result;
+    const { destination, source, type } = result;
+
     if (!destination) return;
     if (
-      source.droppableId === destination.droppableId &&
-      source.index === destination.index
-    )
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
       return;
+    }
 
+    // Handle column drag
+    if (type === "COLUMN") {
+      const newColumns = [...board.columns];
+      const [removed] = newColumns.splice(source.index, 1);
+      newColumns.splice(destination.index, 0, removed);
+
+      // Update positions
+      newColumns.forEach((column, index) => {
+        column.position = index;
+      });
+
+      setBoard({ ...board, columns: newColumns });
+      await updateBoard("UPDATE_COLUMNS", { columns: newColumns });
+      return;
+    }
+
+    // Handle task drag
     const newColumns = [...board.columns];
     const sourceColIndex = newColumns.findIndex(
       (col) => col.name === source.droppableId
@@ -333,8 +352,8 @@ export default function TrelloClone() {
       className={`min-h-screen ${colors.background} ${colors.text} p-4 pb-8`}
     >
       {/* Header with Admin Avatars */}
-      <div className="mt-15 sticky top-0 z-10 mb-6 bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-lg border-b border-gray-700">
-        <div className="w-full max-w-[95%] xl:max-w-[90%] 2xl:max-w-[1800px] mx-auto relative flex flex-col items-center md:h-16">
+      <div className="mt-15 sticky top-0 z-10 mb-6  bg-gray-850/95 backdrop-blur-sm rounded-lg shadow-lg border-b border-gray-700">
+        <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto relative flex flex-col items-center md:h-16">
           {/* Centered H1 */}
           <div className="w-full flex justify-center">
             <h1 className="text-xl md:text-2xl font-bold text-indigo-300 text-center">
@@ -342,7 +361,7 @@ export default function TrelloClone() {
             </h1>
           </div>
 
-          {/* Avatars on right */}
+          {/* Avatars on right (top-right on large screens, below on small screens) */}
           <div className="flex -space-x-2 mt-4 md:mt-0 md:absolute md:top-1/2 md:right-4 md:-translate-y-1/2">
             {admins.map((admin, index) => (
               <div
@@ -367,127 +386,293 @@ export default function TrelloClone() {
       {/* Board Content */}
       <div className="w-full max-w-[95%] xl:max-w-[90%] 2xl:max-w-[1800px] mx-auto px-2">
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex space-x-4 overflow-x-auto pb-4 horizontal-scroll">
-            {board.columns.map((column) => (
-              <Droppable droppableId={column.name} key={column.name}>
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className={`${colors.columnBg} w-64 min-w-[16rem] flex-shrink-0 rounded-lg shadow-lg border ${colors.cardBorder} relative transition-all hover:shadow-indigo-500/10`}
-                  >
-                    {/* Column Header */}
-                    <div
-                      className={`${colors.columnHeaderBg} p-3 rounded-t-lg flex justify-between items-center sticky top-0 z-10 border-b ${colors.cardBorder}`}
+          <Droppable
+            droppableId="all-columns"
+            direction="horizontal"
+            type="COLUMN"
+          >
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="flex space-x-4 overflow-x-auto pb-4 horizontal-scroll"
+              >
+                {board.columns
+                  .sort((a, b) => a.position - b.position)
+                  .map((column, index) => (
+                    <Draggable
+                      key={column.name}
+                      draggableId={column.name}
+                      index={index}
                     >
-                      <h2 className="text-sm font-semibold truncate max-w-[140px] text-indigo-200">
-                        {column.name}{" "}
-                        <span className="text-gray-400">
-                          ({column.tasks.length})
-                        </span>
-                      </h2>
-                      <div className="relative">
-                        <button
-                          onClick={() =>
-                            setShowColumnMenu(
-                              showColumnMenu === column.name
-                                ? null
-                                : column.name
-                            )
-                          }
-                          className={`${colors.textSecondary} hover:text-white p-1 rounded hover:bg-gray-700 transition-colors`}
+                      {(provided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={`${colors.columnBg} w-64 min-w-[16rem] flex-shrink-0 rounded-xl shadow-lg border ${colors.cardBorder} relative transition-all hover:shadow-indigo-500/30`}
+                          style={{
+                            ...provided.draggableProps.style,
+                            height: "fit-content",
+                          }}
                         >
-                          <FiMoreVertical size={16} />
-                        </button>
-
-                        {showColumnMenu === column.name && (
+                          {/* Column Header - now draggable */}
                           <div
-                            ref={menuRef}
-                            className={`absolute bg-gray-900 ${
-                              colors.text
-                            } rounded-lg shadow-xl w-48 p-1 z-50 border ${
-                              colors.cardBorder
-                            } ${isMobile ? "left-0" : "right-0"} top-8`}
+                            {...provided.dragHandleProps}
+                            className={`${colors.columnHeaderBg} p-3 rounded-t-lg flex justify-between items-center sticky top-0 z-10 border-b ${colors.cardBorder}`}
                           >
-                            <button
-                              className="flex items-center w-full p-2 hover:bg-gray-800 text-sm rounded"
-                              onClick={() => {
-                                setNewTask({
-                                  column: column.name,
-                                  title: "",
-                                  description: "",
-                                });
-                                setShowColumnMenu(null);
-                              }}
-                            >
-                              <FiPlus className="mr-2" size={14} /> Add card
-                            </button>
-                            <button
-                              className="flex items-center w-full p-2 hover:bg-gray-800 text-sm rounded"
-                              onClick={() => copyList(column.name)}
-                            >
-                              <FiCopy className="mr-2" size={14} /> Copy list
-                            </button>
-                            <button
-                              className="flex items-center w-full p-2 hover:bg-gray-800 text-sm rounded"
-                              onClick={() => moveListToEnd(column.name)}
-                            >
-                              <FiMove className="mr-2" size={14} /> Move to end
-                            </button>
-                            <button
-                              className="flex items-center w-full p-2 hover:bg-gray-800 text-sm rounded"
-                              onClick={() => sortListByTitle(column.name)}
-                            >
-                              <FiCopy className="mr-2" size={14} /> Sort by name
-                            </button>
-                            <hr className="my-1 border-gray-700" />
-                            <button
-                              onClick={() => deleteColumn(column.name)}
-                              className="flex items-center w-full p-2 text-rose-500 hover:bg-gray-800 text-sm rounded"
-                            >
-                              <FiTrash2 className="mr-2" size={14} /> Delete
-                              list
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                            <h2 className="text-sm font-semibold truncate max-w-[140px] text-indigo-200">
+                              {column.name}{" "}
+                              <span className="text-gray-400">
+                                ({column.tasks.length})
+                              </span>
+                            </h2>
+                            <div className="relative">
+                              <button
+                                onClick={() =>
+                                  setShowColumnMenu(
+                                    showColumnMenu === column.name
+                                      ? null
+                                      : column.name
+                                  )
+                                }
+                                className={`${colors.textSecondary} hover:text-white p-1 rounded hover:bg-gray-700 transition-colors`}
+                              >
+                                <FiMoreVertical size={16} />
+                              </button>
 
-                    {/* Tasks List */}
-                    <div
-                      className={`p-2 overflow-y-auto ${colors.scrollbar}`}
-                      style={{ maxHeight: "calc(100vh - 180px)" }}
-                    >
-                      {column.tasks
-                        .sort((a, b) => a.position - b.position)
-                        .map((task, index) => (
-                          <Draggable
-                            draggableId={task._id}
-                            index={index}
-                            key={task._id}
-                          >
+                              {showColumnMenu === column.name && (
+                                <div
+                                  ref={menuRef}
+                                  className={`absolute bg-gray-900 ${
+                                    colors.text
+                                  } rounded-lg shadow-xl w-48 p-1 z-50 border ${
+                                    colors.cardBorder
+                                  } ${isMobile ? "left-0" : "right-0"} top-8`}
+                                >
+                                  <button
+                                    className="flex items-center w-full p-2 hover:bg-gray-800 text-sm rounded"
+                                    onClick={() => {
+                                      setNewTask({
+                                        column: column.name,
+                                        title: "",
+                                        description: "",
+                                      });
+                                      setShowColumnMenu(null);
+                                    }}
+                                  >
+                                    <FiPlus className="mr-2" size={14} /> Add
+                                    card
+                                  </button>
+                                  <button
+                                    className="flex items-center w-full p-2 hover:bg-gray-800 text-sm rounded"
+                                    onClick={() => copyList(column.name)}
+                                  >
+                                    <FiCopy className="mr-2" size={14} /> Copy
+                                    list
+                                  </button>
+                                  <button
+                                    className="flex items-center w-full p-2 hover:bg-gray-800 text-sm rounded"
+                                    onClick={() => moveListToEnd(column.name)}
+                                  >
+                                    <FiMove className="mr-2" size={14} /> Move
+                                    to end
+                                  </button>
+                                  <button
+                                    className="flex items-center w-full p-2 hover:bg-gray-800 text-sm rounded"
+                                    onClick={() => sortListByTitle(column.name)}
+                                  >
+                                    <FiCopy className="mr-2" size={14} /> Sort
+                                    by name
+                                  </button>
+                                  <hr className="my-1 border-gray-700" />
+                                  <button
+                                    onClick={() => deleteColumn(column.name)}
+                                    className="flex items-center w-full p-2 text-rose-500 hover:bg-gray-800 text-sm rounded"
+                                  >
+                                    <FiTrash2 className="mr-2" size={14} />{" "}
+                                    Delete list
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Tasks List */}
+                          <Droppable droppableId={column.name} type="TASK">
                             {(provided) => (
                               <div
                                 ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className={`${
-                                  colors.cardBg
-                                } p-3 rounded-lg mb-2 border transition-all ${
-                                  task.completed
-                                    ? colors.completed
-                                    : colors.cardBorder
-                                } shadow-sm ${colors.cardHover} group`}
+                                {...provided.droppableProps}
+                                className={`p-2 overflow-y-auto ${colors.scrollbar}`}
+                                style={{
+                                  minHeight: "40px",
+                                  maxHeight: "calc(100vh - 180px)",
+                                }}
                               >
-                                {editingTask?.taskId === task._id ? (
-                                  <div className="space-y-3">
+                                {column.tasks
+                                  .sort((a, b) => a.position - b.position)
+                                  .map((task, index) => (
+                                    <Draggable
+                                      draggableId={task._id}
+                                      index={index}
+                                      key={task._id}
+                                    >
+                                      {(provided) => (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          {...provided.dragHandleProps}
+                                          className={`${
+                                            colors.cardBg
+                                          } p-3 rounded-lg mb-2 border transition-all ${
+                                            task.completed
+                                              ? colors.completed
+                                              : colors.cardBorder
+                                          } shadow-sm ${
+                                            colors.cardHover
+                                          } group`}
+                                        >
+                                          {editingTask?.taskId === task._id ? (
+                                            <div className="space-y-3">
+                                              <input
+                                                type="text"
+                                                className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} focus:ring-1 focus:ring-indigo-500 focus:outline-none`}
+                                                value={editingTask.title}
+                                                onChange={(e) =>
+                                                  setEditingTask({
+                                                    ...editingTask,
+                                                    title: e.target.value,
+                                                  })
+                                                }
+                                                autoFocus
+                                              />
+                                              <textarea
+                                                className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} focus:ring-1 focus:ring-indigo-500 focus:outline-none`}
+                                                value={editingTask.description}
+                                                onChange={(e) =>
+                                                  setEditingTask({
+                                                    ...editingTask,
+                                                    description: e.target.value,
+                                                  })
+                                                }
+                                                rows={3}
+                                                placeholder="Add description..."
+                                              />
+                                              <div className="flex justify-end space-x-2">
+                                                <button
+                                                  onClick={saveEditedTask}
+                                                  className={`${colors.success} px-3 py-1 rounded text-white text-xs flex items-center`}
+                                                >
+                                                  <FiSave
+                                                    className="mr-1"
+                                                    size={12}
+                                                  />{" "}
+                                                  Save
+                                                </button>
+                                                <button
+                                                  onClick={() =>
+                                                    setEditingTask(null)
+                                                  }
+                                                  className={`${colors.secondary} px-3 py-1 rounded text-white text-xs flex items-center`}
+                                                >
+                                                  <FiX
+                                                    className="mr-1"
+                                                    size={12}
+                                                  />{" "}
+                                                  Cancel
+                                                </button>
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <>
+                                              <div className="relative group">
+                                                {/* Checkbox - top-left */}
+                                                <button
+                                                  onClick={() =>
+                                                    toggleComplete(
+                                                      column.name,
+                                                      task._id
+                                                    )
+                                                  }
+                                                  className="absolute top-2 left-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                >
+                                                  <FiCheck
+                                                    size={18}
+                                                    className={`rounded-full ${
+                                                      task.completed
+                                                        ? "bg-emerald-500 text-white"
+                                                        : "text-gray-400 hover:text-emerald-400 border border-gray-400 hover:border-emerald-400"
+                                                    }`}
+                                                  />
+                                                </button>
+
+                                                {/* Edit + Delete - top-right */}
+                                                <div className="absolute top-2 right-0.5 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                  <button
+                                                    onClick={() =>
+                                                      startEditingTask(
+                                                        column.name,
+                                                        task
+                                                      )
+                                                    }
+                                                    className="text-indigo-400 hover:text-indigo-300 "
+                                                  >
+                                                    <FiEdit2 size={14} />
+                                                  </button>
+                                                  <button
+                                                    onClick={() =>
+                                                      deleteTask(
+                                                        column.name,
+                                                        task._id
+                                                      )
+                                                    }
+                                                    className="text-rose-400 hover:text-rose-300 "
+                                                  >
+                                                    <FiTrash2 size={14} />
+                                                  </button>
+                                                </div>
+
+                                                {/* Content with animated padding */}
+                                                <div className="transition-all duration-300  pr-2 group-hover:pl-8 group-hover:pr-6">
+                                                  <h3
+                                                    className={`text-sm font-medium ${
+                                                      task.completed
+                                                        ? "line-through text-gray-400"
+                                                        : colors.text
+                                                    }`}
+                                                  >
+                                                    {task.title}
+                                                  </h3>
+                                                  {task.description && (
+                                                    <p
+                                                      className={`text-xs ${colors.textSecondary} mt-1 line-clamp-2`}
+                                                    >
+                                                      {task.description}
+                                                    </p>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            </>
+                                          )}
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  ))}
+                                {provided.placeholder}
+
+                                {/* Add Task Section */}
+                                {newTask.column === column.name ? (
+                                  <div
+                                    className={`${colors.columnBg} p-3 rounded-lg mt-2 border ${colors.cardBorder} shadow-inner`}
+                                  >
                                     <input
                                       type="text"
-                                      className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} focus:ring-1 focus:ring-indigo-500 focus:outline-none`}
-                                      value={editingTask.title}
+                                      className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} mb-2 focus:ring-1 focus:ring-indigo-500 focus:outline-none`}
+                                      placeholder="Task title"
+                                      value={newTask.title}
                                       onChange={(e) =>
-                                        setEditingTask({
-                                          ...editingTask,
+                                        setNewTask({
+                                          ...newTask,
                                           title: e.target.value,
                                         })
                                       }
@@ -495,207 +680,102 @@ export default function TrelloClone() {
                                     />
                                     <textarea
                                       className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} focus:ring-1 focus:ring-indigo-500 focus:outline-none`}
-                                      value={editingTask.description}
+                                      placeholder="Description (optional)"
+                                      rows={2}
+                                      value={newTask.description}
                                       onChange={(e) =>
-                                        setEditingTask({
-                                          ...editingTask,
+                                        setNewTask({
+                                          ...newTask,
                                           description: e.target.value,
                                         })
                                       }
-                                      rows={3}
-                                      placeholder="Add description..."
-                                    />
-                                    <div className="flex justify-end space-x-2">
+                                    ></textarea>
+                                    <div className="flex justify-end space-x-2 mt-2">
                                       <button
-                                        onClick={saveEditedTask}
-                                        className={`${colors.success} px-3 py-1 rounded text-white text-xs flex items-center`}
+                                        onClick={() => addTask(column.name)}
+                                        className={`${colors.primary} px-3 py-1.5 rounded text-white text-xs font-medium`}
                                       >
-                                        <FiSave className="mr-1" size={12} />{" "}
-                                        Save
+                                        Add Task
                                       </button>
                                       <button
-                                        onClick={() => setEditingTask(null)}
-                                        className={`${colors.secondary} px-3 py-1 rounded text-white text-xs flex items-center`}
+                                        onClick={() =>
+                                          setNewTask({
+                                            title: "",
+                                            description: "",
+                                            column: "",
+                                          })
+                                        }
+                                        className={`${colors.secondary} px-3 py-1.5 rounded text-white text-xs font-medium`}
                                       >
-                                        <FiX className="mr-1" size={12} />{" "}
                                         Cancel
                                       </button>
                                     </div>
                                   </div>
                                 ) : (
-                                  <>
-                                    <div className="flex justify-between items-start">
-                                      <div className="flex items-start">
-                                        <button
-                                          onClick={() =>
-                                            toggleComplete(
-                                              column.name,
-                                              task._id
-                                            )
-                                          }
-                                          className="mr-2 mt-0.5"
-                                        >
-                                          <FiCheck
-                                            size={18}
-                                            className={`rounded-full p-0.5 ${
-                                              task.completed
-                                                ? "bg-emerald-500 text-white"
-                                                : "text-gray-400 hover:text-emerald-400 border border-gray-400 hover:border-emerald-400"
-                                            }`}
-                                          />
-                                        </button>
-                                        <div className="w-full">
-                                          <h3
-                                            className={`text-sm font-medium ${
-                                              task.completed
-                                                ? "line-through text-gray-400"
-                                                : colors.text
-                                            }`}
-                                          >
-                                            {task.title}
-                                          </h3>
-                                          {task.description && (
-                                            <p
-                                              className={`text-xs ${colors.textSecondary} mt-1 line-clamp-2`}
-                                            >
-                                              {task.description}
-                                            </p>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                          onClick={() =>
-                                            startEditingTask(column.name, task)
-                                          }
-                                          className="text-indigo-400 hover:text-indigo-300 p-1"
-                                          title="Edit"
-                                        >
-                                          <FiEdit2 size={14} />
-                                        </button>
-                                        <button
-                                          onClick={() =>
-                                            deleteTask(column.name, task._id)
-                                          }
-                                          className="text-rose-400 hover:text-rose-300 p-1"
-                                          title="Delete"
-                                        >
-                                          <FiTrash2 size={14} />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </>
+                                  <button
+                                    onClick={() =>
+                                      setNewTask({
+                                        ...newTask,
+                                        column: column.name,
+                                      })
+                                    }
+                                    className={`text-xs ${colors.textSecondary} mt-1 hover:text-white w-full p-2 rounded flex items-center ${colors.cardHover} transition-colors`}
+                                  >
+                                    <FiPlus className="mr-2" size={14} /> Add a
+                                    card
+                                  </button>
                                 )}
                               </div>
                             )}
-                          </Draggable>
-                        ))}
-                      {provided.placeholder}
-
-                      {/* Add Task Section */}
-                      {newTask.column === column.name ? (
-                        <div
-                          className={`${colors.columnBg} p-3 rounded-lg mt-2 border ${colors.cardBorder} shadow-inner`}
-                        >
-                          <input
-                            type="text"
-                            className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} mb-2 focus:ring-1 focus:ring-indigo-500 focus:outline-none`}
-                            placeholder="Task title"
-                            value={newTask.title}
-                            onChange={(e) =>
-                              setNewTask({ ...newTask, title: e.target.value })
-                            }
-                            autoFocus
-                          />
-                          <textarea
-                            className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} focus:ring-1 focus:ring-indigo-500 focus:outline-none`}
-                            placeholder="Description (optional)"
-                            rows={2}
-                            value={newTask.description}
-                            onChange={(e) =>
-                              setNewTask({
-                                ...newTask,
-                                description: e.target.value,
-                              })
-                            }
-                          ></textarea>
-                          <div className="flex justify-end space-x-2 mt-2">
-                            <button
-                              onClick={() => addTask(column.name)}
-                              className={`${colors.primary} px-3 py-1.5 rounded text-white text-xs font-medium`}
-                            >
-                              Add Task
-                            </button>
-                            <button
-                              onClick={() =>
-                                setNewTask({
-                                  title: "",
-                                  description: "",
-                                  column: "",
-                                })
-                              }
-                              className={`${colors.secondary} px-3 py-1.5 rounded text-white text-xs font-medium`}
-                            >
-                              Cancel
-                            </button>
-                          </div>
+                          </Droppable>
                         </div>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            setNewTask({ ...newTask, column: column.name })
-                          }
-                          className={`text-xs ${colors.textSecondary} mt-1 hover:text-white w-full p-2 rounded flex items-center ${colors.cardHover} transition-colors`}
-                        >
-                          <FiPlus className="mr-2" size={14} /> Add a card
-                        </button>
                       )}
-                    </div>
-                  </div>
-                )}
-              </Droppable>
-            ))}
+                    </Draggable>
+                  ))}
+                {provided.placeholder}
 
-            {/* Add New List Section */}
-            <div className="min-w-[16rem] w-64">
-              {showAddListInput ? (
-                <div
-                  className={`${colors.columnBg} border ${colors.cardBorder} p-3 rounded-lg shadow-md`}
-                >
-                  <input
-                    type="text"
-                    placeholder="Enter list title..."
-                    className={`w-full p-2 mb-2 text-sm ${colors.columnBg} ${colors.text} rounded border ${colors.cardBorder} focus:ring-1 focus:ring-indigo-500 focus:outline-none`}
-                    value={newListName}
-                    onChange={(e) => setNewListName(e.target.value)}
-                    autoFocus
-                  />
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={addColumn}
-                      className={`${colors.primary} px-3 py-2 text-xs md:text-sm rounded text-white font-medium`}
+                {/* Add New List Section */}
+                <div className="min-w-[16rem] w-64">
+                  {showAddListInput ? (
+                    <div
+                      className={`${colors.columnBg} border ${colors.cardBorder} p-3 rounded-lg shadow-md`}
                     >
-                      Add list
-                    </button>
+                      <input
+                        type="text"
+                        placeholder="Enter list title..."
+                        className={`w-full p-2 mb-2 text-sm ${colors.columnBg} ${colors.text} rounded border ${colors.cardBorder} focus:ring-1 focus:ring-indigo-500 focus:outline-none`}
+                        value={newListName}
+                        onChange={(e) => setNewListName(e.target.value)}
+                        autoFocus
+                      />
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={addColumn}
+                          className={`${colors.primary} px-3 py-2 text-xs md:text-sm rounded text-white font-medium`}
+                        >
+                          Add list
+                        </button>
+                        <button
+                          onClick={() => setShowAddListInput(false)}
+                          className={`${colors.secondary} px-3 py-2 text-xs md:text-sm rounded text-white font-medium`}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
                     <button
-                      onClick={() => setShowAddListInput(false)}
-                      className={`${colors.secondary} px-3 py-2 text-xs md:text-sm rounded text-white font-medium`}
+                      onClick={() => setShowAddListInput(true)}
+                      className={`w-full ${colors.columnBg} border-2 border-dashed ${colors.cardBorder} ${colors.text} p-3 rounded-lg hover:bg-gray-700/50 transition-all flex items-center justify-center space-x-2 h-12`}
                     >
-                      Cancel
+                      <FiPlus size={16} className="text-indigo-400" />
+                      <span className="text-sm">Add another list</span>
                     </button>
-                  </div>
+                  )}
                 </div>
-              ) : (
-                <button
-                  onClick={() => setShowAddListInput(true)}
-                  className={`w-full ${colors.columnBg} border-2 border-dashed ${colors.cardBorder} ${colors.text} p-3 rounded-lg hover:bg-gray-700/50 transition-all flex items-center justify-center space-x-2 h-12`}
-                >
-                  <FiPlus size={16} className="text-indigo-400" />
-                  <span className="text-sm">Add another list</span>
-                </button>
-              )}
-            </div>
-          </div>
+              </div>
+            )}
+          </Droppable>
         </DragDropContext>
       </div>
     </div>
