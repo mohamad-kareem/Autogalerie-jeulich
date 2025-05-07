@@ -85,10 +85,6 @@ export default function TrelloClone() {
         const boardResponse = await fetch("/api/board");
         const boardData = await boardResponse.json();
         setBoard(boardData);
-
-        setAdmins(adminData);
-
-        setBoard(boardData);
       } catch (error) {
         console.error("Failed to fetch data:", error);
       } finally {
@@ -334,11 +330,11 @@ export default function TrelloClone() {
 
   return (
     <div
-      className={`min-h-screen ${colors.background} ${colors.text} p-4 pb-8 mt-15`}
+      className={`min-h-screen ${colors.background} ${colors.text} p-4 pb-8`}
     >
       {/* Header with Admin Avatars */}
-      <div className="sticky top-0 z-10 mb-6  bg-gray-850/95 backdrop-blur-sm rounded-lg shadow-lg border-b border-gray-700">
-        <div className="max-w-7xl mx-auto relative flex flex-col items-center md:h-16">
+      <div className="sticky top-0 z-10 mb-6 bg-gray-850/95 backdrop-blur-sm rounded-lg shadow-lg border-b border-gray-700">
+        <div className="w-full max-w-[95%] xl:max-w-[90%] 2xl:max-w-[1800px] mx-auto relative flex flex-col items-center md:h-16">
           {/* Centered H1 */}
           <div className="w-full flex justify-center">
             <h1 className="text-xl md:text-2xl font-bold text-indigo-300 text-center">
@@ -346,7 +342,7 @@ export default function TrelloClone() {
             </h1>
           </div>
 
-          {/* Avatars on right (top-right on large screens, below on small screens) */}
+          {/* Avatars on right */}
           <div className="flex -space-x-2 mt-4 md:mt-0 md:absolute md:top-1/2 md:right-4 md:-translate-y-1/2">
             {admins.map((admin, index) => (
               <div
@@ -369,7 +365,7 @@ export default function TrelloClone() {
       </div>
 
       {/* Board Content */}
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-[95%] xl:max-w-[90%] 2xl:max-w-[1800px] mx-auto px-2">
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="flex space-x-4 overflow-x-auto pb-4 horizontal-scroll">
             {board.columns.map((column) => (
@@ -378,7 +374,7 @@ export default function TrelloClone() {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`${colors.columnBg} w-72 min-w-72 flex-shrink-0 rounded-lg shadow-lg border ${colors.columnBorder} relative transition-all hover:shadow-indigo-500/10`}
+                    className={`${colors.columnBg} w-72 min-w-[18rem] flex-shrink-0 rounded-lg shadow-lg border ${colors.columnBorder} relative transition-all hover:shadow-indigo-500/10`}
                   >
                     {/* Column Header */}
                     <div
@@ -457,7 +453,7 @@ export default function TrelloClone() {
                       </div>
                     </div>
 
-                    {/* Tasks List - Fixed height with scroll */}
+                    {/* Tasks List */}
                     <div
                       className={`p-2 overflow-y-auto ${colors.scrollbar}`}
                       style={{ height: "calc(100vh - 200px)" }}
@@ -661,7 +657,7 @@ export default function TrelloClone() {
             ))}
 
             {/* Add New List Section */}
-            <div className="min-w-72 w-72">
+            <div className="min-w-[18rem] w-72">
               {showAddListInput ? (
                 <div
                   className={`${colors.columnBg} border ${colors.cardBorder} p-3 rounded-lg shadow-md`}
