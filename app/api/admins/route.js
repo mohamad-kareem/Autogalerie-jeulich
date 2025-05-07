@@ -5,6 +5,6 @@ import Admin from "@/models/Admin";
 
 export async function GET() {
   await connectDB();
-  const admins = await Admin.find().select("name image").lean();
+  const admins = await Admin.find().select("name image email").lean();
   return NextResponse.json(admins);
 }

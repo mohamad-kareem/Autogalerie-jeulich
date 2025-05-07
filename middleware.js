@@ -18,11 +18,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: [
-    "/AdminDashboard/:path*",
-    "/admin/:path*",
-    "/addcar/:path*",
-    "/excel/:path*",
-    "/Reg/:path*",
-  ],
+  matcher: ["/admin/:path*", "/addcar/:path*", "/excel/:path*", "/Reg/:path*"],
 };
