@@ -1,4 +1,3 @@
-// app/admin/contacts/page.js
 "use client";
 
 import { useState, useEffect } from "react";
@@ -27,7 +26,6 @@ export default function ContactsDashboard() {
   const [currentContact, setCurrentContact] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Form state
   const [formData, setFormData] = useState({
     type: "personal",
     name: "",
@@ -41,25 +39,19 @@ export default function ContactsDashboard() {
   });
 
   useEffect(() => {
-    if (status === "authenticated") {
-      fetchContacts();
-    }
+    if (status === "authenticated") fetchContacts();
   }, [status]);
 
   const fetchContacts = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/PersonalData", {
-        credentials: "include",
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch contacts");
-
-      const data = await response.json();
+      const res = await fetch("/api/PersonalData");
+      if (!res.ok) throw new Error("Failed to fetch contacts");
+      const data = await res.json();
       setContacts(data);
       setFilteredContacts(data);
     } catch (error) {
-      toast.error(error.message || "An error occurred");
+      toast.error(error.message);
     } finally {
       setIsLoading(false);
     }
@@ -67,39 +59,23 @@ export default function ContactsDashboard() {
 
   useEffect(() => {
     let results = contacts;
-
-    // Apply search filter
     if (searchTerm) {
-      results = results.filter(
-        (contact) =>
-          contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (contact.phone &&
-            contact.phone.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (contact.email &&
-            contact.email.toLowerCase().includes(searchTerm.toLowerCase()))
+      results = results.filter((c) =>
+        [c.name, c.phone, c.email].some((f) =>
+          f?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
       );
     }
-
-    // Apply tab filter
-    switch (activeTab) {
-      case "personal":
-        results = results.filter((c) => c.type === "personal");
-        break;
-      case "company":
-        results = results.filter((c) => c.type === "company");
-        break;
-      case "emergency":
+    if (activeTab !== "all") {
+      if (activeTab === "emergency")
         results = results.filter((c) => c.emergencyContact);
-        break;
+      else results = results.filter((c) => c.type === activeTab);
     }
-
     setFilteredContacts(results);
   }, [searchTerm, activeTab, contacts]);
 
   const handleInputChange = (e) => {
-    const { name, value, type } = e.target;
-    const checked = type === "checkbox" ? e.target.checked : undefined;
-
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -108,30 +84,23 @@ export default function ContactsDashboard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const method = currentContact ? "PUT" : "POST";
-      const url = currentContact
-        ? `/api/PersonalData/${currentContact.id}`
-        : "/api/PersonalData";
-
-      const response = await fetch(url, {
+      const res = await fetch("/api/PersonalData", {
         method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          currentContact ? { ...formData, id: currentContact._id } : formData
+        ),
       });
-
-      if (!response.ok) throw new Error("Failed to save contact");
-
+      if (!res.ok) throw new Error("Failed to save contact");
       toast.success(
         `Contact ${currentContact ? "updated" : "added"} successfully`
       );
       fetchContacts();
       resetForm();
     } catch (error) {
-      toast.error(error.message || "An error occurred");
+      toast.error(error.message);
     }
   };
 
@@ -169,18 +138,17 @@ export default function ContactsDashboard() {
 
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this contact?")) return;
-
     try {
-      const response = await fetch(`/api/PersonalData/${id}`, {
+      const res = await fetch("/api/PersonalData", {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
       });
-
-      if (!response.ok) throw new Error("Failed to delete contact");
-
+      if (!res.ok) throw new Error("Failed to delete contact");
       toast.success("Contact deleted successfully");
       fetchContacts();
     } catch (error) {
-      toast.error(error.message || "An error occurred");
+      toast.error(error.message);
     }
   };
 

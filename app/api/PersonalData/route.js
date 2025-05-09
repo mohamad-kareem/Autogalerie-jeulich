@@ -1,4 +1,3 @@
-// app/api/admin/contacts/route.js
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/mongodb";
@@ -18,6 +17,7 @@ export async function GET() {
     });
     return Response.json(contacts);
   } catch (error) {
+    console.error("GET /api/PersonalData failed:", error);
     return Response.json(
       { error: "Failed to fetch contacts" },
       { status: 500 }
@@ -35,12 +35,10 @@ export async function POST(request) {
   try {
     await connectDB();
     const data = await request.json();
-    const contact = await Contact.create({
-      ...data,
-      user: session.user.id,
-    });
+    const contact = await Contact.create({ ...data, user: session.user.id });
     return Response.json(contact);
   } catch (error) {
+    console.error("POST /api/PersonalData failed:", error);
     return Response.json(
       { error: "Failed to create contact" },
       { status: 500 }
@@ -59,7 +57,10 @@ export async function PUT(request) {
     await connectDB();
     const { id, ...data } = await request.json();
 
-    // Verify the contact belongs to the user
+    if (!id) {
+      return Response.json({ error: "Missing contact ID" }, { status: 400 });
+    }
+
     const contact = await Contact.findOneAndUpdate(
       { _id: id, user: session.user.id },
       data,
@@ -72,6 +73,7 @@ export async function PUT(request) {
 
     return Response.json(contact);
   } catch (error) {
+    console.error("PUT /api/PersonalData failed:", error);
     return Response.json(
       { error: "Failed to update contact" },
       { status: 500 }
@@ -90,6 +92,10 @@ export async function DELETE(request) {
     await connectDB();
     const { id } = await request.json();
 
+    if (!id) {
+      return Response.json({ error: "Missing contact ID" }, { status: 400 });
+    }
+
     const contact = await Contact.findOneAndDelete({
       _id: id,
       user: session.user.id,
@@ -101,6 +107,7 @@ export async function DELETE(request) {
 
     return Response.json({ success: true });
   } catch (error) {
+    console.error("DELETE /api/PersonalData failed:", error);
     return Response.json(
       { error: "Failed to delete contact" },
       { status: 500 }
