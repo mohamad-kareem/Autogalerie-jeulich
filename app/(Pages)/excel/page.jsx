@@ -303,10 +303,10 @@ const CashBookPage = () => {
   } = calculateData();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-300 to-green-900 p-10 md:pl-17 mt-10">
+    <div className="min-h-screen bg-gradient-to-br from-green-300 to-green-900 p-4 md:pl-8">
       <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div className="flex flex-col md:flex-row  items-start md:items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-green-800">Kassenbuch</h1>
             <p className="text-green-600 mt-1">
@@ -316,15 +316,6 @@ const CashBookPage = () => {
                 1
               ).toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
             </p>
-          </div>
-          <div className="flex items-center space-x-4 mt-4 md:mt-0">
-            <button
-              onClick={fetchEntries}
-              className="bg-white rounded-lg shadow-xs p-2 flex items-center text-green-600 hover:bg-green-50"
-            >
-              <FiRefreshCw className="mr-2" />
-              <span className="text-sm">Aktualisieren</span>
-            </button>
           </div>
         </div>
 

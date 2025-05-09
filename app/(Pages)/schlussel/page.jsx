@@ -210,7 +210,7 @@ export default function SchlüsselManagement() {
     );
   }
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-300 to-orange-900 p-10 md:pl-17 mt-10">
+    <div className="min-h-screen bg-gradient-to-br from-orange-300 to-orange-900 p-10 md:pl-17 ">
       <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">

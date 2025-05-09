@@ -352,10 +352,10 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-400 to-blue-950 p-10 md:pl-17 mt-10">
+    <div className="min-h-screen bg-gradient-to-br from-blue-400 to-blue-950 p-4 md:pl-10 ">
       <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center mb-4">
           <div>
             <h1 className="text-3xl font-bold text-white">
               Aufgabenverwaltung
@@ -364,15 +364,6 @@ export default function TasksPage() {
               {filteredTasks.length}{" "}
               {filteredTasks.length === 1 ? "Aufgabe" : "Aufgaben"} gefunden
             </p>
-          </div>
-          <div className=" items-center space-x-4 mt-4 md:mt-0">
-            <button
-              onClick={refreshData}
-              className="bg-white rounded-lg shadow-xs p-2 flex items-center text-blue-600 hover:bg-blue-50"
-            >
-              <FiRefreshCw className="mr-2" />
-              <span className="text-sm">Aktualisieren</span>
-            </button>
           </div>
         </div>
 

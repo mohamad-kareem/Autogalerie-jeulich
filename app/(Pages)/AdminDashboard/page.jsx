@@ -15,6 +15,7 @@ import {
   FiX,
   FiUpload,
   FiCamera,
+  FiMapPin,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 
@@ -250,8 +251,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-300 mt-15">
-      <main className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-300 ">
+      <main className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-14">
         {/* Modern Welcome Section */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
           <div className="p-6 md:p-8 bg-gradient-to-r from-yellow-600 to-red-800 text-white">
@@ -306,32 +307,35 @@ export default function Dashboard() {
               <NavigationCard
                 href="/addcar"
                 icon={<FiPlus />}
-                title="New Car"
-                description="Add a new vehicle to inventory"
+                title="Neues Auto"
+                description="Ein Fahrzeug zum Bestand hinzufügen"
                 bgColor="bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800"
                 iconBgColor="bg-red-800"
               />
+
               <NavigationCard
                 href="/excel"
                 icon={<FiBook />}
-                title="Cash Book"
-                description="Accounting and finances"
+                title="Kassenbuch"
+                description="Buchhaltung und Finanzen"
                 bgColor="bg-gradient-to-br from-green-500 to-green-700 hover:from-green-600 hover:to-green-800"
                 iconBgColor="bg-green-700"
               />
+
               <NavigationCard
                 href="/forms"
                 icon={<FiFileText />}
-                title="Purchase Contracts"
-                description="Documents and agreements"
+                title="Kaufverträge"
+                description="Dokumente und Vereinbarungen"
                 bgColor="bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800"
                 iconBgColor="bg-purple-700"
               />
+
               <NavigationCard
                 href="/schlussel"
                 icon={<FiKey />}
-                title="Keys"
-                description="Key management"
+                title="Schlüssel"
+                description="Schlüsselverwaltung"
                 bgColor="bg-gradient-to-br from-orange-500 to-orange-700 hover:from-orange-600 hover:to-orange-800"
                 iconBgColor="bg-orange-700"
               />
@@ -339,24 +343,35 @@ export default function Dashboard() {
               <NavigationCard
                 href="/Aufgaben"
                 icon={<FiCheckSquare />}
-                title="Tasks"
-                description="Task management and to-dos"
+                title="Aufgaben"
+                description="Aufgabenverwaltung und To-dos"
                 bgColor="bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800"
                 iconBgColor="bg-indigo-700"
               />
+
               <NavigationCard
                 href="/trello"
                 icon={<FiCheckSquare />}
-                title="Trello Board"
-                description="Project overview & status"
+                title="Trello-Board"
+                description="Projektübersicht und Status"
                 bgColor="bg-gradient-to-br from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700"
                 iconBgColor="bg-blue-500"
               />
+
+              <NavigationCard
+                href="/PersonalData"
+                icon={<FiMapPin />}
+                title="Kontaktdaten"
+                description="Telefonnummern, Adressen, Orte und Kontakte"
+                bgColor="bg-gradient-to-br from-gray-500 to-green-700 hover:from-green-600 hover:to-green-800"
+                iconBgColor="bg-yellow-700"
+              />
+
               <NavigationCard
                 href="/Reg"
                 icon={<FiUserPlus />}
-                title="Add Admin"
-                description="Register new administrator"
+                title="Admin hinzufügen"
+                description="Neuen Administrator registrieren"
                 bgColor="bg-gradient-to-br from-yellow-500 to-yellow-700 hover:from-yellow-600 hover:to-yellow-800"
                 iconBgColor="bg-yellow-700"
               />
