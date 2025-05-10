@@ -349,7 +349,7 @@ export default function TrelloClone() {
 
   return (
     <div
-      className={`min-h-screen ${colors.background} ${colors.text} p-4 pb-8`}
+      className={`min-h-screen ${colors.background} ${colors.text} p-2 pb-8`}
     >
       {/* Header with Admin Avatars */}
       <div className=" sticky top-0 z-10 mb-6  bg-gray-850/95 backdrop-blur-sm rounded-lg shadow-lg border-b border-gray-700">

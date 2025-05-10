@@ -1,7 +1,8 @@
 export default function Button({
   type = "button",
-  bgColor = "bg-black",
-  hoverColor = "hover:bg-red-600",
+  bgColor = "bg-gradient-to-br from-red-600 to-black",
+
+  hoverColor = "hover:from-red-600 hover:to-red-800",
   textColor = "text-white",
   className = "px-4 py-2 rounded-lg transition text-sm sm:text-base flex justify-center items-center",
   children,

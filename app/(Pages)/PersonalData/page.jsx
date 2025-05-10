@@ -13,6 +13,8 @@ import {
   FiSun,
   FiMoon,
   FiSearch,
+  FiChevronDown,
+  FiX,
 } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 
@@ -42,6 +44,18 @@ export default function AdminDashboard() {
   const [data, setData] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
   const [isEditing, setIsEditing] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check for mobile on mount and resize
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkIfMobile();
+    window.addEventListener("resize", checkIfMobile);
+    return () => window.removeEventListener("resize", checkIfMobile);
+  }, []);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -127,6 +141,13 @@ export default function AdminDashboard() {
       _id: item._id,
     });
     setIsEditing(true);
+    if (isMobile) {
+      // Scroll to form on mobile when editing
+      document.getElementById("form-section")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
   };
 
   const handleDelete = async (id) => {
@@ -155,43 +176,94 @@ export default function AdminDashboard() {
 
   return (
     <div
-      className={` min-h-screen transition-colors duration-300 ${
+      className={`min-h-screen transition-colors duration-300 ${
         darkMode ? "dark bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-900"
       }`}
     >
-      <div className="container mx-auto px-4 py-8">
-        <header className="flex  items-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Admin Dashboard
-          </h1>
-          <button
-            onClick={toggleDarkMode}
-            className="p-2 mt-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-          >
-            {darkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
-          </button>
-        </header>
-
-        <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
-          {Object.keys(typeMap).map((tab) => (
+      <div className="container mx-auto px-2 py-4 sm:py-8">
+        {/* Mobile Header */}
+        {isMobile && (
+          <div className="flex items-center justify-between mb-4">
             <button
-              key={tab}
-              className={`px-4 py-2 font-medium capitalize ${
-                activeTab === tab
-                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
-                  : "text-gray-500 dark:text-gray-400"
-              }`}
-              onClick={() => {
-                setActiveTab(tab);
-                resetForm();
-              }}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
             >
-              {tab}
+              {mobileMenuOpen ? <FiX size={24} /> : <FiChevronDown size={24} />}
             </button>
-          ))}
-        </div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Admin Dashboard
+            </h1>
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+            >
+              {darkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
+            </button>
+          </div>
+        )}
 
-        <div className="mb-6 flex items-center bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2">
+        {/* Desktop Header */}
+        {!isMobile && (
+          <header className="flex items-center mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Admin Dashboard
+            </h1>
+            <button
+              onClick={toggleDarkMode}
+              className="p-2  rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            >
+              {darkMode ? <FiSun size={18} /> : <FiMoon size={18} />}
+            </button>
+          </header>
+        )}
+
+        {/* Mobile Menu */}
+        {isMobile && mobileMenuOpen && (
+          <div className="mb-4 grid grid-cols-2 gap-2">
+            {Object.keys(typeMap).map((tab) => (
+              <button
+                key={tab}
+                className={`px-4 py-2 text-sm font-medium rounded-lg capitalize ${
+                  activeTab === tab
+                    ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                }`}
+                onClick={() => {
+                  setActiveTab(tab);
+                  resetForm();
+                  setMobileMenuOpen(false);
+                }}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Desktop Tabs */}
+        {!isMobile && (
+          <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+            {Object.keys(typeMap).map((tab) => (
+              <button
+                key={tab}
+                className={`px-4 py-2 font-medium capitalize ${
+                  activeTab === tab
+                    ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "text-gray-500 dark:text-gray-400"
+                }`}
+                onClick={() => {
+                  setActiveTab(tab);
+                  resetForm();
+                }}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Search Bar */}
+        <div className="mb-6 flex items-center bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
           <FiSearch className="text-gray-400 mx-2" />
           <input
             type="text"
@@ -202,18 +274,21 @@ export default function AdminDashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1">
+        {/* Main Content - Mobile Stacked Layout */}
+        {isMobile ? (
+          <div className="space-y-6">
+            {/* Form Section */}
             <div
-              className={`p-6 rounded-lg shadow-md ${
+              id="form-section"
+              className={`p-4 sm:p-4 rounded-lg shadow-md ${
                 darkMode ? "bg-gray-800" : "bg-white"
               }`}
             >
-              <h2 className="text-xl font-semibold mb-4">
+              <h2 className="text-lg font-semibold mb-4">
                 {isEditing ? "Edit Entry" : `Add New ${activeTab}`}
               </h2>
               <form onSubmit={handleSubmit}>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium mb-1">
                       Name*
@@ -223,7 +298,7 @@ export default function AdminDashboard() {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                      className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                       required
                     />
                   </div>
@@ -237,7 +312,7 @@ export default function AdminDashboard() {
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                      className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                       required
                     />
                   </div>
@@ -252,7 +327,7 @@ export default function AdminDashboard() {
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                        className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                       />
                     </div>
                   )}
@@ -267,7 +342,7 @@ export default function AdminDashboard() {
                         name="position"
                         value={formData.position}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                        className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                       />
                     </div>
                   )}
@@ -281,7 +356,7 @@ export default function AdminDashboard() {
                       name="address"
                       value={formData.address}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                      className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                     />
                   </div>
 
@@ -293,7 +368,7 @@ export default function AdminDashboard() {
                       name="notes"
                       value={formData.notes}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                      className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                       rows="2"
                     />
                   </div>
@@ -304,30 +379,29 @@ export default function AdminDashboard() {
                     <button
                       type="button"
                       onClick={resetForm}
-                      className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                      className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
                     >
                       Cancel
                     </button>
                   )}
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                    className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
                   >
-                    <FiSave className="mr-2" />
+                    <FiSave className="mr-1" size={14} />
                     {isEditing ? "Update" : "Save"}
                   </button>
                 </div>
               </form>
             </div>
-          </div>
 
-          <div className="lg:col-span-2">
+            {/* Data List Section */}
             <div
-              className={`p-6 rounded-lg shadow-md ${
+              className={`p-4 sm:p-6 rounded-lg shadow-md ${
                 darkMode ? "bg-gray-800" : "bg-white"
               }`}
             >
-              <h2 className="text-xl font-semibold mb-4 capitalize">
+              <h2 className="text-lg font-semibold mb-4 capitalize">
                 {activeTab} ({data.length})
               </h2>
 
@@ -340,66 +414,68 @@ export default function AdminDashboard() {
                   No data found
                 </p>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {data.map((item) => (
                     <div
                       key={item._id}
-                      className={`p-4 rounded-lg border ${
+                      className={`p-3 rounded-lg border ${
                         darkMode
                           ? "border-gray-700 bg-gray-700"
                           : "border-gray-200 bg-gray-50"
                       }`}
                     >
                       <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold text-lg flex items-center">
-                            {item.type === "contact" ? (
-                              <FiUser className="mr-2 text-blue-500" />
-                            ) : item.type === "location" ? (
-                              <FiMapPin className="mr-2 text-red-500" />
-                            ) : (
-                              <FiGlobe className="mr-2 text-green-500" />
-                            )}
-                            {item.name}
-                          </h3>
-                          <p className="text-gray-600 dark:text-gray-300">
+                        <div className="w-full">
+                          <div className="flex justify-between items-start w-full">
+                            <h3 className="font-semibold flex items-center text-sm sm:text-base">
+                              {item.type === "contact" ? (
+                                <FiUser className="mr-2 text-blue-500" />
+                              ) : item.type === "location" ? (
+                                <FiMapPin className="mr-2 text-red-500" />
+                              ) : (
+                                <FiGlobe className="mr-2 text-green-500" />
+                              )}
+                              {item.name}
+                            </h3>
+                            <div className="flex space-x-1">
+                              <button
+                                onClick={() => handleEdit(item)}
+                                className="p-1 text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-600 rounded-full"
+                              >
+                                <FiEdit2 size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(item._id)}
+                                className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-gray-600 rounded-full"
+                              >
+                                <FiTrash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-1">
                             {item.position || item.address}
                           </p>
+                          <div className="mt-2 space-y-1 text-xs sm:text-sm">
+                            {item.phone && (
+                              <p className="flex items-center">
+                                <FiPhone className="mr-2 text-green-500" />
+                                {item.phone}
+                              </p>
+                            )}
+                            {item.email && (
+                              <p className="flex items-center">
+                                <FiMail className="mr-2 text-purple-500" />
+                                {item.email}
+                              </p>
+                            )}
+                            {item.notes && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <span className="font-medium">Notes:</span>{" "}
+                                {item.notes}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEdit(item)}
-                            className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-600 rounded-full transition-colors"
-                          >
-                            <FiEdit2 />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item._id)}
-                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-gray-600 rounded-full transition-colors"
-                          >
-                            <FiTrash2 />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="mt-3 space-y-1">
-                        {item.phone && (
-                          <p className="flex items-center">
-                            <FiPhone className="mr-2 text-green-500" />
-                            {item.phone}
-                          </p>
-                        )}
-                        {item.email && (
-                          <p className="flex items-center">
-                            <FiMail className="mr-2 text-purple-500" />
-                            {item.email}
-                          </p>
-                        )}
-                        {item.notes && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                            <span className="font-medium">Notes:</span>{" "}
-                            {item.notes}
-                          </p>
-                        )}
                       </div>
                     </div>
                   ))}
@@ -407,7 +483,215 @@ export default function AdminDashboard() {
               )}
             </div>
           </div>
-        </div>
+        ) : (
+          // Desktop Layout (2-column)
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1">
+              <div
+                className={`p-6 rounded-lg shadow-md ${
+                  darkMode ? "bg-gray-800" : "bg-white"
+                }`}
+              >
+                <h2 className="text-xl font-semibold mb-4">
+                  {isEditing ? "Edit Entry" : `Add New ${activeTab}`}
+                </h2>
+                <form onSubmit={handleSubmit}>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Name*
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Phone*
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                        required
+                      />
+                    </div>
+
+                    {activeTab !== "locations" && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                      </div>
+                    )}
+
+                    {activeTab === "contacts" && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Position
+                        </label>
+                        <input
+                          type="text"
+                          name="position"
+                          value={formData.position}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Address
+                      </label>
+                      <input
+                        type="text"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Notes
+                      </label>
+                      <textarea
+                        name="notes"
+                        value={formData.notes}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                        rows="2"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-2 mt-4">
+                    {isEditing && (
+                      <button
+                        type="button"
+                        onClick={resetForm}
+                        className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                    >
+                      <FiSave className="mr-2" />
+                      {isEditing ? "Update" : "Save"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <div className="lg:col-span-2">
+              <div
+                className={`p-6 rounded-lg shadow-md ${
+                  darkMode ? "bg-gray-800" : "bg-white"
+                }`}
+              >
+                <h2 className="text-xl font-semibold mb-4 capitalize">
+                  {activeTab} ({data.length})
+                </h2>
+
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-32">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : data.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No data found
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {data.map((item) => (
+                      <div
+                        key={item._id}
+                        className={`p-4 rounded-lg border ${
+                          darkMode
+                            ? "border-gray-700 bg-gray-700"
+                            : "border-gray-200 bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-semibold text-lg flex items-center">
+                              {item.type === "contact" ? (
+                                <FiUser className="mr-2 text-blue-500" />
+                              ) : item.type === "location" ? (
+                                <FiMapPin className="mr-2 text-red-500" />
+                              ) : (
+                                <FiGlobe className="mr-2 text-green-500" />
+                              )}
+                              {item.name}
+                            </h3>
+                            <p className="text-gray-600 dark:text-gray-300">
+                              {item.position || item.address}
+                            </p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleEdit(item)}
+                              className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-600 rounded-full"
+                            >
+                              <FiEdit2 />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(item._id)}
+                              className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-gray-600 rounded-full"
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="mt-3 space-y-1">
+                          {item.phone && (
+                            <p className="flex items-center">
+                              <FiPhone className="mr-2 text-green-500" />
+                              {item.phone}
+                            </p>
+                          )}
+                          {item.email && (
+                            <p className="flex items-center">
+                              <FiMail className="mr-2 text-purple-500" />
+                              {item.email}
+                            </p>
+                          )}
+                          {item.notes && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                              <span className="font-medium">Notes:</span>{" "}
+                              {item.notes}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

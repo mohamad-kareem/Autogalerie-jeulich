@@ -210,12 +210,12 @@ export default function SchlüsselManagement() {
     );
   }
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-300 to-orange-900 p-10 md:pl-17 ">
+    <div className="min-h-screen bg-gradient-to-br from-orange-300 to-orange-900 p-2  ">
       <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-orange-800">
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-orange-800">
               Schlüsselverwaltung
             </h1>
             <p className="text-orange-600 mt-1">
@@ -223,14 +223,7 @@ export default function SchlüsselManagement() {
               registriert
             </p>
           </div>
-          <div className="flex items-center space-x-4 mt-4 md:mt-0">
-            <button
-              onClick={fetchSchlussels}
-              className="bg-white rounded-lg shadow-xs p-2 flex items-center text-orange-600 hover:bg-orange-50"
-            >
-              <FiRefreshCw className="mr-2" />
-              <span className="text-sm">Aktualisieren</span>
-            </button>
+          <div className="flex items-center space-x-4 mt-6 md:mt-2">
             <button
               onClick={startAdd}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"

@@ -37,13 +37,7 @@ export default function LandingSection() {
           </div>
           <div className="flex flex-wrap gap-4">
             <Link href="/vergleich" passHref>
-              <Button
-                bgColor="bg-white"
-                textColor="text-black"
-                className=" border-2 border-black px-4 py-2 rounded-lg transition text-sm sm:text-base"
-              >
-                Vergleiche Autos ↔
-              </Button>
+              <Button>Vergleiche Autos ↔</Button>
             </Link>
           </div>
         </div>

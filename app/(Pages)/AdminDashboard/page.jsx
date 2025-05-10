@@ -309,70 +309,63 @@ export default function Dashboard() {
                 icon={<FiPlus />}
                 title="Neues Auto"
                 description="Ein Fahrzeug zum Bestand hinzufügen"
-                bgColor="bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800"
+                bgColor="bg-gradient-to-br from-red-600 to-black hover:from-red-600 hover:to-red-800"
                 iconBgColor="bg-red-800"
               />
-
               <NavigationCard
                 href="/excel"
                 icon={<FiBook />}
                 title="Kassenbuch"
                 description="Buchhaltung und Finanzen"
-                bgColor="bg-gradient-to-br from-green-500 to-green-700 hover:from-green-600 hover:to-green-800"
+                bgColor="bg-gradient-to-br from-green-600 via-green-700 to-black hover:from-green-600 hover:to-green-800"
                 iconBgColor="bg-green-700"
               />
-
               <NavigationCard
                 href="/forms"
                 icon={<FiFileText />}
                 title="Kaufverträge"
                 description="Dokumente und Vereinbarungen"
-                bgColor="bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800"
+                bgColor="bg-gradient-to-br from-purple-500 to-black hover:from-purple-600 hover:to-purple-800"
                 iconBgColor="bg-purple-700"
               />
-
-              <NavigationCard
-                href="/schlussel"
-                icon={<FiKey />}
-                title="Schlüssel"
-                description="Schlüsselverwaltung"
-                bgColor="bg-gradient-to-br from-orange-500 to-orange-700 hover:from-orange-600 hover:to-orange-800"
-                iconBgColor="bg-orange-700"
-              />
-
-              <NavigationCard
-                href="/Aufgaben"
-                icon={<FiCheckSquare />}
-                title="Aufgaben"
-                description="Aufgabenverwaltung und To-dos"
-                bgColor="bg-gradient-to-br from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800"
-                iconBgColor="bg-indigo-700"
-              />
-
               <NavigationCard
                 href="/trello"
                 icon={<FiCheckSquare />}
                 title="Trello-Board"
                 description="Projektübersicht und Status"
-                bgColor="bg-gradient-to-br from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700"
-                iconBgColor="bg-blue-500"
+                bgColor="bg-gradient-to-br from-gray-600 to-black hover:from-gray-800 hover:to-gray-700"
+                iconBgColor="bg-blue-800"
               />
-
+              <NavigationCard
+                href="/Aufgaben"
+                icon={<FiCheckSquare />}
+                title="Aufgaben"
+                description="Aufgabenverwaltung und To-dos"
+                bgColor="bg-gradient-to-br from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-indigo-800"
+                iconBgColor="bg-indigo-700"
+              />
               <NavigationCard
                 href="/PersonalData"
                 icon={<FiMapPin />}
                 title="Kontaktdaten"
                 description="Telefonnummern, Adressen, Orte und Kontakte"
-                bgColor="bg-gradient-to-br from-gray-500 to-green-700 hover:from-green-600 hover:to-green-800"
+                bgColor="bg-gradient-to-br from-gray-700 to-black hover:from-black hover:to-red-800"
                 iconBgColor="bg-yellow-700"
               />
-
+              <NavigationCard
+                href="/schlussel"
+                icon={<FiKey />}
+                title="Schlüssel"
+                description="Schlüsselverwaltung"
+                bgColor="bg-gradient-to-br from-orange-500 via-orange-600 to-orange-950 hover:from-orange-600 hover:to-orange-800"
+                iconBgColor="bg-orange-700"
+              />
               <NavigationCard
                 href="/Reg"
                 icon={<FiUserPlus />}
                 title="Admin hinzufügen"
                 description="Neuen Administrator registrieren"
-                bgColor="bg-gradient-to-br from-yellow-500 to-yellow-700 hover:from-yellow-600 hover:to-yellow-800"
+                bgColor="bg-gradient-to-br from-yellow-500 to-black hover:from-yellow-600 hover:to-yellow-800"
                 iconBgColor="bg-yellow-700"
               />
             </div>

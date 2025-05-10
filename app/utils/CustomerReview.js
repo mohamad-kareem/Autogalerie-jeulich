@@ -16,7 +16,7 @@ const CusReviews = [
     name: "Kia",
     role: "Einkäuferin",
     image: user2,
-    bg: "bg-red-600 text-white",
+    bg: "bg-gradient-to-br from-gray-100 to-red-400 text-white",
   },
   {
     quote:
