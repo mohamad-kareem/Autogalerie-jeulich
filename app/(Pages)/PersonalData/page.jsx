@@ -15,6 +15,9 @@ import {
   FiSearch,
   FiChevronDown,
   FiX,
+  FiLock,
+  FiEye,
+  FiEyeOff,
 } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 
@@ -23,6 +26,7 @@ const typeMap = {
   company: "company",
   locations: "location",
   emergency: "emergency",
+  passwords: "password",
 };
 
 const initialFormData = {
@@ -34,6 +38,9 @@ const initialFormData = {
   address: "",
   website: "",
   notes: "",
+  label: "",
+  password: "",
+  username: "",
 };
 
 export default function AdminDashboard() {
@@ -46,6 +53,7 @@ export default function AdminDashboard() {
   const [isEditing, setIsEditing] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Check for mobile on mount and resize
   useEffect(() => {
@@ -61,7 +69,9 @@ export default function AdminDashboard() {
     setIsLoading(true);
     try {
       const res = await fetch(
-        `/api/admin?type=${typeMap[activeTab]}&search=${searchTerm}`
+        `/api/admin?type=${typeMap[activeTab]}&search=${encodeURIComponent(
+          searchTerm
+        )}`
       );
       const result = await res.json();
       setData(result);
@@ -100,6 +110,7 @@ export default function AdminDashboard() {
       type: typeMap[activeTab] || "contact",
     });
     setIsEditing(false);
+    setShowPassword(false);
   };
 
   const handleSubmit = async (e) => {
@@ -109,6 +120,13 @@ export default function AdminDashboard() {
         ...formData,
         type: typeMap[activeTab] || "contact",
       };
+
+      // Don't send empty fields for passwords
+      if (activeTab === "passwords") {
+        if (!submissionData.label || !submissionData.password) {
+          throw new Error("Label and password are required");
+        }
+      }
 
       const response = await fetch("/api/admin", {
         method: "POST",
@@ -142,7 +160,6 @@ export default function AdminDashboard() {
     });
     setIsEditing(true);
     if (isMobile) {
-      // Scroll to form on mobile when editing
       document.getElementById("form-section")?.scrollIntoView({
         behavior: "smooth",
         block: "start",
@@ -172,6 +189,20 @@ export default function AdminDashboard() {
     } catch (error) {
       toast.error(error.message);
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  // Improved search function
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    // Debounce the search to avoid too many API calls
+    const timer = setTimeout(() => {
+      setSearchTerm(value);
+    }, 300);
+    return () => clearTimeout(timer);
   };
 
   return (
@@ -268,8 +299,8 @@ export default function AdminDashboard() {
           <input
             type="text"
             placeholder={`Search ${activeTab}...`}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            defaultValue={searchTerm}
+            onChange={handleSearch}
             className="w-full bg-transparent outline-none dark:text-white"
           />
         </div>
@@ -289,76 +320,130 @@ export default function AdminDashboard() {
               </h2>
               <form onSubmit={handleSubmit}>
                 <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Name*
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                      required
-                    />
-                  </div>
+                  {activeTab === "passwords" ? (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Label*
+                        </label>
+                        <input
+                          type="text"
+                          name="label"
+                          value={formData.label}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Username/Email
+                        </label>
+                        <input
+                          type="text"
+                          name="username"
+                          value={formData.username}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Password*
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            name="password"
+                            value={formData.password}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 pr-10"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={togglePasswordVisibility}
+                            className="absolute right-3 top-2.5 text-gray-500 dark:text-gray-400"
+                          >
+                            {showPassword ? <FiEyeOff /> : <FiEye />}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Name*
+                        </label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                          required
+                        />
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Phone*
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                      required
-                    />
-                  </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Phone*
+                        </label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                          required
+                        />
+                      </div>
 
-                  {activeTab !== "locations" && (
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                      />
-                    </div>
+                      {activeTab !== "locations" && (
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Email
+                          </label>
+                          <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                        </div>
+                      )}
+
+                      {activeTab === "contacts" && (
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Position
+                          </label>
+                          <input
+                            type="text"
+                            name="position"
+                            value={formData.position}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Address
+                        </label>
+                        <input
+                          type="text"
+                          name="address"
+                          value={formData.address}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                      </div>
+                    </>
                   )}
-
-                  {activeTab === "contacts" && (
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Position
-                      </label>
-                      <input
-                        type="text"
-                        name="position"
-                        value={formData.position}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                      />
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Address
-                    </label>
-                    <input
-                      type="text"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                    />
-                  </div>
 
                   <div>
                     <label className="block text-sm font-medium mb-1">
@@ -432,10 +517,12 @@ export default function AdminDashboard() {
                                 <FiUser className="mr-2 text-blue-500" />
                               ) : item.type === "location" ? (
                                 <FiMapPin className="mr-2 text-red-500" />
+                              ) : item.type === "password" ? (
+                                <FiLock className="mr-2 text-yellow-500" />
                               ) : (
                                 <FiGlobe className="mr-2 text-green-500" />
                               )}
-                              {item.name}
+                              {item.name || item.label}
                             </h3>
                             <div className="flex space-x-1">
                               <button
@@ -453,7 +540,7 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-1">
-                            {item.position || item.address}
+                            {item.position || item.address || item.username}
                           </p>
                           <div className="mt-2 space-y-1 text-xs sm:text-sm">
                             {item.phone && (
@@ -466,6 +553,23 @@ export default function AdminDashboard() {
                               <p className="flex items-center">
                                 <FiMail className="mr-2 text-purple-500" />
                                 {item.email}
+                              </p>
+                            )}
+                            {item.type === "password" && (
+                              <p className="flex items-center">
+                                <FiLock className="mr-2 text-yellow-500" />
+                                {item.password.replace(/./g, "•")}
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(
+                                      item.password
+                                    );
+                                    toast.success("Password copied!");
+                                  }}
+                                  className="ml-2 text-xs bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded"
+                                >
+                                  Copy
+                                </button>
                               </p>
                             )}
                             {item.notes && (
@@ -497,76 +601,130 @@ export default function AdminDashboard() {
                 </h2>
                 <form onSubmit={handleSubmit}>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Name*
-                      </label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                        required
-                      />
-                    </div>
+                    {activeTab === "passwords" ? (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Label*
+                          </label>
+                          <input
+                            type="text"
+                            name="label"
+                            value={formData.label}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Username/Email
+                          </label>
+                          <input
+                            type="text"
+                            name="username"
+                            value={formData.username}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Password*
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showPassword ? "text" : "password"}
+                              name="password"
+                              value={formData.password}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 pr-10"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={togglePasswordVisibility}
+                              className="absolute right-3 top-2.5 text-gray-500 dark:text-gray-400"
+                            >
+                              {showPassword ? <FiEyeOff /> : <FiEye />}
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Name*
+                          </label>
+                          <input
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                            required
+                          />
+                        </div>
 
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Phone*
-                      </label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                        required
-                      />
-                    </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Phone*
+                          </label>
+                          <input
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                            required
+                          />
+                        </div>
 
-                    {activeTab !== "locations" && (
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                        />
-                      </div>
+                        {activeTab !== "locations" && (
+                          <div>
+                            <label className="block text-sm font-medium mb-1">
+                              Email
+                            </label>
+                            <input
+                              type="email"
+                              name="email"
+                              value={formData.email}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                            />
+                          </div>
+                        )}
+
+                        {activeTab === "contacts" && (
+                          <div>
+                            <label className="block text-sm font-medium mb-1">
+                              Position
+                            </label>
+                            <input
+                              type="text"
+                              name="position"
+                              value={formData.position}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                            />
+                          </div>
+                        )}
+
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Address
+                          </label>
+                          <input
+                            type="text"
+                            name="address"
+                            value={formData.address}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                        </div>
+                      </>
                     )}
-
-                    {activeTab === "contacts" && (
-                      <div>
-                        <label className="block text-sm font-medium mb-1">
-                          Position
-                        </label>
-                        <input
-                          type="text"
-                          name="position"
-                          value={formData.position}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                        />
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Address
-                      </label>
-                      <input
-                        type="text"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                      />
-                    </div>
 
                     <div>
                       <label className="block text-sm font-medium mb-1">
@@ -640,13 +798,15 @@ export default function AdminDashboard() {
                                 <FiUser className="mr-2 text-blue-500" />
                               ) : item.type === "location" ? (
                                 <FiMapPin className="mr-2 text-red-500" />
+                              ) : item.type === "password" ? (
+                                <FiLock className="mr-2 text-yellow-500" />
                               ) : (
                                 <FiGlobe className="mr-2 text-green-500" />
                               )}
-                              {item.name}
+                              {item.name || item.label}
                             </h3>
                             <p className="text-gray-600 dark:text-gray-300">
-                              {item.position || item.address}
+                              {item.position || item.address || item.username}
                             </p>
                           </div>
                           <div className="flex space-x-2">
@@ -676,6 +836,23 @@ export default function AdminDashboard() {
                               <FiMail className="mr-2 text-purple-500" />
                               {item.email}
                             </p>
+                          )}
+                          {item.type === "password" && (
+                            <div className="flex items-center">
+                              <FiLock className="mr-2 text-yellow-500" />
+                              <span className="mr-2">
+                                {item.password.replace(/./g, "•")}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(item.password);
+                                  toast.success("Password copied!");
+                                }}
+                                className="text-xs bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded"
+                              >
+                                Copy
+                              </button>
+                            </div>
                           )}
                           {item.notes && (
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">

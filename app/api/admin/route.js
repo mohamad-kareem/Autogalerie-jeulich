@@ -7,12 +7,8 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
 
     const query = {};
-    const searchTerm = searchParams.get("search");
     const type = searchParams.get("type");
 
-    if (searchTerm) {
-      query.$text = { $search: searchTerm };
-    }
     if (type) {
       query.type = type;
     }

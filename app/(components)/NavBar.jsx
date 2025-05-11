@@ -65,7 +65,7 @@ export default function NavBar() {
   // ✅ Admin Dropdown Only (Floating, no Navbar)
   if (isAdminRoute && isAdmin) {
     return (
-      <div className="fixed top-4 right-4 z-50">
+      <div className="absolute top-4 right-4 z-50">
         <div className="relative">
           <button
             onClick={() => setOpen((v) => !v)}

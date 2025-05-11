@@ -26,7 +26,7 @@ export default function LandingSlide() {
       {/* Left Arrow Button */}
       <button
         type="button"
-        className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 bg-white rounded-full shadow p-1 sm:p-2 hover:bg-red-600 z-10 transition"
+        className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 bg-white rounded-full shadow p-1 sm:p-2 hover:bg-gradient-to-br from-red-600 to-black z-10 transition"
         onClick={() => scroll("left")}
       >
         <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6 text-gray-600" />
@@ -40,7 +40,7 @@ export default function LandingSlide() {
         {popularCategories.map((category, index) => (
           <div
             key={index}
-            className="min-w-[200px] sm:min-w-[220px] md:min-w-[240px] bg-gray-100 rounded-xl p-4 sm:p-6 flex-shrink-0 flex flex-col items-center justify-between text-center hover:bg-red-400 hover:shadow-md transition "
+            className="min-w-[200px] sm:min-w-[220px] md:min-w-[240px] bg-gray-100 rounded-xl p-4 sm:p-6 flex-shrink-0 flex flex-col items-center justify-between text-center hover:bg-gradient-to-br from-red-600 to-black/20 hover:shadow-md transition "
           >
             <Image
               src={category.image}

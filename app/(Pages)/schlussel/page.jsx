@@ -211,9 +211,9 @@ export default function SchlüsselManagement() {
   }
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-300 to-orange-900 p-2  ">
-      <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto">
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1536px] mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center mb-8">
           <div>
             <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-orange-800">
               Schlüsselverwaltung
@@ -222,15 +222,6 @@ export default function SchlüsselManagement() {
               {schlussels.length} {schlussels.length === 1 ? "key" : "keys"}{" "}
               registriert
             </p>
-          </div>
-          <div className="flex items-center space-x-4 mt-6 md:mt-2">
-            <button
-              onClick={startAdd}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-            >
-              <FiPlus className="-ml-1 mr-2 h-4 w-4" />
-              Schlüssel hinzufügen
-            </button>
           </div>
         </div>
 

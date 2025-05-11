@@ -353,7 +353,7 @@ export default function TrelloClone() {
     >
       {/* Header with Admin Avatars */}
       <div className=" sticky top-0 z-10 mb-6  bg-gray-850/95 backdrop-blur-sm rounded-lg shadow-lg border-b border-gray-700">
-        <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto relative flex flex-col items-center md:h-16">
+        <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1536px] mx-auto relative flex flex-col items-center md:h-16">
           {/* Centered H1 */}
           <div className="w-full flex justify-center">
             <h1 className="text-xl md:text-2xl font-bold text-indigo-300 text-center">

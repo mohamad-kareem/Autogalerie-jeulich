@@ -32,7 +32,7 @@ export default function FormsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto bg-white shadow rounded-lg p-6 print:shadow-none">
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1536px] mx-auto bg-white shadow rounded-lg p-6 print:shadow-none">
         <h1 className="text-2xl font-bold mb-6">Vertragsformulare ausfüllen</h1>
         <div className="flex border-b mb-4">
           {forms.map((f, i) => (

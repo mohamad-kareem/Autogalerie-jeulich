@@ -4,11 +4,26 @@ const adminDataSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ["contact", "company", "location", "emergency"],
+    enum: ["contact", "company", "location", "emergency", "password"],
   },
-  name: { type: String, required: true },
+  name: {
+    type: String,
+    required: function () {
+      // Only require name if not a password type
+      return this.type !== "password";
+    },
+  },
+  label: {
+    type: String,
+    required: function () {
+      // Only require label for password type
+      return this.type === "password";
+    },
+  },
   phone: String,
   email: String,
+  username: String, // Added for password entries
+  password: String, // Added for password entries
   position: String,
   address: String,
   website: String,
@@ -19,11 +34,20 @@ const adminDataSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
+// Update text index to include new fields
 adminDataSchema.index({
   name: "text",
+  label: "text",
   phone: "text",
   email: "text",
+  username: "text",
   position: "text",
+});
+
+// Middleware to update the updatedAt field before saving
+adminDataSchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+  next();
 });
 
 export default mongoose.models.AdminData ||

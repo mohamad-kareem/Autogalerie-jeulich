@@ -74,7 +74,7 @@ const AdminCarForm = () => {
   const CurrentStepComponent = steps[step - 1].component;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto py-6">
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-red-700 to-red-700 px-8 py-2">

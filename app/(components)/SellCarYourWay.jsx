@@ -8,7 +8,7 @@ import Link from "next/link";
 
 export default function SellCarYourWay() {
   return (
-    <section className="relative max-w-7xl mx-auto bg-white text-black py-12 px-4 sm:px-6 lg:px-16 mb-16 rounded-3xl border border-gray-100 shadow-lg">
+    <section className="max-w-[76rem] mx-auto px-4 sm:px-6 md:px-10 lg:px-16 py-12 bg-white relative shadow-even mb-8">
       {/* Background elements */}
       <div className="absolute inset-0 overflow-hidden z-0">
         <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-red-50 filter blur-2xl opacity-20"></div>
@@ -18,18 +18,8 @@ export default function SellCarYourWay() {
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
         {/* Text content */}
         <div className="space-y-6">
-          <div className="inline-flex items-center px-3 py-1.5 bg-gray-100 rounded-full border border-gray-200">
-            <span className="flex items-center justify-center w-4 h-4 mr-2 bg-gradient-to-r from-red-500 to-red-600 rounded-full">
-              <MdVerified className="text-white text-[10px]" />
-            </span>
-            <span className="text-xs font-medium text-gray-700 tracking-wider">
-              PREMIUM AUTOHANDEL
-            </span>
-          </div>
-
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-tight mt-4">
             Kaufen oder verkaufen Sie Autos –<br />
-            <span className="font-light">alles an einem Ort</span>
           </h2>
 
           {/* Feature 1 */}
@@ -56,7 +46,7 @@ export default function SellCarYourWay() {
             <div className="flex-shrink-0 relative">
               <div className="absolute -inset-1 bg-blue-100 rounded-lg transform -rotate-3 opacity-30"></div>
               <div className="relative flex items-center justify-center w-10 h-10 bg-white rounded-lg border border-gray-200 shadow-sm">
-                <MdOutlineAttachMoney className="text-blue-600 text-lg" />
+                <MdOutlineAttachMoney className="text-green-600 text-lg" />
               </div>
             </div>
             <div>
@@ -80,7 +70,11 @@ export default function SellCarYourWay() {
             </Link>
 
             <Link href="/kontakt" passHref>
-              <Button>
+              <Button
+                bgColor="bg-black"
+                textColor="text-white"
+                hoverColor="hover:bg-red-950"
+              >
                 <span>Auto verkaufen</span>
                 <IoIosArrowForward className="ml-1 transition-transform group-hover:translate-x-1" />
               </Button>
@@ -105,7 +99,7 @@ export default function SellCarYourWay() {
           <div className="absolute -bottom-3 -left-3 bg-white px-2.5 py-1.5 rounded-md shadow-sm border border-gray-200 transform -rotate-1">
             <div className="flex items-center">
               <div className="bg-green-100 p-1.5 rounded-sm mr-1.5">
-                <FaSearch className="text-green-600 text-xs" />
+                <FaSearch className="text-green-600 text-xl" />
               </div>
               <span className="text-xs font-medium text-gray-700">Kaufen</span>
             </div>
@@ -114,7 +108,7 @@ export default function SellCarYourWay() {
           <div className="absolute -top-3 -right-3 bg-white px-2.5 py-1.5 rounded-md shadow-sm border border-gray-200 transform rotate-1">
             <div className="flex items-center">
               <div className="bg-blue-100 p-1.5 rounded-sm mr-1.5">
-                <MdOutlineAttachMoney className="text-blue-600 text-xs" />
+                <MdOutlineAttachMoney className="text-green-600 text-xl" />
               </div>
               <span className="text-xs font-medium text-gray-700">
                 Verkaufen

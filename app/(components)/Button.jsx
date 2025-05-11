@@ -1,18 +1,22 @@
 export default function Button({
   type = "button",
   bgColor = "bg-gradient-to-br from-red-600 to-black",
-
   hoverColor = "hover:from-red-600 hover:to-red-800",
   textColor = "text-white",
-  className = "px-4 py-2 rounded-lg transition text-sm sm:text-base flex justify-center items-center",
+  className = "",
   children,
-  ...props // catch all other props like onClick, disabled, etc.
+  ...props
 }) {
+  const baseClasses =
+    "rounded-lg transition-all duration-300 font-medium text-center flex justify-center items-center";
+  const responsivePadding = "px-4 py-2 sm:px-5 sm:py-2.5";
+  const responsiveText = "text-sm sm:text-base";
+
   return (
     <button
       type={type}
-      className={`${bgColor} ${hoverColor} ${textColor} ${className}`}
-      {...props} // spread the rest of the props here
+      className={`${bgColor} ${hoverColor} ${textColor} ${baseClasses} ${responsivePadding} ${responsiveText} ${className}`}
+      {...props}
     >
       {children}
     </button>
