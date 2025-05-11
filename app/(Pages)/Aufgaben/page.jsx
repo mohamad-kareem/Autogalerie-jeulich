@@ -410,7 +410,7 @@ export default function TasksPage() {
         darkMode ? "bg-gray-900" : "bg-gradient-to-br from-blue-400 to-blue-950"
       } p-4`}
     >
-      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
         {/* Header */}
         <div className="flex flex-col gap-2 sm:gap-3 md:gap-4 mb-4">
           {/* Title always on top */}

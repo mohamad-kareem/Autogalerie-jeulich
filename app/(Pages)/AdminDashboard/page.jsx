@@ -252,17 +252,17 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-300 ">
-      <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto px-4 sm:px-6 lg:px-8 py-14">
+      <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto px-4 sm:px-6 lg:px-8 py-14">
         {/* Modern Welcome Section */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden mt-5 ">
           <div className="p-6 md:p-8 bg-gradient-to-r from-yellow-600 to-red-800 text-white">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold mb-2">
-                  Welcome back, {user.name.split(" ")[0]}!
+                  willkommen zurück, {user.name.split(" ")[0]}!
                 </h1>
                 <p className="text-indigo-100">
-                  You have full administrator access to the system.
+                  Sie haben vollen Administratorzugriff auf das System.
                 </p>
               </div>
               <div className="mt-4 md:mt-0 flex items-center space-x-4">

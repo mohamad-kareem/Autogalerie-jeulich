@@ -8,7 +8,7 @@ const EntryDetails = ({ entry, onPrint, onExport }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
-        <h4 className="text-sm font-medium text-gray-900 mb-2">Details</h4>
+        <h4 className="text-xl font-medium text-gray-900 mb-2">Details</h4>
         <DetailGrid>
           <DetailItem label="Belegart" value={entry.documentType} />
           <DetailItem label="Belegnummer" value={entry.documentNumber} />
