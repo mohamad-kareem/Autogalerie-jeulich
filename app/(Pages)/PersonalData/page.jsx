@@ -48,7 +48,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("contacts");
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [data, setData] = useState([]);
+  const [allData, setAllData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
   const [isEditing, setIsEditing] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -68,13 +69,10 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(
-        `/api/admin?type=${typeMap[activeTab]}&search=${encodeURIComponent(
-          searchTerm
-        )}`
-      );
+      const res = await fetch(`/api/admin?type=${typeMap[activeTab]}`);
       const result = await res.json();
-      setData(result);
+      setAllData(result);
+      setFilteredData(result);
     } catch (error) {
       toast.error("Failed to fetch data");
     } finally {
@@ -84,7 +82,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [activeTab, searchTerm]);
+  }, [activeTab]);
 
   useEffect(() => {
     const savedMode = localStorage.getItem("darkMode") === "true";
@@ -121,7 +119,6 @@ export default function AdminDashboard() {
         type: typeMap[activeTab] || "contact",
       };
 
-      // Don't send empty fields for passwords
       if (activeTab === "passwords") {
         if (!submissionData.label || !submissionData.password) {
           throw new Error("Label and password are required");
@@ -195,14 +192,33 @@ export default function AdminDashboard() {
     setShowPassword(!showPassword);
   };
 
-  // Improved search function
   const handleSearch = (e) => {
-    const value = e.target.value;
-    // Debounce the search to avoid too many API calls
-    const timer = setTimeout(() => {
-      setSearchTerm(value);
-    }, 300);
-    return () => clearTimeout(timer);
+    const value = e.target.value.toLowerCase();
+    setSearchTerm(value);
+
+    if (!value) {
+      setFilteredData(allData);
+      return;
+    }
+
+    const filtered = allData.filter((item) => {
+      const searchFields = [
+        item.name || "",
+        item.label || "",
+        item.phone || "",
+        item.email || "",
+        item.username || "",
+        item.position || "",
+        item.address || "",
+        item.notes || "",
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchFields.includes(value);
+    });
+
+    setFilteredData(filtered);
   };
 
   return (
@@ -299,7 +315,7 @@ export default function AdminDashboard() {
           <input
             type="text"
             placeholder={`Search ${activeTab}...`}
-            defaultValue={searchTerm}
+            value={searchTerm}
             onChange={handleSearch}
             className="w-full bg-transparent outline-none dark:text-white"
           />
@@ -487,20 +503,20 @@ export default function AdminDashboard() {
               }`}
             >
               <h2 className="text-lg font-semibold mb-4 capitalize">
-                {activeTab} ({data.length})
+                {activeTab} ({filteredData.length})
               </h2>
 
               {isLoading ? (
                 <div className="flex justify-center items-center h-32">
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
                 </div>
-              ) : data.length === 0 ? (
+              ) : filteredData.length === 0 ? (
                 <p className="text-gray-500 dark:text-gray-400">
                   No data found
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {data.map((item) => (
+                  {filteredData.map((item) => (
                     <div
                       key={item._id}
                       className={`p-3 rounded-lg border ${
@@ -769,20 +785,20 @@ export default function AdminDashboard() {
                 }`}
               >
                 <h2 className="text-xl font-semibold mb-4 capitalize">
-                  {activeTab} ({data.length})
+                  {activeTab} ({filteredData.length})
                 </h2>
 
                 {isLoading ? (
                   <div className="flex justify-center items-center h-32">
                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
                   </div>
-                ) : data.length === 0 ? (
+                ) : filteredData.length === 0 ? (
                   <p className="text-gray-500 dark:text-gray-400">
                     No data found
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {data.map((item) => (
+                    {filteredData.map((item) => (
                       <div
                         key={item._id}
                         className={`p-4 rounded-lg border ${
