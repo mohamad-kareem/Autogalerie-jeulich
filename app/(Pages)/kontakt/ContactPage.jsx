@@ -71,15 +71,16 @@ export default function ContactPage({ carId, carName, carLink }) {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Hero Section */}
-      <div className="relative bg-black">
+      <div className="relative bg-black h-[400px] sm:h-[400px]">
         <div className="absolute inset-0 overflow-hidden opacity-60">
           <Image
             src={Hero2}
             alt="Dealership Showroom"
-            className="object-cover"
+            className="object-cover "
             priority
           />
         </div>
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
           <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-4xl">
             Kontaktieren Sie uns

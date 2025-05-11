@@ -15,9 +15,9 @@ export default function LandingSlide() {
       behavior: "smooth",
     });
   };
-
+  //     py-12  relative
   return (
-    <section className="max-w-[76rem] mx-auto px-4 sm:px-6 md:px-10 lg:px-16 py-12 bg-white relative shadow-even mb-8">
+    <section className="py-12  relative w-full bg-white py-12 shadow-even mb-8 px-4 sm:px-6 lg:px-16">
       <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-black mb-4">
         Unsere Kategorien
       </h2>

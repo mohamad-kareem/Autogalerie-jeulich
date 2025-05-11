@@ -2,7 +2,7 @@ import Button from "./Button";
 import Link from "next/link";
 export default function LandingSection() {
   return (
-    <section className="bg-white max-w-[76rem] mx-auto  px-4 sm:px-6 md:px- shadow-even mb-8 ">
+    <section className="w-full bg-white py-12 shadow-even mb-8 px-4 sm:px-6 lg:px-16 ">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Explore Vehicles Card */}
         <div className=" p-4 sm:p-5 md:p-6 lg:p-8  flex flex-col justify-between">

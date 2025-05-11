@@ -3,7 +3,7 @@ import React from "react";
 const Footbar = () => {
   return (
     // <footer className="bg-gradient-to-b from-gray-900 to-black text-white py-16 px-6 md:px-20 mt-20 w-full border-t-4 border-red-600">
-    <footer className="bg-black text-white py-16 px-6 md:px-20 mt-20 w-full border-t-4 border-red-600">
+    <footer className="bg-black text-white py-16 px-6 md:px-20  w-full border-t-4 border-red-600">
       <div className="max-w-7xl mx-auto">
         {/* Main Content */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">

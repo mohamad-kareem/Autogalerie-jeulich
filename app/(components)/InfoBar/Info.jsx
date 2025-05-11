@@ -9,19 +9,19 @@ export default function InfoBar() {
       <div className="container mx-auto py-6 grid grid-cols-1 md:grid-cols-3 gap-8">
         {[
           {
-            icon: <MapPin size={24} className="text-red-400" />,
+            icon: <MapPin size={24} className="text-red-500" />,
             title: "Standort",
             content: "Alte Dürenerstraße 4, 52428 Jülich",
             link: "/kontakt#map",
           },
           {
-            icon: <Phone size={24} className="text-red-400" />,
+            icon: <Phone size={24} className="text-red-500" />,
             title: "Telefon",
             content: "+49 2461 9163780",
             link: "tel:+4924619163780",
           },
           {
-            icon: <Mail size={24} className="text-red-400" />,
+            icon: <Mail size={24} className="text-red-500" />,
             title: "Email",
             content: "info@autogalerie-juelich.de",
             link: "mailto:info@autogalerie-juelich.de",
@@ -40,7 +40,7 @@ export default function InfoBar() {
             </motion.div>
             <div>
               <p className="text-sm text-white/70">{item.title}</p>
-              <p className="text-lg text-white font-medium group-hover:text-red-300 transition-colors duration-300">
+              <p className="text-lg text-white font-medium group-hover:text-red-500 transition-colors duration-300">
                 {item.content}
               </p>
             </div>

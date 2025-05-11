@@ -16,6 +16,8 @@ import {
   FiKey,
   FiFileText,
   FiRefreshCw,
+  FiSun,
+  FiMoon,
 } from "react-icons/fi";
 import Image from "next/image";
 import toast from "react-hot-toast";
@@ -34,11 +36,18 @@ const needsOptions = [
 
 const priorityOptions = ["low", "medium", "high"];
 
-const PriorityBadge = ({ priority }) => {
+const PriorityBadge = ({ priority, darkMode }) => {
   const priorityStyles = {
-    high: "bg-gradient-to-br from-red-400 to-red-500",
-    medium: "bg-gradient-to-br from-green-400 to-green-500",
-    low: "bg-gradient-to-br from-blue-200 to-blue-300",
+    light: {
+      high: "bg-gradient-to-br from-red-400 to-red-500",
+      medium: "bg-gradient-to-br from-green-400 to-green-500",
+      low: "bg-gradient-to-br from-blue-200 to-blue-300",
+    },
+    dark: {
+      high: "bg-gradient-to-br from-red-600 to-red-700",
+      medium: "bg-gradient-to-br from-green-600 to-green-700",
+      low: "bg-gradient-to-br from-blue-400 to-blue-500",
+    },
   };
 
   const priorityText = {
@@ -49,18 +58,28 @@ const PriorityBadge = ({ priority }) => {
 
   return (
     <span
-      className={`px-3 py-1 inline-flex text-xs font-medium rounded-full ${priorityStyles[priority]}`}
+      className={`px-3 py-1 inline-flex text-xs font-medium rounded-full ${
+        darkMode
+          ? priorityStyles.dark[priority]
+          : priorityStyles.light[priority]
+      } ${darkMode ? "text-white" : "text-gray-900"}`}
     >
       {priorityText[priority]}
     </span>
   );
 };
 
-const SortIcon = ({ direction }) => {
+const SortIcon = ({ direction, darkMode }) => {
   return direction === "asc" ? (
-    <FiChevronUp size={14} className="text-gray-500" />
+    <FiChevronUp
+      size={14}
+      className={darkMode ? "text-blue-300" : "text-blue-500"}
+    />
   ) : (
-    <FiChevronDown size={14} className="text-gray-500" />
+    <FiChevronDown
+      size={14}
+      className={darkMode ? "text-blue-300" : "text-blue-500"}
+    />
   );
 };
 
@@ -83,6 +102,30 @@ export default function TasksPage() {
     key: "createdAt",
     direction: "desc",
   });
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Check for saved theme preference or use system preference
+    const savedMode = localStorage.getItem("darkMode");
+    if (savedMode !== null) {
+      setDarkMode(savedMode === "true");
+    } else if (
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+    ) {
+      setDarkMode(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Apply dark mode class to body
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("darkMode", darkMode);
+  }, [darkMode]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -160,11 +203,11 @@ export default function TasksPage() {
       setTasks((prev) => [{ ...newTask, id: newTask._id }, ...prev]);
       toast.success("Aufgabe erfolgreich erstellt!", {
         style: {
-          background: "#2563EB", // blue-600
+          background: darkMode ? "#1E40AF" : "#2563EB",
           color: "#fff",
         },
         iconTheme: {
-          primary: "#1E40AF", // blue-800
+          primary: darkMode ? "#1E3A8A" : "#1E40AF",
           secondary: "#fff",
         },
       });
@@ -224,11 +267,11 @@ export default function TasksPage() {
       );
       toast.success("Aufgabe erfolgreich aktualisiert!", {
         style: {
-          background: "#2563EB", // blue-600
+          background: darkMode ? "#1E40AF" : "#2563EB",
           color: "#fff",
         },
         iconTheme: {
-          primary: "#1E40AF", // blue-800
+          primary: darkMode ? "#1E3A8A" : "#1E40AF",
           secondary: "#fff",
         },
       });
@@ -256,11 +299,11 @@ export default function TasksPage() {
       setTasks((prev) => prev.filter((task) => task.id !== taskId));
       toast.success("Aufgabe erfolgreich gelöscht!", {
         style: {
-          background: "#2563EB", // blue-600
+          background: darkMode ? "#1E40AF" : "#2563EB",
           color: "#fff",
         },
         iconTheme: {
-          primary: "#1E40AF", // blue-800
+          primary: darkMode ? "#1E3A8A" : "#1E40AF",
           secondary: "#fff",
         },
       });
@@ -324,11 +367,11 @@ export default function TasksPage() {
       setIsLoading(false);
       toast.success("Daten aktualisiert", {
         style: {
-          background: "#2563EB", // blue-600
+          background: darkMode ? "#1E40AF" : "#2563EB",
           color: "#fff",
         },
         iconTheme: {
-          primary: "#1E40AF", // blue-800
+          primary: darkMode ? "#1E3A8A" : "#1E40AF",
           secondary: "#fff",
         },
       });
@@ -341,10 +384,20 @@ export default function TasksPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-300 to-blue-900 p-10 md:pl-17 mt-10">
+      <div
+        className={`min-h-screen ${
+          darkMode
+            ? "bg-gray-900"
+            : "bg-gradient-to-br from-blue-300 to-blue-900"
+        } p-10 md:pl-17 mt-10`}
+      >
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+            <div
+              className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${
+                darkMode ? "border-blue-500" : "border-white"
+              }`}
+            ></div>
           </div>
         </div>
       </div>
@@ -352,32 +405,75 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-400 to-blue-950 p-4  ">
-      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1650px] mx-auto">
+    <div
+      className={`min-h-screen ${
+        darkMode ? "bg-gray-900" : "bg-gradient-to-br from-blue-400 to-blue-950"
+      } p-4`}
+    >
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white">
-              Aufgabenverwaltung
-            </h1>
-            <p className="text-blue-100 mt-1">
+        <div className="flex flex-col gap-2 sm:gap-3 md:gap-4 mb-4">
+          {/* Title always on top */}
+          <h1
+            className={`text-xl sm:text-2xl font-bold ${
+              darkMode ? "text-white" : "text-white"
+            }`}
+          >
+            Aufgabenverwaltung
+          </h1>
+
+          {/* On mobile: task count + toggle icon side-by-side
+      On larger: stack under title */}
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <p className={darkMode ? "text-blue-300" : "text-blue-100"}>
               {filteredTasks.length}{" "}
               {filteredTasks.length === 1 ? "Aufgabe" : "Aufgaben"} gefunden
             </p>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className={`p-2 rounded-lg ${
+                darkMode
+                  ? "bg-blue-800 text-yellow-300 hover:bg-blue-700"
+                  : "bg-blue-100 text-blue-800 hover:bg-blue-200"
+              } transition-colors`}
+              title={
+                darkMode ? "Zu Light Mode wechseln" : "Zu Dark Mode wechseln"
+              }
+            >
+              {darkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
+            </button>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
-          <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gradient-to-r from-blue-50 to-blue-100">
+        <div
+          className={`rounded-xl shadow-md overflow-hidden mb-8 ${
+            darkMode ? "bg-gray-800" : "bg-white"
+          }`}
+        >
+          <div
+            className={`px-6 py-4 border-b ${
+              darkMode
+                ? "border-gray-700 bg-gray-700"
+                : "border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100"
+            } flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4`}
+          >
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
               <div className="flex items-center">
-                <FiFilter className="text-blue-500 mr-2" />
+                <FiFilter
+                  className={
+                    darkMode ? "text-blue-400 mr-2" : "text-blue-500 mr-2"
+                  }
+                />
                 <select
                   name="needs"
                   value={filters.needs}
                   onChange={handleFilterChange}
-                  className="border border-blue-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  className={`rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                    darkMode
+                      ? "bg-gray-600 border-gray-600 text-white"
+                      : "bg-white border-blue-200"
+                  }`}
                 >
                   <option value="">Alle Kategorien</option>
                   {needsOptions.map((option) => (
@@ -391,7 +487,9 @@ export default function TasksPage() {
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <div className="relative flex-grow sm:w-64">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiSearch className="text-blue-400" />
+                  <FiSearch
+                    className={darkMode ? "text-blue-400" : "text-blue-400"}
+                  />
                 </div>
                 <input
                   type="text"
@@ -399,13 +497,21 @@ export default function TasksPage() {
                   value={filters.search}
                   onChange={handleFilterChange}
                   placeholder="Aufgaben suchen..."
-                  className="block w-full pl-10 pr-3 py-2 border border-blue-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all"
+                  className={`block w-full pl-10 pr-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all ${
+                    darkMode
+                      ? "bg-gray-600 border-gray-600 text-white placeholder-gray-300"
+                      : "bg-white border-blue-200"
+                  }`}
                 />
               </div>
 
               <button
                 onClick={() => setIsAddingTask(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
+                className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm ${
+                  darkMode
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                }`}
               >
                 <FiPlus size={16} /> Neue Aufgabe
               </button>
@@ -414,47 +520,83 @@ export default function TasksPage() {
 
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-blue-50">
+              <thead className={darkMode ? "bg-gray-700" : "bg-blue-50"}>
                 <tr>
                   <th
                     onClick={() => requestSort("car")}
-                    className="px-6 py-3 text-left text-xs font-medium text-blue-600 uppercase tracking-wider cursor-pointer hover:bg-blue-100 transition-colors"
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer transition-colors ${
+                      darkMode
+                        ? "text-blue-300 hover:bg-gray-600"
+                        : "text-blue-600 hover:bg-blue-100"
+                    }`}
                   >
                     <div className="flex items-center gap-1">
                       Fahrzeug
                       {sortConfig.key === "car" && (
-                        <SortIcon direction={sortConfig.direction} />
+                        <SortIcon
+                          direction={sortConfig.direction}
+                          darkMode={darkMode}
+                        />
                       )}
                     </div>
                   </th>
                   <th
                     onClick={() => requestSort("needs")}
-                    className="px-6 py-3 text-left text-xs font-medium text-blue-600 uppercase tracking-wider cursor-pointer hover:bg-blue-100 transition-colors"
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer transition-colors ${
+                      darkMode
+                        ? "text-blue-300 hover:bg-gray-600"
+                        : "text-blue-600 hover:bg-blue-100"
+                    }`}
                   >
                     <div className="flex items-center gap-1">
                       Kategorie
                       {sortConfig.key === "needs" && (
-                        <SortIcon direction={sortConfig.direction} />
+                        <SortIcon
+                          direction={sortConfig.direction}
+                          darkMode={darkMode}
+                        />
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-blue-600 uppercase tracking-wider">
+                  <th
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                      darkMode ? "text-blue-300" : "text-blue-600"
+                    }`}
+                  >
                     Beschreibung
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-blue-600 uppercase tracking-wider">
+                  <th
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                      darkMode ? "text-blue-300" : "text-blue-600"
+                    }`}
+                  >
                     Zugewiesen
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-blue-600 uppercase tracking-wider">
+                  <th
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                      darkMode ? "text-blue-300" : "text-blue-600"
+                    }`}
+                  >
                     Priorität
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-blue-600 uppercase tracking-wider">
+                  <th
+                    className={`px-6 py-3 text-right text-xs font-medium uppercase tracking-wider ${
+                      darkMode ? "text-blue-300" : "text-blue-600"
+                    }`}
+                  >
                     Aktionen
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody
+                className={`divide-y ${
+                  darkMode
+                    ? "divide-gray-700 bg-gray-800"
+                    : "divide-gray-200 bg-white"
+                }`}
+              >
                 {isAddingTask && (
-                  <tr className="bg-blue-50">
+                  <tr className={darkMode ? "bg-gray-700" : "bg-blue-50"}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         type="text"
@@ -463,7 +605,11 @@ export default function TasksPage() {
                         onChange={handleInputChange}
                         placeholder="Fahrzeug"
                         required
-                        className="border border-blue-200 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                          darkMode
+                            ? "bg-gray-600 border-gray-600 text-white"
+                            : "border-blue-200"
+                        }`}
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -471,7 +617,11 @@ export default function TasksPage() {
                         name="needs"
                         value={taskForm.needs}
                         onChange={handleInputChange}
-                        className="border border-blue-200 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                          darkMode
+                            ? "bg-gray-600 border-gray-600 text-white"
+                            : "border-blue-200"
+                        }`}
                       >
                         {needsOptions.map((option) => (
                           <option key={option} value={option}>
@@ -487,7 +637,11 @@ export default function TasksPage() {
                         value={taskForm.description}
                         onChange={handleInputChange}
                         placeholder="Beschreibung"
-                        className="border border-blue-200 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                          darkMode
+                            ? "bg-gray-600 border-gray-600 text-white"
+                            : "border-blue-200"
+                        }`}
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -495,7 +649,11 @@ export default function TasksPage() {
                         name="assignedTo"
                         value={taskForm.assignedTo}
                         onChange={handleInputChange}
-                        className="border border-blue-200 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                          darkMode
+                            ? "bg-gray-600 border-gray-600 text-white"
+                            : "border-blue-200"
+                        }`}
                       >
                         <option value="">Nicht zugewiesen</option>
                         {admins.map((admin) => (
@@ -510,7 +668,11 @@ export default function TasksPage() {
                         name="priority"
                         value={taskForm.priority}
                         onChange={handleInputChange}
-                        className="border border-blue-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className={`rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                          darkMode
+                            ? "bg-gray-600 border-gray-600 text-white"
+                            : "border-blue-200"
+                        }`}
                       >
                         {priorityOptions.map((option) => (
                           <option key={option} value={option}>
@@ -540,7 +702,7 @@ export default function TasksPage() {
                 )}
 
                 {editingTaskId && (
-                  <tr className="bg-blue-50">
+                  <tr className={darkMode ? "bg-gray-700" : "bg-blue-50"}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         type="text"
@@ -548,7 +710,11 @@ export default function TasksPage() {
                         value={taskForm.car}
                         onChange={handleInputChange}
                         required
-                        className="border border-blue-200 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                          darkMode
+                            ? "bg-gray-600 border-gray-600 text-white"
+                            : "border-blue-200"
+                        }`}
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -556,7 +722,11 @@ export default function TasksPage() {
                         name="needs"
                         value={taskForm.needs}
                         onChange={handleInputChange}
-                        className="border border-blue-200 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                          darkMode
+                            ? "bg-gray-600 border-gray-600 text-white"
+                            : "border-blue-200"
+                        }`}
                       >
                         {needsOptions.map((option) => (
                           <option key={option} value={option}>
@@ -571,7 +741,11 @@ export default function TasksPage() {
                         name="description"
                         value={taskForm.description}
                         onChange={handleInputChange}
-                        className="border border-blue-200 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                          darkMode
+                            ? "bg-gray-600 border-gray-600 text-white"
+                            : "border-blue-200"
+                        }`}
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -579,7 +753,11 @@ export default function TasksPage() {
                         name="assignedTo"
                         value={taskForm.assignedTo}
                         onChange={handleInputChange}
-                        className="border border-blue-200 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                          darkMode
+                            ? "bg-gray-600 border-gray-600 text-white"
+                            : "border-blue-200"
+                        }`}
                       >
                         <option value="">Nicht zugewiesen</option>
                         {admins.map((admin) => (
@@ -594,7 +772,11 @@ export default function TasksPage() {
                         name="priority"
                         value={taskForm.priority}
                         onChange={handleInputChange}
-                        className="border border-blue-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className={`rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                          darkMode
+                            ? "bg-gray-600 border-gray-600 text-white"
+                            : "border-blue-200"
+                        }`}
                       >
                         {priorityOptions.map((option) => (
                           <option key={option} value={option}>
@@ -626,8 +808,14 @@ export default function TasksPage() {
                 {filteredTasks.map((task) => (
                   <React.Fragment key={task.id}>
                     <tr
-                      className={`hover:bg-blue-50 cursor-pointer transition-colors ${
-                        expandedTaskId === task.id ? "bg-blue-50" : ""
+                      className={`cursor-pointer transition-colors ${
+                        darkMode ? "hover:bg-gray-700" : "hover:bg-blue-50"
+                      } ${
+                        expandedTaskId === task.id
+                          ? darkMode
+                            ? "bg-gray-700"
+                            : "bg-blue-50"
+                          : ""
                       }`}
                       onClick={() =>
                         setExpandedTaskId(
@@ -636,19 +824,39 @@ export default function TasksPage() {
                       }
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-blue-900">
+                        <div
+                          className={`text-sm font-semibold ${
+                            darkMode ? "text-white" : "text-blue-900"
+                          }`}
+                        >
                           {task.car}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-blue-800 px-3 py-1 rounded-md bg-blue-100 inline-block">
+                        <div
+                          className={`text-sm px-3 py-1 rounded-md inline-block ${
+                            darkMode
+                              ? "bg-blue-900 text-blue-200"
+                              : "bg-blue-100 text-blue-800"
+                          }`}
+                        >
                           {task.needs}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-600 max-w-xs truncate">
+                        <div
+                          className={`text-sm max-w-xs truncate ${
+                            darkMode ? "text-gray-300" : "text-gray-600"
+                          }`}
+                        >
                           {task.description || (
-                            <span className="text-gray-400 italic">
+                            <span
+                              className={
+                                darkMode
+                                  ? "text-gray-400 italic"
+                                  : "text-gray-400 italic"
+                              }
+                            >
                               Keine Beschreibung
                             </span>
                           )}
@@ -665,19 +873,30 @@ export default function TasksPage() {
                                 className="object-cover"
                               />
                             </div>
-                            <span className="text-sm text-blue-800">
+                            <span
+                              className={`text-sm ${
+                                darkMode ? "text-white" : "text-blue-800"
+                              }`}
+                            >
                               {task.assignedTo.name}
                             </span>
                           </div>
                         ) : (
-                          <div className="flex items-center text-blue-400">
+                          <div
+                            className={`flex items-center ${
+                              darkMode ? "text-blue-300" : "text-blue-400"
+                            }`}
+                          >
                             <FiUser className="mr-2" />
                             <span className="text-sm">Nicht zugewiesen</span>
                           </div>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <PriorityBadge priority={task.priority} />
+                        <PriorityBadge
+                          priority={task.priority}
+                          darkMode={darkMode}
+                        />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-1">
                         <button
@@ -685,7 +904,11 @@ export default function TasksPage() {
                             e.stopPropagation();
                             handleEditTask(task.id);
                           }}
-                          className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                          className={`p-2 rounded-lg transition-colors ${
+                            darkMode
+                              ? "text-blue-400 hover:bg-gray-600"
+                              : "text-blue-600 hover:bg-blue-100"
+                          }`}
                           title="Bearbeiten"
                         >
                           <FiEdit2 />
@@ -695,7 +918,11 @@ export default function TasksPage() {
                             e.stopPropagation();
                             handleDeleteTask(task.id);
                           }}
-                          className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                          className={`p-2 rounded-lg transition-colors ${
+                            darkMode
+                              ? "text-red-400 hover:bg-gray-600"
+                              : "text-red-600 hover:bg-red-100"
+                          }`}
                           title="Löschen"
                         >
                           <FiTrash2 />
@@ -704,24 +931,50 @@ export default function TasksPage() {
                     </tr>
 
                     {expandedTaskId === task.id && (
-                      <tr className="bg-blue-50">
+                      <tr className={darkMode ? "bg-gray-700" : "bg-blue-50"}>
                         <td colSpan="6" className="px-6 py-4">
-                          <div className="bg-white p-6 rounded-lg border border-blue-200 shadow-xs">
+                          <div
+                            className={`p-6 rounded-lg border ${
+                              darkMode
+                                ? "bg-gray-800 border-gray-600 shadow-xs"
+                                : "bg-white border-blue-200 shadow-xs"
+                            }`}
+                          >
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                               <div className="md:col-span-2">
                                 <div className="flex items-center mb-4">
-                                  <div className="w-4 h-4 bg-blue-500 rounded-full mr-3 flex-shrink-0"></div>
-                                  <h3 className="text-lg font-semibold text-blue-800">
+                                  <div
+                                    className={`w-4 h-4 rounded-full mr-3 flex-shrink-0 ${
+                                      darkMode ? "bg-blue-500" : "bg-blue-500"
+                                    }`}
+                                  ></div>
+                                  <h3
+                                    className={`text-lg font-semibold ${
+                                      darkMode ? "text-white" : "text-blue-800"
+                                    }`}
+                                  >
                                     Aufgabendetails
                                   </h3>
                                 </div>
-                                <div className="prose prose-sm text-gray-600 max-w-none">
+                                <div className="prose prose-sm max-w-none">
                                   {task.description ? (
-                                    <div className="whitespace-pre-line bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                    <div
+                                      className={`whitespace-pre-line p-4 rounded-lg border ${
+                                        darkMode
+                                          ? "bg-gray-700 border-gray-600 text-gray-200"
+                                          : "bg-blue-50 border-blue-200 text-gray-600"
+                                      }`}
+                                    >
                                       {task.description}
                                     </div>
                                   ) : (
-                                    <div className="text-blue-400 italic bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                    <div
+                                      className={`italic p-4 rounded-lg border ${
+                                        darkMode
+                                          ? "bg-gray-700 border-gray-600 text-gray-400"
+                                          : "bg-blue-50 border-blue-200 text-blue-400"
+                                      }`}
+                                    >
                                       Keine Beschreibung vorhanden
                                     </div>
                                   )}
@@ -730,8 +983,16 @@ export default function TasksPage() {
 
                               <div className="space-y-4">
                                 <div className="flex items-center">
-                                  <div className="w-4 h-4 bg-blue-500 rounded-full mr-3 flex-shrink-0"></div>
-                                  <h3 className="text-lg font-semibold text-blue-800">
+                                  <div
+                                    className={`w-4 h-4 rounded-full mr-3 flex-shrink-0 ${
+                                      darkMode ? "bg-blue-500" : "bg-blue-500"
+                                    }`}
+                                  ></div>
+                                  <h3
+                                    className={`text-lg font-semibold ${
+                                      darkMode ? "text-white" : "text-blue-800"
+                                    }`}
+                                  >
                                     Weitere Details
                                   </h3>
                                 </div>
@@ -739,13 +1000,31 @@ export default function TasksPage() {
                                 <div className="space-y-4">
                                   <div className="flex items-start">
                                     <div className="flex-shrink-0 mt-1">
-                                      <FiCalendar className="text-blue-400" />
+                                      <FiCalendar
+                                        className={
+                                          darkMode
+                                            ? "text-blue-400"
+                                            : "text-blue-400"
+                                        }
+                                      />
                                     </div>
                                     <div className="ml-3">
-                                      <p className="text-sm font-medium text-blue-500">
+                                      <p
+                                        className={`text-sm font-medium ${
+                                          darkMode
+                                            ? "text-blue-400"
+                                            : "text-blue-500"
+                                        }`}
+                                      >
                                         Erstellt am
                                       </p>
-                                      <p className="text-sm text-blue-800">
+                                      <p
+                                        className={`text-sm ${
+                                          darkMode
+                                            ? "text-white"
+                                            : "text-blue-800"
+                                        }`}
+                                      >
                                         {new Date(
                                           task.createdAt
                                         ).toLocaleDateString("de-DE", {
@@ -762,10 +1041,22 @@ export default function TasksPage() {
                                   {task.assignedBy && (
                                     <div className="flex items-start">
                                       <div className="flex-shrink-0 mt-1">
-                                        <FiUser className="text-blue-400" />
+                                        <FiUser
+                                          className={
+                                            darkMode
+                                              ? "text-blue-400"
+                                              : "text-blue-400"
+                                          }
+                                        />
                                       </div>
                                       <div className="ml-3">
-                                        <p className="text-sm font-medium text-blue-500">
+                                        <p
+                                          className={`text-sm font-medium ${
+                                            darkMode
+                                              ? "text-blue-400"
+                                              : "text-blue-500"
+                                          }`}
+                                        >
                                           Erstellt von
                                         </p>
                                         <div className="flex items-center mt-1">
@@ -777,7 +1068,13 @@ export default function TasksPage() {
                                               className="object-cover"
                                             />
                                           </div>
-                                          <p className="text-sm text-blue-800">
+                                          <p
+                                            className={`text-sm ${
+                                              darkMode
+                                                ? "text-white"
+                                                : "text-blue-800"
+                                            }`}
+                                          >
                                             {task.assignedBy.name}
                                           </p>
                                         </div>
@@ -787,15 +1084,28 @@ export default function TasksPage() {
 
                                   <div className="flex items-start">
                                     <div className="flex-shrink-0 mt-1">
-                                      <FiKey className="text-blue-400" />
+                                      <FiKey
+                                        className={
+                                          darkMode
+                                            ? "text-blue-400"
+                                            : "text-blue-400"
+                                        }
+                                      />
                                     </div>
                                     <div className="ml-3">
-                                      <p className="text-sm font-medium text-blue-500">
+                                      <p
+                                        className={`text-sm font-medium ${
+                                          darkMode
+                                            ? "text-blue-400"
+                                            : "text-blue-500"
+                                        }`}
+                                      >
                                         Priorität
                                       </p>
                                       <div className="mt-1">
                                         <PriorityBadge
                                           priority={task.priority}
+                                          darkMode={darkMode}
                                         />
                                       </div>
                                     </div>
@@ -815,10 +1125,18 @@ export default function TasksPage() {
 
           {filteredTasks.length === 0 && !isAddingTask && !editingTaskId && (
             <div className="p-12 text-center">
-              <div className="mx-auto h-24 w-24 text-blue-400 mb-4 flex items-center justify-center">
+              <div
+                className={`mx-auto h-24 w-24 mb-4 flex items-center justify-center ${
+                  darkMode ? "text-blue-400" : "text-blue-400"
+                }`}
+              >
                 <FiFileText size={48} className="opacity-50" />
               </div>
-              <h3 className="text-lg font-semibold text-blue-800 mb-1">
+              <h3
+                className={`text-lg font-semibold mb-1 ${
+                  darkMode ? "text-white" : "text-blue-800"
+                }`}
+              >
                 {filters.needs || filters.search
                   ? "Keine passenden Aufgaben gefunden"
                   : "Keine Aufgaben vorhanden"}

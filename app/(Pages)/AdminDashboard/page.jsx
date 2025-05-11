@@ -252,7 +252,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-300 ">
-      <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-14">
+      <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto px-4 sm:px-6 lg:px-8 py-14">
         {/* Modern Welcome Section */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
           <div className="p-6 md:p-8 bg-gradient-to-r from-yellow-600 to-red-800 text-white">

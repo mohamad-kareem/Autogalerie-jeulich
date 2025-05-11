@@ -15,7 +15,7 @@ export default function Rating() {
   }, [inView]);
 
   return (
-    <section className=" bg-white max-w-[76rem] mx-auto py-10 px-14 sm:px-6 md:px-8 shadow-even">
+    <section className=" w-full bg-white py-12 shadow-even mb-8 px-4 sm:px-6 lg:px-16">
       <motion.div
         ref={ref}
         initial={{ opacity: 0, y: 60 }}

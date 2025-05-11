@@ -8,7 +8,7 @@ import Link from "next/link";
 
 export default function SellCarYourWay() {
   return (
-    <section className="max-w-[76rem] mx-auto px-4 sm:px-6 md:px-10 lg:px-16 py-12 bg-white relative shadow-even mb-8">
+    <section className="w-full bg-white py-12 shadow-even mb-8 px-4 sm:px-6 lg:px-16">
       {/* Background elements */}
       <div className="absolute inset-0 overflow-hidden z-0">
         <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-red-50 filter blur-2xl opacity-20"></div>
