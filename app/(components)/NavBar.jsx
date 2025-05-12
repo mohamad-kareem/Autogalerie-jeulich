@@ -35,6 +35,7 @@ export default function NavBar() {
     "/trello",
     "/AdminDashboard",
     "/PersonalData",
+    "/Plate",
   ];
 
   const isAdminRoute = adminRoutes.some((route) => pathname?.startsWith(route));

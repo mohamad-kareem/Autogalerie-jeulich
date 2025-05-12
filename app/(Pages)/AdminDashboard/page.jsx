@@ -16,6 +16,7 @@ import {
   FiUpload,
   FiCamera,
   FiMapPin,
+  FiCalendar,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 
@@ -328,6 +329,15 @@ export default function Dashboard() {
                 bgColor="bg-gradient-to-br from-purple-500 to-black hover:from-purple-600 hover:to-purple-800"
                 iconBgColor="bg-purple-700"
               />
+              <NavigationCard
+                href="/Plate"
+                icon={<FiCalendar />}
+                title="Kennzeichenverwaltung"
+                description="Verfolgen und verwalten Sie temporäre Nummernschilder"
+                bgColor="bg-gradient-to-br from-blue-500 to-black hover:from-blue-600 hover:to-blue-800"
+                iconBgColor="bg-blue-700"
+              />
+
               <NavigationCard
                 href="/trello"
                 icon={<FiCheckSquare />}

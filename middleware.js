@@ -29,7 +29,9 @@ export const config = {
     "/Reg/:path*",
     "/reset-password/:path*",
     "/schlussel/:path*",
-    // "/trello/:path*",
+    "/trello/:path*",
     "/AdminDashboard/:path*",
+    "/PersonalData/:path*",
+    "/Plate/:path*",
   ],
 };
