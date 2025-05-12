@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { FiRefreshCw, FiPlus } from "react-icons/fi";
+import { FiRefreshCw, FiPlus, FiMoon, FiSun } from "react-icons/fi";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import SummaryCards from "@/app/(components)/admin/excel/SummaryCards";
@@ -14,6 +14,7 @@ import { printEntries } from "@/app/utils/PrintService";
 
 const CashBookPage = () => {
   const { data: session, status } = useSession();
+  const [darkMode, setDarkMode] = useState(false);
   const [state, setState] = useState({
     entries: [],
     formData: {
@@ -39,10 +40,16 @@ const CashBookPage = () => {
   });
 
   useEffect(() => {
+    setDarkMode(false);
+
     if (status === "authenticated") {
       fetchEntries();
     }
   }, [status]);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
 
   const fetchEntries = async () => {
     try {
@@ -109,7 +116,7 @@ const CashBookPage = () => {
 
       toast.success(`Entry ${editId ? "updated" : "created"} successfully`, {
         style: {
-          background: "#16a34a",
+          background: darkMode ? "#10b981" : "#16a34a",
           color: "#fff",
         },
       });
@@ -172,7 +179,7 @@ const CashBookPage = () => {
 
       toast.success("Entry deleted successfully", {
         style: {
-          background: "#16a34a",
+          background: darkMode ? "#10b981" : "#16a34a",
           color: "#fff",
         },
       });
@@ -206,18 +213,20 @@ const CashBookPage = () => {
   const calculateData = () => {
     const { entries, filterMonth, filterYear, searchTerm } = state;
 
-    const filteredEntries = entries.filter((entry) => {
-      const entryDate = new Date(entry.date);
-      return (
-        entryDate.getMonth() + 1 === parseInt(filterMonth) &&
-        entryDate.getFullYear() === parseInt(filterYear) &&
-        (entry.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          entry.documentNumber
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          entry.carName?.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    });
+    const filteredEntries = entries
+      .filter((entry) => {
+        const entryDate = new Date(entry.date);
+        return (
+          entryDate.getMonth() + 1 === parseInt(filterMonth) &&
+          entryDate.getFullYear() === parseInt(filterYear) &&
+          (entry.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            entry.documentNumber
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            entry.carName?.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+      })
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
 
     const entriesWithBalance = filteredEntries.reduce((acc, entry, index) => {
       const prevBalance = index > 0 ? acc[index - 1].balance : 0;
@@ -285,10 +294,18 @@ const CashBookPage = () => {
 
   if (state.isLoading || status === "loading") {
     return (
-      <div className="min-h-screen bg-green-50 p-4 md:p-8 mt-10">
+      <div
+        className={`min-h-screen ${
+          darkMode ? "bg-green-900" : "bg-green-50"
+        } p-4 md:p-8 mt-10`}
+      >
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+            <div
+              className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${
+                darkMode ? "border-emerald-300" : "border-green-500"
+              }`}
+            ></div>
           </div>
         </div>
       </div>
@@ -303,13 +320,29 @@ const CashBookPage = () => {
   } = calculateData();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-300 to-green-900 p-4 ">
+    <div
+      className={`min-h-screen transition-colors duration-300 ${
+        darkMode
+          ? "bg-gradient-to-br from-green-800 to-green-950"
+          : "bg-gradient-to-br from-green-300 to-green-900"
+      } p-4`}
+    >
       <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row  items-start md:items-center mb-6">
+        {/* Header with dark mode toggle */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-green-800">Kassenbuch</h1>
-            <p className="text-green-600 mt-1">
+            <h1
+              className={`text-3xl font-bold ${
+                darkMode ? "text-emerald-100" : "text-green-800"
+              }`}
+            >
+              Kassenbuch
+            </h1>
+            <p
+              className={`mt-1 ${
+                darkMode ? "text-emerald-200" : "text-green-600"
+              }`}
+            >
               {new Date(
                 state.filterYear,
                 state.filterMonth - 1,
@@ -317,21 +350,46 @@ const CashBookPage = () => {
               ).toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
             </p>
           </div>
+          <div className="mt-10">
+            <button
+              onClick={toggleDarkMode}
+              className={`p-2 rounded-full ${
+                darkMode
+                  ? "bg-emerald-700 hover:bg-emerald-600 text-emerald-50"
+                  : "bg-green-600 hover:bg-green-700 text-white"
+              }`}
+              aria-label={
+                darkMode ? "Switch to light mode" : "Switch to dark mode"
+              }
+            >
+              {darkMode ? (
+                <FiSun className="h-5 w-5" />
+              ) : (
+                <FiMoon className="h-5 w-5" />
+              )}
+            </button>
+          </div>
         </div>
 
         <SummaryCards
           totalIncome={totalIncome}
           totalExpense={totalExpense}
           currentBalance={currentBalance}
+          darkMode={darkMode}
         />
 
         {/* Main Content */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+        <div
+          className={`rounded-xl shadow-md overflow-hidden mb-8 transition-colors duration-300 ${
+            darkMode ? "bg-green-100 border border-green-200" : "bg-white"
+          }`}
+        >
           <Tabs
             activeTab={state.activeTab}
             setActiveTab={(tab) =>
               setState((prev) => ({ ...prev, activeTab: tab }))
             }
+            darkMode={darkMode}
           />
 
           <div className="p-6">
@@ -352,6 +410,7 @@ const CashBookPage = () => {
                     setSearchTerm={(term) =>
                       setState((prev) => ({ ...prev, searchTerm: term }))
                     }
+                    darkMode={darkMode}
                   />
                   <button
                     onClick={() =>
@@ -360,7 +419,11 @@ const CashBookPage = () => {
                         isFormExpanded: !prev.isFormExpanded,
                       }))
                     }
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm ${
+                      darkMode
+                        ? "bg-emerald-700 hover:bg-emerald-800 text-white"
+                        : "bg-green-600 hover:bg-green-700 text-white"
+                    }`}
                   >
                     <FiPlus className="-ml-1 mr-2 h-4 w-4" />
                     Neuer Eintrag
@@ -380,6 +443,7 @@ const CashBookPage = () => {
                       }))
                     }
                     resetForm={resetForm}
+                    darkMode={darkMode}
                   />
                 )}
 
@@ -392,6 +456,7 @@ const CashBookPage = () => {
                   handlePrint={handlePrint}
                   handleExport={handleExport}
                   isFormExpanded={state.isFormExpanded}
+                  darkMode={darkMode}
                 />
               </>
             )}
@@ -400,6 +465,7 @@ const CashBookPage = () => {
               <AnalyticsSection
                 dailyData={dailyData}
                 categoryData={categoryData}
+                darkMode={darkMode}
               />
             )}
           </div>

@@ -223,41 +223,45 @@ export default function AdminDashboard() {
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${
+      className={`min-h-screen transition-colors duration-300  ${
         darkMode ? "dark bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-900"
       }`}
     >
-      <div className="container mx-auto px-2 py-4 sm:py-8">
+      <div className="container mx-auto  py-4 sm:py-8">
         {/* Mobile Header */}
         {isMobile && (
-          <div className="flex items-center justify-between mb-4">
+          <div className=" flex items-center justify-between mb-4">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
             >
               {mobileMenuOpen ? <FiX size={24} /> : <FiChevronDown size={24} />}
             </button>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Admin Dashboard
+            <h1 className="text-md font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              personenbezogenen Daten
             </h1>
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 "
             >
-              {darkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
+              {darkMode ? (
+                <FiSun size={20} className="mt-8" />
+              ) : (
+                <FiMoon size={20} className="mt-8" />
+              )}
             </button>
           </div>
         )}
 
         {/* Desktop Header */}
         {!isMobile && (
-          <header className="flex items-center mb-8">
+          <header className="flex justify-between  items-center mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Admin Dashboard
+              personenbezogenen Daten
             </h1>
             <button
               onClick={toggleDarkMode}
-              className="p-2  rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="p-2 mt-5    rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
               {darkMode ? <FiSun size={18} /> : <FiMoon size={18} />}
             </button>

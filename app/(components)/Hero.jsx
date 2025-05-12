@@ -87,7 +87,7 @@ export default function UltraModernHero() {
   return (
     <>
       <section
-        className="relative w-full h-[90vh] min-h-[600px] max-h-[1200px] overflow-hidden"
+        className="relative w-full h-screen sm:h-[90vh] max-h-[1200px] overflow-hidden"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onMouseMove={handleMouseMove}
@@ -104,15 +104,18 @@ export default function UltraModernHero() {
               transition={{ duration: 1.5, ease: [0.43, 0.13, 0.23, 0.96] }}
               className="absolute inset-0"
             >
-              <Image
-                src={slides[currentSlide].image}
-                alt={`Slide ${currentSlide + 1}`}
-                className="object-cover"
-                fill
-                priority
-                quality={100}
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 100vw"
-              />
+              <div className="relative w-full h-full">
+                <Image
+                  src={slides[currentSlide].image}
+                  alt={`Slide ${currentSlide + 1}`}
+                  fill
+                  priority
+                  quality={100}
+                  className="object-cover object-center"
+                  sizes="100vw"
+                />
+              </div>
+
               <div
                 className="absolute inset-0"
                 style={{

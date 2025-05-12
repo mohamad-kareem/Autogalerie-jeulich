@@ -18,6 +18,8 @@ import {
   FiRefreshCw,
   FiSun,
   FiMoon,
+  FiInfo,
+  FiAlertCircle,
 } from "react-icons/fi";
 import Image from "next/image";
 import toast from "react-hot-toast";
@@ -83,6 +85,246 @@ const SortIcon = ({ direction, darkMode }) => {
   );
 };
 
+const TaskFormSection = ({
+  isEditing,
+  taskForm,
+  handleInputChange,
+  resetForm,
+  handleSubmit,
+  darkMode,
+  needsOptions,
+  priorityOptions,
+  admins,
+}) => {
+  return (
+    <tr className={darkMode ? "bg-gray-700" : "bg-blue-50"}>
+      <td colSpan="6" className="px-6 py-6">
+        <div
+          className={`rounded-lg border p-6 ${
+            darkMode
+              ? "bg-gray-800 border-gray-600"
+              : "bg-white border-blue-200"
+          } shadow-sm`}
+        >
+          <h3
+            className={`text-lg font-semibold mb-6 pb-2 border-b ${
+              darkMode
+                ? "border-gray-700 text-white"
+                : "border-blue-100 text-blue-800"
+            }`}
+          >
+            {isEditing ? "Aufgabe bearbeiten" : "Neue Aufgabe erstellen"}
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <div>
+                <label
+                  htmlFor="car"
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-blue-300" : "text-blue-600"
+                  }`}
+                >
+                  Fahrzeug *
+                </label>
+                <input
+                  type="text"
+                  id="car"
+                  name="car"
+                  value={taskForm.car}
+                  onChange={handleInputChange}
+                  placeholder="z.B. BMW 320d, VW Golf"
+                  required
+                  className={`w-full rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                    darkMode
+                      ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                      : "border-blue-200 placeholder-blue-300"
+                  }`}
+                />
+                <p
+                  className={`mt-1 text-xs ${
+                    darkMode ? "text-blue-400" : "text-blue-500"
+                  }`}
+                >
+                  <FiInfo className="inline mr-1" /> Bitte geben Sie das
+                  Fahrzeugmodell ein
+                </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="needs"
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-blue-300" : "text-blue-600"
+                  }`}
+                >
+                  Kategorie
+                </label>
+                <select
+                  id="needs"
+                  name="needs"
+                  value={taskForm.needs}
+                  onChange={handleInputChange}
+                  className={`w-full rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                    darkMode
+                      ? "bg-gray-700 border-gray-600 text-white"
+                      : "border-blue-200"
+                  }`}
+                >
+                  {needsOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="priority"
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-blue-300" : "text-blue-600"
+                  }`}
+                >
+                  Priorität
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {priorityOptions.map((option) => (
+                    <div key={option} className="flex items-center">
+                      <input
+                        type="radio"
+                        id={`priority-${option}`}
+                        name="priority"
+                        value={option}
+                        checked={taskForm.priority === option}
+                        onChange={handleInputChange}
+                        className="hidden peer"
+                      />
+                      <label
+                        htmlFor={`priority-${option}`}
+                        className={`w-full py-2 px-3 text-center text-sm rounded-lg cursor-pointer transition-all ${
+                          darkMode
+                            ? "peer-checked:bg-blue-600 peer-checked:text-white bg-gray-700 text-gray-300 hover:bg-gray-600"
+                            : "peer-checked:bg-blue-600 peer-checked:text-white bg-blue-100 text-blue-800 hover:bg-blue-200"
+                        }`}
+                      >
+                        {option === "high" && "Hoch"}
+                        {option === "medium" && "Mittel"}
+                        {option === "low" && "Niedrig"}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label
+                  htmlFor="assignedTo"
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-blue-300" : "text-blue-600"
+                  }`}
+                >
+                  Zuweisen an
+                </label>
+                <select
+                  id="assignedTo"
+                  name="assignedTo"
+                  value={taskForm.assignedTo}
+                  onChange={handleInputChange}
+                  className={`w-full rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                    darkMode
+                      ? "bg-gray-700 border-gray-600 text-white"
+                      : "border-blue-200"
+                  }`}
+                >
+                  <option value="">Nicht zugewiesen</option>
+                  {admins.map((admin) => (
+                    <option key={admin._id} value={admin._id}>
+                      {admin.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="description"
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-blue-300" : "text-blue-600"
+                  }`}
+                >
+                  Beschreibung
+                </label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={taskForm.description}
+                  onChange={handleInputChange}
+                  placeholder="Detaillierte Beschreibung der Aufgabe..."
+                  rows={4}
+                  className={`w-full rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                    darkMode
+                      ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                      : "border-blue-200 placeholder-blue-300"
+                  }`}
+                />
+                <p
+                  className={`mt-1 text-xs ${
+                    darkMode ? "text-blue-400" : "text-blue-500"
+                  }`}
+                >
+                  <FiInfo className="inline mr-1" /> Optional, aber empfohlen
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={resetForm}
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
+                darkMode
+                  ? "text-gray-300 hover:text-white bg-gray-700 hover:bg-gray-600"
+                  : "text-gray-700 hover:text-gray-900 bg-gray-100 hover:bg-gray-200"
+              }`}
+            >
+              <FiX size={16} /> Abbrechen
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!taskForm.car.trim()}
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm ${
+                darkMode
+                  ? "bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-800 disabled:opacity-70"
+                  : "bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400 disabled:opacity-70"
+              }`}
+            >
+              <FiCheck size={16} /> {isEditing ? "Speichern" : "Erstellen"}
+            </button>
+          </div>
+
+          {!taskForm.car.trim() && (
+            <div
+              className={`mt-4 p-3 rounded-lg flex items-start ${
+                darkMode
+                  ? "bg-red-900/30 text-red-300"
+                  : "bg-red-50 text-red-600"
+              }`}
+            >
+              <FiAlertCircle className="flex-shrink-0 mt-0.5 mr-2" />
+              <p className="text-sm">
+                Bitte geben Sie ein Fahrzeug an, um fortzufahren.
+              </p>
+            </div>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+};
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState([]);
   const [admins, setAdmins] = useState([]);
@@ -105,7 +347,6 @@ export default function TasksPage() {
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    // Check for saved theme preference or use system preference
     const savedMode = localStorage.getItem("darkMode");
     if (savedMode !== null) {
       setDarkMode(savedMode === "true");
@@ -118,7 +359,6 @@ export default function TasksPage() {
   }, []);
 
   useEffect(() => {
-    // Apply dark mode class to body
     if (darkMode) {
       document.documentElement.classList.add("dark");
     } else {
@@ -411,9 +651,7 @@ export default function TasksPage() {
       } p-4`}
     >
       <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
-        {/* Header */}
         <div className="flex flex-col gap-2 sm:gap-3 md:gap-4 mb-4">
-          {/* Title always on top */}
           <h1
             className={`text-xl sm:text-2xl font-bold ${
               darkMode ? "text-white" : "text-white"
@@ -422,8 +660,6 @@ export default function TasksPage() {
             Aufgabenverwaltung
           </h1>
 
-          {/* On mobile: task count + toggle icon side-by-side
-      On larger: stack under title */}
           <div className="flex items-center justify-between flex-wrap gap-3">
             <p className={darkMode ? "text-blue-300" : "text-blue-100"}>
               {filteredTasks.length}{" "}
@@ -431,7 +667,7 @@ export default function TasksPage() {
             </p>
             <button
               onClick={() => setDarkMode(!darkMode)}
-              className={`p-2 rounded-lg ${
+              className={`p-2 mr-3 sm:mr-0 rounded-lg ${
                 darkMode
                   ? "bg-blue-800 text-yellow-300 hover:bg-blue-700"
                   : "bg-blue-100 text-blue-800 hover:bg-blue-200"
@@ -445,7 +681,6 @@ export default function TasksPage() {
           </div>
         </div>
 
-        {/* Main Content */}
         <div
           className={`rounded-xl shadow-md overflow-hidden mb-8 ${
             darkMode ? "bg-gray-800" : "bg-white"
@@ -596,213 +831,31 @@ export default function TasksPage() {
                 }`}
               >
                 {isAddingTask && (
-                  <tr className={darkMode ? "bg-gray-700" : "bg-blue-50"}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="text"
-                        name="car"
-                        value={taskForm.car}
-                        onChange={handleInputChange}
-                        placeholder="Fahrzeug"
-                        required
-                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                          darkMode
-                            ? "bg-gray-600 border-gray-600 text-white"
-                            : "border-blue-200"
-                        }`}
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        name="needs"
-                        value={taskForm.needs}
-                        onChange={handleInputChange}
-                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                          darkMode
-                            ? "bg-gray-600 border-gray-600 text-white"
-                            : "border-blue-200"
-                        }`}
-                      >
-                        {needsOptions.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-6 py-4">
-                      <input
-                        type="text"
-                        name="description"
-                        value={taskForm.description}
-                        onChange={handleInputChange}
-                        placeholder="Beschreibung"
-                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                          darkMode
-                            ? "bg-gray-600 border-gray-600 text-white"
-                            : "border-blue-200"
-                        }`}
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        name="assignedTo"
-                        value={taskForm.assignedTo}
-                        onChange={handleInputChange}
-                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                          darkMode
-                            ? "bg-gray-600 border-gray-600 text-white"
-                            : "border-blue-200"
-                        }`}
-                      >
-                        <option value="">Nicht zugewiesen</option>
-                        {admins.map((admin) => (
-                          <option key={admin._id} value={admin._id}>
-                            {admin.name}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        name="priority"
-                        value={taskForm.priority}
-                        onChange={handleInputChange}
-                        className={`rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                          darkMode
-                            ? "bg-gray-600 border-gray-600 text-white"
-                            : "border-blue-200"
-                        }`}
-                      >
-                        {priorityOptions.map((option) => (
-                          <option key={option} value={option}>
-                            {option.charAt(0).toUpperCase() + option.slice(1)}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                      <button
-                        onClick={handleAddTask}
-                        disabled={!taskForm.car.trim()}
-                        className="p-2 text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50 transition-colors shadow-sm"
-                        title="Speichern"
-                      >
-                        <FiCheck />
-                      </button>
-                      <button
-                        onClick={resetForm}
-                        className="p-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-sm"
-                        title="Abbrechen"
-                      >
-                        <FiX />
-                      </button>
-                    </td>
-                  </tr>
+                  <TaskFormSection
+                    isEditing={false}
+                    taskForm={taskForm}
+                    handleInputChange={handleInputChange}
+                    resetForm={resetForm}
+                    handleSubmit={handleAddTask}
+                    darkMode={darkMode}
+                    needsOptions={needsOptions}
+                    priorityOptions={priorityOptions}
+                    admins={admins}
+                  />
                 )}
 
                 {editingTaskId && (
-                  <tr className={darkMode ? "bg-gray-700" : "bg-blue-50"}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="text"
-                        name="car"
-                        value={taskForm.car}
-                        onChange={handleInputChange}
-                        required
-                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                          darkMode
-                            ? "bg-gray-600 border-gray-600 text-white"
-                            : "border-blue-200"
-                        }`}
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        name="needs"
-                        value={taskForm.needs}
-                        onChange={handleInputChange}
-                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                          darkMode
-                            ? "bg-gray-600 border-gray-600 text-white"
-                            : "border-blue-200"
-                        }`}
-                      >
-                        {needsOptions.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-6 py-4">
-                      <input
-                        type="text"
-                        name="description"
-                        value={taskForm.description}
-                        onChange={handleInputChange}
-                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                          darkMode
-                            ? "bg-gray-600 border-gray-600 text-white"
-                            : "border-blue-200"
-                        }`}
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        name="assignedTo"
-                        value={taskForm.assignedTo}
-                        onChange={handleInputChange}
-                        className={`rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                          darkMode
-                            ? "bg-gray-600 border-gray-600 text-white"
-                            : "border-blue-200"
-                        }`}
-                      >
-                        <option value="">Nicht zugewiesen</option>
-                        {admins.map((admin) => (
-                          <option key={admin._id} value={admin._id}>
-                            {admin.name}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        name="priority"
-                        value={taskForm.priority}
-                        onChange={handleInputChange}
-                        className={`rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                          darkMode
-                            ? "bg-gray-600 border-gray-600 text-white"
-                            : "border-blue-200"
-                        }`}
-                      >
-                        {priorityOptions.map((option) => (
-                          <option key={option} value={option}>
-                            {option.charAt(0).toUpperCase() + option.slice(1)}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                      <button
-                        onClick={handleUpdateTask}
-                        disabled={!taskForm.car.trim()}
-                        className="p-2 text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50 transition-colors shadow-sm"
-                        title="Speichern"
-                      >
-                        <FiCheck />
-                      </button>
-                      <button
-                        onClick={resetForm}
-                        className="p-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-sm"
-                        title="Abbrechen"
-                      >
-                        <FiX />
-                      </button>
-                    </td>
-                  </tr>
+                  <TaskFormSection
+                    isEditing={true}
+                    taskForm={taskForm}
+                    handleInputChange={handleInputChange}
+                    resetForm={resetForm}
+                    handleSubmit={handleUpdateTask}
+                    darkMode={darkMode}
+                    needsOptions={needsOptions}
+                    priorityOptions={priorityOptions}
+                    admins={admins}
+                  />
                 )}
 
                 {filteredTasks.map((task) => (
