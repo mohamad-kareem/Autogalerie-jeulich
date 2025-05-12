@@ -1,12 +1,12 @@
 "use client";
 import { useState, useRef } from "react";
 import { FiPrinter, FiDownload } from "react-icons/fi";
-import KVPrivatForm from "@/app/(components)/admin/Kauftrags/KVPrivatForm";
-import KaufvertragForm from "@/app/(components)/admin/Kauftrags/KaufvertragForm";
+import KVForm from "@/app/(components)/admin/Kauftrags/KVForm";
+import KVPrivateForm from "@/app/(components)/admin/Kauftrags/KVPrivateForm";
 
 const forms = [
-  { name: "Kfz-Kaufvertrag (TÜV Süd)", component: KaufvertragForm },
-  { name: "Kfz-Kaufvertrag (ADAC)", component: KVPrivatForm },
+  { name: "Kfz-Kaufvertrag Private", component: KVPrivateForm },
+  { name: "Kfz-Kaufvertrag ", component: KVForm },
 ];
 
 export default function FormsPage() {
@@ -31,8 +31,8 @@ export default function FormsPage() {
   const ActiveForm = forms[activeTab].component;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto bg-white shadow rounded-lg p-6 print:shadow-none">
+    <div className="min-h-screen bg-gray-50  ">
+      <div className="w-full max-w-[100vw] xl:max-w-[1700px] 2xl:max-w-[1850px] mx-auto bg-white shadow rounded-lg p-6 print:shadow-none">
         <h1 className="text-2xl font-bold mb-6">Vertragsformulare ausfüllen</h1>
         <div className="flex border-b mb-4">
           {forms.map((f, i) => (
