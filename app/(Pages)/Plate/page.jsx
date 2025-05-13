@@ -18,6 +18,7 @@ import { toast } from "react-hot-toast";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { exportPlateReport } from "@/app/utils/PlateExportService";
+import DeleteByTimeRange from "@/app/(components)/DeleteByTimeRange";
 
 const PlateTrackingPage = () => {
   const { data: session } = useSession();
@@ -33,7 +34,7 @@ const PlateTrackingPage = () => {
     plateNumber: "",
     employeeName: "",
     destination: "",
-    from: "",
+    from: "Boora",
     startTime: new Date(),
     endTime: null,
     notes: "",
@@ -507,6 +508,7 @@ const PlateTrackingPage = () => {
                     }`}
                   >
                     <option value="">Select starting location</option>
+                    <option value="Boora">Boora</option>
                     <option value="Hassona">Hassona</option>
                     <option value="Probefahrt">Probefahrt</option>
                     <option value="Toni">Toni</option>
@@ -547,6 +549,7 @@ const PlateTrackingPage = () => {
                     }`}
                   >
                     <option value="">Select destination</option>
+                    <option value="Boora">Boora</option>
                     <option value="Hassona">Hassona</option>
                     <option value="Toni">Toni</option>
                     <option value="Abo Abass">Abo Abass</option>
@@ -766,19 +769,14 @@ const PlateTrackingPage = () => {
                   <FiDownload className="mr-1 sm:mr-2" />
                   Generate Report
                 </button>
-                <button
-                  onClick={() => window.print()}
-                  className={`px-3 py-1 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium flex items-center justify-center ${
-                    darkMode
-                      ? "bg-gray-600 hover:bg-gray-500 text-white"
-                      : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-                  } focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${
-                    darkMode ? "focus:ring-offset-gray-800" : ""
-                  }`}
-                >
-                  <FiPrinter className="mr-1 sm:mr-2" />
-                  Print Report
-                </button>
+                <DeleteByTimeRange
+                  darkMode={darkMode}
+                  onDeleted={(deletedIds) =>
+                    setPlateUsage((prev) =>
+                      prev.filter((entry) => !deletedIds.includes(entry._id))
+                    )
+                  }
+                />
               </div>
             </div>
 
@@ -807,6 +805,14 @@ const PlateTrackingPage = () => {
                         >
                           Employee
                         </th>
+                        <th
+                          className={`px-3 py-2 sm:px-6 sm:py-3 text-left text-xs sm:text-sm font-medium uppercase tracking-wider ${
+                            darkMode ? "text-gray-300" : "text-gray-500"
+                          }`}
+                        >
+                          From
+                        </th>
+
                         <th
                           className={`px-3 py-2 sm:px-6 sm:py-3 text-left text-xs sm:text-sm font-medium uppercase tracking-wider ${
                             darkMode ? "text-gray-300" : "text-gray-500"
@@ -886,6 +892,14 @@ const PlateTrackingPage = () => {
                               >
                                 {usage.employeeName}
                               </td>
+                              <td
+                                className={`px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm ${
+                                  darkMode ? "text-gray-300" : "text-gray-500"
+                                }`}
+                              >
+                                {usage.from}
+                              </td>
+
                               <td
                                 className={`px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm ${
                                   darkMode ? "text-gray-300" : "text-gray-500"
