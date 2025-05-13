@@ -4,8 +4,9 @@ const PlateUsageSchema = new mongoose.Schema({
   plateNumber: { type: String, required: true },
   employeeId: { type: mongoose.Schema.Types.ObjectId, required: true },
   employeeName: { type: String, required: true },
-  destination: { type: String, required: true },
-  purpose: { type: String },
+  destination: { type: String },
+  from: { type: String }, // ✅ FIXED: lowercase
+  carType: { type: String }, // ✅ Already good
   startTime: { type: Date, required: true, default: Date.now },
   endTime: { type: Date },
   notes: { type: String },

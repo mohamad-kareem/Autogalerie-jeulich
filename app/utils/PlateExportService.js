@@ -16,7 +16,8 @@ export const exportPlateReport = (data, fileName) => {
       ? new Date(entry.endTime).toLocaleTimeString("de-DE")
       : "Aktiv",
     "Dauer (h)": entry.durationHours || "-",
-    Zweck: entry.carName || "-",
+    Standort: entry.from || "-", // ✅ Correct field name
+    Fahrzeugtyp: entry.carType || "-", // ✅ Add carType
     Notizen: entry.notes || "-",
   }));
 

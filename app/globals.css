@@ -1,8 +1,9 @@
-@import "tailwindcss";
+/* app/globals.css */
+@import "tailwindcss/preflight";
 
-body {
-  @apply bg-gray-100 text-black;
-}
+@tailwind utilities;
+
+@import "tailwindcss";
 
 @theme {
 }
@@ -37,12 +38,12 @@ body {
   .shadow-even {
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
   }
-  .bg-dark-gray {
+  /* .bg-dark-gray {
     background-color: #3d3935;
   }
   .hover\:bg-dark-gray:hover {
     background-color: #3d3935;
-  }
+  } */
 }
 .custom-scroll {
   scrollbar-width: thin;

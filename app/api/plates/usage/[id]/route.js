@@ -15,3 +15,16 @@ export async function PUT(req, { params }) {
     });
   }
 }
+export async function DELETE(_, { params }) {
+  try {
+    await connectDB();
+    await PlateUsage.findByIdAndDelete(params.id);
+    return new Response(JSON.stringify({ message: "Deleted successfully" }), {
+      status: 200,
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ message: error.message }), {
+      status: 500,
+    });
+  }
+}
