@@ -321,7 +321,7 @@ const PlateTrackingPage = () => {
         darkMode ? "bg-gray-900" : "bg-blue-50"
       } p-4 sm:p-6`}
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
         {/* Header with dark mode toggle */}
         <div className="mb-6 sm:mb-8 flex justify-between items-center">
           <div>
@@ -342,7 +342,7 @@ const PlateTrackingPage = () => {
           </div>
           <button
             onClick={() => setDarkMode(!darkMode)}
-            className={`p-2 sm:p-2.5 rounded-full text-sm sm:text-base mt-10 ${
+            className={`p-2 sm:p-2.5 rounded-full text-sm sm:text-base mt-10  ${
               darkMode
                 ? "bg-blue-800 text-yellow-300 hover:bg-blue-700"
                 : "bg-blue-100 text-blue-800 hover:bg-blue-200"
@@ -458,27 +458,31 @@ const PlateTrackingPage = () => {
                     ))}
                   </select>
                 </div>
-
-                {/* Employee Name */}
-                <div>
-                  <label
-                    className={`block text-xs sm:text-sm font-medium mb-1 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    Employee Name
-                  </label>
-                  <input
-                    type="text"
-                    name="employeeName"
-                    value={formData.employeeName}
-                    onChange={handleInputChange}
-                    className={`w-full px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                      darkMode
-                        ? "bg-gray-700 border-gray-600 text-white"
-                        : "border-gray-300 bg-white text-gray-900"
-                    }`}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  {/* Start Time */}
+                  <div>
+                    <label
+                      className={`block text-xs sm:text-sm font-medium mb-1 ${
+                        darkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      Start Time
+                    </label>
+                    <DatePicker
+                      selected={formData.startTime}
+                      onChange={(date) => handleDateChange(date, "startTime")}
+                      showTimeSelect
+                      timeFormat="HH:mm"
+                      timeIntervals={15}
+                      dateFormat="MMMM d, yyyy h:mm aa"
+                      className={`w-full px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                        darkMode
+                          ? "bg-gray-700 border-gray-600 text-white"
+                          : "border-gray-300 bg-white text-gray-900"
+                      }`}
+                      wrapperClassName={darkMode ? "dark:text-white" : ""}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -592,31 +596,26 @@ const PlateTrackingPage = () => {
                     }`}
                   />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                  {/* Start Time */}
-                  <div>
-                    <label
-                      className={`block text-xs sm:text-sm font-medium mb-1 ${
-                        darkMode ? "text-gray-300" : "text-gray-700"
-                      }`}
-                    >
-                      Start Time
-                    </label>
-                    <DatePicker
-                      selected={formData.startTime}
-                      onChange={(date) => handleDateChange(date, "startTime")}
-                      showTimeSelect
-                      timeFormat="HH:mm"
-                      timeIntervals={15}
-                      dateFormat="MMMM d, yyyy h:mm aa"
-                      className={`w-full px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                        darkMode
-                          ? "bg-gray-700 border-gray-600 text-white"
-                          : "border-gray-300 bg-white text-gray-900"
-                      }`}
-                      wrapperClassName={darkMode ? "dark:text-white" : ""}
-                    />
-                  </div>
+                {/* Employee Name */}
+                <div>
+                  <label
+                    className={`block text-xs sm:text-sm font-medium mb-1 ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Employee Name
+                  </label>
+                  <input
+                    type="text"
+                    name="employeeName"
+                    value={formData.employeeName}
+                    onChange={handleInputChange}
+                    className={`w-full px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                      darkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "border-gray-300 bg-white text-gray-900"
+                    }`}
+                  />
                 </div>
               </div>
 

@@ -179,14 +179,14 @@ const CarTypeSelector = ({ formData, handleInputChange, darkMode }) => {
         <div className="flex items-center">
           <input
             type="text"
-            placeholder="Search car (e.g. 'Ford' or 'SUV')"
+            placeholder="Search car (e.g. 'Ford' )"
             value={isOpen ? carTypeFilter : formData.carType || carTypeFilter}
             onChange={(e) => {
               setCarTypeFilter(e.target.value);
               if (!isOpen) setIsOpen(true);
             }}
             onFocus={() => setIsOpen(true)}
-            className={`w-full p-2 pl-3 pr-8 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+            className={`w-full p-1 pl-3 pr-8 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 ${
               darkMode
                 ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                 : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
