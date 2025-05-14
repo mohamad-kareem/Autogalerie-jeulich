@@ -43,20 +43,20 @@ export default function LoginPage({ callbackUrl }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-100 to-yellow-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-red-100 to-black/90 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Link
           href="/"
-          className="flex items-center text-yellow-700 hover:text-yellow-800 mb-4"
+          className="flex items-center text-red-700 hover:text-red-800 mb-4"
         >
           <FiArrowLeft className="mr-2" />
           Back to Home
         </Link>
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="bg-gradient-to-br from-yellow-500 to-yellow-700 p-6 text-center">
+          <div className="bg-gradient-to-br from-red-600 to-black p-6 text-center">
             <h1 className="text-2xl font-bold text-white">Admin Login</h1>
-            <p className="text-yellow-100 mt-1">
+            <p className="text-red-100 mt-1">
               Sign in to your administrator account
             </p>
           </div>
@@ -78,7 +78,7 @@ export default function LoginPage({ callbackUrl }) {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiMail className="text-yellow-500" />
+                  <FiMail className="text-red-500" />
                 </div>
                 <input
                   id="email"
@@ -89,7 +89,7 @@ export default function LoginPage({ callbackUrl }) {
                   onChange={handleChange}
                   required
                   placeholder="admin@example.com"
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                 />
               </div>
             </div>
@@ -103,7 +103,7 @@ export default function LoginPage({ callbackUrl }) {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock className="text-yellow-500" />
+                  <FiLock className="text-red-500" />
                 </div>
                 <input
                   id="password"
@@ -115,12 +115,12 @@ export default function LoginPage({ callbackUrl }) {
                   required
                   minLength="8"
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all"
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-yellow-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-red-600"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
@@ -165,7 +165,7 @@ export default function LoginPage({ callbackUrl }) {
             <div className="flex items-center justify-between">
               <Link
                 href="/forgotpassword"
-                className="text-sm font-medium text-yellow-600 hover:text-yellow-700"
+                className="text-sm font-medium text-red-600 hover:text-red-700"
               >
                 Forgot password?
               </Link>
@@ -176,8 +176,8 @@ export default function LoginPage({ callbackUrl }) {
               disabled={isLoading}
               className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all shadow-md ${
                 isLoading
-                  ? "bg-yellow-400 cursor-not-allowed"
-                  : "bg-gradient-to-br from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700"
+                  ? "bg-red-400 cursor-not-allowed"
+                  : "bg-gradient-to-br from-red-600 to-black hover:from-red-600 hover:to-red-700"
               }`}
             >
               {isLoading ? (

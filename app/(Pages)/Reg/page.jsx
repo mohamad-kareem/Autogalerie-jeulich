@@ -85,11 +85,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-100 to-yellow-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-red-100 to-black/90 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Link
           href="/AdminDashboard"
-          className="flex items-center text-yellow-700 hover:text-yellow-800 mb-4"
+          className="flex items-center text-red-700 hover:text-red-800 mb-4"
         >
           <FiArrowLeft className="mr-2" />
           Back to Dashboard
@@ -97,11 +97,11 @@ export default function RegisterPage() {
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           {/* Header with gradient */}
-          <div className="bg-gradient-to-br from-yellow-500 to-yellow-700 p-6 text-center">
+          <div className="bg-gradient-to-br from-red-600 to-black p-6 text-center">
             <h1 className="text-2xl font-bold text-white">
               Admin Registration
             </h1>
-            <p className="text-yellow-100 mt-1">
+            <p className="text-red-100 mt-1">
               Create your administrator account
             </p>
           </div>
@@ -117,7 +117,7 @@ export default function RegisterPage() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiUser className="text-yellow-500" />
+                  <FiUser className="text-red-500" />
                 </div>
                 <input
                   id="name"
@@ -127,7 +127,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   required
                   placeholder="Karim"
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                 />
               </div>
             </div>
@@ -142,7 +142,7 @@ export default function RegisterPage() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiMail className="text-yellow-500" />
+                  <FiMail className="text-red-500" />
                 </div>
                 <input
                   id="email"
@@ -152,7 +152,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   required
                   placeholder="karim@example.com"
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                 />
               </div>
             </div>
@@ -167,7 +167,7 @@ export default function RegisterPage() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock className="text-yellow-500" />
+                  <FiLock className="text-red-500" />
                 </div>
                 <input
                   id="password"
@@ -178,7 +178,7 @@ export default function RegisterPage() {
                   required
                   minLength="8"
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
@@ -197,7 +197,7 @@ export default function RegisterPage() {
                   <img
                     src={previewImage}
                     alt="Preview"
-                    className="h-32 w-32 rounded-full object-cover mx-auto border-2 border-yellow-300"
+                    className="h-32 w-32 rounded-full object-cover mx-auto border-2 border-red-300"
                   />
                   <button
                     type="button"
@@ -209,9 +209,9 @@ export default function RegisterPage() {
                   </button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-yellow-500 hover:bg-yellow-50 transition-colors">
+                <label className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-red-500 hover:bg-red-50 transition-colors">
                   <div className="flex flex-col items-center justify-center">
-                    <FiCamera className="text-yellow-500 text-2xl mb-2" />
+                    <FiCamera className="text-red-500 text-2xl mb-2" />
                     <p className="text-sm text-gray-600">
                       Click to upload image
                     </p>
@@ -237,8 +237,8 @@ export default function RegisterPage() {
               disabled={isSubmitting}
               className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all shadow-md ${
                 isSubmitting
-                  ? "bg-yellow-400 cursor-not-allowed"
-                  : "bg-gradient-to-br from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700"
+                  ? "bg-red-600 cursor-not-allowed"
+                  : "bg-gradient-to-br from-red-600 to-black hover:from-red-600 hover:to-red-700"
               }`}
             >
               {isSubmitting ? (

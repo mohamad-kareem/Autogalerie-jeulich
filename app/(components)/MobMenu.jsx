@@ -61,7 +61,7 @@ const MobMenu = ({ Menus }) => {
             initial={{ x: "-100%" }}
             animate={{ x: isOpen ? "0%" : "-100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed left-0 top-0 h-full w-4/5 max-w-sm bg-white/95 backdrop-blur-lg text-black z-[999] shadow-xl"
+            className="fixed left-0 top-0 w-4/5 max-w-sm h-[100dvh] bg-white/95 backdrop-blur-lg text-black z-[999] shadow-xl overflow-y-auto"
           >
             <div className="h-full overflow-y-auto pt-20 pb-10 px-6">
               <ul className="space-y-2">

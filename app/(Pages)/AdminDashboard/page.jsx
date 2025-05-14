@@ -22,33 +22,49 @@ import {
 import toast from "react-hot-toast";
 
 const NavigationCard = ({ href, icon, title, description, accentColor }) => {
-  const colorVariants = {
-    red: "from-red-500 to-red-600",
-    green: "from-emerald-500 to-emerald-600",
-    purple: "from-violet-500 to-violet-600",
-    blue: "from-blue-500 to-blue-600",
-    indigo: "from-indigo-500 to-indigo-600",
-    orange: "from-amber-500 to-amber-600",
-    yellow: "from-yellow-500 to-yellow-600",
-    gray: "from-gray-500 to-gray-600",
+  const colorMap = {
+    red: "bg-red-100 text-red-600",
+    green: "bg-emerald-100 text-emerald-600",
+    purple: "bg-violet-100 text-violet-600",
+    blue: "bg-blue-100 text-blue-600",
+    indigo: "bg-indigo-100 text-indigo-600",
+    orange: "bg-amber-100 text-amber-600",
+    yellow: "bg-yellow-100 text-yellow-600",
+    gray: "bg-gray-100 text-gray-600",
+  };
+
+  const gradientMap = {
+    red: "from-red-100 to-red-50",
+    green: "from-emerald-100 to-emerald-50",
+    purple: "from-violet-100 to-violet-50",
+    blue: "from-blue-100 to-blue-50",
+    indigo: "from-indigo-100 to-indigo-50",
+    orange: "from-amber-100 to-amber-50",
+    yellow: "from-yellow-100 to-yellow-50",
+    gray: "from-gray-100 to-gray-50",
   };
 
   return (
     <Link href={href} passHref>
-      <div className="group relative h-full overflow-hidden rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md">
-        <div className="absolute inset-0 bg-gradient-to-br opacity-10 transition-opacity group-hover:opacity-20 ${colorVariants[accentColor]}"></div>
+      <div
+        className={`group relative h-full overflow-hidden rounded-xl md:rounded-2xl bg-gradient-to-br ${gradientMap[accentColor]} p-4 md:p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 md:hover:-translate-y-1`}
+      >
         <div className="relative z-10 flex items-start">
           <div
-            className={`mr-4 rounded-lg p-3 bg-${accentColor}-100 text-${accentColor}-600`}
+            className={`mr-3 md:mr-4 rounded-lg md:rounded-xl p-2 md:p-3 ${colorMap[accentColor]} transition-all group-hover:scale-105 md:group-hover:scale-110`}
           >
-            {icon}
+            {React.cloneElement(icon, { className: "text-sm md:text-base" })}
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-            <p className="mt-1 text-sm text-gray-600">{description}</p>
-            <div className="mt-3 flex items-center text-sm font-medium text-gray-500 transition-colors group-hover:text-gray-700">
+            <h3 className="text-sm md:text-lg font-semibold text-gray-800">
+              {title}
+            </h3>
+            <p className="mt-1 text-xs md:text-sm text-gray-600 line-clamp-2">
+              {description}
+            </p>
+            <div className="mt-2 md:mt-3 flex items-center text-xs md:text-sm font-medium text-gray-500 transition-colors group-hover:text-gray-700">
               <span>Access module</span>
-              <FiChevronRight className="ml-1" />
+              <FiChevronRight className="ml-0.5 md:ml-1 transition-transform group-hover:translate-x-0.5 md:group-hover:translate-x-1" />
             </div>
           </div>
         </div>
@@ -112,31 +128,33 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md animate-fade-in rounded-xl bg-white p-6 shadow-xl">
-        <div className="flex items-center justify-between border-b pb-4">
-          <h3 className="text-xl font-semibold text-gray-900">Edit Profile</h3>
+      <div className="w-full max-w-md animate-fade-in rounded-xl md:rounded-2xl bg-white p-4 md:p-6 shadow-2xl">
+        <div className="flex items-center justify-between border-b pb-3 md:pb-4">
+          <h3 className="text-lg md:text-xl font-semibold text-gray-900">
+            Edit Profile
+          </h3>
           <button
             onClick={onClose}
             className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
           >
-            <FiX size={20} />
+            <FiX className="h-4 w-4 md:h-5 md:w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-6">
-          <div className="mb-6 flex flex-col items-center">
+        <form onSubmit={handleSubmit} className="mt-4 md:mt-6">
+          <div className="mb-4 md:mb-6 flex flex-col items-center">
             <div className="relative">
               <img
                 src={previewImage || "/default-avatar.png"}
                 alt="Profile"
-                className="h-24 w-24 rounded-full object-cover shadow-sm"
+                className="h-20 w-20 md:h-24 md:w-24 rounded-full object-cover shadow-lg ring-2 md:ring-4 ring-white/80"
               />
               <button
                 type="button"
                 onClick={triggerFileInput}
-                className="absolute bottom-0 right-0 rounded-full bg-indigo-600 p-2 text-white shadow-md transition-colors hover:bg-indigo-700"
+                className="absolute bottom-0 right-0 rounded-full bg-indigo-600 p-1.5 md:p-2 text-white shadow-lg transition-all hover:bg-indigo-700 hover:scale-105 md:hover:scale-110"
               >
-                <FiCamera size={16} />
+                <FiCamera className="h-3 w-3 md:h-4 md:w-4" />
               </button>
             </div>
             <input
@@ -148,9 +166,9 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
             />
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-xs md:text-sm font-medium text-gray-700">
                 Full Name
               </label>
               <input
@@ -158,20 +176,20 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                className="w-full rounded-lg md:rounded-xl border border-gray-200 px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                 required
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-xs md:text-sm font-medium text-gray-700">
                 Email
               </label>
               <input
                 type="email"
                 value={user.email}
                 readOnly
-                className="w-full cursor-not-allowed rounded-lg border border-gray-300 bg-gray-50 px-4 py-2"
+                className="w-full cursor-not-allowed rounded-lg md:rounded-xl border border-gray-200 bg-gray-50 px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base"
               />
               <p className="mt-1 text-xs text-gray-500">
                 Contact support to change your email address
@@ -179,17 +197,17 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
             </div>
           </div>
 
-          <div className="mt-8 flex justify-end space-x-3 border-t pt-4">
+          <div className="mt-6 md:mt-8 flex justify-end space-x-2 md:space-x-3 border-t pt-3 md:pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50"
+              className="rounded-lg md:rounded-xl border border-gray-200 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-700 transition-all hover:bg-gray-50 hover:shadow-sm"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              className="rounded-lg md:rounded-xl bg-gradient-to-r from-indigo-600 to-blue-500 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-white shadow-md transition-all hover:shadow-lg hover:brightness-105"
             >
               Save Changes
             </button>
@@ -237,10 +255,12 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-t-2 border-b-2 border-indigo-500"></div>
-          <p className="mt-4 text-gray-700">Loading dashboard...</p>
+          <div className="mx-auto h-10 w-10 md:h-12 md:w-12 animate-spin rounded-full border-t-2 border-b-2 border-indigo-500"></div>
+          <p className="mt-3 md:mt-4 text-sm md:text-base text-gray-700">
+            Loading your dashboard...
+          </p>
         </div>
       </div>
     );
@@ -248,44 +268,51 @@ export default function Dashboard() {
 
   if (!user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50">
         <div className="text-center">
-          <p className="text-gray-700">Failed to load admin data</p>
+          <p className="text-sm md:text-base text-gray-700">
+            Failed to load admin data
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 pb-8 md:pb-12">
+      <div className="mx-auto max-w-7xl px-3 sm:px-4 py-6 md:py-8 lg:px-8">
         {/* Header */}
-        <div className="mb-8 rounded-xl bg-white p-6 shadow-sm">
+        <div className="mb-6 md:mb-8 rounded-xl md:rounded-2xl bg-white p-4 md:p-6 shadow-sm backdrop-blur-sm">
           <div className="flex flex-col justify-between md:flex-row md:items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
-                Welcome back, {user.name.split(" ")[0]}
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 sm:text-2xl md:text-3xl">
+                Welcome back,{" "}
+                <span className="text-red-900">{user.name.split(" ")[0]}</span>!
               </h1>
-              <p className="mt-1 text-gray-600">
-                You have full administrative access to the system
+              <p className="mt-1 text-xs md:text-sm text-gray-600">
+                Sie haben vollen administrativen Zugriff auf das System
               </p>
+              <div className="mt-2 h-0.5 md:h-1 w-12 md:w-16 rounded-full bg-gradient-to-br from-red-600 to-black/80"></div>
             </div>
 
-            <div className="mt-4 flex items-center space-x-4 md:mt-0">
+            <div className="mt-3 md:mt-4 flex items-center space-x-3 md:space-x-4 md:mt-0">
               <div className="hidden text-right md:block">
-                <p className="font-medium text-gray-700">{user.role}</p>
-                <p className="text-sm text-gray-500">{user.email}</p>
+                <p className="text-sm md:text-base font-medium text-gray-700">
+                  {user.role}
+                </p>
+                <p className="text-xs md:text-sm text-gray-500">{user.email}</p>
               </div>
               <div className="relative">
                 <button
                   onClick={() => setShowProfileModal(true)}
-                  className="flex items-center focus:outline-none"
+                  className="flex items-center focus:outline-none transition-transform hover:scale-105"
                 >
                   <img
                     src={user.image || "/default-avatar.png"}
                     alt={user.name}
-                    className="h-10 w-10 rounded-full object-cover ring-2 ring-white"
+                    className="h-8 w-8 md:h-10 md:w-10 rounded-full object-cover ring-1 md:ring-2 ring-white shadow-md"
                   />
+                  <div className="absolute -bottom-0.5 -right-0.5 h-2 w-2 md:h-3 md:w-3 rounded-full bg-green-500 ring-1 md:ring-2 ring-white"></div>
                 </button>
               </div>
             </div>
@@ -293,70 +320,81 @@ export default function Dashboard() {
         </div>
 
         {/* Main Content */}
-        <div className="mb-8">
-          <h2 className="mb-4 text-xl font-semibold text-gray-800">
-            Quick Access
-          </h2>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mb-6 md:mb-8">
+          <div className="mb-4 md:mb-6 flex items-center justify-between">
+            <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+              Quick Access Modules
+            </h2>
+            <div className="hidden md:block h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent mx-4"></div>
+            <span className="text-xs md:text-sm text-gray-500">
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <NavigationCard
               href="/addcar"
-              icon={<FiPlus size={20} />}
+              icon={<FiPlus />}
               title="Add Vehicle"
               description="Add a new vehicle to inventory"
-              accentColor="red"
+              accentColor="blue"
             />
             <NavigationCard
               href="/excel"
-              icon={<FiBook size={20} />}
+              icon={<FiBook />}
               title="Accounting"
               description="Financial records and bookkeeping"
               accentColor="green"
             />
             <NavigationCard
               href="/forms"
-              icon={<FiFileText size={20} />}
+              icon={<FiFileText />}
               title="Contracts"
               description="Sales agreements and documents"
               accentColor="purple"
             />
             <NavigationCard
               href="/Plate"
-              icon={<FiCalendar size={20} />}
+              icon={<FiCalendar />}
               title="License Plates"
               description="Manage temporary license plates"
-              accentColor="blue"
-            />
-            <NavigationCard
-              href="/trello"
-              icon={<FiCheckSquare size={20} />}
-              title="Trello Board"
-              description="Project overview and status"
               accentColor="indigo"
             />
             <NavigationCard
-              href="/Aufgaben"
-              icon={<FiCheckSquare size={20} />}
-              title="Tasks"
-              description="Task management system"
+              href="/trello"
+              icon={<FiCheckSquare />}
+              title="Trello Board"
+              description="Project overview and status"
               accentColor="orange"
             />
             <NavigationCard
-              href="/PersonalData"
-              icon={<FiMapPin size={20} />}
-              title="Contacts"
-              description="Phone numbers and addresses"
+              href="/Aufgaben"
+              icon={<FiCheckSquare />}
+              title="Tasks"
+              description="Task management system"
               accentColor="yellow"
             />
             <NavigationCard
+              href="/PersonalData"
+              icon={<FiMapPin />}
+              title="Contacts"
+              description="Phone numbers and addresses"
+              accentColor="red"
+            />
+            <NavigationCard
               href="/schlussel"
-              icon={<FiKey size={20} />}
+              icon={<FiKey />}
               title="Keys"
               description="Key management system"
               accentColor="gray"
             />
             <NavigationCard
               href="/Reg"
-              icon={<FiUserPlus size={20} />}
+              icon={<FiUserPlus />}
               title="Add Admin"
               description="Register new administrator"
               accentColor="indigo"
