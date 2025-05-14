@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://autogaleriejülich.de
+
+# Sitemaps
+Sitemap: https://autogaleriejülich.de/sitemap.xml
