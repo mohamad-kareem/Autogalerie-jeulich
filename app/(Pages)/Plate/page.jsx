@@ -322,7 +322,7 @@ const PlateTrackingPage = () => {
         darkMode ? "bg-gray-900" : "bg-blue-50"
       } p-4 sm:p-6`}
     >
-      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
+      <div className=" w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
         {/* Header with dark mode toggle */}
         <div className="mb-6 sm:mb-8 flex justify-between items-center">
           <div>
@@ -756,6 +756,14 @@ const PlateTrackingPage = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row justify-end mt-3 sm:mt-4 space-y-2 sm:space-y-0 sm:space-x-3">
+                <DeleteByTimeRange
+                  darkMode={darkMode}
+                  onDeleted={(deletedIds) =>
+                    setPlateUsage((prev) =>
+                      prev.filter((entry) => !deletedIds.includes(entry._id))
+                    )
+                  }
+                />
                 <button
                   onClick={generateReport}
                   className={`px-3 py-1 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium flex items-center justify-center ${
@@ -769,14 +777,6 @@ const PlateTrackingPage = () => {
                   <FiDownload className="mr-1 sm:mr-2" />
                   Generate Report
                 </button>
-                <DeleteByTimeRange
-                  darkMode={darkMode}
-                  onDeleted={(deletedIds) =>
-                    setPlateUsage((prev) =>
-                      prev.filter((entry) => !deletedIds.includes(entry._id))
-                    )
-                  }
-                />
               </div>
             </div>
 

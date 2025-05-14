@@ -17,33 +17,45 @@ import {
   FiCamera,
   FiMapPin,
   FiCalendar,
+  FiChevronRight,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 
-const NavigationCard = ({
-  href,
-  icon,
-  title,
-  description,
-  bgColor,
-  iconBgColor = "bg-white/20",
-}) => (
-  <Link href={href} passHref>
-    <div
-      className={`${bgColor} p-2 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer text-white h-full`}
-    >
-      <div className="flex items-start">
-        <div className={`p-2 rounded-lg ${iconBgColor} shadow-sm mr-4`}>
-          {icon}
-        </div>
-        <div>
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <p className="mt-1 text-sm text-white/90">{description}</p>
+const NavigationCard = ({ href, icon, title, description, accentColor }) => {
+  const colorVariants = {
+    red: "from-red-500 to-red-600",
+    green: "from-emerald-500 to-emerald-600",
+    purple: "from-violet-500 to-violet-600",
+    blue: "from-blue-500 to-blue-600",
+    indigo: "from-indigo-500 to-indigo-600",
+    orange: "from-amber-500 to-amber-600",
+    yellow: "from-yellow-500 to-yellow-600",
+    gray: "from-gray-500 to-gray-600",
+  };
+
+  return (
+    <Link href={href} passHref>
+      <div className="group relative h-full overflow-hidden rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md">
+        <div className="absolute inset-0 bg-gradient-to-br opacity-10 transition-opacity group-hover:opacity-20 ${colorVariants[accentColor]}"></div>
+        <div className="relative z-10 flex items-start">
+          <div
+            className={`mr-4 rounded-lg p-3 bg-${accentColor}-100 text-${accentColor}-600`}
+          >
+            {icon}
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+            <p className="mt-1 text-sm text-gray-600">{description}</p>
+            <div className="mt-3 flex items-center text-sm font-medium text-gray-500 transition-colors group-hover:text-gray-700">
+              <span>Access module</span>
+              <FiChevronRight className="ml-1" />
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </Link>
-);
+    </Link>
+  );
+};
 
 const ProfileEditModal = ({ user, onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -99,32 +111,32 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-md w-full p-6 animate-fade-in">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold">Edit Profile</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md animate-fade-in rounded-xl bg-white p-6 shadow-xl">
+        <div className="flex items-center justify-between border-b pb-4">
+          <h3 className="text-xl font-semibold text-gray-900">Edit Profile</h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
           >
-            <FiX size={24} />
+            <FiX size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="flex flex-col items-center mb-6">
-            <div className="relative group">
+        <form onSubmit={handleSubmit} className="mt-6">
+          <div className="mb-6 flex flex-col items-center">
+            <div className="relative">
               <img
                 src={previewImage || "/default-avatar.png"}
                 alt="Profile"
-                className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
+                className="h-24 w-24 rounded-full object-cover shadow-sm"
               />
               <button
                 type="button"
                 onClick={triggerFileInput}
-                className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition-colors shadow-md"
+                className="absolute bottom-0 right-0 rounded-full bg-indigo-600 p-2 text-white shadow-md transition-colors hover:bg-indigo-700"
               >
-                <FiCamera size={18} />
+                <FiCamera size={16} />
               </button>
             </div>
             <input
@@ -134,57 +146,50 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
               accept="image/*"
               className="hidden"
             />
-            <button
-              type="button"
-              onClick={triggerFileInput}
-              className="mt-3 flex items-center text-sm text-indigo-600 hover:text-indigo-800 transition-colors"
-            >
-              <FiUpload className="mr-1" /> Change Image
-            </button>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Name
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Full Name
               </label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="mb-1 block text-sm font-medium text-gray-700">
                 Email
               </label>
               <input
                 type="email"
                 value={user.email}
                 readOnly
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                className="w-full cursor-not-allowed rounded-lg border border-gray-300 bg-gray-50 px-4 py-2"
               />
               <p className="mt-1 text-xs text-gray-500">
-                Email address cannot be changed.
+                Contact support to change your email address
               </p>
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 mt-6">
+          <div className="mt-8 flex justify-end space-x-3 border-t pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
               Save Changes
             </button>
@@ -232,9 +237,9 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-300 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-t-2 border-b-2 border-indigo-500"></div>
           <p className="mt-4 text-gray-700">Loading dashboard...</p>
         </div>
       </div>
@@ -243,7 +248,7 @@ export default function Dashboard() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-300 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
           <p className="text-gray-700">Failed to load admin data</p>
         </div>
@@ -252,138 +257,114 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-300 ">
-      <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto px-4 sm:px-6 lg:px-8 py-14">
-        {/* Modern Welcome Section */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mt-5 ">
-          <div className="p-6 md:p-8 bg-gradient-to-r from-yellow-600 to-red-800 text-white">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold mb-2">
-                  willkommen zurück, {user.name.split(" ")[0]}!
-                </h1>
-                <p className="text-indigo-100">
-                  Sie haben vollen Administratorzugriff auf das System.
-                </p>
-              </div>
-              <div className="mt-4 md:mt-0 flex items-center space-x-4">
-                <div className="text-right hidden md:block">
-                  <p className="font-medium">{user.role}</p>
-                </div>
-                <div className="relative group">
-                  <button className="flex items-center focus:outline-none">
-                    <img
-                      src={user.image || "/default-avatar.png"}
-                      alt={user.name}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-indigo-200 hover:border-indigo-300 transition-all"
-                    />
-                  </button>
-                  <div className="absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                    <div className="py-1">
-                      <div className="px-4 py-2 border-b">
-                        <p className="text-sm font-medium text-gray-900">
-                          {user.name}
-                        </p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
-                      </div>
-                      <button
-                        onClick={() => setShowProfileModal(true)}
-                        className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                      >
-                        <FiEdit className="mr-3" /> Edit Profile
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8 rounded-xl bg-white p-6 shadow-sm">
+          <div className="flex flex-col justify-between md:flex-row md:items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+                Welcome back, {user.name.split(" ")[0]}
+              </h1>
+              <p className="mt-1 text-gray-600">
+                You have full administrative access to the system
+              </p>
             </div>
-          </div>
 
-          <div className="p-6 md:p-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Quick Start
-            </h2>
-            {/* Navigation Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-15">
-              <NavigationCard
-                href="/addcar"
-                icon={<FiPlus />}
-                title="Neues Auto"
-                description="Ein Fahrzeug zum Bestand hinzufügen"
-                bgColor="bg-gradient-to-br from-red-600 to-black hover:from-red-600 hover:to-red-800"
-                iconBgColor="bg-red-800"
-              />
-              <NavigationCard
-                href="/excel"
-                icon={<FiBook />}
-                title="Kassenbuch"
-                description="Buchhaltung und Finanzen"
-                bgColor="bg-gradient-to-br from-green-600 via-green-700 to-black hover:from-green-600 hover:to-green-800"
-                iconBgColor="bg-green-700"
-              />
-              <NavigationCard
-                href="/forms"
-                icon={<FiFileText />}
-                title="Kaufverträge"
-                description="Dokumente und Vereinbarungen"
-                bgColor="bg-gradient-to-br from-purple-500 to-black hover:from-purple-600 hover:to-purple-800"
-                iconBgColor="bg-purple-700"
-              />
-              <NavigationCard
-                href="/Plate"
-                icon={<FiCalendar />}
-                title="Kennzeichenverwaltung"
-                description="Verfolgen und verwalten Sie temporäre Nummernschilder"
-                bgColor="bg-gradient-to-br from-blue-500 to-black hover:from-blue-600 hover:to-blue-800"
-                iconBgColor="bg-blue-700"
-              />
-
-              <NavigationCard
-                href="/trello"
-                icon={<FiCheckSquare />}
-                title="Trello-Board"
-                description="Projektübersicht und Status"
-                bgColor="bg-gradient-to-br from-gray-600 to-black hover:from-gray-800 hover:to-gray-700"
-                iconBgColor="bg-blue-800"
-              />
-              <NavigationCard
-                href="/Aufgaben"
-                icon={<FiCheckSquare />}
-                title="Aufgaben"
-                description="Aufgabenverwaltung und To-dos"
-                bgColor="bg-gradient-to-br from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-indigo-800"
-                iconBgColor="bg-indigo-700"
-              />
-              <NavigationCard
-                href="/PersonalData"
-                icon={<FiMapPin />}
-                title="Kontaktdaten"
-                description="Telefonnummern, Adressen, Orte und Kontakte"
-                bgColor="bg-gradient-to-br from-gray-700 to-black hover:from-black hover:to-red-800"
-                iconBgColor="bg-yellow-700"
-              />
-              <NavigationCard
-                href="/schlussel"
-                icon={<FiKey />}
-                title="Schlüssel"
-                description="Schlüsselverwaltung"
-                bgColor="bg-gradient-to-br from-orange-500 via-orange-600 to-orange-950 hover:from-orange-600 hover:to-orange-800"
-                iconBgColor="bg-orange-700"
-              />
-              <NavigationCard
-                href="/Reg"
-                icon={<FiUserPlus />}
-                title="Admin hinzufügen"
-                description="Neuen Administrator registrieren"
-                bgColor="bg-gradient-to-br from-yellow-500 to-black hover:from-yellow-600 hover:to-yellow-800"
-                iconBgColor="bg-yellow-700"
-              />
+            <div className="mt-4 flex items-center space-x-4 md:mt-0">
+              <div className="hidden text-right md:block">
+                <p className="font-medium text-gray-700">{user.role}</p>
+                <p className="text-sm text-gray-500">{user.email}</p>
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setShowProfileModal(true)}
+                  className="flex items-center focus:outline-none"
+                >
+                  <img
+                    src={user.image || "/default-avatar.png"}
+                    alt={user.name}
+                    className="h-10 w-10 rounded-full object-cover ring-2 ring-white"
+                  />
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </main>
 
-      {/* Profile Edit Modal */}
+        {/* Main Content */}
+        <div className="mb-8">
+          <h2 className="mb-4 text-xl font-semibold text-gray-800">
+            Quick Access
+          </h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <NavigationCard
+              href="/addcar"
+              icon={<FiPlus size={20} />}
+              title="Add Vehicle"
+              description="Add a new vehicle to inventory"
+              accentColor="red"
+            />
+            <NavigationCard
+              href="/excel"
+              icon={<FiBook size={20} />}
+              title="Accounting"
+              description="Financial records and bookkeeping"
+              accentColor="green"
+            />
+            <NavigationCard
+              href="/forms"
+              icon={<FiFileText size={20} />}
+              title="Contracts"
+              description="Sales agreements and documents"
+              accentColor="purple"
+            />
+            <NavigationCard
+              href="/Plate"
+              icon={<FiCalendar size={20} />}
+              title="License Plates"
+              description="Manage temporary license plates"
+              accentColor="blue"
+            />
+            <NavigationCard
+              href="/trello"
+              icon={<FiCheckSquare size={20} />}
+              title="Trello Board"
+              description="Project overview and status"
+              accentColor="indigo"
+            />
+            <NavigationCard
+              href="/Aufgaben"
+              icon={<FiCheckSquare size={20} />}
+              title="Tasks"
+              description="Task management system"
+              accentColor="orange"
+            />
+            <NavigationCard
+              href="/PersonalData"
+              icon={<FiMapPin size={20} />}
+              title="Contacts"
+              description="Phone numbers and addresses"
+              accentColor="yellow"
+            />
+            <NavigationCard
+              href="/schlussel"
+              icon={<FiKey size={20} />}
+              title="Keys"
+              description="Key management system"
+              accentColor="gray"
+            />
+            <NavigationCard
+              href="/Reg"
+              icon={<FiUserPlus size={20} />}
+              title="Add Admin"
+              description="Register new administrator"
+              accentColor="indigo"
+            />
+          </div>
+        </div>
+      </div>
+
       {showProfileModal && (
         <ProfileEditModal
           user={user}

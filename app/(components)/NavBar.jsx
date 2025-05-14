@@ -8,7 +8,7 @@ import { User, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 
-import Logo from "../(assets)/Logo.png";
+import Logo from "../(assets)/sm1car.png";
 import DesktopMenu from "./DesktopMenu";
 import MobMenu from "./MobMenu";
 import { Menus } from "../utils/NavData";
@@ -140,8 +140,8 @@ export default function NavBar() {
     <header
       className={`print:hidden fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
         hydrated && scrolled
-          ? "h-14 shadow-md bg-white/95 backdrop-blur-sm"
-          : "h-16 bg-white"
+          ? "h-14 shadow-md bg-gradient-to-br from-black/20 to-red-800 backdrop-blur-sm "
+          : "h-16 bg-gradient-to-br from-black/60 to-red-800 "
       }`}
     >
       <nav className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto h-full flex items-center justify-between px-4 sm:px-6">
@@ -150,16 +150,14 @@ export default function NavBar() {
           <Image
             src={Logo}
             alt="Logo"
-            width={40}
-            height={40}
             priority
             className={`object-contain w-10 h-10 sm:w-[85px] sm:h-[110px] transition-transform duration-300 ${
-              hydrated && scrolled ? "scale-90" : "scale-100"
+              hydrated && scrolled ? "scale-70" : "scale-100"
             }`}
           />
           <span
-            className={`hidden sm:inline-block ml-2 font-semibold whitespace-nowrap transition-all duration-300 ${
-              hydrated && scrolled ? "text-base" : "text-lg"
+            className={`hidden sm:inline-block ml-2 font-semibold whitespace-nowrap transition-all duration-300 text-white ${
+              hydrated && scrolled ? "text-sm" : "text-lg"
             }`}
           >
             Autogalerie Jülich
@@ -167,9 +165,9 @@ export default function NavBar() {
         </Link>
 
         {/* Right Side */}
-        <div className="flex items-center space-x-2 sm:space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4 ">
           {/* Desktop Menu */}
-          <ul className="hidden lg:flex items-center space-x-2 xl:space-x-4">
+          <ul className="hidden lg:flex items-center space-x-2 xl:space-x-4 ">
             {Menus.map((menu) => (
               <DesktopMenu menu={menu} key={menu.name} scrolled={scrolled} />
             ))}
@@ -214,7 +212,7 @@ export default function NavBar() {
                     <li>
                       <Link
                         href="/AdminDashboard"
-                        className="block px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+                        className="block px-4 py-2 text-sm hover:bg-gray-50 transition-colors "
                         onClick={() => setOpen(false)}
                       >
                         Admin Dashboard

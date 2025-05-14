@@ -111,7 +111,7 @@ const DeleteByTimeRange = ({ onDeleted, darkMode }) => {
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-all ${
+        className={`w-full flex items-center justify-between px-8 py-2.5 rounded-lg transition-all ${
           darkMode
             ? "bg-gray-700 hover:bg-gray-600"
             : "bg-white hover:bg-gray-50"
