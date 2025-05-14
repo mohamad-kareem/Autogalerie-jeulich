@@ -8,4 +8,19 @@ module.exports = {
     formats: ["image/webp"],
     minimumCacheTTL: 60,
   },
+  async redirects() {
+    return [
+      {
+        source: "/(.*)",
+        has: [
+          {
+            type: "host",
+            value: "www.autogaleriejülich.de",
+          },
+        ],
+        destination: "https://autogaleriejülich.de/:1",
+        permanent: true,
+      },
+    ];
+  },
 };
