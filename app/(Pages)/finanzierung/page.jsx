@@ -11,10 +11,18 @@ import {
 import Image from "next/image";
 import finance from "@/app/(assets)/finance.jpg";
 import Footbar from "@/app/(components)/Footbar";
-
+import Head from "next/head";
 export default function FinanzierungPage() {
   return (
     <>
+      <Head>
+        <title>Home | Auto Galerie Jülich</title>
+        <meta name="robots" content="index,follow" />
+        <meta
+          name="description"
+          content="Auto Galerie Jülich – Beste Gebrauchtwagen in NRW."
+        />
+      </Head>
       <div className="min-h-screen bg-neutral-50">
         {/* Hero Section - Compact on mobile */}
         <section className="relative bg-black text-white py-16 sm:py-20 md:py-28 lg:py-32 text-center overflow-hidden">

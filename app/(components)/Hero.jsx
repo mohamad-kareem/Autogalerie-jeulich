@@ -4,6 +4,8 @@ import Bild2 from "../(assets)/Hero2.jpeg";
 import Bild3 from "../(assets)/yes2.png";
 import Bild4 from "../(assets)/dacia4.png";
 import { useState, useEffect, useRef } from "react";
+import Head from "next/head";
+
 import {
   motion,
   AnimatePresence,
@@ -86,6 +88,14 @@ export default function UltraModernHero() {
 
   return (
     <>
+      <Head>
+        <title>Home | Auto Galerie Jülich</title>
+        <meta name="robots" content="index,follow" />
+        <meta
+          name="description"
+          content="Auto Galerie Jülich – Beste Gebrauchtwagen in NRW."
+        />
+      </Head>
       <section
         className="relative w-full h-screen sm:h-[90vh] max-h-[1200px] overflow-hidden"
         onMouseEnter={() => setIsHovered(true)}

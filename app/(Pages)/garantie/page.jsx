@@ -3,6 +3,8 @@ import React from "react";
 import Link from "next/link";
 import Button from "@/app/(components)/Button";
 import Footbar from "@/app/(components)/Footbar";
+import Head from "next/head";
+
 import {
   FiShield,
   FiClock,
@@ -25,6 +27,14 @@ import {
 export default function GarantiePage() {
   return (
     <>
+      <Head>
+        <title>Home | Auto Galerie Jülich</title>
+        <meta name="robots" content="index,follow" />
+        <meta
+          name="description"
+          content="Auto Galerie Jülich – Beste Gebrauchtwagen in NRW."
+        />
+      </Head>
       <div className="min-h-screen bg-neutral-50 overflow-x-hidden  ">
         {/* Hero Section - Made more compact on mobile */}
         <section className="relative bg-black text-white py-16 sm:py-24 lg:py-28 text-center mb-8 sm:mb-10 overflow-hidden">
