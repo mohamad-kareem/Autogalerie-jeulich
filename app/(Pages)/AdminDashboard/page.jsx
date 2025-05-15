@@ -63,7 +63,7 @@ const NavigationCard = ({ href, icon, title, description, accentColor }) => {
               {description}
             </p>
             <div className="mt-2 md:mt-3 flex items-center text-xs md:text-sm font-medium text-gray-500 transition-colors group-hover:text-gray-700">
-              <span>Access module</span>
+              <span>Modul öffnen</span>
               <FiChevronRight className="ml-0.5 md:ml-1 transition-transform group-hover:translate-x-0.5 md:group-hover:translate-x-1" />
             </div>
           </div>
@@ -114,13 +114,13 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update profile");
+        throw new Error("Profil konnte nicht aktualisiert werden");
       }
 
       const updatedUser = await response.json();
       onSave(updatedUser);
       onClose();
-      toast.success("Profile updated successfully!");
+      toast.success("Profil erfolgreich aktualisiert!");
     } catch (error) {
       toast.error(error.message);
     }
@@ -131,7 +131,7 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
       <div className="w-full max-w-md animate-fade-in rounded-xl md:rounded-2xl bg-white p-4 md:p-6 shadow-2xl">
         <div className="flex items-center justify-between border-b pb-3 md:pb-4">
           <h3 className="text-lg md:text-xl font-semibold text-gray-900">
-            Edit Profile
+            Profil bearbeiten
           </h3>
           <button
             onClick={onClose}
@@ -146,7 +146,7 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
             <div className="relative">
               <img
                 src={previewImage || "/default-avatar.png"}
-                alt="Profile"
+                alt="Profilbild"
                 className="h-20 w-20 md:h-24 md:w-24 rounded-full object-cover shadow-lg ring-2 md:ring-4 ring-white/80"
               />
               <button
@@ -169,7 +169,7 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
           <div className="space-y-3 md:space-y-4">
             <div>
               <label className="mb-1 block text-xs md:text-sm font-medium text-gray-700">
-                Full Name
+                Vollständiger Name
               </label>
               <input
                 type="text"
@@ -183,7 +183,7 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
 
             <div>
               <label className="mb-1 block text-xs md:text-sm font-medium text-gray-700">
-                Email
+                E-Mail
               </label>
               <input
                 type="email"
@@ -192,7 +192,7 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
                 className="w-full cursor-not-allowed rounded-lg md:rounded-xl border border-gray-200 bg-gray-50 px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base"
               />
               <p className="mt-1 text-xs text-gray-500">
-                Contact support to change your email address
+                Kontaktieren Sie den Support, um die E-Mail-Adresse zu ändern
               </p>
             </div>
           </div>
@@ -203,13 +203,13 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
               onClick={onClose}
               className="rounded-lg md:rounded-xl border border-gray-200 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-700 transition-all hover:bg-gray-50 hover:shadow-sm"
             >
-              Cancel
+              Abbrechen
             </button>
             <button
               type="submit"
               className="rounded-lg md:rounded-xl bg-gradient-to-r from-indigo-600 to-blue-500 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-white shadow-md transition-all hover:shadow-lg hover:brightness-105"
             >
-              Save Changes
+              Änderungen speichern
             </button>
           </div>
         </form>
@@ -231,7 +231,7 @@ export default function Dashboard() {
 
         const response = await fetch(`/api/admins/${session.user.id}`);
         if (!response.ok) {
-          throw new Error("Failed to fetch admin data");
+          throw new Error("Admin-Daten konnten nicht geladen werden");
         }
 
         const adminData = await response.json();
@@ -259,7 +259,7 @@ export default function Dashboard() {
         <div className="text-center">
           <div className="mx-auto h-10 w-10 md:h-12 md:w-12 animate-spin rounded-full border-t-2 border-b-2 border-indigo-500"></div>
           <p className="mt-3 md:mt-4 text-sm md:text-base text-gray-700">
-            Loading your dashboard...
+            Dashboard wird geladen...
           </p>
         </div>
       </div>
@@ -271,7 +271,7 @@ export default function Dashboard() {
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50">
         <div className="text-center">
           <p className="text-sm md:text-base text-gray-700">
-            Failed to load admin data
+            Admin-Daten konnten nicht geladen werden
           </p>
         </div>
       </div>
@@ -281,12 +281,11 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 pb-8 md:pb-12">
       <div className="mx-auto max-w-7xl px-3 sm:px-4 py-6 md:py-8 lg:px-8">
-        {/* Header */}
         <div className="mb-6 md:mb-8 rounded-xl md:rounded-2xl bg-white p-4 md:p-6 shadow-sm backdrop-blur-sm">
           <div className="flex flex-col justify-between md:flex-row md:items-center">
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900 sm:text-2xl md:text-3xl">
-                Welcome back,{" "}
+                Willkommen zurück,{" "}
                 <span className="text-red-900">{user.name.split(" ")[0]}</span>!
               </h1>
               <p className="mt-1 text-xs md:text-sm text-gray-600">
@@ -319,16 +318,16 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Main Content */}
+        {/* Hauptinhalt */}
         <div className="mb-6 md:mb-8">
           <div className="mb-4 md:mb-6 flex items-center justify-between">
             <h2 className="text-lg md:text-xl font-semibold text-gray-800">
-              Quick Access Modules
+              Systemmodule
             </h2>
             <div className="hidden md:block h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent mx-4"></div>
             <span className="text-xs md:text-sm text-gray-500">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "short",
+              {new Date().toLocaleDateString("de-DE", {
+                weekday: "long",
                 month: "short",
                 day: "numeric",
               })}
@@ -339,64 +338,64 @@ export default function Dashboard() {
             <NavigationCard
               href="/addcar"
               icon={<FiPlus />}
-              title="Add Vehicle"
-              description="Add a new vehicle to inventory"
+              title="Fahrzeug hinzufügen"
+              description="Ein neues Fahrzeug zum Bestand hinzufügen"
               accentColor="blue"
             />
             <NavigationCard
               href="/excel"
               icon={<FiBook />}
-              title="Accounting"
-              description="Financial records and bookkeeping"
+              title="Buchhaltung"
+              description="Finanzdaten und Aufzeichnungen"
               accentColor="green"
             />
             <NavigationCard
               href="/forms"
               icon={<FiFileText />}
-              title="Contracts"
-              description="Sales agreements and documents"
+              title="Verträge"
+              description="Kaufverträge und Dokumente"
               accentColor="purple"
             />
             <NavigationCard
               href="/Plate"
               icon={<FiCalendar />}
-              title="License Plates"
-              description="Manage temporary license plates"
+              title="Kennzeichen"
+              description="Temporäre Kennzeichen verwalten"
               accentColor="indigo"
             />
             <NavigationCard
               href="/trello"
               icon={<FiCheckSquare />}
-              title="Trello Board"
-              description="Project overview and status"
+              title="Trello-Board"
+              description="Projektübersicht und Status"
               accentColor="orange"
             />
             <NavigationCard
               href="/Aufgaben"
               icon={<FiCheckSquare />}
-              title="Tasks"
-              description="Task management system"
+              title="Aufgaben"
+              description="Aufgabenmanagement-System"
               accentColor="yellow"
             />
             <NavigationCard
               href="/PersonalData"
               icon={<FiMapPin />}
-              title="Contacts"
-              description="Phone numbers and addresses"
+              title="Kontakte"
+              description="Telefonnummern und Adressen"
               accentColor="red"
             />
             <NavigationCard
               href="/schlussel"
               icon={<FiKey />}
-              title="Keys"
-              description="Key management system"
+              title="Schlüssel"
+              description="Schlüsselverwaltung"
               accentColor="gray"
             />
             <NavigationCard
               href="/Reg"
               icon={<FiUserPlus />}
-              title="Add Admin"
-              description="Register new administrator"
+              title="Admin hinzufügen"
+              description="Neuen Administrator registrieren"
               accentColor="indigo"
             />
           </div>

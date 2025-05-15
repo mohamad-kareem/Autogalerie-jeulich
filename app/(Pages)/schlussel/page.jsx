@@ -14,6 +14,7 @@ import {
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
+import { FaGasPump } from "react-icons/fa";
 
 export default function SchlüsselManagement() {
   const [schlussels, setSchlussels] = useState([]);
@@ -27,6 +28,7 @@ export default function SchlüsselManagement() {
     car: "",
     schlusselNumber: "",
     notes: "",
+    needsBenzine: false,
   });
 
   const fetchSchlussels = async () => {
@@ -69,6 +71,7 @@ export default function SchlüsselManagement() {
     setSelected(s);
     setIsAdding(false);
     setIsEditing(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const onInput = (e) => {
@@ -76,8 +79,13 @@ export default function SchlüsselManagement() {
     setForm((p) => ({ ...p, [name]: value }));
   };
 
+  const onCheckboxChange = (e) => {
+    const { name, checked } = e.target;
+    setForm((p) => ({ ...p, [name]: checked }));
+  };
+
   const startAdd = () => {
-    setForm({ car: "", schlusselNumber: "", notes: "" });
+    setForm({ car: "", schlusselNumber: "", notes: "", needsBenzine: false });
     setIsAdding(true);
     setSelected(null);
   };
@@ -88,6 +96,7 @@ export default function SchlüsselManagement() {
       car: selected.car,
       schlusselNumber: selected.schlusselNumber,
       notes: selected.notes || "",
+      needsBenzine: selected.needsBenzine || false,
     });
     setIsEditing(true);
   };
@@ -109,6 +118,7 @@ export default function SchlüsselManagement() {
         setSchlussels((p) => [schlussel, ...p]);
         setFiltered((p) => [schlussel, ...p]);
         setIsAdding(false);
+        setSelected(schlussel);
         toast.success("Schlüssel erfolgreich hinzugefügt", {
           style: {
             background: "#4F46E5",
@@ -207,20 +217,17 @@ export default function SchlüsselManagement() {
       </div>
     );
   }
-  {
-    /* <div className="min-h-screen bg-gradient-to-br from-green-300 to-green-900 p-4 ">
-      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto"></div> */
-  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-indigo-900 p-4 md:p-6">
-      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-indigo-900 p-4 md:p-6 ">
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto mt-4">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
-            <h1 className="text-xl md:text-3xl font-bold text-indigo-900">
+            <h1 className="text-xl md:text-3xl font-bold text-indigo-100">
               Schlüsselverwaltung
             </h1>
-            <p className="text-indigo-600 mt-1">
+            <p className="text-indigo-300 mt-1">
               {schlussels.length}{" "}
               {schlussels.length === 1 ? "Schlüssel" : "Schlüssel"} registriert
             </p>
@@ -229,7 +236,7 @@ export default function SchlüsselManagement() {
             onClick={startAdd}
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.98 }}
-            className="mt-6 md:mt-10 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition-colors flex items-center gap-2 shadow-md"
+            className="mt-6 md:mt-0 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition-colors flex items-center gap-2 shadow-md"
           >
             <FiPlus className="text-base" />
             Neuer Schlüssel
@@ -307,8 +314,14 @@ export default function SchlüsselManagement() {
                             <h3 className="font-medium text-gray-800">
                               {s.car}
                             </h3>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 flex items-center gap-2">
                               Schlüssel #{s.schlusselNumber}
+                              {s.needsBenzine && (
+                                <FaGasPump
+                                  title="Benötigt Benzin"
+                                  className="text-green-500 text-sm"
+                                />
+                              )}
                             </p>
                           </div>
                         </div>
@@ -406,6 +419,23 @@ export default function SchlüsselManagement() {
                         />
                       </div>
 
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="needsBenzine"
+                          name="needsBenzine"
+                          checked={form.needsBenzine}
+                          onChange={onCheckboxChange}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                        <label
+                          htmlFor="needsBenzine"
+                          className="ml-2 block text-sm text-gray-700"
+                        >
+                          Fahrzeug benötigt Benzin
+                        </label>
+                      </div>
+
                       <div className="flex justify-end gap-3 pt-3">
                         <button
                           onClick={() => {
@@ -465,6 +495,23 @@ export default function SchlüsselManagement() {
                         </h3>
                         <p className="text-xl font-bold text-gray-800">
                           {selected.schlusselNumber}
+                        </p>
+                      </div>
+
+                      <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                          Benzin-Status
+                        </h3>
+                        <p className="text-gray-800">
+                          {selected.needsBenzine ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-400 text-black">
+                              Benötigt Benzin
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-200 text-black">
+                              Kein Benzin benötigt
+                            </span>
+                          )}
                         </p>
                       </div>
 
