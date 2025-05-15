@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import {
   FaGasPump,
   FaTachometerAlt,
@@ -142,8 +143,33 @@ export default function ComparisonPage({ idsFromUrl }) {
 
   if (!carsToCompare.length) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-gray-500">
-        <p>Keine Fahrzeuge ausgewählt.</p>
+      <div className="min-h-screen flex flex-col items-center justify-center text-gray-500 p-4">
+        <p className="text-lg mb-2">
+          Keine Fahrzeuge zum Vergleichen ausgewählt.
+        </p>
+        <p className="text-sm mb-4">
+          Wählen Sie Fahrzeuge aus, um sie zu vergleichen.
+        </p>
+        <Link
+          href="/gebrauchtwagen" // Adjust this path to your vehicle listing page
+          className="text-red-500 hover:text-red-600 transition-colors duration-200 flex items-center"
+        >
+          <span>Zu den Fahrzeugen</span>
+          <svg
+            className="w-4 h-4 ml-1"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M14 5l7 7m0 0l-7 7m7-7H3"
+            />
+          </svg>
+        </Link>
       </div>
     );
   }

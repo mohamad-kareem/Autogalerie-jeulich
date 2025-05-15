@@ -23,25 +23,25 @@ import toast from "react-hot-toast";
 
 const NavigationCard = ({ href, icon, title, description, accentColor }) => {
   const colorMap = {
-    red: "bg-red-100 text-red-600",
-    green: "bg-emerald-100 text-emerald-600",
-    purple: "bg-violet-100 text-violet-600",
-    blue: "bg-blue-100 text-blue-600",
-    indigo: "bg-indigo-100 text-indigo-600",
-    orange: "bg-amber-100 text-amber-600",
-    yellow: "bg-yellow-100 text-yellow-600",
-    gray: "bg-gray-100 text-gray-600",
+    red: "bg-red-200 text-red-600",
+    green: "bg-emerald-300 text-emerald-600",
+    purple: "bg-yellow-200 text-yellow-600",
+    blue: "bg-blue-200 text-blue-600",
+    indigo: "bg-indigo-200 text-indigo-600",
+    orange: "bg-purple-400 text-purple-900",
+    yellow: "bg-yellow-200 text-yellow-600",
+    gray: "bg-gray-200 text-gray-600",
   };
 
   const gradientMap = {
-    red: "from-red-100 to-red-50",
-    green: "from-emerald-100 to-emerald-50",
-    purple: "from-violet-100 to-violet-50",
-    blue: "from-blue-100 to-blue-50",
-    indigo: "from-indigo-100 to-indigo-50",
-    orange: "from-amber-100 to-amber-50",
-    yellow: "from-yellow-100 to-yellow-50",
-    gray: "from-gray-100 to-gray-50",
+    red: "from-red-400 to-red-300",
+    green: "from-emerald-400 to-emerald-200",
+    purple: "from-yellow-300 to-yellow-200",
+    blue: "from-blue-300 to-blue-200",
+    indigo: "from-indigo-300 to-indigo-200",
+    orange: "from-purple-500 to-purple-300",
+    yellow: "from-black/20 to-black/50",
+    gray: "from-red-500 to-red-400",
   };
 
   return (

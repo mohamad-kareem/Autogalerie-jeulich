@@ -183,7 +183,7 @@ const CarCard = ({ car, viewMode = "grid", onCompareToggle, isComparing }) => {
               href={`/gebrauchtwagen/${car.id}`}
               className={`${
                 viewMode === "list" ? "py-1.5 px-3 text-sm" : "py-2 px-4"
-              } bg-black hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex-1 text-center`}
+              } bg-black hover:bg-gradient-to-br from-red-600 to-black text-white rounded-lg font-medium transition-colors flex-1 text-center`}
             >
               Details anzeigen
             </Link>
@@ -194,8 +194,8 @@ const CarCard = ({ car, viewMode = "grid", onCompareToggle, isComparing }) => {
               } border rounded-lg transition-colors flex items-center justify-center 
                 ${
                   isComparing
-                    ? "bg-blue-100 border-blue-200 text-red-600"
-                    : "border-gray-200 hover:bg-gray-50"
+                    ? "bg-blue-100 border-blue-200 text-red-600 hover:bg-gradient-to-br from-red-600 to-black"
+                    : "border-gray-400 hover:bg-gray-50 hover:bg-gradient-to-br from-red-600 to-black/10"
                 }`}
               aria-label="Fahrzeug vergleichen"
             >

@@ -145,7 +145,7 @@ export default function NavBar() {
           : "h-16 bg-gradient-to-br from-black/60 to-red-800 "
       }`}
     >
-      <nav className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto h-full flex items-center justify-between px-4 sm:px-6">
+      <nav className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto h-full flex items-center justify-between px-2 sm:px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center flex-shrink-0">
           <Image
@@ -157,9 +157,9 @@ export default function NavBar() {
             }`}
           />
           <span
-            className={`hidden sm:inline-block ml-2 font-semibold whitespace-nowrap transition-all duration-300 text-white ${
-              hydrated && scrolled ? "text-sm" : "text-lg"
-            }`}
+            className={`ml-2 font-semibold whitespace-nowrap transition-all duration-300 text-white 
+      text-[10px] sm:text-base 
+      ${hydrated && scrolled ? "sm:text-sm" : "sm:text-base"}`}
           >
             Autogalerie Jülich
           </span>

@@ -12,8 +12,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        {/* Favicon: Ensure Logo.png is in the /public folder */}
-        <link rel="icon" type="image/png" href="/Logo.png" />
+        <title>Autogalerie Jülich</title>
+
+        <link rel="icon" href="/Logo.png" type="image/png" sizes="32x32" />
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>

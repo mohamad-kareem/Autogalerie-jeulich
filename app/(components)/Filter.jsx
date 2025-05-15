@@ -169,7 +169,7 @@ const Filter = ({ filters, onChange, onSubmit, onReset }) => {
       <div className="flex gap-2 pt-1">
         <button
           type="submit"
-          className="flex-1 py-1.5 px-2 rounded-lg bg-black hover:bg-red-700 active:bg-red-800 text-white font-semibold text-xs shadow-sm flex items-center justify-center gap-1 transition"
+          className="flex-1 py-1.5 px-2 rounded-lg bg-black hover:hover:bg-gradient-to-br from-red-600 to-black active:bg-red-800 text-white font-semibold text-xs shadow-sm flex items-center justify-center gap-1 transition"
         >
           <FiSearch className="w-4 h-4" />
           anzeigen
@@ -177,7 +177,7 @@ const Filter = ({ filters, onChange, onSubmit, onReset }) => {
         <button
           type="button"
           onClick={onReset}
-          className="flex-1 py-1.5 px-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-100 text-gray-700 font-medium text-xs shadow-sm flex items-center justify-center gap-1 transition"
+          className="flex-1 py-1.5 px-2 rounded-lg bg-white border border-gray-200 hover:hover:bg-gradient-to-br from-red-600 to-black/20 text-gray-700 font-medium text-xs shadow-sm flex items-center justify-center gap-1 transition"
         >
           <FiRefreshCw className="w-4 h-4" />
           Zurücksetzen

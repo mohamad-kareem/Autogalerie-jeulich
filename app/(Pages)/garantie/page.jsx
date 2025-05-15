@@ -40,7 +40,7 @@ export default function GarantiePage() {
         <section className="relative bg-black text-white py-16 sm:py-24 lg:py-28 text-center mb-8 sm:mb-10 overflow-hidden">
           <div className="absolute inset-0 bg-[url('/pattern.png')] bg-cover opacity-20" />
           <div className="relative z-10 px-4 sm:px-6 max-w-4xl mx-auto">
-            <span className="inline-flex items-center bg-white/20 px-3 py-1 rounded-full text-xs sm:text-sm font-medium mb-4 sm:mb-6 text-red-500 sm:text-red-600">
+            <span className="inline-flex items-center bg-white/20 px-3 py-1 rounded-full text-xs sm:text-sm font-medium mb-4 sm:mb-6 text-red-500 sm:text-red-600 mt-4 sm:mt-0">
               <FiShield className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
               Premium Protection
             </span>
@@ -300,17 +300,19 @@ export default function GarantiePage() {
               </p>
 
               <div className="space-y-3 sm:space-y-4">
-                <Link href="/kontakt" passHref>
-                  <Button className="w-full">
-                    <span className="flex items-center justify-center">
-                      <FiMail className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                      Online-Formular
-                    </span>
-                  </Button>
-                </Link>
+                <div className=" mb-3 sm:mb-4">
+                  <Link href="/kontakt" passHref>
+                    <Button className="w-full">
+                      <span className="flex items-center justify-center ">
+                        <FiMail className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                        Kontaktieren Sie uns
+                      </span>
+                    </Button>
+                  </Link>
+                </div>
 
                 <div className="bg-gray-50 p-4 sm:p-5 rounded-lg border border-gray-200">
-                  <div className="flex items-start mb-3 sm:mb-4">
+                  <div className="">
                     <FiPhone className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 mt-0.5 mr-2 sm:mr-3" />
                     <div>
                       <h4 className="font-medium text-sm sm:text-base text-gray-900">
