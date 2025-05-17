@@ -32,10 +32,11 @@ export default function RootLayout({ children }) {
         <link rel="icon" href="/mylogo.png" sizes="32x32" type="image/png" />
         <link rel="shortcut icon" href="/mylogo.png" type="image/png" />
         <link rel="apple-touch-icon" href="/mylogo.png" />
-
+        <link rel="canonical" href="https://autogaleriejülich.de/" />
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
+
       <body>
         <Toaster
           position="top-center"
