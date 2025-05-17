@@ -263,7 +263,12 @@ const PlateTrackingPage = () => {
     }
   };
   const handleDeleteEntry = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this entry?")) return;
+    if (
+      !window.confirm(
+        "Sind Sie sicher, dass Sie diesen Eintrag löschen möchten??"
+      )
+    )
+      return;
 
     try {
       const res = await fetch(`/api/plates/usage/${id}`, {
@@ -348,7 +353,9 @@ const PlateTrackingPage = () => {
                 ? "bg-blue-800 text-yellow-300 hover:bg-blue-700"
                 : "bg-blue-100 text-blue-800 hover:bg-blue-200"
             } transition-colors`}
-            title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+            title={
+              darkMode ? "Zum Lichtmodus wechseln" : "	Zum Dunkelmodus wechseln"
+            }
           >
             {darkMode ? (
               <FiSun size={14} className="sm:size-5" />
@@ -378,7 +385,7 @@ const PlateTrackingPage = () => {
               }`}
             >
               <FiUser className="inline mr-1 sm:mr-2" />
-              Log Plate
+              Nummernschild protokollieren
             </button>
             <button
               onClick={() => setActiveTab("report")}
@@ -393,7 +400,7 @@ const PlateTrackingPage = () => {
               }`}
             >
               <FiCalendar className="inline mr-1 sm:mr-2" />
-              Usage Report
+              Nutzungsbericht
             </button>
             <button
               onClick={() => setActiveTab("active")}
@@ -408,7 +415,7 @@ const PlateTrackingPage = () => {
               }`}
             >
               <FiClock className="inline mr-1 sm:mr-2" />
-              Active Plates
+              Aktive Nummernschilder
             </button>
           </div>
         </div>
@@ -426,7 +433,7 @@ const PlateTrackingPage = () => {
               }`}
             >
               <FiUser className="inline mr-2 text-blue-500" />
-              Log New Plate Usage
+              Neue Nummernschildnutzung protokollieren
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
@@ -438,7 +445,7 @@ const PlateTrackingPage = () => {
                       darkMode ? "text-gray-300" : "text-gray-700"
                     }`}
                   >
-                    Plate Number <span className="text-red-500">*</span>
+                    Nummernschild <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="plateNumber"
@@ -451,7 +458,7 @@ const PlateTrackingPage = () => {
                     }`}
                     required
                   >
-                    <option value="">Select a plate</option>
+                    <option value="">Wähle ein Nummernschild</option>
                     {plates.map((plate) => (
                       <option key={plate._id} value={plate.number}>
                         {plate.number} - {plate.type}
@@ -467,7 +474,7 @@ const PlateTrackingPage = () => {
                         darkMode ? "text-gray-300" : "text-gray-700"
                       }`}
                     >
-                      Start Time
+                      Startzeit
                     </label>
                     <DatePicker
                       selected={formData.startTime}
@@ -495,7 +502,7 @@ const PlateTrackingPage = () => {
                       darkMode ? "text-gray-300" : "text-gray-700"
                     }`}
                   >
-                    from <span className="text-red-500">*</span>
+                    von <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="from"
@@ -507,7 +514,7 @@ const PlateTrackingPage = () => {
                         : "border-gray-300 bg-white text-gray-900"
                     }`}
                   >
-                    <option value="">Select starting location</option>
+                    <option value="">Startort auswählen</option>
                     <option value="Boora">Boora</option>
                     <option value="Hassona">Hassona</option>
                     <option value="Probefahrt">Probefahrt</option>
@@ -536,7 +543,7 @@ const PlateTrackingPage = () => {
                       darkMode ? "text-gray-300" : "text-gray-700"
                     }`}
                   >
-                    Destination <span className="text-red-500">*</span>
+                    Zielort <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="destination"
@@ -548,7 +555,7 @@ const PlateTrackingPage = () => {
                         : "border-gray-300 bg-white text-gray-900"
                     }`}
                   >
-                    <option value="">Select destination</option>
+                    <option value=""> Zielort auswählen</option>
                     <option value="Boora">Boora</option>
                     <option value="Hassona">Hassona</option>
                     <option value="Toni">Toni</option>
@@ -584,14 +591,14 @@ const PlateTrackingPage = () => {
                       darkMode ? "text-gray-300" : "text-gray-700"
                     }`}
                   >
-                    Notes
+                    Notizen
                   </label>
                   <input
                     type="text"
                     name="notes"
                     value={formData.notes}
                     onChange={handleInputChange}
-                    placeholder="Any additional notes"
+                    placeholder="Zusätzliche Notizen"
                     className={`w-full px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                       darkMode
                         ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
@@ -606,7 +613,7 @@ const PlateTrackingPage = () => {
                       darkMode ? "text-gray-300" : "text-gray-700"
                     }`}
                   >
-                    Employee Name
+                    Name des Mitarbeiters
                   </label>
                   <input
                     type="text"
@@ -633,7 +640,7 @@ const PlateTrackingPage = () => {
                     darkMode ? "focus:ring-offset-gray-800" : ""
                   }`}
                 >
-                  Log Plate Usage
+                  Nummernschildnutzung speichern
                 </button>
               </div>
             </form>
@@ -653,7 +660,7 @@ const PlateTrackingPage = () => {
               }`}
             >
               <FiCalendar className="inline mr-2 text-blue-500" />
-              Plate Usage Report
+              Bericht zur Nummernschildnutzung
             </h2>
 
             <div
@@ -666,7 +673,7 @@ const PlateTrackingPage = () => {
                   darkMode ? "text-gray-300" : "text-blue-800"
                 }`}
               >
-                Report Filters
+                Berichtfilter
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -677,7 +684,7 @@ const PlateTrackingPage = () => {
                       darkMode ? "text-gray-300" : "text-gray-700"
                     }`}
                   >
-                    Start Date
+                    Startdatum
                   </label>
                   <DatePicker
                     selected={reportFilters.startDate}
@@ -702,7 +709,7 @@ const PlateTrackingPage = () => {
                       darkMode ? "text-gray-300" : "text-gray-700"
                     }`}
                   >
-                    End Date
+                    Enddatum
                   </label>
                   <DatePicker
                     selected={reportFilters.endDate}
@@ -729,7 +736,7 @@ const PlateTrackingPage = () => {
                       darkMode ? "text-gray-300" : "text-gray-700"
                     }`}
                   >
-                    Plate Number
+                    Nummernschild
                   </label>
                   <select
                     value={reportFilters.plateNumber}
@@ -775,7 +782,7 @@ const PlateTrackingPage = () => {
                   }`}
                 >
                   <FiDownload className="mr-1 sm:mr-2" />
-                  Generate Report
+                  Bericht erstellen
                 </button>
               </div>
             </div>
@@ -796,21 +803,21 @@ const PlateTrackingPage = () => {
                             darkMode ? "text-gray-300" : "text-gray-500"
                           }`}
                         >
-                          Plate
+                          Nummernschild
                         </th>
                         <th
                           className={`px-3 py-2 sm:px-6 sm:py-3 text-left text-xs sm:text-sm font-medium uppercase tracking-wider ${
                             darkMode ? "text-gray-300" : "text-gray-500"
                           }`}
                         >
-                          Employee
+                          Mitarbeiter
                         </th>
                         <th
                           className={`px-3 py-2 sm:px-6 sm:py-3 text-left text-xs sm:text-sm font-medium uppercase tracking-wider ${
                             darkMode ? "text-gray-300" : "text-gray-500"
                           }`}
                         >
-                          From
+                          Von
                         </th>
 
                         <th
@@ -818,35 +825,35 @@ const PlateTrackingPage = () => {
                             darkMode ? "text-gray-300" : "text-gray-500"
                           }`}
                         >
-                          Destination
+                          Ziel
                         </th>
                         <th
                           className={`px-3 py-2 sm:px-6 sm:py-3 text-left text-xs sm:text-sm font-medium uppercase tracking-wider ${
                             darkMode ? "text-gray-300" : "text-gray-500"
                           }`}
                         >
-                          Start Time
+                          Startzeit
                         </th>
                         <th
                           className={`px-3 py-2 sm:px-6 sm:py-3 text-left text-xs sm:text-sm font-medium uppercase tracking-wider ${
                             darkMode ? "text-gray-300" : "text-gray-500"
                           }`}
                         >
-                          End Time
+                          Endzeit
                         </th>
                         <th
                           className={`px-3 py-2 sm:px-6 sm:py-3 text-left text-xs sm:text-sm font-medium uppercase tracking-wider ${
                             darkMode ? "text-gray-300" : "text-gray-500"
                           }`}
                         >
-                          Duration
+                          Dauer
                         </th>
                         <th
                           className={`px-3 py-2 sm:px-6 sm:py-3 text-left text-xs sm:text-sm font-medium uppercase tracking-wider ${
                             darkMode ? "text-gray-300" : "text-gray-500"
                           }`}
                         >
-                          Actions
+                          Aktionen
                         </th>
                       </tr>
                     </thead>
@@ -936,7 +943,7 @@ const PlateTrackingPage = () => {
                                 <button
                                   onClick={() => handleDeleteEntry(usage._id)}
                                   className="hover:text-red-500 transition-colors"
-                                  title="Delete entry"
+                                  title="Eintrag löschen"
                                 >
                                   <FiTrash2 />
                                 </button>
@@ -952,8 +959,8 @@ const PlateTrackingPage = () => {
                               darkMode ? "text-gray-400" : "text-gray-500"
                             }`}
                           >
-                            No plate usage records found for the selected
-                            filters
+                            Keine Nummernschild-Datensätze für die ausgewählten
+                            Filter gefunden
                           </td>
                         </tr>
                       )}
@@ -978,7 +985,7 @@ const PlateTrackingPage = () => {
               }`}
             >
               <FiClock className="inline mr-2 text-blue-500" />
-              Currently Active Plates
+              Aktuell aktive Nummernschilder
             </h2>
 
             {plateUsage.filter((u) => u.status === "active").length > 0 ? (
@@ -1032,7 +1039,7 @@ const PlateTrackingPage = () => {
                               }`}
                             >
                               <FiClock className="inline mr-1" />
-                              {startTime.toLocaleTimeString()} - Active for{" "}
+                              {startTime.toLocaleTimeString()} - Aktiv seit{" "}
                               {durationHours} hours
                             </p>
                           </div>
@@ -1044,7 +1051,7 @@ const PlateTrackingPage = () => {
                                 : "bg-green-100 text-green-800 hover:bg-green-200"
                             }`}
                           >
-                            Mark Returned
+                            Als zurückgegeben markieren
                           </button>
                         </div>
                         {usage.from && (
@@ -1053,7 +1060,7 @@ const PlateTrackingPage = () => {
                               darkMode ? "text-gray-400" : "text-gray-500"
                             }`}
                           >
-                            <span className="font-medium">from:</span>{" "}
+                            <span className="font-medium">Von:</span>{" "}
                             {usage.from}
                           </p>
                         )}
@@ -1068,7 +1075,7 @@ const PlateTrackingPage = () => {
                 }`}
               >
                 <p className="text-sm sm:text-base">
-                  No plates are currently in use
+                  Derzeit sind keine Nummernschilder im Einsatz.
                 </p>
               </div>
             )}

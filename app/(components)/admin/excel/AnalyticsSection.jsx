@@ -11,7 +11,7 @@ const AnalyticsSection = ({ dailyData, categoryData }) => {
     <div className="space-y-8">
       <div>
         <h3 className="text-lg font-medium text-gray-900 mb-4">Cashflow</h3>
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
+        <div className="bg-lime-200 p-4 rounded-lg border border-gray-200">
           <CashflowChart data={dailyData} />
         </div>
       </div>
@@ -21,14 +21,14 @@ const AnalyticsSection = ({ dailyData, categoryData }) => {
           <h3 className="text-lg font-medium text-gray-900 mb-4">
             Saldoverlauf
           </h3>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="bg-lime-200 p-4 rounded-lg border border-gray-200">
             <BalanceTrendChart data={dailyData} />
           </div>
         </div>
 
         <div>
           <h3 className="text-lg font-medium text-gray-900 mb-4">Kategorien</h3>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="bg-lime-200 p-4 rounded-lg border border-gray-200">
             <CategoriesChart data={categoryData} />
           </div>
         </div>

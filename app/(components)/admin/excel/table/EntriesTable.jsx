@@ -18,7 +18,7 @@ const EntriesTable = ({
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+        <thead className="bg-lime-200">
           <tr>
             <TableHeader>Datum</TableHeader>
             <TableHeader>Beschreibung</TableHeader>
@@ -29,7 +29,7 @@ const EntriesTable = ({
             <TableHeader align="right">Aktionen</TableHeader>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-lime-100  divide-y divide-gray-200">
           {entries.length > 0 ? (
             entries.map((entry) => (
               <EntryRow

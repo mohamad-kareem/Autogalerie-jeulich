@@ -2,9 +2,8 @@
 "use client";
 
 import React from "react";
-import { FiPrinter, FiDownload } from "react-icons/fi";
 
-const EntryDetails = ({ entry, onPrint, onExport }) => {
+const EntryDetails = ({ entry }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -16,17 +15,6 @@ const EntryDetails = ({ entry, onPrint, onExport }) => {
           <DetailItem label="Kategorie" value={entry.category} />
           <DetailItem label="Steuersatz" value={entry.tax} />
         </DetailGrid>
-      </div>
-      <div>
-        <h4 className="text-sm font-medium text-gray-900 mb-2">Aktionen</h4>
-        <div className="flex space-x-3">
-          <ActionButton onClick={onPrint} icon={<FiPrinter />} text="Drucken" />
-          <ActionButton
-            onClick={() => onExport("excel")}
-            icon={<FiDownload />}
-            text="Excel Export"
-          />
-        </div>
       </div>
     </div>
   );

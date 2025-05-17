@@ -17,7 +17,7 @@ const EntryRow = ({
   return (
     <React.Fragment>
       <tr
-        className="hover:bg-gray-50 cursor-pointer"
+        className="hover:bg-lime-200 cursor-pointer"
         onClick={() => toggleExpand(entry._id)}
       >
         <TableCell>

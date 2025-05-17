@@ -29,24 +29,24 @@ export default function TrelloClone() {
   const [isMobile, setIsMobile] = useState(false);
   const menuRef = useRef(null);
 
-  // Vibrant color palette with better contrast
+  // Dark orange gradient color palette
   const colors = {
-    background: "bg-gradient-to-br from-indigo-900 to-gray-900",
-    columnBg: "bg-gray-800/80",
-    columnHeaderBg: "bg-gray-800/90",
-    cardBg: "bg-gray-700/80",
-    cardHover: "hover:bg-gray-700 ",
-    cardBorder: "border-gray-600",
-    primary: "bg-indigo-600 hover:bg-indigo-500",
+    background: "bg-gradient-to-br from-amber-800 to-gray-700",
+    columnBg: "bg-[#2c2a27]/90", // deep warm gray-brown blend
+    columnHeaderBg: "bg-[#3b3732]/95", // richer contrast for headers
+    cardBg: "bg-[#443f38]/90", // mid-tone card background
+    cardHover: "hover:bg-[#504942]", // subtle hover contrast
+    cardBorder: "border-[#5b5246]", // softer brown-gray border
+    primary: "bg-amber-600 hover:bg-amber-500",
     secondary: "bg-gray-600 hover:bg-gray-500",
-    danger: "bg-rose-600 hover:bg-rose-500",
-    success: "bg-emerald-600 hover:bg-emerald-500",
+    danger: "bg-red-600 hover:bg-red-500",
+    success: "bg-orange-600 hover:bg-orange-500",
     text: "text-gray-100",
     textSecondary: "text-gray-300",
-    accent: "border-indigo-400",
-    completed: "border-emerald-500 ",
+    accent: "border-amber-400",
+    completed: "border-orange-500",
     scrollbar:
-      "scrollbar-thumb-red-500 scrollbar-track-gray-800 scrollbar-thin",
+      "scrollbar-thumb-amber-500 scrollbar-track-gray-800 scrollbar-thin",
   };
 
   useEffect(() => {
@@ -59,7 +59,6 @@ export default function TrelloClone() {
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
 
-  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -76,12 +75,10 @@ export default function TrelloClone() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch admins
         const adminResponse = await fetch("/api/admins");
         const adminData = await adminResponse.json();
         setAdmins(adminData);
 
-        // Fetch board
         const boardResponse = await fetch("/api/board");
         const boardData = await boardResponse.json();
         setBoard(boardData);
@@ -123,13 +120,11 @@ export default function TrelloClone() {
       return;
     }
 
-    // Handle column drag
     if (type === "COLUMN") {
       const newColumns = [...board.columns];
       const [removed] = newColumns.splice(source.index, 1);
       newColumns.splice(destination.index, 0, removed);
 
-      // Update positions
       newColumns.forEach((column, index) => {
         column.position = index;
       });
@@ -139,7 +134,6 @@ export default function TrelloClone() {
       return;
     }
 
-    // Handle task drag
     const newColumns = [...board.columns];
     const sourceColIndex = newColumns.findIndex(
       (col) => col.name === source.droppableId
@@ -153,23 +147,16 @@ export default function TrelloClone() {
     const sourceTasks = [...sourceCol.tasks];
     const destTasks = destCol ? [...destCol.tasks] : [];
 
-    // Remove from source
     const [movedTask] = sourceTasks.splice(source.index, 1);
-
-    // Update positions in source column
     sourceTasks.forEach((task, index) => {
       task.position = index;
     });
 
-    // Insert into destination
     destTasks.splice(destination.index, 0, movedTask);
-
-    // Update positions in destination column
     destTasks.forEach((task, index) => {
       task.position = index;
     });
 
-    // Update the columns
     newColumns[sourceColIndex] = {
       ...sourceCol,
       tasks: sourceTasks,
@@ -182,10 +169,7 @@ export default function TrelloClone() {
       };
     }
 
-    // Optimistic update
     setBoard({ ...board, columns: newColumns });
-
-    // Update in database
     await updateBoard("UPDATE_COLUMNS", { columns: newColumns });
   };
 
@@ -253,7 +237,6 @@ export default function TrelloClone() {
       name: newName,
     });
 
-    // Add all tasks from the copied column
     for (const task of columnToCopy.tasks) {
       await updateBoard("ADD_TASK", {
         columnName: newName,
@@ -285,7 +268,6 @@ export default function TrelloClone() {
       a.title.localeCompare(b.title)
     );
 
-    // Update positions
     sortedTasks.forEach((task, index) => {
       task.position = index;
     });
@@ -327,7 +309,7 @@ export default function TrelloClone() {
         className={`min-h-screen ${colors.background} ${colors.text} p-4 flex items-center justify-center`}
       >
         <div className="animate-pulse flex flex-col items-center">
-          <div className="h-8 w-8 bg-indigo-600 rounded-full mb-2"></div>
+          <div className="h-8 w-8 bg-amber-600 rounded-full mb-2"></div>
           <div>Loading board...</div>
         </div>
       </div>
@@ -340,7 +322,7 @@ export default function TrelloClone() {
         className={`min-h-screen ${colors.background} ${colors.text} p-4 flex items-center justify-center`}
       >
         <div className="text-center">
-          <div className="text-rose-500 mb-2">⚠️</div>
+          <div className="text-red-500 mb-2">⚠️</div>
           <div>Failed to load board. Please try again.</div>
         </div>
       </div>
@@ -352,16 +334,14 @@ export default function TrelloClone() {
       className={`min-h-screen ${colors.background} ${colors.text} p-2 pb-8`}
     >
       {/* Header with Admin Avatars */}
-      <div className=" sticky top-0 z-10 mb-6  bg-gray-850/95 backdrop-blur-sm rounded-lg shadow-lg border-b border-gray-700">
+      <div className="sticky top-0 z-10 mb-6 bg-gray-850/95 backdrop-blur-sm rounded-lg shadow-lg border-b border-gray-700">
         <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto relative flex flex-col items-center md:h-16">
-          {/* Centered H1 */}
           <div className="w-full flex justify-center">
-            <h1 className="text-xl md:text-2xl font-bold text-indigo-300 text-center">
+            <h1 className="text-xl md:text-2xl font-bold text-amber-300 text-center">
               بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيم
             </h1>
           </div>
 
-          {/* Avatars on right (top-right on large screens, below on small screens) */}
           <div className="flex -space-x-2 mt-4 md:mt-0 md:absolute md:top-1/2 md:left-4 md:-translate-y-1/2">
             {admins.map((admin, index) => (
               <div
@@ -372,7 +352,7 @@ export default function TrelloClone() {
                 <img
                   src={admin.image || "/default-avatar.png"}
                   alt={admin.name}
-                  className="w-8 h-8 rounded-full border-2 border-gray-700 hover:border-indigo-500 transition-all"
+                  className="w-8 h-8 rounded-full border-2 border-gray-700 hover:border-amber-500 transition-all"
                 />
                 <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity">
                   {admin.name}
@@ -410,23 +390,21 @@ export default function TrelloClone() {
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`${colors.columnBg} w-64 min-w-[16rem] flex-shrink-0 rounded-xl shadow-lg border ${colors.cardBorder} relative transition-all hover:shadow-indigo-500/30`}
+                            className={`${colors.columnBg} w-80 min-w-[20rem] flex-shrink-0 rounded-xl shadow-lg border ${colors.cardBorder} relative transition-all hover:shadow-amber-500/30`}
                             style={{
                               ...provided.draggableProps.style,
                               height: "fit-content",
                             }}
                           >
-                            {/* Column Header - now draggable */}
+                            {/* Column Header */}
                             <div
                               {...provided.dragHandleProps}
                               className={`${colors.columnHeaderBg} p-3 rounded-t-lg flex justify-between items-center sticky top-0 z-10 border-b ${colors.cardBorder}`}
                             >
-                              <h2 className="text-sm font-semibold truncate max-w-[140px] text-indigo-200">
-                                {column.name}{" "}
-                                <span className="text-gray-400">
-                                  ({column.tasks.length})
-                                </span>
+                              <h2 className="text-sm font-semibold truncate max-w-[180px] text-amber-200">
+                                {column.name}
                               </h2>
+
                               <div className="relative">
                                 <button
                                   onClick={() =>
@@ -490,7 +468,7 @@ export default function TrelloClone() {
                                     <hr className="my-1 border-gray-700" />
                                     <button
                                       onClick={() => deleteColumn(column.name)}
-                                      className="flex items-center w-full p-2 text-rose-500 hover:bg-gray-800 text-sm rounded"
+                                      className="flex items-center w-full p-2 text-red-500 hover:bg-gray-800 text-sm rounded"
                                     >
                                       <FiTrash2 className="mr-2" size={14} />{" "}
                                       Delete list
@@ -506,7 +484,7 @@ export default function TrelloClone() {
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.droppableProps}
-                                  className={`p-2 overflow-y-auto ${colors.scrollbar}`}
+                                  className={`p-3 overflow-y-auto ${colors.scrollbar}`}
                                   style={{
                                     minHeight: "40px",
                                     maxHeight: "calc(100vh - 180px)",
@@ -527,7 +505,7 @@ export default function TrelloClone() {
                                             {...provided.dragHandleProps}
                                             className={`${
                                               colors.cardBg
-                                            } p-3 rounded-lg mb-2 border transition-all ${
+                                            } p-3 rounded-lg mb-3 border transition-all ${
                                               task.completed
                                                 ? colors.completed
                                                 : colors.cardBorder
@@ -540,7 +518,7 @@ export default function TrelloClone() {
                                               <div className="space-y-3">
                                                 <input
                                                   type="text"
-                                                  className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} focus:ring-1 focus:ring-indigo-500 focus:outline-none`}
+                                                  className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} focus:ring-1 focus:ring-amber-500 focus:outline-none`}
                                                   value={editingTask.title}
                                                   onChange={(e) =>
                                                     setEditingTask({
@@ -551,7 +529,7 @@ export default function TrelloClone() {
                                                   autoFocus
                                                 />
                                                 <textarea
-                                                  className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} focus:ring-1 focus:ring-indigo-500 focus:outline-none`}
+                                                  className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} focus:ring-1 focus:ring-amber-500 focus:outline-none`}
                                                   value={
                                                     editingTask.description
                                                   }
@@ -593,54 +571,37 @@ export default function TrelloClone() {
                                             ) : (
                                               <>
                                                 <div className="relative group">
-                                                  {/* Checkbox - top-left */}
-                                                  <button
-                                                    onClick={() =>
-                                                      toggleComplete(
-                                                        column.name,
-                                                        task._id
-                                                      )
-                                                    }
-                                                    className="absolute top-2 left-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                                  >
-                                                    <FiCheck
-                                                      size={18}
-                                                      className={`rounded-full ${
-                                                        task.completed
-                                                          ? "bg-emerald-500 text-white"
-                                                          : "text-gray-400 hover:text-emerald-400 border border-gray-400 hover:border-emerald-400"
-                                                      }`}
-                                                    />
-                                                  </button>
-
-                                                  {/* Edit + Delete - top-right */}
-                                                  <div className="absolute top-2 right-0.5 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                  {/* ✅ Check Button: only shows on hover or if completed */}
+                                                  {(task.completed || true) && (
                                                     <button
                                                       onClick={() =>
-                                                        startEditingTask(
-                                                          column.name,
-                                                          task
-                                                        )
-                                                      }
-                                                      className="text-indigo-400 hover:text-indigo-300 "
-                                                    >
-                                                      <FiEdit2 size={14} />
-                                                    </button>
-                                                    <button
-                                                      onClick={() =>
-                                                        deleteTask(
+                                                        toggleComplete(
                                                           column.name,
                                                           task._id
                                                         )
                                                       }
-                                                      className="text-rose-400 hover:text-rose-300 "
+                                                      className={`absolute top-2 left-1 z-10 w-5 h-5 flex items-center justify-center rounded-full border-2
+        transition-all duration-200
+        ${
+          task.completed
+            ? "border-orange-500 bg-orange-500 text-white"
+            : "border-gray-500 text-gray-400 opacity-0 group-hover:opacity-100 hover:border-orange-400 hover:text-orange-400"
+        }`}
                                                     >
-                                                      <FiTrash2 size={14} />
+                                                      {task.completed && (
+                                                        <FiCheck size={12} />
+                                                      )}
                                                     </button>
-                                                  </div>
+                                                  )}
 
-                                                  {/* Content with animated padding */}
-                                                  <div className="transition-all duration-300  pr-2 group-hover:pl-8 group-hover:pr-6">
+                                                  {/* Main content shifted only when hovered or completed */}
+                                                  <div
+                                                    className={`transition-all duration-300 pr-2 ${
+                                                      task.completed
+                                                        ? "pl-8"
+                                                        : "group-hover:pl-8"
+                                                    }`}
+                                                  >
                                                     <h3
                                                       className={`text-sm font-medium ${
                                                         task.completed
@@ -674,7 +635,7 @@ export default function TrelloClone() {
                                     >
                                       <input
                                         type="text"
-                                        className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} mb-2 focus:ring-1 focus:ring-indigo-500 focus:outline-none`}
+                                        className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} mb-2 focus:ring-1 focus:ring-amber-500 focus:outline-none`}
                                         placeholder="Task title"
                                         value={newTask.title}
                                         onChange={(e) =>
@@ -686,7 +647,7 @@ export default function TrelloClone() {
                                         autoFocus
                                       />
                                       <textarea
-                                        className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} focus:ring-1 focus:ring-indigo-500 focus:outline-none`}
+                                        className={`w-full p-2 text-sm rounded ${colors.columnBg} ${colors.text} border ${colors.cardBorder} focus:ring-1 focus:ring-amber-500 focus:outline-none`}
                                         placeholder="Description (optional)"
                                         rows={2}
                                         value={newTask.description}
@@ -742,7 +703,7 @@ export default function TrelloClone() {
                   {provided.placeholder}
 
                   {/* Add New List Section */}
-                  <div className="min-w-[16rem] w-64">
+                  <div className="min-w-[20rem] w-80">
                     {showAddListInput ? (
                       <div
                         className={`${colors.columnBg} border ${colors.cardBorder} p-3 rounded-lg shadow-md`}
@@ -750,7 +711,7 @@ export default function TrelloClone() {
                         <input
                           type="text"
                           placeholder="Enter list title..."
-                          className={`w-full p-2 mb-2 text-sm ${colors.columnBg} ${colors.text} rounded border ${colors.cardBorder} focus:ring-1 focus:ring-indigo-500 focus:outline-none`}
+                          className={`w-full p-2 mb-2 text-sm ${colors.columnBg} ${colors.text} rounded border ${colors.cardBorder} focus:ring-1 focus:ring-amber-500 focus:outline-none`}
                           value={newListName}
                           onChange={(e) => setNewListName(e.target.value)}
                           autoFocus
@@ -775,7 +736,7 @@ export default function TrelloClone() {
                         onClick={() => setShowAddListInput(true)}
                         className={`w-full ${colors.columnBg} border-2 border-dashed ${colors.cardBorder} ${colors.text} p-3 rounded-lg hover:bg-gray-700/50 transition-all flex items-center justify-center space-x-2 h-12`}
                       >
-                        <FiPlus size={16} className="text-indigo-400" />
+                        <FiPlus size={16} className="text-amber-400" />
                         <span className="text-sm">Add another list</span>
                       </button>
                     )}

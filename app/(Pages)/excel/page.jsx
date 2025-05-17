@@ -1,6 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
-import { FiRefreshCw, FiPlus, FiMoon, FiSun } from "react-icons/fi";
+import {
+  FiRefreshCw,
+  FiPlus,
+  FiMoon,
+  FiSun,
+  FiDownload,
+  FiPrinter,
+} from "react-icons/fi";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import SummaryCards from "@/app/(components)/admin/excel/SummaryCards";
@@ -40,8 +47,6 @@ const CashBookPage = () => {
   });
 
   useEffect(() => {
-    setDarkMode(false);
-
     if (status === "authenticated") {
       fetchEntries();
     }
@@ -49,12 +54,12 @@ const CashBookPage = () => {
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
+    document.documentElement.classList.toggle("dark");
   };
 
   const fetchEntries = async () => {
     try {
       setState((prev) => ({ ...prev, isLoading: true }));
-
       const response = await fetch("/api/entries", {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -83,7 +88,6 @@ const CashBookPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!session?.user?.id) {
       toast.error("Authentication required");
       return;
@@ -114,12 +118,7 @@ const CashBookPage = () => {
         throw new Error(error.message);
       }
 
-      toast.success(`Entry ${editId ? "updated" : "created"} successfully`, {
-        style: {
-          background: darkMode ? "#10b981" : "#16a34a",
-          color: "#fff",
-        },
-      });
+      toast.success(`Entry ${editId ? "updated" : "created"} successfully`);
       fetchEntries();
       resetForm();
     } catch (error) {
@@ -163,7 +162,7 @@ const CashBookPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Möchten Sie diesen Eintrag wirklich löschen?")) return;
+    if (!confirm("Are you sure you want to delete this entry?")) return;
 
     try {
       const response = await fetch(`/api/entries/${id}`, {
@@ -177,12 +176,7 @@ const CashBookPage = () => {
         throw new Error(error.message);
       }
 
-      toast.success("Entry deleted successfully", {
-        style: {
-          background: darkMode ? "#10b981" : "#16a34a",
-          color: "#fff",
-        },
-      });
+      toast.success("Entry deleted successfully");
       fetchEntries();
     } catch (error) {
       toast.error(error.message);
@@ -198,10 +192,7 @@ const CashBookPage = () => {
 
   const handleExport = () => {
     const { filterMonth, filterYear, entriesWithBalance } = calculateData();
-    exportToExcel(
-      entriesWithBalance,
-      `kassenbuch_${filterMonth}_${filterYear}`
-    );
+    exportToExcel(entriesWithBalance, `cashbook_${filterMonth}_${filterYear}`);
   };
 
   const handlePrint = () => {
@@ -270,7 +261,7 @@ const CashBookPage = () => {
     }, []);
 
     const categoryData = entriesWithBalance.reduce((acc, entry) => {
-      const category = entry.category || "Sonstiges";
+      const category = entry.category || "Other";
       const existingCat = acc.find((item) => item.name === category);
       const amount = (entry.income || 0) - (entry.expense || 0);
 
@@ -294,20 +285,8 @@ const CashBookPage = () => {
 
   if (state.isLoading || status === "loading") {
     return (
-      <div
-        className={`min-h-screen ${
-          darkMode ? "bg-green-900" : "bg-green-50"
-        } p-4 md:p-8 mt-10`}
-      >
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center items-center h-64">
-            <div
-              className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${
-                darkMode ? "border-emerald-300" : "border-green-500"
-              }`}
-            ></div>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lime-400"></div>
       </div>
     );
   }
@@ -322,81 +301,214 @@ const CashBookPage = () => {
   return (
     <div
       className={`min-h-screen transition-colors duration-300 ${
-        darkMode
-          ? "bg-gradient-to-br from-green-800 to-green-950"
-          : "bg-gradient-to-br from-green-300 to-green-900"
-      } p-4`}
+        darkMode ? "bg-gradient-to-br from-gray-900 to-gray-800" : "bg-gray-50"
+      }`}
     >
-      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
-        {/* Header with dark mode toggle */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
-          <div>
-            <h1
-              className={`text-3xl font-bold ${
-                darkMode ? "text-emerald-100" : "text-green-800"
-              }`}
-            >
-              Kassenbuch
-            </h1>
-            <p
-              className={`mt-1 ${
-                darkMode ? "text-emerald-200" : "text-green-600"
-              }`}
-            >
-              {new Date(
-                state.filterYear,
-                state.filterMonth - 1,
-                1
-              ).toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
-            </p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <header className="mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <h1
+                className={`text-3xl font-bold ${
+                  darkMode ? "text-lime-400" : "text-gray-900"
+                }`}
+              >
+                Cash Book
+              </h1>
+              <div className="mt-2 flex items-center gap-3 text-sm">
+                <span className={darkMode ? "text-gray-300" : "text-gray-600"}>
+                  {new Date(
+                    state.filterYear,
+                    state.filterMonth - 1,
+                    1
+                  ).toLocaleDateString("en-US", {
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </span>
+                <button
+                  onClick={fetchEntries}
+                  className={`p-1.5 rounded-full ${
+                    darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"
+                  }`}
+                >
+                  <FiRefreshCw
+                    className={darkMode ? "text-lime-400" : "text-gray-600"}
+                  />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <button
+                onClick={toggleDarkMode}
+                className={`p-2 rounded-full ${
+                  darkMode
+                    ? "bg-gray-800 text-lime-400"
+                    : "bg-gray-200 text-gray-700"
+                }`}
+              >
+                {darkMode ? (
+                  <FiSun className="h-5 w-5" />
+                ) : (
+                  <FiMoon className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
-          <div className="mt-10">
-            <button
-              onClick={toggleDarkMode}
-              className={`p-2 rounded-full ${
-                darkMode
-                  ? "bg-emerald-700 hover:bg-emerald-600 text-emerald-50"
-                  : "bg-green-600 hover:bg-green-700 text-white"
-              }`}
-              aria-label={
-                darkMode ? "Switch to light mode" : "Switch to dark mode"
-              }
-            >
-              {darkMode ? (
-                <FiSun className="h-5 w-5" />
-              ) : (
-                <FiMoon className="h-5 w-5" />
-              )}
-            </button>
+        </header>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+          <div
+            className={`p-5 rounded-xl ${
+              darkMode
+                ? "bg-gray-800/50 backdrop-blur-sm border border-gray-700"
+                : "bg-white shadow-sm border border-gray-200"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <h3
+                className={`text-sm font-medium ${
+                  darkMode ? "text-gray-300" : "text-gray-500"
+                }`}
+              >
+                Total Income
+              </h3>
+              <span
+                className={`text-xl font-bold ${
+                  darkMode ? "text-lime-400" : "text-gray-900"
+                }`}
+              >
+                {totalIncome.toLocaleString("de-DE", {
+                  style: "currency",
+                  currency: "EUR",
+                })}
+              </span>
+            </div>
+          </div>
+          <div
+            className={`p-5 rounded-xl ${
+              darkMode
+                ? "bg-gray-800/50 backdrop-blur-sm border border-gray-700"
+                : "bg-white shadow-sm border border-gray-200"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <h3
+                className={`text-sm font-medium ${
+                  darkMode ? "text-gray-300" : "text-gray-500"
+                }`}
+              >
+                Total Expense
+              </h3>
+              <span
+                className={`text-xl font-bold ${
+                  darkMode ? "text-rose-400" : "text-gray-900"
+                }`}
+              >
+                {totalExpense.toLocaleString("de-DE", {
+                  style: "currency",
+                  currency: "EUR",
+                })}
+              </span>
+            </div>
+          </div>
+          <div
+            className={`p-5 rounded-xl ${
+              darkMode
+                ? "bg-gray-800/50 backdrop-blur-sm border border-gray-700"
+                : "bg-white shadow-sm border border-gray-200"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <h3
+                className={`text-sm font-medium ${
+                  darkMode ? "text-gray-300" : "text-gray-500"
+                }`}
+              >
+                Current Balance
+              </h3>
+              <span
+                className={`text-xl font-bold ${
+                  currentBalance >= 0
+                    ? darkMode
+                      ? "text-lime-400"
+                      : "text-gray-900"
+                    : darkMode
+                    ? "text-rose-400"
+                    : "text-rose-600"
+                }`}
+              >
+                {currentBalance.toLocaleString("de-DE", {
+                  style: "currency",
+                  currency: "EUR",
+                })}
+              </span>
+            </div>
           </div>
         </div>
 
-        <SummaryCards
-          totalIncome={totalIncome}
-          totalExpense={totalExpense}
-          currentBalance={currentBalance}
-          darkMode={darkMode}
-        />
-
         {/* Main Content */}
         <div
-          className={`rounded-xl shadow-md overflow-hidden mb-8 transition-colors duration-300 ${
-            darkMode ? "bg-green-100 border border-green-200" : "bg-white"
+          className={`rounded-xl ${
+            darkMode
+              ? "bg-gray-800/50 backdrop-blur-sm border border-gray-700"
+              : "bg-white shadow-sm border border-gray-200"
           }`}
         >
-          <Tabs
-            activeTab={state.activeTab}
-            setActiveTab={(tab) =>
-              setState((prev) => ({ ...prev, activeTab: tab }))
-            }
-            darkMode={darkMode}
-          />
+          {/* Tabs */}
+          <div className="border-b border-gray-700">
+            <nav className="flex -mb-px">
+              <button
+                onClick={() =>
+                  setState((prev) => ({ ...prev, activeTab: "einträge" }))
+                }
+                className={`py-4 px-6 text-sm font-medium ${
+                  state.activeTab === "einträge"
+                    ? darkMode
+                      ? "text-lime-400 border-lime-400"
+                      : "text-gray-900 border-gray-900"
+                    : darkMode
+                    ? "text-gray-400 hover:text-gray-300"
+                    : "text-gray-500 hover:text-gray-700"
+                } border-b-2 ${
+                  state.activeTab === "einträge"
+                    ? "border-b-2"
+                    : "border-transparent"
+                }`}
+              >
+                Entries
+              </button>
+              <button
+                onClick={() =>
+                  setState((prev) => ({ ...prev, activeTab: "analytics" }))
+                }
+                className={`py-4 px-6 text-sm font-medium ${
+                  state.activeTab === "analytics"
+                    ? darkMode
+                      ? "text-lime-400 border-lime-400"
+                      : "text-gray-900 border-gray-900"
+                    : darkMode
+                    ? "text-gray-400 hover:text-gray-300"
+                    : "text-gray-500 hover:text-gray-700"
+                } border-b-2 ${
+                  state.activeTab === "analytics"
+                    ? "border-b-2"
+                    : "border-transparent"
+                }`}
+              >
+                Analytics
+              </button>
+            </nav>
+          </div>
 
           <div className="p-6">
             {state.activeTab === "einträge" && (
               <>
                 {/* Filters and Actions */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                   <Filters
                     filterMonth={state.filterMonth}
                     setFilterMonth={(month) =>
@@ -412,22 +524,47 @@ const CashBookPage = () => {
                     }
                     darkMode={darkMode}
                   />
-                  <button
-                    onClick={() =>
-                      setState((prev) => ({
-                        ...prev,
-                        isFormExpanded: !prev.isFormExpanded,
-                      }))
-                    }
-                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm ${
-                      darkMode
-                        ? "bg-emerald-700 hover:bg-emerald-800 text-white"
-                        : "bg-green-600 hover:bg-green-700 text-white"
-                    }`}
-                  >
-                    <FiPlus className="-ml-1 mr-2 h-4 w-4" />
-                    Neuer Eintrag
-                  </button>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleExport}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm ${
+                        darkMode
+                          ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                          : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                      }`}
+                    >
+                      <FiDownload className="h-4 w-4" />
+                      Export
+                    </button>
+                    <button
+                      onClick={handlePrint}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm ${
+                        darkMode
+                          ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                          : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                      }`}
+                    >
+                      <FiPrinter className="h-4 w-4" />
+                      Print
+                    </button>
+                    <button
+                      onClick={() =>
+                        setState((prev) => ({
+                          ...prev,
+                          isFormExpanded: !prev.isFormExpanded,
+                        }))
+                      }
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm ${
+                        darkMode
+                          ? "bg-lime-600 hover:bg-lime-500 text-white"
+                          : "bg-lime-600 hover:bg-lime-700 text-white"
+                      }`}
+                    >
+                      <FiPlus className="h-4 w-4" />
+                      New Entry
+                    </button>
+                  </div>
                 </div>
 
                 {state.isFormExpanded && (
@@ -453,8 +590,6 @@ const CashBookPage = () => {
                   toggleExpandEntry={toggleExpandEntry}
                   handleEdit={handleEdit}
                   handleDelete={handleDelete}
-                  handlePrint={handlePrint}
-                  handleExport={handleExport}
                   isFormExpanded={state.isFormExpanded}
                   darkMode={darkMode}
                 />
