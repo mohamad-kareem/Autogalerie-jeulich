@@ -13,7 +13,7 @@ import {
   FiUserPlus,
   FiEdit,
   FiX,
-  FiUpload,
+  FiClock,
   FiCamera,
   FiMapPin,
   FiCalendar,
@@ -23,25 +23,47 @@ import toast from "react-hot-toast";
 
 const NavigationCard = ({ href, icon, title, description, accentColor }) => {
   const colorMap = {
-    red: "bg-red-200 text-red-600",
-    green: "bg-emerald-300 text-emerald-600",
-    purple: "bg-yellow-200 text-yellow-600",
-    blue: "bg-blue-200 text-blue-600",
-    indigo: "bg-indigo-200 text-indigo-600",
-    orange: "bg-purple-400 text-purple-900",
-    yellow: "bg-yellow-200 text-yellow-600",
-    gray: "bg-gray-200 text-gray-600",
+    red: "bg-red-100 text-red-700",
+    green: "bg-green-100 text-green-700",
+    blue: "bg-blue-100 text-blue-700",
+    yellow: "bg-yellow-100 text-yellow-700",
+    orange: "bg-orange-100 text-orange-700",
+    indigo: "bg-indigo-100 text-indigo-700",
+    purple: "bg-purple-100 text-purple-700",
+    pink: "bg-pink-100 text-pink-700",
+    teal: "bg-teal-100 text-teal-700",
+    cyan: "bg-cyan-100 text-cyan-700",
+    lime: "bg-lime-100 text-lime-700",
+    amber: "bg-amber-100 text-amber-700",
+    rose: "bg-rose-100 text-rose-700",
+    sky: "bg-sky-100 text-sky-700",
+    slate: "bg-slate-100 text-slate-700",
+    gray: "bg-gray-100 text-gray-700",
+    zinc: "bg-zinc-100 text-zinc-700",
+    neutral: "bg-neutral-100 text-neutral-700",
+    stone: "bg-stone-100 text-stone-700",
   };
 
   const gradientMap = {
-    red: "from-red-400 to-red-300",
-    green: "from-emerald-400 to-emerald-200",
-    purple: "from-yellow-300 to-yellow-200",
-    blue: "from-blue-300 to-blue-200",
-    indigo: "from-indigo-300 to-indigo-200",
-    orange: "from-purple-500 to-purple-300",
-    yellow: "from-black/20 to-black/50",
-    gray: "from-red-500 to-red-400",
+    red: "from-red-400 to-red-200",
+    green: "from-green-400 to-green-200",
+    blue: "from-blue-400 to-blue-200",
+    yellow: "from-yellow-400 to-yellow-200",
+    orange: "from-orange-400 to-orange-200",
+    indigo: "from-indigo-400 to-indigo-200",
+    purple: "from-purple-400 to-purple-200",
+    pink: "from-pink-400 to-pink-200",
+    teal: "from-teal-400 to-teal-200",
+    cyan: "from-cyan-400 to-cyan-200",
+    lime: "from-lime-400 to-lime-200",
+    amber: "from-amber-400 to-amber-200",
+    rose: "from-rose-400 to-rose-200",
+    sky: "from-sky-400 to-sky-200",
+    slate: "from-slate-400 to-slate-200",
+    gray: "from-gray-400 to-gray-200",
+    zinc: "from-zinc-400 to-zinc-200",
+    neutral: "from-neutral-400 to-neutral-200",
+    stone: "from-stone-400 to-stone-200",
   };
 
   return (
@@ -279,12 +301,12 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 pb-8 md:pb-12">
-      <div className="mx-auto max-w-7xl px-3 sm:px-4 py-6 md:py-8 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 pb-8 md:pb-12 ">
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto px-3 sm:px-4 py-6 md:py-8 lg:px-8">
         <div className="mb-6 md:mb-8 rounded-xl md:rounded-2xl bg-white p-4 md:p-6 shadow-sm backdrop-blur-sm">
           <div className="flex flex-col justify-between md:flex-row md:items-center">
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900 sm:text-2xl md:text-3xl">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 sm:text-2xl ">
                 Willkommen zurück,{" "}
                 <span className="text-red-900">{user.name.split(" ")[0]}</span>!
               </h1>
@@ -294,7 +316,7 @@ export default function Dashboard() {
               <div className="mt-2 h-0.5 md:h-1 w-12 md:w-16 rounded-full bg-gradient-to-br from-red-600 to-black/80"></div>
             </div>
 
-            <div className="mt-3 md:mt-4 flex items-center space-x-3 md:space-x-4 md:mt-0">
+            <div className="mt-3 md:mt-4 flex items-center space-x-3 md:space-x-4 ">
               <div className="hidden text-right md:block">
                 <p className="text-sm md:text-base font-medium text-gray-700">
                   {user.role}
@@ -375,28 +397,35 @@ export default function Dashboard() {
               icon={<FiCheckSquare />}
               title="Aufgaben"
               description="Aufgabenmanagement-System"
-              accentColor="yellow"
+              accentColor="amber"
             />
             <NavigationCard
               href="/PersonalData"
               icon={<FiMapPin />}
               title="Kontakte"
               description="Telefonnummern und Adressen"
-              accentColor="red"
+              accentColor="rose"
+            />
+            <NavigationCard
+              href="/punsh"
+              icon={<FiClock />} // better suited for punch clock
+              title="Stempeluhr"
+              description="Ein- und Ausstempeln für Admins"
+              accentColor="teal"
             />
             <NavigationCard
               href="/schlussel"
               icon={<FiKey />}
               title="Schlüssel"
               description="Schlüsselverwaltung"
-              accentColor="gray"
+              accentColor="cyan"
             />
             <NavigationCard
               href="/Reg"
               icon={<FiUserPlus />}
               title="Admin hinzufügen"
               description="Neuen Administrator registrieren"
-              accentColor="indigo"
+              accentColor="lime"
             />
           </div>
         </div>

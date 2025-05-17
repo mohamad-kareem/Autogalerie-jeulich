@@ -3,10 +3,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { FiLogIn, FiLogOut, FiClock, FiUser, FiCalendar } from "react-icons/fi";
+import {
+  FiLogIn,
+  FiLogOut,
+  FiClock,
+  FiUser,
+  FiCalendar,
+  FiTrash2,
+  FiEdit,
+} from "react-icons/fi";
 import { FaLocationArrow, FaUserClock } from "react-icons/fa";
 import { MdOutlineSecurity } from "react-icons/md";
 import { IoMdTime } from "react-icons/io";
+import { toast } from "react-hot-toast";
 
 export default function PunchClockPage() {
   const { data: session, status: authStatus } = useSession();
@@ -19,6 +28,7 @@ export default function PunchClockPage() {
   const [records, setRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState("all");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const dealershipCoords = { lat: 50.9116416, lng: 6.373376 };
 
@@ -56,6 +66,7 @@ export default function PunchClockPage() {
       setRecords(data);
     } catch (error) {
       console.error("Punch records fetch error:", error);
+      toast.error("Failed to load records");
     } finally {
       setIsLoading(false);
     }
@@ -105,8 +116,10 @@ export default function PunchClockPage() {
     if (!session?.user?.id) return;
     try {
       const { coords, distance } = await getLocation();
-      if (distance > 200)
-        return alert("You must be at the dealership to punch.");
+      if (distance > 200) {
+        toast.error("You must be at the dealership to punch.");
+        return;
+      }
 
       const res = await fetch("/api/punch", {
         method: "POST",
@@ -124,9 +137,37 @@ export default function PunchClockPage() {
       if (data.success) {
         setCurrentStatus(data.status);
         fetchPunchRecords();
+        toast.success(`Successfully clocked ${type === "in" ? "in" : "out"}`);
       }
     } catch (error) {
-      alert("Punch failed.");
+      toast.error("Punch failed. Please try again.");
+    }
+  };
+
+  const handleDeleteRecord = async (recordId) => {
+    if (!window.confirm("Are you sure you want to delete this record?")) return;
+
+    try {
+      setIsDeleting(true);
+      const res = await fetch(`/api/punch/${recordId}`, {
+        method: "DELETE",
+        headers: {
+          "x-admin-id": session.user.id,
+        },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to delete record");
+      }
+
+      fetchPunchRecords();
+      toast.success("Record deleted successfully");
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error(error.message || "Failed to delete record");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -180,7 +221,7 @@ export default function PunchClockPage() {
 
   if (authStatus !== "authenticated") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="animate-pulse flex items-center space-x-4">
           <MdOutlineSecurity className="h-8 w-8 text-indigo-600" />
           <span className="text-lg font-medium text-slate-700">
@@ -192,7 +233,7 @@ export default function PunchClockPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <header className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
@@ -218,7 +259,7 @@ export default function PunchClockPage() {
 
         {/* Status Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-medium text-slate-500">Status</h3>
@@ -242,7 +283,7 @@ export default function PunchClockPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-medium text-slate-500">
@@ -263,7 +304,7 @@ export default function PunchClockPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-medium text-slate-500">
@@ -286,7 +327,7 @@ export default function PunchClockPage() {
         </div>
 
         {/* Punch Actions */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8 hover:shadow-md transition-shadow">
           <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
             <MdOutlineSecurity className="text-indigo-600" />
             <span>Time Clock</span>
@@ -298,11 +339,11 @@ export default function PunchClockPage() {
               className={`py-4 px-6 rounded-lg flex flex-col items-center justify-center text-center font-medium transition-all ${
                 currentStatus === "in" || isLoading
                   ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                  : "bg-emerald-400 text-black hover:bg-emerald-200 border border-emerald-200 hover:border-emerald-300"
+                  : "bg-gradient-to-r from-emerald-400 to-teal-500 text-white hover:from-emerald-500 hover:to-teal-600 shadow-md hover:shadow-lg"
               }`}
             >
               <FiLogIn className="text-2xl mb-2" />
-              <span className="font-semibold">Punsh IN</span>
+              <span className="font-semibold">Punch IN</span>
               <span className="text-xs mt-1">Start your shift</span>
             </button>
             <button
@@ -311,18 +352,18 @@ export default function PunchClockPage() {
               className={`py-4 px-6 rounded-lg flex flex-col items-center justify-center text-center font-medium transition-all ${
                 currentStatus !== "in" || isLoading
                   ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                  : "bg-red-400 text-black hover:bg-rose-100 border border-rose-200 hover:border-rose-300"
+                  : "bg-gradient-to-r from-rose-400 to-pink-500 text-white hover:from-rose-500 hover:to-pink-600 shadow-md hover:shadow-lg"
               }`}
             >
               <FiLogOut className="text-2xl mb-2" />
-              <span className="font-semibold">Punsh Out</span>
+              <span className="font-semibold">Punch Out</span>
               <span className="text-xs mt-1">End your shift</span>
             </button>
           </div>
         </div>
 
         {/* Punch Records */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
               <FiCalendar className="text-indigo-600" />
@@ -375,6 +416,9 @@ export default function PunchClockPage() {
                           <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                             Location Verification
                           </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            Actions
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-slate-200">
@@ -410,6 +454,16 @@ export default function PunchClockPage() {
                                 </span>
                               )}
                             </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500">
+                              <button
+                                onClick={() => handleDeleteRecord(record._id)}
+                                disabled={isDeleting}
+                                className="text-rose-500 hover:text-rose-700 p-1 rounded-full hover:bg-rose-50 transition-colors"
+                                title="Delete record"
+                              >
+                                <FiTrash2 className="h-4 w-4" />
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -425,7 +479,7 @@ export default function PunchClockPage() {
                 No time records found
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                Punsh IN to start recording your time
+                Punch IN to start recording your time
               </p>
             </div>
           )}

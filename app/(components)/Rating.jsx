@@ -6,6 +6,7 @@ import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
 import Rate from "../(assets)/Rate.png";
 import Button from "./Button";
+import Link from "next/link";
 export default function Rating() {
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.2 });
   const [hasAnimated, setHasAnimated] = useState(false);
@@ -35,8 +36,12 @@ export default function Rating() {
             setzt alles daran, Ihre Erwartungen zu übertreffen. Lassen Sie sich
             überzeugen und erleben Sie Service, der begeistert.
           </p>
-
-          <Button>Geben Sie uns Ihr Feedback</Button>
+          <Link
+            href="https://www.mobile.de/bewertungen/AutogalerieJuelich#1"
+            passHref
+          >
+            <Button>Geben Sie uns Ihr Feedback</Button>
+          </Link>
         </div>
 
         {/* Right - Image */}
