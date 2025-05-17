@@ -6,15 +6,33 @@ export const metadata = {
   title: "Autogalerie Jülich",
   description:
     "Premium Fahrzeugflotte · Standort. Alte Dürenerstraße 4, 52428 Jülich · Telefon. +49 2461 9163780 · Email. info@autogalerie-juelich.de",
+  icons: {
+    icon: "/mylogo.png",
+    shortcut: "/mylogo.png",
+    apple: "/mylogo.png",
+  },
+  openGraph: {
+    title: "Autogalerie Jülich",
+    description: "Premium Fahrzeugflotte in Jülich · Jetzt entdecken!",
+    images: [
+      {
+        url: "/mylogo.png",
+        width: 1200,
+        height: 630,
+        alt: "Autogalerie Jülich Logo",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <title>Autogalerie Jülich</title>
+        <link rel="icon" href="/mylogo.png" sizes="32x32" type="image/png" />
+        <link rel="shortcut icon" href="/mylogo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/mylogo.png" />
 
-        <link rel="icon" href="/Logo.png" type="image/png" sizes="32x32" />
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
