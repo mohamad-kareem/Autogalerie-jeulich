@@ -2,7 +2,7 @@
 import LoginPage from "./LoginPage";
 
 export default function AdminLoginWrapper({ searchParams }) {
-  const callbackUrl = searchParams?.callbackUrl || "/AdminDashboard";
+  const callbackUrl = searchParams?.callbackUrl; // No default
 
   return <LoginPage callbackUrl={callbackUrl} />;
 }

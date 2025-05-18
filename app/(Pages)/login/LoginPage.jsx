@@ -33,7 +33,14 @@ export default function LoginPage({ callbackUrl }) {
 
       if (result?.error) throw new Error("Invalid email or password");
 
-      if (result?.ok) router.push(callbackUrl);
+      if (result?.ok) {
+        if (callbackUrl) {
+          router.push(callbackUrl); // Only redirect if it's defined
+        } else {
+          // Optional: go to home or show message
+          router.push("/"); // or show a toast: "Login successful"
+        }
+      }
     } catch (err) {
       setError(err.message);
       setCredentials((prev) => ({ ...prev, password: "" }));

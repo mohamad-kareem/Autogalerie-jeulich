@@ -1,14 +1,17 @@
 // app/api/admins/[id]/route.js
-import { NextResponse } from "next/server";
+export const dynamic = "force-dynamic";
+
 import { connectDB } from "@/lib/mongodb";
+import { NextResponse } from "next/server";
 import Admin from "@/models/Admin";
 
-export async function GET(request, { params }) {
+export async function GET(req, context) {
   try {
+    const id = context.params.id;
+
     await connectDB();
-    const admin = await Admin.findById(params.id)
-      .select("name image email")
-      .lean();
+
+    const admin = await Admin.findById(id).select("name image email").lean();
 
     if (!admin) {
       return NextResponse.json({ error: "Admin not found" }, { status: 404 });
@@ -16,9 +19,11 @@ export async function GET(request, { params }) {
 
     return NextResponse.json(admin);
   } catch (error) {
+    console.error("GET admin error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
 export async function PUT(request, { params }) {
   try {
     await connectDB();

@@ -1,47 +1,90 @@
+"use client";
+import { motion } from "framer-motion";
 import Button from "./Button";
 import Link from "next/link";
-export default function LandingSection() {
+import { Car, GitCompare, Search, Check } from "lucide-react";
+
+export default function LandingChoices() {
+  const features = [
+    {
+      icon: <Search className="text-red-500" size={20} />,
+      title: "Bereit für eine neue Fahrt?",
+      items: [
+        "Sieh dir die neuesten Modelle an",
+        "Vergleiche Fahrzeuge nebeneinander",
+      ],
+      buttonText: "🔍 Gebrauchtwagen suchen",
+      link: "/gebrauchtwagen",
+    },
+    {
+      icon: <GitCompare className="text-red-500" size={20} />,
+      title: "Vergleiche Fahrzeuge ganz einfach",
+      items: [
+        "Modelle nebeneinander darstellen",
+        "Unterschiede schnell erkennen",
+      ],
+      buttonText: "Vergleiche Autos ↔",
+      link: "/vergleich",
+    },
+  ];
+
   return (
-    <section className="w-full bg-white py-12 shadow-even mb-8 px-4 sm:px-6 lg:px-16 ">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Explore Vehicles Card */}
-        <div className=" p-4 sm:p-5 md:p-6 lg:p-8  flex flex-col justify-between">
-          <div>
-            <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2">
-              Bereit für eine neue Fahrt?
-            </h2>
+    <section className="w-full  py-16 px-4 sm:px-6 lg:px-16 relative overflow-hidden">
+      {/* Removed decorative background image */}
 
-            <ul className="text-gray-700 space-y-2 mb-6 text-sm sm:text-base">
-              <li>✔ Sieh dir die neuesten Modelle an</li>
-              <li>✔ Vergleiche Fahrzeuge nebeneinander</li>
-            </ul>
-          </div>
-          <div className="flex flex-wrap gap-4">
-            <Link href="/gebrauchtwagen" passHref>
-              <Button as="a">🔍 Gebrauchtwagen suchen</Button>
-            </Link>
-          </div>
-        </div>
+      <div className="max-w-7xl mx-auto relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-8"
+        >
+          {features.map((feature, index) => (
+            <motion.div
+              key={index}
+              whileHover={{ y: -5 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              className="bg-black/90 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              <div className="flex flex-col h-full">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-red-500/10 rounded-lg">
+                    {feature.icon}
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">
+                    {feature.title}
+                  </h2>
+                </div>
 
-        {/* Featured Brand Card */}
-        <div className=" p-4 sm:p-5 md:p-6 lg:p-8 flex flex-col justify-between">
-          <div>
-            <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2">
-              Vergleiche Fahrzeuge ganz einfach
-            </h2>
+                <ul className="text-gray-300 space-y-2 mb-6 text-sm sm:text-base flex-grow">
+                  {feature.items.map((item, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <Check
+                        className="text-red-500 mt-0.5 flex-shrink-0"
+                        size={16}
+                      />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
 
-            <ul className="text-gray-700 space-y-2 mb-6 text-sm sm:text-base">
-              <li>✔ Modelle nebeneinander darstellen</li>
-              <li>✔ Unterschiede schnell erkennen</li>
-            </ul>
-          </div>
-          <div className="flex flex-wrap gap-4">
-            <Link href="/vergleich" passHref>
-              <Button>Vergleiche Autos ↔</Button>
-            </Link>
-          </div>
-        </div>
+                <div className="mt-auto">
+                  <Link href={feature.link} passHref>
+                    <Button className="w-full sm:w-auto">
+                      {feature.buttonText}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
+
+      {/* Glow effects */}
+      <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-red-500/10 blur-3xl pointer-events-none"></div>
+      <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
     </section>
   );
 }

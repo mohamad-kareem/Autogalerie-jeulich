@@ -127,12 +127,16 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`/api/admins/${user._id}`, {
+      const response = await fetch(`/api/admins`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          id: user._id,
+          name: formData.name,
+          image: formData.image,
+        }),
       });
 
       if (!response.ok) {
@@ -251,7 +255,7 @@ export default function Dashboard() {
       try {
         if (!session?.user?.id) return;
 
-        const response = await fetch(`/api/admins/${session.user.id}`);
+        const response = await fetch(`/api/admins?id=${session.user.id}`);
         if (!response.ok) {
           throw new Error("Admin-Daten konnten nicht geladen werden");
         }
