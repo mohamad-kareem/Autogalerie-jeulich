@@ -35,7 +35,7 @@ export async function DELETE(request) {
     };
 
     // Add admin filter if specified
-    if (filterAdminId) {
+    if (filterAdminId && filterAdminId !== "all") {
       query.admin = filterAdminId;
     }
 
@@ -43,7 +43,7 @@ export async function DELETE(request) {
     const result = await TimeRecord.deleteMany(query);
 
     // Update admin status if needed
-    if (filterAdminId) {
+    if (filterAdminId && filterAdminId !== "all") {
       const admin = await Admin.findById(filterAdminId);
       const lastRecord = await TimeRecord.findOne({ admin: filterAdminId })
         .sort({ time: -1 })

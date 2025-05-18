@@ -580,13 +580,13 @@ export default function TrelloClone() {
                                                           task._id
                                                         )
                                                       }
-                                                      className={`absolute top-2 left-1 z-10 w-5 h-5 flex items-center justify-center rounded-full border-2
-        transition-all duration-200
-        ${
-          task.completed
-            ? "border-orange-500 bg-orange-500 text-white"
-            : "border-gray-500 text-gray-400 opacity-0 group-hover:opacity-100 hover:border-orange-400 hover:text-orange-400"
-        }`}
+                                                      className={`absolute top-1/2 -translate-y-1/2 left-1 z-10 w-5 h-5 flex items-center justify-center rounded-full border-2
+    transition-all duration-200
+    ${
+      task.completed
+        ? "border-orange-500 bg-orange-500 text-white"
+        : "border-gray-500 text-gray-400 opacity-0 group-hover:opacity-100 hover:border-orange-400 hover:text-orange-400"
+    }`}
                                                     >
                                                       {task.completed && (
                                                         <FiCheck size={12} />
@@ -595,29 +595,60 @@ export default function TrelloClone() {
                                                   )}
 
                                                   {/* Main content shifted only when hovered or completed */}
-                                                  <div
-                                                    className={`transition-all duration-300 pr-2 ${
-                                                      task.completed
-                                                        ? "pl-8"
-                                                        : "group-hover:pl-8"
-                                                    }`}
-                                                  >
-                                                    <h3
-                                                      className={`text-sm font-medium ${
+                                                  <div className="flex items-start justify-between space-x-2">
+                                                    {/* Content (Title + Description) */}
+                                                    <div
+                                                      className={`transition-all duration-300 pr-2 flex-1 ${
                                                         task.completed
-                                                          ? "line-through text-gray-400"
-                                                          : colors.text
+                                                          ? "pl-8"
+                                                          : "group-hover:pl-8"
                                                       }`}
                                                     >
-                                                      {task.title}
-                                                    </h3>
-                                                    {task.description && (
-                                                      <p
-                                                        className={`text-xs ${colors.textSecondary} mt-1 line-clamp-2`}
+                                                      <h3
+                                                        className={`text-sm font-medium ${
+                                                          task.completed
+                                                            ? "line-through text-gray-400"
+                                                            : colors.text
+                                                        }`}
                                                       >
-                                                        {task.description}
-                                                      </p>
-                                                    )}
+                                                        {task.title}
+                                                      </h3>
+                                                      {task.description && (
+                                                        <p
+                                                          className={`text-xs ${colors.textSecondary} mt-1 line-clamp-2`}
+                                                        >
+                                                          {task.description}
+                                                        </p>
+                                                      )}
+                                                    </div>
+
+                                                    {/* Action buttons */}
+                                                    <div className="flex-shrink-0 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                      <button
+                                                        onClick={() =>
+                                                          startEditingTask(
+                                                            column.name,
+                                                            task
+                                                          )
+                                                        }
+                                                        className="text-gray-400 hover:text-amber-400"
+                                                        title="Edit"
+                                                      >
+                                                        <FiEdit2 size={14} />
+                                                      </button>
+                                                      <button
+                                                        onClick={() =>
+                                                          deleteTask(
+                                                            column.name,
+                                                            task._id
+                                                          )
+                                                        }
+                                                        className="text-gray-400 hover:text-red-500"
+                                                        title="Delete"
+                                                      >
+                                                        <FiTrash2 size={14} />
+                                                      </button>
+                                                    </div>
                                                   </div>
                                                 </div>
                                               </>
