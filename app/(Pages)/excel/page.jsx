@@ -525,29 +525,31 @@ const CashBookPage = () => {
                     darkMode={darkMode}
                   />
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <button
                       onClick={handleExport}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm ${
+                      className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm ${
                         darkMode
                           ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
                           : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                       }`}
                     >
                       <FiDownload className="h-4 w-4" />
-                      Export
+                      <span className="hidden xs:inline">Export</span>
                     </button>
+
                     <button
                       onClick={handlePrint}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm ${
+                      className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm ${
                         darkMode
                           ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
                           : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                       }`}
                     >
                       <FiPrinter className="h-4 w-4" />
-                      Print
+                      <span className="hidden xs:inline">Print</span>
                     </button>
+
                     <button
                       onClick={() =>
                         setState((prev) => ({
@@ -555,14 +557,14 @@ const CashBookPage = () => {
                           isFormExpanded: !prev.isFormExpanded,
                         }))
                       }
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm ${
+                      className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm ${
                         darkMode
                           ? "bg-lime-600 hover:bg-lime-500 text-white"
                           : "bg-lime-600 hover:bg-lime-700 text-white"
                       }`}
                     >
                       <FiPlus className="h-4 w-4" />
-                      New Entry
+                      <span className="hidden xs:inline">New Entry</span>
                     </button>
                   </div>
                 </div>
