@@ -630,6 +630,121 @@ export default function PunchClockPage() {
                 </div>
               )}
             </div>
+            {/* Monthly Worked Hours Summary */}
+            {/* Monthly Worked Hours Summary */}
+            {/* Monthly Worked Hours Summary */}
+            <div className="bg-gray-800/50 rounded-xl border border-gray-700 mb-8 p-5">
+              <h2 className="text-sm sm:text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2">
+                <FiClock className="text-lime-400" />
+                Gearbeitet Stunden (diesen Monat)
+              </h2>
+
+              {allAdmins.length === 0 ? (
+                <p className="text-sm text-gray-400">Keine Daten verfügbar.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {allAdmins.map((name) => {
+                    // Get and sort all records for this admin in current month
+                    const adminRecords = records
+                      .filter(
+                        (r) =>
+                          r.admin?.name === name &&
+                          new Date(r.time).getMonth() ===
+                            new Date().getMonth() &&
+                          new Date(r.time).getFullYear() ===
+                            new Date().getFullYear()
+                      )
+                      .sort((a, b) => new Date(a.time) - new Date(b.time));
+
+                    let totalMs = 0;
+                    const sessions = [];
+                    let currentSession = null;
+
+                    // Process records to calculate time
+                    adminRecords.forEach((record) => {
+                      if (record.type === "in") {
+                        currentSession = { start: new Date(record.time) };
+                      } else if (
+                        record.type === "out" &&
+                        currentSession?.start
+                      ) {
+                        currentSession.end = new Date(record.time);
+                        const duration =
+                          currentSession.end - currentSession.start;
+                        sessions.push({
+                          start: currentSession.start,
+                          end: currentSession.end,
+                          duration,
+                        });
+                        totalMs += duration;
+                        currentSession = null;
+                      }
+                    });
+
+                    // Handle currently active session (clocked in but not out)
+                    if (currentSession?.start) {
+                      const duration = new Date() - currentSession.start;
+                      sessions.push({
+                        start: currentSession.start,
+                        end: null, // indicates still active
+                        duration,
+                      });
+                      totalMs += duration;
+                    }
+
+                    // Convert to hours and minutes
+                    const totalHours = Math.floor(totalMs / (1000 * 60 * 60));
+                    const totalMinutes = Math.floor(
+                      (totalMs / (1000 * 60)) % 60
+                    );
+
+                    return (
+                      <li
+                        key={name}
+                        className="flex flex-col bg-gray-900/40 px-4 py-3 rounded-lg border border-gray-700"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm sm:text-base font-medium text-gray-200">
+                            {name === session.user.name ? `${name} (Du)` : name}
+                          </span>
+                          <span className="text-sm text-lime-400">
+                            {totalHours}h {totalMinutes}min
+                            {currentSession && (
+                              <span className="text-xs text-gray-400 ml-1">
+                                (aktiv)
+                              </span>
+                            )}
+                          </span>
+                        </div>
+
+                        {/* Show individual sessions if needed */}
+                        {sessions.length > 0 && (
+                          <div className="mt-2 text-xs text-gray-400">
+                            {sessions.map((session, i) => (
+                              <div key={i}>
+                                {session.start.toLocaleTimeString()} -{" "}
+                                {session.end
+                                  ? session.end.toLocaleTimeString()
+                                  : "now"}
+                                :{" "}
+                                {Math.floor(
+                                  session.duration / (1000 * 60 * 60)
+                                )}
+                                h{" "}
+                                {Math.floor(
+                                  (session.duration / (1000 * 60)) % 60
+                                )}
+                                min
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
 
             {/* Records Table */}
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
