@@ -5,19 +5,18 @@ import Link from "next/link";
 
 export default function Reviews() {
   return (
-    <section className="w-full bg-white py-12 shadow-even mb-8 px-4 sm:px-6 lg:px-16">
+    <section className="w-full  py-12 shadow-even mb-8 px-4 sm:px-6 lg:px-16">
       <div className="max-w-[76rem] mx-auto">
         {/* Header */}
         <div className="text-center mb-12 md:mb-16">
           <span className="relative inline-block text-xs font-semibold uppercase tracking-widest text-red-500 mb-3 pl-8 before:content-[''] before:absolute before:left-0 before:top-1/2 before:w-6 before:h-0.5 before:bg-red-500">
             Kundenstimmen
           </span>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-300 mb-4">
             Vertrauen, das <span className="text-red-600">überzeugt</span>
           </h2>
-          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Lesen Sie, was unsere zufriedenen Kunden über ihre Erfahrungen
-            berichten – und werden auch Sie Teil unserer Erfolgsgeschichte.
+          <p className="text-base sm:text-lg text-gray-700 max-w-2xl mx-auto leading-relaxed">
+            Unsere Kunden sind begeistert – lesen Sie ihre Erfahrungen.
           </p>
         </div>
 

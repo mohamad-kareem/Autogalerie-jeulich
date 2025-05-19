@@ -250,9 +250,6 @@ const Footbar = () => {
           </div>
         </div>
 
-        {/* Divider */}
-        <hr className="border-gray-800 my-8" />
-
         {/* Bottom Text */}
         <div className="flex justify-center items-center">
           <p className="text-sm text-gray-500 mb-4 md:mb-0">

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import Rate from "../(assets)/Rate.png";
 import Button from "./Button";
 import Link from "next/link";
+
 export default function Rating() {
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.2 });
   const [hasAnimated, setHasAnimated] = useState(false);
@@ -16,7 +17,7 @@ export default function Rating() {
   }, [inView]);
 
   return (
-    <section className=" w-full bg-white py-12 shadow-even mb-8 px-4 sm:px-6 lg:px-16">
+    <section className="relative w-full py-12 px-4 sm:px-6 lg:px-16 mb-8 overflow-hidden shadow-even">
       <motion.div
         ref={ref}
         initial={{ opacity: 0, y: 60 }}
@@ -26,10 +27,10 @@ export default function Rating() {
       >
         {/* Left - Text */}
         <div>
-          <h2 className="text-xl sm:text-xl md:text-2xl lg:text-2xl font-bold text-black mb-4">
+          <h2 className="text-xl sm:text-xl md:text-2xl lg:text-2xl font-bold text-white mb-4">
             Unsere Kunden sind mit Autogalerie Jülich zufrieden.
           </h2>
-          <p className="text-sm sm:text-base md:text-lg leading-relaxed mb-6 text-gray-600">
+          <p className="text-sm sm:text-base md:text-lg leading-relaxed mb-6 text-gray-500">
             Bei uns stehen Sie im Mittelpunkt! Unser Team sorgt für einen
             reibungslosen Ablauf, besten Kundenservice und kompetente Beratung.
             Ob beim Kauf oder Verkauf eines Fahrzeugs – Ihr Autohaus in Jülich
@@ -57,6 +58,9 @@ export default function Rating() {
           </div>
         </div>
       </motion.div>
+
+      {/* Glow Effects */}
+      <div className="absolute -bottom-20 -left-20 w-300 h-64 rounded-full bg-red-500/5 blur-3xl pointer-events-none" />
     </section>
   );
 }

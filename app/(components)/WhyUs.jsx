@@ -3,8 +3,9 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import steps from "../utils/Why.js";
-import Button from "./Button.jsx";
-import Link from "next/link.js";
+import Button from "./Button";
+import Link from "next/link";
+
 export default function WhyUs() {
   const [scrollProgress, setScrollProgress] = useState(0);
   const containerRef = useRef(null);
@@ -30,9 +31,9 @@ export default function WhyUs() {
   }, []);
 
   return (
-    <section className="w-full bg-white py-12 shadow-even mb-8 px-4 sm:px-6 lg:px-16">
-      <div ref={containerRef} className="max-w-7xl mx-auto relative">
-        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-center mb-12">
+    <section className="relative w-full py-12 px-4 sm:px-6 lg:px-16 overflow-hidden shadow-even mb-8">
+      <div ref={containerRef} className="max-w-7xl mx-auto relative z-10">
+        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-center mb-12 text-white">
           So funktioniert der Autoankauf bei Autogalerie Jülich
         </h2>
 
@@ -70,16 +71,16 @@ export default function WhyUs() {
                 </div>
 
                 {/* Text */}
-                <div className="bg-white rounded-xl shadow-md p-6 sm:p-8 max-w-md w-full md:w-1/2 relative z-10 text-center md:text-left">
-                  <h3 className="font-bold text-lg sm:text-xl mb-2">
+                <div className="bg-gradient-to-br from-black to-red-950 rounded-xl shadow-md p-6 sm:p-8 max-w-md w-full md:w-1/2 relative z-10 text-center md:text-left">
+                  <h3 className="font-bold text-lg sm:text-xl mb-2 text-white">
                     {step.title}
                   </h3>
-                  <p className="text-gray-700 text-sm sm:text-base">
+                  <p className="text-gray-400 text-sm sm:text-base">
                     {step.description}
                   </p>
                 </div>
 
-                {/* Step Number Circle */}
+                {/* Step Number */}
                 <div
                   className={`hidden md:flex absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full border-4 items-center justify-center font-bold z-30 transition-all duration-300 ${
                     stepReached
@@ -103,6 +104,10 @@ export default function WhyUs() {
           </div>
         </div>
       </div>
+
+      {/* Glow Effects */}
+      <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-red-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
     </section>
   );
 }

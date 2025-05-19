@@ -5,7 +5,6 @@ import Bild3 from "../(assets)/yes2.png";
 import Bild4 from "../(assets)/dacia4.png";
 import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
-
 import {
   motion,
   AnimatePresence,
@@ -69,7 +68,6 @@ export default function UltraModernHero() {
     "linear-gradient(135deg, #1e141e 0%, #0a1e28 100%)",
   ]);
 
-  // Auto-advance slides
   useEffect(() => {
     const interval = setInterval(() => {
       if (!isHovered) {
@@ -79,7 +77,6 @@ export default function UltraModernHero() {
     return () => clearInterval(interval);
   }, [isHovered, currentSlide]);
 
-  // Parallax effect for mouse movement
   const handleMouseMove = (e) => {
     const { left, width } = e.currentTarget.getBoundingClientRect();
     const xPos = (e.clientX - left) / width;
@@ -97,13 +94,12 @@ export default function UltraModernHero() {
         />
       </Head>
       <section
-        className="relative w-full h-screen sm:h-[90vh] max-h-[1200px] overflow-hidden"
+        className="relative w-full h-screen sm:h-[100vh] max-h-[1200px] overflow-hidden"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onMouseMove={handleMouseMove}
         ref={constraintsRef}
       >
-        {/* Dynamic Background */}
         <motion.div className="absolute inset-0" style={{ background }}>
           <AnimatePresence mode="wait">
             <motion.div
@@ -125,18 +121,14 @@ export default function UltraModernHero() {
                   sizes="100vw"
                 />
               </div>
-
               <div
                 className="absolute inset-0"
-                style={{
-                  background: slides[currentSlide].overlay,
-                }}
+                style={{ background: slides[currentSlide].overlay }}
               />
             </motion.div>
           </AnimatePresence>
         </motion.div>
 
-        {/* Content Container */}
         <div className="relative z-10 h-full flex items-center px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16">
           <div className="container mx-auto">
             <motion.div
@@ -149,7 +141,6 @@ export default function UltraModernHero() {
               }}
               className="max-w-3xl lg:max-w-4xl xl:max-w-5xl"
             >
-              {/* Badge */}
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -161,17 +152,14 @@ export default function UltraModernHero() {
                 </span>
               </motion.div>
 
-              {/* Title */}
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-5xl xl:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight">
                 {slides[currentSlide].title}
               </h1>
 
-              {/* Subtitle */}
               <p className="text-lg sm:text-xl md:text-xl text-white/90 mb-6 sm:mb-8 max-w-2xl">
                 {slides[currentSlide].subtitle}
               </p>
 
-              {/* Features */}
               <motion.div
                 className="flex flex-wrap gap-3 sm:gap-4 mb-8 sm:mb-10"
                 initial={{ opacity: 0 }}
@@ -195,7 +183,6 @@ export default function UltraModernHero() {
                 ))}
               </motion.div>
 
-              {/* Buttons */}
               <motion.div
                 className="flex flex-col sm:flex-row gap-3 sm:gap-4"
                 initial={{ opacity: 0, y: 20 }}
@@ -217,7 +204,6 @@ export default function UltraModernHero() {
           </div>
         </div>
 
-        {/* Slide Indicators */}
         <motion.div
           className="flex absolute bottom-6 sm:bottom-8 md:bottom-10 left-0 right-0 justify-center gap-2 sm:gap-3 z-20"
           initial={{ opacity: 0 }}
@@ -239,35 +225,13 @@ export default function UltraModernHero() {
           ))}
         </motion.div>
 
-        {/* Decorative Elements */}
+        {/* Glow + Bottom Fade Effect */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_rgba(255,50,50,0.1)_0%,_transparent_70%)] opacity-30" />
           <div className="absolute bottom-0 left-0 w-full h-32 sm:h-48 bg-gradient-to-t from-black to-transparent" />
-
-          {/* Animated grid pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern
-                  id="grid"
-                  width="40"
-                  height="40"
-                  patternUnits="userSpaceOnUse"
-                >
-                  <path
-                    d="M 40 0 L 0 0 0 40"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="0.5"
-                  />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-            </svg>
-          </div>
         </div>
 
-        {/* Micro-interaction cursor follower */}
+        {/* Micro-interaction Cursor Glow */}
         <motion.div
           className="absolute top-0 left-0 w-48 h-48 sm:w-64 sm:h-64 rounded-full bg-red-500/10 blur-3xl pointer-events-none"
           style={{

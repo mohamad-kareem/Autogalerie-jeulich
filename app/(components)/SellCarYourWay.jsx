@@ -1,5 +1,7 @@
+"use client";
+
 import { FaSearch } from "react-icons/fa";
-import { MdOutlineAttachMoney, MdVerified } from "react-icons/md";
+import { MdOutlineAttachMoney } from "react-icons/md";
 import { IoIosArrowForward } from "react-icons/io";
 import Image from "next/image";
 import Marketing from "../(assets)/Marketing.png";
@@ -8,18 +10,16 @@ import Link from "next/link";
 
 export default function SellCarYourWay() {
   return (
-    <section className="w-full bg-white py-12 shadow-even mb-8 px-4 sm:px-6 lg:px-16">
-      {/* Background elements */}
-      <div className="absolute inset-0 overflow-hidden z-0">
-        <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-red-50 filter blur-2xl opacity-20"></div>
-        <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-blue-50 filter blur-2xl opacity-20"></div>
-      </div>
+    <section className="relative w-full py-12 px-4 sm:px-6 lg:px-16 mb-8 overflow-hidden shadow-even">
+      {/* Glow Effects */}
+      <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-red-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
 
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-        {/* Text content */}
+        {/* Text Section */}
         <div className="space-y-6">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-tight mt-4">
-            Kaufen oder verkaufen Sie Autos –<br />
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight mt-4">
+            Kaufen oder verkaufen Sie Autos –
           </h2>
 
           {/* Feature 1 */}
@@ -31,10 +31,10 @@ export default function SellCarYourWay() {
               </div>
             </div>
             <div>
-              <h3 className="text-base font-semibold text-gray-800">
+              <h3 className="text-base font-semibold text-white">
                 Durchstöbern Sie unsere Autosammlung
               </h3>
-              <p className="text-gray-600 text-sm mt-1">
+              <p className="text-gray-400 text-sm mt-1">
                 Entdecken Sie qualitativ hochwertige neue und gebrauchte Autos.
                 Finden Sie das perfekte Fahrzeug für Ihren Lebensstil.
               </p>
@@ -50,12 +50,12 @@ export default function SellCarYourWay() {
               </div>
             </div>
             <div>
-              <h3 className="text-base font-semibold text-gray-800">
+              <h3 className="text-base font-semibold text-white">
                 Verkaufen Sie uns Ihr Auto
               </h3>
-              <p className="text-gray-600 text-sm mt-1">
+              <p className="text-gray-400 text-sm mt-1">
                 Erhalten Sie ein schnelles, faires Angebot von unserem Team.
-                Kein Aufwand - wir kümmern uns um alles.
+                Kein Aufwand – wir kümmern uns um alles.
               </p>
             </div>
           </div>
@@ -68,7 +68,6 @@ export default function SellCarYourWay() {
                 <IoIosArrowForward className="ml-1 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
-
             <Link href="/kontakt" passHref>
               <Button
                 bgColor="bg-black"
@@ -82,20 +81,20 @@ export default function SellCarYourWay() {
           </div>
         </div>
 
-        {/* Image section */}
+        {/* Image Section */}
         <div className="relative w-full h-64 sm:h-80 md:h-96 lg:h-[350px]">
           <div className="relative w-full h-full rounded-lg overflow-hidden shadow-md">
             <Image
               src={Marketing}
               alt="Illustration von Auto kaufen und verkaufen"
               fill
-              className="object-fill"
+              className="object-cover"
               priority
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
           </div>
 
-          {/* Labels on image */}
+          {/* Bottom Left Label */}
           <div className="absolute -bottom-3 -left-3 bg-white px-2.5 py-1.5 rounded-md shadow-sm border border-gray-200 transform -rotate-1">
             <div className="flex items-center">
               <div className="bg-green-100 p-1.5 rounded-sm mr-1.5">
@@ -105,6 +104,7 @@ export default function SellCarYourWay() {
             </div>
           </div>
 
+          {/* Top Right Label */}
           <div className="absolute -top-3 -right-3 bg-white px-2.5 py-1.5 rounded-md shadow-sm border border-gray-200 transform rotate-1">
             <div className="flex items-center">
               <div className="bg-blue-100 p-1.5 rounded-sm mr-1.5">

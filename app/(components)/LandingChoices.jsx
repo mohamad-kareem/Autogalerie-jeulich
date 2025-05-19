@@ -1,4 +1,5 @@
 "use client";
+
 import { motion } from "framer-motion";
 import Button from "./Button";
 import Link from "next/link";
@@ -7,7 +8,7 @@ import { Car, GitCompare, Search, Check } from "lucide-react";
 export default function LandingChoices() {
   const features = [
     {
-      icon: <Search className="text-red-500" size={20} />,
+      icon: <Search className="text-red-700" size={20} />,
       title: "Bereit für eine neue Fahrt?",
       items: [
         "Sieh dir die neuesten Modelle an",
@@ -17,7 +18,7 @@ export default function LandingChoices() {
       link: "/gebrauchtwagen",
     },
     {
-      icon: <GitCompare className="text-red-500" size={20} />,
+      icon: <GitCompare className="text-red-800" size={20} />,
       title: "Vergleiche Fahrzeuge ganz einfach",
       items: [
         "Modelle nebeneinander darstellen",
@@ -29,9 +30,7 @@ export default function LandingChoices() {
   ];
 
   return (
-    <section className="w-full  py-16 px-4 sm:px-6 lg:px-16 relative overflow-hidden">
-      {/* Removed decorative background image */}
-
+    <section className="relative w-full py-16 px-4 sm:px-6 lg:px-16 overflow-hidden">
       <div className="max-w-7xl mx-auto relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -45,7 +44,7 @@ export default function LandingChoices() {
               key={index}
               whileHover={{ y: -5 }}
               transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              className="bg-black/90 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-300"
+              className="backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <div className="flex flex-col h-full">
                 <div className="flex items-center gap-3 mb-4">
@@ -61,7 +60,7 @@ export default function LandingChoices() {
                   {feature.items.map((item, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <Check
-                        className="text-red-500 mt-0.5 flex-shrink-0"
+                        className="text-red-800 mt-0.5 flex-shrink-0"
                         size={16}
                       />
                       <span>{item}</span>
@@ -82,9 +81,9 @@ export default function LandingChoices() {
         </motion.div>
       </div>
 
-      {/* Glow effects */}
-      <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-red-500/10 blur-3xl pointer-events-none"></div>
-      <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
+      {/* Glow Effects */}
+      <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-red-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
     </section>
   );
 }
