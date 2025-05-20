@@ -1,6 +1,3 @@
-// app/api/sync/route.js
-export const dynamic = "force-dynamic";
-
 import { NextResponse } from "next/server";
 import { syncCars } from "@/lib/syncCars";
 
