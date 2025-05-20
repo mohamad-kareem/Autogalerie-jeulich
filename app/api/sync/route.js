@@ -1,18 +1,19 @@
 // app/api/sync/route.js
 import { NextResponse } from "next/server";
-import { syncCars } from "@/lib/syncCars"; // adjust path if needed
+import { syncCars } from "@/lib/syncCars";
 
 export async function GET(req) {
-  const { searchParams } = new URL(req.url);
-  // simple token check to prevent unauthorized hits
-  if (searchParams.get("token") !== process.env.SYNC_TOKEN) {
+  // Vercel will send: Authorization: Bearer <your CRON_SECRET>
+  const auth = req.headers.get("Authorization");
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
+
   try {
     await syncCars();
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("❌ Sync failed:", err);
-    return new NextResponse("Sync error", { status: 500 });
+    console.error("❌ Sync error:", err);
+    return new NextResponse("Sync failed", { status: 500 });
   }
 }

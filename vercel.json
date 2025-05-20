@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/sync?token=a8f3e6d7c2b1",
+      "path": "/api/sync",
       "schedule": "*/1 * * * *"
     }
   ]
