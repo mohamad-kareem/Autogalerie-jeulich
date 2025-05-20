@@ -1,12 +1,12 @@
+// app/gebrauchtwagen/page.js
+export const dynamic = "force-dynamic"; // ← disable prerendering
+
 import Link from "next/link";
 import { connectDB } from "@/lib/mongodb";
 import Car from "@/models/Car";
-import { syncCars } from "@/lib/syncCars";
-export default async function Page() {
-  // 1) fetch & upsert from mobile.de
-  await syncCars();
 
-  // 2) connect & get all cars
+export default async function Page() {
+  // 1) just read from MongoDB (cron keeps it up-to-date)
   await connectDB();
   const cars = await Car.find({}).lean();
 
