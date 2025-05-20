@@ -1,5 +1,5 @@
-// app/gebrauchtwagen/[id]/page.js
-export const dynamic = "force-dynamic"; // ← disable prerendering
+// app/(Pages)/gebrauchtwagen/[id]/page.js
+export const dynamic = "force-dynamic"; // disable build-time prerender
 
 import { connectDB } from "@/lib/mongodb";
 import Car from "@/models/Car";
@@ -17,6 +17,7 @@ export default async function CarPage({ params }) {
       <h1 className="text-3xl mb-4">
         {car.make} {car.model}
       </h1>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           {car.images?.map((img, i) => (
@@ -28,6 +29,7 @@ export default async function CarPage({ params }) {
             />
           ))}
         </div>
+
         <div className="space-y-2">
           <p>
             <strong>Description:</strong> {car.modelDescription}

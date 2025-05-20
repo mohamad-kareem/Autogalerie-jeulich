@@ -1,12 +1,12 @@
-// app/gebrauchtwagen/page.js
-export const dynamic = "force-dynamic"; // ← disable prerendering
+// app/(Pages)/gebrauchtwagen/page.js
+export const dynamic = "force-dynamic"; // disable build-time prerender
 
 import Link from "next/link";
 import { connectDB } from "@/lib/mongodb";
 import Car from "@/models/Car";
 
 export default async function Page() {
-  // 1) just read from MongoDB (cron keeps it up-to-date)
+  // read from MongoDB only; cron keeps DB fresh
   await connectDB();
   const cars = await Car.find({}).lean();
 
