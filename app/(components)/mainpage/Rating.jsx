@@ -4,8 +4,8 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
-import Rate from "../(assets)/Rate.png";
-import Button from "./Button";
+import Rate from "../../(assets)/Rate.png";
+import Button from "../helpers/Button";
 import Link from "next/link";
 
 export default function Rating() {

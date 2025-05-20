@@ -1,5 +1,5 @@
-import Complete from "./(components)/completePage/Complete";
-import NavBar from "./(components)/NavBar";
+import Complete from "./(components)/mainpage/Complete";
+import NavBar from "./(components)/Nav/NavBar";
 
 export default function Home() {
   return (

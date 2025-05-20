@@ -1,6 +1,6 @@
 import "./globals.css";
-import NavBar from "./(components)/NavBar";
-import SessionWrapper from "@/app/(components)/SessionWrapper";
+import NavBar from "./(components)/Nav/NavBar";
+import SessionWrapper from "@/app/(components)/helpers/SessionWrapper";
 import { Toaster } from "react-hot-toast";
 
 export const metadata = {

@@ -1,6 +1,6 @@
 import Image from "next/image";
-import CusReviews from "../utils/CustomerReview";
-import Button from "./Button";
+import CusReviews from "../../utils/CustomerReview";
+import Button from "../helpers/Button";
 import Link from "next/link";
 
 export default function Reviews() {

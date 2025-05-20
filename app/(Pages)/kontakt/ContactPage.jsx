@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Hero2 from "../../(assets)/Hero2.jpeg";
-import Footbar from "@/app/(components)/Footbar";
+import Footbar from "@/app/(components)/mainpage/Footbar";
 import Head from "next/head";
 
 import {

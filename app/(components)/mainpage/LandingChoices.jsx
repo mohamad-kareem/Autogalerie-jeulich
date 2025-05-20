@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Button from "./Button";
+import Button from "../helpers/Button";
 import Link from "next/link";
 import { Car, GitCompare, Search, Check } from "lucide-react";
 

@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import steps from "../utils/Why.js";
-import Button from "./Button";
+import steps from "../../utils/Why.js";
+import Button from "../helpers/Button";
 import Link from "next/link";
 
 export default function WhyUs() {

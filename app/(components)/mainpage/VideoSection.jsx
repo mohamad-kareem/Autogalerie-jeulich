@@ -1,4 +1,4 @@
-import Button from "./Button";
+import Button from "../helpers/Button";
 export default function VideoSection() {
   return (
     <section className="max-w-[76rem] mx-auto bg-white text-black py-10 px-4 sm:px-6 md:px-8 mb-8 shadow-even">

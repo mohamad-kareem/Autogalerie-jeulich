@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ChevronRight, ChevronLeft } from "lucide-react";
-import popularCategories from "../utils/images.js";
+import popularCategories from "../../utils/images.js";
 
 export default function LandingSlide() {
   const scroll = (direction) => {

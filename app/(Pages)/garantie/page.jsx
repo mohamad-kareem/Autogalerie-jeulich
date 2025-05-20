@@ -1,8 +1,8 @@
 // app/garantie/page.jsx
 import React from "react";
 import Link from "next/link";
-import Button from "@/app/(components)/Button";
-import Footbar from "@/app/(components)/Footbar";
+import Button from "@/app/(components)/helpers/Button";
+import Footbar from "@/app/(components)/mainpage/Footbar";
 import Head from "next/head";
 
 import {

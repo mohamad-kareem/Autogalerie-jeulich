@@ -1,8 +1,8 @@
 "use client";
 import Image from "next/image";
-import Bild2 from "../(assets)/Hero2.jpeg";
-import Bild3 from "../(assets)/yes2.png";
-import Bild4 from "../(assets)/dacia4.png";
+import Bild2 from "../../(assets)/Hero2.jpeg";
+import Bild3 from "../../(assets)/yes2.png";
+import Bild4 from "../../(assets)/dacia4.png";
 import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
 import {
@@ -13,8 +13,8 @@ import {
 } from "framer-motion";
 import { Car, ShieldCheck, Settings } from "lucide-react";
 import Link from "next/link";
-import Button from "./Button.jsx";
-import InfoBar from "./InfoBar/Info";
+import Button from "../helpers/Button.jsx";
+import InfoBar from "../InfoBar/Info";
 
 const slides = [
   {

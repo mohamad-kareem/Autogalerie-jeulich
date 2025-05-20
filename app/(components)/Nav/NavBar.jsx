@@ -8,10 +8,10 @@ import { User, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 
-import Logo from "../(assets)/sm1car.png";
+import Logo from "../../(assets)/sm1car.png";
 import DesktopMenu from "./DesktopMenu";
 import MobMenu from "./MobMenu";
-import { Menus } from "../utils/NavData";
+import { Menus } from "../../utils/NavData";
 
 export default function NavBar() {
   const { data: session } = useSession();

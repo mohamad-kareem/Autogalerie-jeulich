@@ -4,8 +4,8 @@ import { FaSearch } from "react-icons/fa";
 import { MdOutlineAttachMoney } from "react-icons/md";
 import { IoIosArrowForward } from "react-icons/io";
 import Image from "next/image";
-import Marketing from "../(assets)/Marketing.png";
-import Button from "./Button";
+import Marketing from "../../(assets)/Marketing.png";
+import Button from "../helpers/Button";
 import Link from "next/link";
 
 export default function SellCarYourWay() {

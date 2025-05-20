@@ -12,13 +12,13 @@ import {
   FiMoon,
   FiTrash2,
 } from "react-icons/fi";
-import CarTypeSelector from "@/app/(components)/CarTypeSelector";
+import CarTypeSelector from "@/app/(components)/helpers/CarTypeSelector";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { exportPlateReport } from "@/app/utils/PlateExportService";
-import DeleteByTimeRange from "@/app/(components)/DeleteByTimeRange";
+import DeleteByTimeRange from "@/app/(components)/helpers/DeleteByTimeRange";
 
 const PlateTrackingPage = () => {
   const { data: session } = useSession();

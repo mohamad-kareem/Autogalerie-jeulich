@@ -10,7 +10,7 @@ import {
 } from "react-icons/fa";
 import Image from "next/image";
 import finance from "@/app/(assets)/finance.jpg";
-import Footbar from "@/app/(components)/Footbar";
+import Footbar from "@/app/(components)/mainpage/Footbar";
 import Head from "next/head";
 export default function FinanzierungPage() {
   return (
