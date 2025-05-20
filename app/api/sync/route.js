@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { syncCars } from "@/lib/syncCars";
 
 export async function GET(req) {
-  // Vercel will send: Authorization: Bearer <your CRON_SECRET>
   const auth = req.headers.get("Authorization");
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return new NextResponse("Unauthorized", { status: 401 });
