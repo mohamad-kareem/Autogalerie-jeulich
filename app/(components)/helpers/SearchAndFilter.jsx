@@ -115,7 +115,7 @@ export default function SearchAndFilter({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Make Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+              <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
                 <CarFront className="h-4 w-4" />
                 Marke
               </label>
@@ -140,7 +140,7 @@ export default function SearchAndFilter({
 
             {/* Fuel Type Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+              <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
                 <Fuel className="h-4 w-4" />
                 Kraftstoffart
               </label>
@@ -272,7 +272,7 @@ export default function SearchAndFilter({
           </div>
 
           <div className="mt-6 flex justify-end gap-3">
-            <Button
+            <button
               onClick={() => {
                 setFilters({
                   make: "",
@@ -288,7 +288,7 @@ export default function SearchAndFilter({
               className="px-4 py-2.5"
             >
               Filter zurücksetzen
-            </Button>
+            </button>
           </div>
         </div>
       )}
