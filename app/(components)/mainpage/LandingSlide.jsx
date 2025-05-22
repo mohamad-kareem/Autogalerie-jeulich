@@ -18,7 +18,7 @@ export default function LandingSlide() {
   //     py-12  relative
   return (
     <section className="py-12  relative w-full overflow-hidden   shadow-even mb-8 px-4 sm:px-6 lg:px-16">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
         <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-white mb-4">
           Unsere Kategorien
         </h2>

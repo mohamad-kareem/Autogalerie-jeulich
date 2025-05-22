@@ -1,7 +1,7 @@
 // components/GridBackground.jsx
 export default function GridBackground() {
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none  ">
       <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_rgba(255,50,50,0.1)_0%,_transparent_70%)] opacity-30" />
       <div className="absolute bottom-0 left-0 w-full h-32 sm:h-48 bg-gradient-to-t from-black to-transparent" />
       <div className="absolute inset-0 opacity-5">

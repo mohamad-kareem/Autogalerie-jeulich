@@ -1,166 +1,200 @@
 "use client";
+import React, { useState } from "react";
+import Image from "next/image";
+import { FiArrowLeft } from "react-icons/fi";
 
-import { useState, useEffect, useCallback } from "react";
-import { FaChevronLeft, FaChevronRight, FaPause, FaPlay } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
+const ImageSlider = ({ images = [], car = {} }) => {
+  const [activeImage, setActiveImage] = useState(0);
+  const [fullscreenImage, setFullscreenImage] = useState(null);
 
-export default function ImageSlider({
-  images,
-  car,
-  autoPlay = true,
-  interval = 5000,
-}) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState("right");
-  const [isPlaying, setIsPlaying] = useState(autoPlay);
-
-  // Handle auto-play
-  useEffect(() => {
-    if (!isPlaying || images.length <= 1) return;
-
-    const timer = setInterval(() => {
-      handleNext();
-    }, interval);
-
-    return () => clearInterval(timer);
-  }, [currentIndex, isPlaying, interval, images.length]);
-
-  // Slide handlers
-  const handlePrevious = useCallback(() => {
-    setDirection("left");
-    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  }, [images.length]);
-
-  const handleNext = useCallback(() => {
-    setDirection("right");
-    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  }, [images.length]);
-
-  const goToImage = useCallback(
-    (index) => {
-      setDirection(index > currentIndex ? "right" : "left");
-      setCurrentIndex(index);
-    },
-    [currentIndex]
+  // Normalize image URLs
+  const imageUrls = images.map((img) =>
+    typeof img === "string" ? img : img.ref
   );
 
-  // Animation settings
-  const slideVariants = {
-    hiddenRight: { x: "100%", opacity: 0 },
-    hiddenLeft: { x: "-100%", opacity: 0 },
-    visible: {
-      x: 0,
-      opacity: 1,
-      transition: { duration: 0.6, ease: "easeInOut" },
-    },
-    exitRight: { x: "-100%", opacity: 0, transition: { duration: 0.6 } },
-    exitLeft: { x: "100%", opacity: 0, transition: { duration: 0.6 } },
-  };
-
-  // Get visible thumbnails (current + next two)
-  const getVisibleThumbnails = () => {
-    const thumbnails = [];
-    for (let i = 0; i < 3; i++) {
-      const index = (currentIndex + i) % images.length;
-      thumbnails.push(images[index]);
-    }
-    return thumbnails;
-  };
+  const altText = `${car.make || ""} ${car.model || ""}`.trim();
 
   return (
-    <div className="relative w-full group">
-      {/* **Main Slider** */}
-      <div className="relative overflow-hidden rounded-xl aspect-video bg-gradient-to-br from-gray-50 to-gray-100 shadow-xl">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={currentIndex}
-            variants={slideVariants}
-            initial={direction === "right" ? "hiddenRight" : "hiddenLeft"}
-            animate="visible"
-            exit={direction === "right" ? "exitLeft" : "exitRight"}
-            className="absolute inset-0"
+    <>
+      {/* Main Viewer */}
+      <div className="relative bg-white rounded-xl border border-gray-200 overflow-hidden group hover:shadow-lg transition-shadow duration-300">
+        <button
+          className="absolute top-4 right-4 z-10 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-lg shadow-md transition-all opacity-100 lg:opacity-0 group-hover:opacity-100"
+          onClick={() => setFullscreenImage(activeImage)}
+          aria-label="Vollbild"
+        >
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
-            <img
-              src={images[currentIndex].ref}
-              alt={`${car.make} ${car.model} - ${currentIndex + 1}`}
-              className="w-full h-full object-cover"
-              loading={currentIndex <= 2 ? "eager" : "lazy"}
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
             />
-          </motion.div>
-        </AnimatePresence>
+          </svg>
+        </button>
 
-        {/* **Navigation Arrows** */}
-        {images.length > 1 && (
+        <div className="relative h-96 w-full transition-opacity duration-300">
+          <Image
+            src={imageUrls[activeImage] || "/default-car.jpg"}
+            alt={altText}
+            fill
+            className="object-contain p-4 transition-transform duration-500 ease-in-out group-hover:scale-[1.02]"
+            priority
+            quality={90}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px"
+          />
+        </div>
+
+        {imageUrls.length > 1 && (
           <>
             <button
-              onClick={handlePrevious}
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 text-gray-800 p-3 rounded-full shadow-lg hover:scale-110 transition-transform duration-300 backdrop-blur-sm"
-              aria-label="Previous image"
+              onClick={() =>
+                setActiveImage((prev) =>
+                  prev === 0 ? imageUrls.length - 1 : prev - 1
+                )
+              }
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-red-500 text-gray-800 p-3 rounded-full shadow-md transition-all opacity-100 lg:opacity-0 group-hover:opacity-100 hover:scale-110"
+              aria-label="Prev"
             >
-              <FaChevronLeft className="text-lg" />
+              <FiArrowLeft className="w-5 h-5" />
             </button>
             <button
-              onClick={handleNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 text-gray-800 p-3 rounded-full shadow-lg hover:scale-110 transition-transform duration-300 backdrop-blur-sm"
-              aria-label="Next image"
+              onClick={() =>
+                setActiveImage((prev) =>
+                  prev === imageUrls.length - 1 ? 0 : prev + 1
+                )
+              }
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-red-500 text-gray-800 p-3 rounded-full shadow-md transition-all opacity-100 lg:opacity-0 group-hover:opacity-100 hover:scale-110"
+              aria-label="Next"
             >
-              <FaChevronRight className="text-lg" />
+              <FiArrowLeft className="w-5 h-5 rotate-180" />
             </button>
+
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 text-gray-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
+              {activeImage + 1} / {imageUrls.length}
+            </div>
+
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
+              <div
+                className="h-full bg-red-200 transition-all duration-300"
+                style={{
+                  width: `${((activeImage + 1) / imageUrls.length) * 100}%`,
+                }}
+              ></div>
+            </div>
           </>
         )}
-
-        {/* **Play/Pause Button** */}
-        {autoPlay && (
-          <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="absolute top-4 right-4 bg-black/60 text-white p-2 rounded-full hover:bg-black/80 transition-colors"
-            aria-label={isPlaying ? "Pause slideshow" : "Play slideshow"}
-          >
-            {isPlaying ? <FaPause /> : <FaPlay />}
-          </button>
-        )}
-
-        {/* **Image Counter** */}
-        <div className="absolute bottom-4 left-4 bg-black/60 text-white text-sm px-2 py-1 rounded-md">
-          {currentIndex + 1} / {images.length}
-        </div>
       </div>
 
-      {/* **Thumbnail Strip (3 Visible Images)** */}
-      {images.length > 1 && (
-        <div className="flex justify-center mt-4 gap-3 px-2">
-          {getVisibleThumbnails().map((image, i) => {
-            const actualIndex = (currentIndex + i) % images.length;
-            return (
-              <motion.button
-                key={actualIndex}
-                onClick={() => goToImage(actualIndex)}
-                whileHover={{ scale: 1.05 }}
-                className={`relative rounded-lg overflow-hidden transition-all duration-300 ${
-                  actualIndex === currentIndex
-                    ? "ring-2 ring-primary-500"
-                    : "opacity-80 hover:opacity-100"
+      {/* Thumbnails */}
+      {imageUrls.length > 1 && (
+        <div className="relative mt-3">
+          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-gray-50 to-transparent z-10 pointer-events-none"></div>
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-50 to-transparent z-10 pointer-events-none"></div>
+
+          <div className="flex space-x-3 overflow-x-auto py-2 px-1 scrollbar-hide -mx-1">
+            {imageUrls.map((img, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveImage(index)}
+                className={`relative flex-shrink-0 w-20 h-20 bg-white rounded-lg border overflow-hidden transition-all duration-200 ease-in-out ${
+                  activeImage === index
+                    ? "ring-2 ring-red-500 border-transparent scale-105"
+                    : "border-gray-200 hover:border-gray-300 hover:scale-105"
                 }`}
-                style={{ width: "80px", height: "60px" }}
-                aria-label={`View image ${actualIndex + 1}`}
               >
-                <img
-                  src={image.ref}
-                  alt={`Thumbnail ${actualIndex + 1}`}
-                  className="w-full h-full object-cover"
+                <Image
+                  src={img}
+                  alt={`${altText} Bild ${index + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="80px"
                 />
-                {actualIndex === currentIndex && (
-                  <motion.div
-                    className="absolute inset-0 bg-black/30"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  />
+                {activeImage === index && (
+                  <div className="absolute inset-0 bg-black/20"></div>
                 )}
-              </motion.button>
-            );
-          })}
+              </button>
+            ))}
+          </div>
         </div>
       )}
-    </div>
+
+      {/* Fullscreen Modal */}
+      {fullscreenImage !== null && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+          <div className="relative w-full h-full flex items-center justify-center">
+            <button
+              onClick={() => setFullscreenImage(null)}
+              className="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-all"
+              aria-label="Close"
+            >
+              <svg
+                className="h-8 w-8"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
+            {imageUrls.length > 1 && (
+              <>
+                <button
+                  onClick={() =>
+                    setFullscreenImage((prev) =>
+                      prev === 0 ? imageUrls.length - 1 : prev - 1
+                    )
+                  }
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 rounded-full hover:bg-white/10 transition-all"
+                  aria-label="Prev"
+                >
+                  <FiArrowLeft className="w-8 h-8" />
+                </button>
+                <button
+                  onClick={() =>
+                    setFullscreenImage((prev) =>
+                      prev === imageUrls.length - 1 ? 0 : prev + 1
+                    )
+                  }
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 rounded-full hover:bg-white/10 transition-all"
+                  aria-label="Next"
+                >
+                  <FiArrowLeft className="w-8 h-8 rotate-180" />
+                </button>
+              </>
+            )}
+
+            <div className="relative w-full h-full max-w-6xl">
+              <Image
+                src={imageUrls[fullscreenImage] || "/default-car.jpg"}
+                alt={`${altText} (Fullscreen)`}
+                fill
+                className="object-contain"
+                quality={100}
+              />
+            </div>
+
+            {imageUrls.length > 1 && (
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/50 text-white px-4 py-2 rounded-full text-sm font-medium">
+                {fullscreenImage + 1} / {imageUrls.length}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
-}
+};
+
+export default ImageSlider;

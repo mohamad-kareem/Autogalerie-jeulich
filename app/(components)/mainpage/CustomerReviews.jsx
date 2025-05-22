@@ -6,7 +6,7 @@ import Link from "next/link";
 export default function Reviews() {
   return (
     <section className="w-full  py-12 shadow-even mb-8 px-4 sm:px-6 lg:px-16">
-      <div className="max-w-[76rem] mx-auto">
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
         {/* Header */}
         <div className="text-center mb-12 md:mb-16">
           <span className="relative inline-block text-xs font-semibold uppercase tracking-widest text-red-500 mb-3 pl-8 before:content-[''] before:absolute before:left-0 before:top-1/2 before:w-6 before:h-0.5 before:bg-red-500">

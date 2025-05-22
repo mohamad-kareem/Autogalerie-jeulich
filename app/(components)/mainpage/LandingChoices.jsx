@@ -46,8 +46,8 @@ export default function LandingChoices() {
               transition={{ type: "spring", stiffness: 400, damping: 10 }}
               className="backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-300"
             >
-              <div className="flex flex-col h-full">
-                <div className="flex items-center gap-3 mb-4">
+              <div className="flex flex-col h-full  ">
+                <div className="flex items-center gap-3 mb-4 ">
                   <div className="p-2 bg-red-500/10 rounded-lg">
                     {feature.icon}
                   </div>

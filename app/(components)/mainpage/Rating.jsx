@@ -17,7 +17,7 @@ export default function Rating() {
   }, [inView]);
 
   return (
-    <section className="relative w-full py-12 px-4 sm:px-6 lg:px-16 mb-8 overflow-hidden shadow-even">
+    <section className="relative w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto py-12 px-4 sm:px-6 lg:px-16 mb-8 overflow-hidden shadow-even">
       <motion.div
         ref={ref}
         initial={{ opacity: 0, y: 60 }}
