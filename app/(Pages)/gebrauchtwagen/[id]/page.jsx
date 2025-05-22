@@ -1,5 +1,6 @@
 import { connectDB } from "../../../../lib/mongodb";
 import Car from "../../../../models/Car";
+import ContactForm from "@/app/(components)/helpers/ContactForm";
 import {
   FaGasPump,
   FaCar,
@@ -11,20 +12,15 @@ import {
   FaKey,
   FaSun,
   FaSnowflake,
-  Faredtooth,
   FaMapMarkerAlt,
   FaMusic,
   FaWifi,
   FaParking,
   FaLightbulb,
 } from "react-icons/fa";
-import { GiGearStick, GiCarDoor, GiSteeringWheel } from "react-icons/gi";
-import {
-  MdAir,
-  MdElectricCar,
-  MdSecurity,
-  MdDirectionsCar,
-} from "react-icons/md";
+import { GiGearStick, GiCarDoor } from "react-icons/gi";
+import { MdAir, MdDirectionsCar } from "react-icons/md";
+import ImageSlider from "./ImageSlider";
 
 export default async function CarPage({ params }) {
   await connectDB();
@@ -45,7 +41,6 @@ export default async function CarPage({ params }) {
     );
   }
 
-  // Helper function to render boolean features
   const renderFeature = (value, label) => (
     <div className="flex items-center space-x-2">
       <span
@@ -59,7 +54,6 @@ export default async function CarPage({ params }) {
     </div>
   );
 
-  // Group features into categories
   const featureCategories = [
     {
       title: "Performance",
@@ -116,7 +110,7 @@ export default async function CarPage({ params }) {
       icon: <FaMusic className="text-red-500" />,
       features: [
         { label: "Navigation System", value: car.navigationSystem },
-        { label: "redtooth", value: car.redtooth },
+        { label: "Bluetooth", value: car.bluetooth },
         { label: "Touchscreen", value: car.touchscreen },
         { label: "Voice Control", value: car.voiceControl },
         { label: "Wireless Charging", value: car.wirelessCharging },
@@ -142,8 +136,7 @@ export default async function CarPage({ params }) {
 
   return (
     <main className="mt-20 min-h-screen">
-      {/* Hero Section */}
-      <div className=" text-black py-12 px-4 sm:px-6 lg:px-8">
+      <div className="text-black py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl font-bold mb-2">
             {car.make} {car.model}
@@ -170,50 +163,24 @@ export default async function CarPage({ params }) {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Image Gallery */}
           <div className="lg:col-span-2">
             {car.images?.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4">
-                <div className="relative overflow-hidden rounded-xl aspect-video bg-gray-200">
-                  <img
-                    src={car.images[0].ref}
-                    alt={`${car.make} ${car.model}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                {car.images.length > 1 && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {car.images.slice(1).map((img, i) => (
-                      <div
-                        key={i}
-                        className="relative overflow-hidden rounded-lg aspect-square bg-gray-200"
-                      >
-                        <img
-                          src={img.ref}
-                          alt={`${car.make} ${car.model} - ${i + 2}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <ImageSlider
+                images={car.images?.map(({ ref }) => ({ ref }))}
+                car={{ make: car.make, model: car.model }}
+              />
             ) : (
               <div className="bg-gray-200 rounded-xl aspect-video flex items-center justify-center text-gray-400">
                 No images available
               </div>
             )}
-
-            {/* Detailed Specifications */}
             <div className="mt-8 bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-2xl font-bold mb-6 flex items-center">
                 <FaCar className="text-red-500 mr-2" />
                 Vehicle Specifications
               </h2>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="font-semibold text-lg mb-3">
@@ -244,7 +211,6 @@ export default async function CarPage({ params }) {
                     </div>
                   </div>
                 </div>
-
                 <div>
                   <h3 className="font-semibold text-lg mb-3">Dimensions</h3>
                   <div className="space-y-2">
@@ -272,9 +238,7 @@ export default async function CarPage({ params }) {
             </div>
           </div>
 
-          {/* Price & Features */}
           <div className="space-y-6">
-            {/* Price Box */}
             <div className="bg-white rounded-xl shadow-sm p-6 border border-red-100">
               <div className="flex justify-between items-start mb-4">
                 <div>
@@ -295,12 +259,11 @@ export default async function CarPage({ params }) {
               </div>
             </div>
 
-            {/* Features Overview */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-xl font-bold mb-4">Highlights</h2>
               <div className="grid grid-cols-2 gap-3">
                 {car.navigationSystem && renderFeature(true, "Navigation")}
-                {car.redtooth && renderFeature(true, "redtooth")}
+                {car.bluetooth && renderFeature(true, "Bluetooth")}
                 {car.leatherSteeringWheel &&
                   renderFeature(true, "Leather Wheel")}
                 {car.electricHeatedSeats && renderFeature(true, "Heated Seats")}
@@ -312,7 +275,6 @@ export default async function CarPage({ params }) {
               </div>
             </div>
 
-            {/* Contact & Details */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-xl font-bold mb-4">Quick Info</h2>
               <div className="space-y-3">
@@ -341,7 +303,6 @@ export default async function CarPage({ params }) {
           </div>
         </div>
 
-        {/* Feature Categories */}
         <div className="mt-12">
           <h2 className="text-2xl font-bold mb-6">Features & Equipment</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

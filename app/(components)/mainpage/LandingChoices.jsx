@@ -31,7 +31,7 @@ export default function LandingChoices() {
 
   return (
     <section className="relative w-full py-16 px-4 sm:px-6 lg:px-16 overflow-hidden">
-      <div className="max-w-7xl mx-auto relative z-10">
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
