@@ -25,7 +25,12 @@ import {
 import Button from "@/app/(components)/helpers/Button";
 import SearchAndFilter from "@/app/(components)/helpers/SearchAndFilter";
 import GridBackground from "@/app/(components)/helpers/Grid";
+import { useRouter } from "next/navigation"; // <-- import this at the top
+
+// Inside your component:
+
 export default function UsedCarsPage() {
+  const router = useRouter();
   const [cars, setCars] = useState([]);
 
   const [loading, setLoading] = useState(false);
@@ -191,8 +196,23 @@ export default function UsedCarsPage() {
               >
                 Abbrechen
               </button>
-              <Link
-                href="/vergleich"
+              <button
+                onClick={() => {
+                  if (selectedForComparison.length >= 2) {
+                    // Save selected car IDs to localStorage
+                    localStorage.setItem(
+                      "carComparison",
+                      JSON.stringify(selectedForComparison)
+                    );
+
+                    // Navigate to the comparison page
+                    const query = selectedForComparison
+                      .map((id) => `id=${id}`)
+                      .join("&");
+                    router.push(`/vergleich?${query}`);
+                  }
+                }}
+                disabled={selectedForComparison.length < 2}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   selectedForComparison.length >= 2
                     ? "bg-red-800 text-white hover:bg-gray-900"
@@ -200,7 +220,7 @@ export default function UsedCarsPage() {
                 }`}
               >
                 Fahrzeuge vergleichen
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -462,7 +482,7 @@ export default function UsedCarsPage() {
                   <div className="flex items-center gap-3">
                     <Link
                       href={`/gebrauchtwagen/${car._id}`}
-                      className="text-red-800 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md border border-gray-300 bg-white text-gray-800 hover:bg-gray-100 hover:border-gray-400 transition font-medium text-sm shadow-sm"
+                      className="text-red-800 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md border border-gray-300 bg-white  hover:bg-gray-100 hover:border-gray-400 transition font-medium text-sm shadow-sm"
                     >
                       Details Anzeigen
                       <ChevronRight className="h-4 w-4 text-red-800 group-hover:translate-x-1 transition-transform" />
