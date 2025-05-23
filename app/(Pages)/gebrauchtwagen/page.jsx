@@ -227,9 +227,9 @@ export default function UsedCarsPage() {
       )}
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8 pb-20 pt-20">
+      <div className="container  px-4 py-8 pb-20 pt-20 w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
         {/* Page Header */}
-        <div className="mb-8">
+        <div className="pb-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <div className="flex items-center gap-2">
@@ -369,12 +369,12 @@ export default function UsedCarsPage() {
                 )}
 
                 {/* Image Section */}
-                <div className="relative aspect-[4/3] bg-gray-100">
+                <div className="relative aspect-[4/3] bg-gray-100 p-4">
                   {car.images?.[0]?.ref ? (
                     <img
                       src={car.images[0].ref}
                       alt={`${car.make} ${car.model}`}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 rounded-2xl"
                       loading="lazy"
                     />
                   ) : (
@@ -545,13 +545,13 @@ export default function UsedCarsPage() {
                   )}
 
                   {/* Image Section - Compact size */}
-                  <div className="sm:w-1/4 relative">
+                  <div className="sm:w-1/4 relative pt-2">
                     <div className="aspect-[4/3] bg-gray-100">
                       {car.images?.[0]?.ref ? (
                         <img
                           src={car.images[0].ref}
                           alt={`${car.make} ${car.model}`}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover rounded-2xl"
                           loading="lazy"
                         />
                       ) : (
