@@ -7,15 +7,24 @@ export default function Button({
   children,
   ...props
 }) {
-  const baseClasses =
-    "cursor-pointer rounded-lg transition-all duration-300 font-medium text-center flex justify-center items-center";
-  const responsivePadding = "px-4 py-2 sm:px-5 sm:py-2.5";
-  const responsiveText = "text-sm sm:text-base";
+  const baseStyles = `
+    flex items-center justify-center
+    font-medium text-center
+    rounded-lg transition-all duration-300 cursor-pointer
+  `;
+
+  const responsivePadding = `
+    px-2 py-1 text-xs
+    sm:px-5 sm:py-2.5 sm:text-base
+  `;
 
   return (
     <button
       type={type}
-      className={`${bgColor} ${hoverColor} ${textColor} ${baseClasses} ${responsivePadding} ${responsiveText} ${className}`}
+      className={`
+        ${bgColor} ${hoverColor} ${textColor}
+        ${baseStyles} ${responsivePadding} ${className}
+      `}
       {...props}
     >
       {children}

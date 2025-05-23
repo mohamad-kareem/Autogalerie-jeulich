@@ -17,7 +17,7 @@ export default function GridBackground() {
                 d="M 40 0 L 0 0 0 40"
                 fill="none"
                 stroke="white"
-                strokeWidth="1.2"
+                strokeWidth="1.5"
               />
             </pattern>
           </defs>

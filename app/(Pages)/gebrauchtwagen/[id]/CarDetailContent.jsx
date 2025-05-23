@@ -313,8 +313,8 @@ function CarDetailContent({ car }) {
         <GridBackground />
 
         {/* Hero Section */}
-        <div className="relative text-white pt-20 md:pt-24 pb-8 md:pb-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
-          <div className="max-w-7xl mx-auto">
+        <div className="relative text-white pt-20 md:pt-24 pb-8 md:pb-12 px-4 sm:px-6 lg:px-14 overflow-hidden">
+          <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 md:gap-6">
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -356,7 +356,7 @@ function CarDetailContent({ car }) {
                   ))}
                 </div>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 md:p-6  md:min-w-[300px] mt-4 md:mt-0 border border-white/20">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 md:p-6  md:min-w-[250px] mt-4 md:mt-0 border border-white/20">
                 <div className="text-sm md:text-xl text-gray-300 mb-1">
                   Preis
                 </div>
@@ -373,7 +373,7 @@ function CarDetailContent({ car }) {
         </div>
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 -mt-8 md:-mt-12">
+        <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 -mt-8 md:-mt-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
             <div className="lg:col-span-2 space-y-6 md:space-y-8">
               {/* Image Gallery */}
