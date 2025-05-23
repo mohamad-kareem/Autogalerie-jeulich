@@ -85,12 +85,28 @@ export default function ContactPage({ carId, carName, carLink }) {
         {/* Hero Section */}
         <div className="relative bg-black h-[400px] sm:h-[400px]">
           <div className="absolute inset-0 overflow-hidden opacity-60">
-            <Image
-              src={Hero2}
-              alt="Dealership Showroom"
-              className="object-cover "
-              priority
-            />
+            {/* Small screens (fill + cover) */}
+            <div className="relative h-[400px] sm:h-[400px] lg:hidden">
+              <Image
+                src={Hero2}
+                alt="Dealership Showroom"
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+
+            {/* Large screens (standard image with aspect ratio) */}
+            <div className="hidden lg:block">
+              <Image
+                src={Hero2}
+                alt="Dealership Showroom"
+                width={1920}
+                height={500}
+                className="w-full h-auto object-cover"
+                priority
+              />
+            </div>
           </div>
 
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">

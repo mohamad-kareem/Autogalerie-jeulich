@@ -10,7 +10,7 @@ import Link from "next/link";
 
 export default function SellCarYourWay() {
   return (
-    <section className="relative w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto py-12 px-4 sm:px-6 lg:px-16 mb-8 overflow-hidden shadow-even">
+    <section className="relative w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto py-12 px-4 sm:px-6 lg:px-16 pb-30 pt-30 overflow-hidden shadow-even">
       {/* Glow Effects */}
       <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-red-500/10 blur-3xl pointer-events-none" />
       <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
