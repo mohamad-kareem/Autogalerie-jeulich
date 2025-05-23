@@ -43,7 +43,7 @@ const ImageSlider = ({ images = [], car = {} }) => {
             src={imageUrls[activeImage] || "/default-car.jpg"}
             alt={altText}
             fill
-            className="object-contain p-4 transition-transform duration-500 ease-in-out group-hover:scale-[1.02]"
+            className="object-contain  transition-transform duration-500 ease-in-out group-hover:scale-[1.02]"
             priority
             quality={90}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px"

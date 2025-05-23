@@ -46,6 +46,69 @@ import {
 import ImageSlider from "./ImageSlider";
 import FinanceCalculatorAdvanced from "@/app/(components)/helpers/FinanceCalculatorAdvanced";
 import GridBackground from "@/app/(components)/helpers/Grid";
+const prettifyValue = (category, value) => {
+  const maps = {
+    climatisation: {
+      AUTOMATIC_CLIMATISATION: "Automatisch",
+      AUTOMATIC_CLIMATISATION_2_ZONES: "2-Zonen-Klimaautomatik",
+      AUTOMATIC_CLIMATISATION_3_ZONES: "3-Zonen-Klimaautomatik",
+      MANUAL_CLIMATISATION: "Manuell",
+    },
+    airbag: {
+      FRONT_AIRBAGS: "Front",
+      SIDE_AIRBAGS: "Seiten",
+      FRONT_AND_SIDE_AIRBAGS: "Front & Seite",
+      FRONT_AND_SIDE_AND_MORE_AIRBAGS: "Vollausstattung (Front & Seite)",
+    },
+    bendingLightsType: {
+      ADAPTIVE_BENDING_LIGHTS: "Adaptives Kurvenlicht",
+      STATIC_BENDING_LIGHTS: "Statisches Kurvenlicht",
+    },
+    parkingAssistants: {
+      FRONT_SENSORS: "Frontsensoren",
+      REAR_SENSORS: "Hecksensoren",
+      CAM_360_DEGREES: "360° Kamera",
+      REAR_CAMERA: "Rückfahrkamera",
+      PARKING_ASSISTANT: "Parkassistent",
+    },
+    doors: {
+      TWO: "2 Türen",
+      THREE: "3 Türen",
+      FOUR: "4 Türen",
+      FIVE: "5 Türen",
+      FOUR_OR_FIVE: "4 oder 5 Türen",
+      "four or five": "4 oder 5 Türen", // in case it's lowercase text from API
+    },
+    gearbox: {
+      MANUAL_GEAR: "Schaltgetriebe",
+      AUTOMATIC_GEAR: "Automatik",
+      SEMI_AUTOMATIC_GEAR: "Halbautomatik",
+      NO_GEARS: "Ohne Getriebe",
+    },
+    driveType: {
+      FRONT: "Vorderradantrieb",
+      REAR: "Hinterradantrieb",
+      ALL_WHEEL: "Allradantrieb",
+      FOUR_WHEEL: "Vierradantrieb",
+    },
+  };
+
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => maps[category]?.[v] || v.replace(/_/g, " ").toLowerCase())
+      .join(", ");
+  }
+
+  return (
+    maps[category]?.[value] ||
+    value
+      ?.replace(/_/g, " ")
+      .toLowerCase()
+      ?.replace(/^\w/, (c) => c.toUpperCase()) ||
+    "-"
+  );
+};
+
 const SpecCard = ({ icon, title, items }) => (
   <div className="bg-white rounded-lg md:rounded-xl p-4 md:p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
     <div className="flex items-center mb-3 md:mb-4">
@@ -101,7 +164,10 @@ function CarDetailContent({ car }) {
       title: "Komfort",
       icon: <MdAir className="text-red-600" />,
       features: [
-        { label: "Klimaanlage", value: car.climatisation },
+        {
+          label: "Klimaanlage",
+          value: prettifyValue("climatisation", car.climatisation),
+        },
         {
           label: "Regensensor",
           value: car.automaticRainSensor ? "Ja" : "Nein",
@@ -189,7 +255,7 @@ function CarDetailContent({ car }) {
       title: "Sicherheit",
       icon: <FaShieldAlt className="text-red-600" />,
       features: [
-        { label: "Airbags", value: car.airbag },
+        { label: "Airbags", value: prettifyValue("airbag", car.airbag) },
         { label: "ABS", value: car.abs ? "Ja" : "Nein" },
         { label: "ESP", value: car.esp ? "Ja" : "Nein" },
         {
@@ -234,7 +300,12 @@ function CarDetailContent({ car }) {
           label: "Blendfreies Fernlicht",
           value: car.glareFreeHighBeam ? "Ja" : "Nein",
         },
-        { label: "Kurvenlicht", value: car.bendingLightsType },
+
+        {
+          label: "Kurvenlicht",
+          value: prettifyValue("bendingLightsType", car.bendingLightsType),
+        },
+        ,
       ],
     },
     {
@@ -243,7 +314,7 @@ function CarDetailContent({ car }) {
       features: [
         {
           label: "Parkassistent",
-          value: car.parkingAssistants?.join(", ") || "-",
+          value: prettifyValue("parkingAssistants", car.parkingAssistants),
         },
         {
           label: "360° Kamera",
@@ -287,12 +358,12 @@ function CarDetailContent({ car }) {
     {
       icon: <GiGearStick className="text-white" size={16} />,
       label: "Getriebe",
-      value: car.gearbox,
+      value: prettifyValue("gearbox", car.gearbox),
     },
     {
       icon: <GiCarDoor className="text-white" size={16} />,
       label: "Türen",
-      value: car.doors?.replace(/_/g, " ")?.toLowerCase(),
+      value: prettifyValue("doors", car.doors),
     },
     {
       icon: <FaChair className="text-white" size={16} />,
@@ -459,7 +530,7 @@ function CarDetailContent({ car }) {
                           icon={<FaCar className="text-red-600" size={20} />}
                           title="Allgemeine Daten"
                           items={[
-                            { label: "FIN", value: car.vin },
+                            { label: "VIN", value: car.vin },
                             { label: "Fahrzeugklasse", value: car.category },
                             { label: "Zustand", value: car.condition },
                             {
@@ -487,8 +558,14 @@ function CarDetailContent({ car }) {
                               value: `${car.cubicCapacity} ccm`,
                             },
                             { label: "Kraftstoff", value: car.fuel },
-                            { label: "Getriebe", value: car.gearbox },
-                            { label: "Antriebsart", value: car.driveType },
+                            {
+                              label: "Getriebe",
+                              value: prettifyValue("gearbox", car.gearbox),
+                            },
+                            {
+                              label: "Antriebsart",
+                              value: prettifyValue("driveType", car.driveType),
+                            },
                           ]}
                         />
                         <SpecCard
@@ -600,8 +677,14 @@ function CarDetailContent({ car }) {
                               value: `${car.cubicCapacity} ccm`,
                             },
                             { label: "Kraftstoff", value: car.fuel },
-                            { label: "Getriebe", value: car.gearbox },
-                            { label: "Antriebsart", value: car.driveType },
+                            {
+                              label: "Getriebe",
+                              value: prettifyValue("gearbox", car.gearbox),
+                            },
+                            {
+                              label: "Antriebsart",
+                              value: prettifyValue("driveType", car.driveType),
+                            },
                             {
                               label: "Start-Stopp-Automatik",
                               value: car.startStopSystem ? "Ja" : "Nein",
@@ -655,9 +738,7 @@ function CarDetailContent({ car }) {
                           items={[
                             {
                               label: "Türen",
-                              value: car.doors
-                                ?.replace(/_/g, " ")
-                                ?.toLowerCase(),
+                              value: prettifyValue("doors", car.doors),
                             },
                             { label: "Sitzplätze", value: car.seats },
                             {

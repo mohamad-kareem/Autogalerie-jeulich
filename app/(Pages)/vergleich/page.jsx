@@ -114,7 +114,7 @@ const ComparePage = () => {
 
   const renderComparisonRow = (title, icon, key, formatter = (val) => val) => {
     return (
-      <div className="grid grid-cols-12 gap-4 py-3 px-4 hover:bg-white/5 transition-colors border-b border-white/10">
+      <div className="grid grid-cols-12 gap-4 py-3 px-4 hover:bg-white/5 transition-colors border-b border-white/20">
         <div className="col-span-12 md:col-span-3 flex items-center text-gray-300 gap-2">
           {icon &&
             React.cloneElement(icon, { className: "h-4 w-4 text-red-500" })}
@@ -136,7 +136,7 @@ const ComparePage = () => {
 
   const renderFeatureRow = (title, icon, key) => {
     return (
-      <div className="grid grid-cols-12 gap-4 py-3 px-4 hover:bg-white/5 transition-colors border-b border-white/10">
+      <div className="grid grid-cols-12 gap-4 py-3 px-4 hover:bg-white/5 transition-colors border-b border-white/20">
         <div className="col-span-12 md:col-span-3 flex items-center text-gray-300 gap-2">
           {icon &&
             React.cloneElement(icon, { className: "h-4 w-4 text-red-500" })}
@@ -182,7 +182,7 @@ const ComparePage = () => {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="bg-black/70 backdrop-blur-sm p-8 rounded-xl shadow-lg max-w-md w-full border border-white/10"
+            className="bg-black/70 backdrop-blur-sm p-8 rounded-xl shadow-lg max-w-md w-full border border-white/20"
           >
             <div className="flex justify-center mb-4">
               <Scale className="h-12 w-12 text-red-500" />
@@ -250,7 +250,7 @@ const ComparePage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="bg-black/70 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-white/10"
+                className="bg-black/70 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-white/20"
               >
                 <div className="relative">
                   <div className="aspect-video bg-gray-900/50">
@@ -268,7 +268,7 @@ const ComparePage = () => {
                   </div>
                   <button
                     onClick={() => removeCar(car._id)}
-                    className="absolute top-2 right-2 bg-black/70 hover:bg-black p-2 rounded-full shadow-sm  border border-white/10"
+                    className="absolute top-2 right-2 bg-black/70 hover:bg-black p-2 rounded-full shadow-sm  border border-white/20"
                   >
                     <X className="h-4 w-4 text-gray-300 hover:text-red-500" />
                   </button>
@@ -319,15 +319,15 @@ const ComparePage = () => {
           </div>
 
           {/* Desktop comparison table */}
-          <div className="hidden md:block bg-black/70 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden mb-8 border border-white/10">
-            <div className="grid grid-cols-12 gap-0 border-b border-white/10">
+          <div className="hidden md:block bg-black/70 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden mb-8 border border-white/20">
+            <div className="grid grid-cols-12 gap-0 border-b border-white/20">
               <div className="col-span-3 p-4 bg-black/30">
                 <h2 className="font-semibold text-gray-300">Spezifikationen</h2>
               </div>
               {cars.map((car) => (
                 <div
                   key={car._id}
-                  className="col-span-3 p-4 relative group border-l border-white/10"
+                  className="col-span-3 p-4 relative group border-l border-white/20"
                 >
                   <button
                     onClick={() => removeCar(car._id)}
@@ -367,7 +367,7 @@ const ComparePage = () => {
             </div>
 
             {/* Tab navigation */}
-            <div className="border-b border-white/10">
+            <div className="border-b border-white/20">
               <nav className="flex overflow-x-auto">
                 <button
                   onClick={() => setActiveTab("specs")}
@@ -561,11 +561,11 @@ const ComparePage = () => {
           </div>
 
           {/* Summary section */}
-          <div className="bg-black/70 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-white/10">
-            <div className="p-6 border-b border-white/10">
+          <div className="bg-black/70 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-white/20">
+            <div className="p-6 border-b border-white/20">
               <h3 className="text-lg font-bold text-white">Zusammenfassung</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-white/10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-white/20">
               {cars.map((car) => (
                 <div
                   key={`summary-${car._id}`}
