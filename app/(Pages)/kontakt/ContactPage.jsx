@@ -166,7 +166,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                           href="mailto:anfrage@juelicherautozentrum.de"
                           className="mt-1 text-gray-600 hover:text-red-600 transition-colors"
                         >
-                          anfrage@juelicherautozentrum.de
+                          info@autogalerie-juelich.de
                         </a>
                       </div>
                     </div>
