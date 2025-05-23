@@ -304,7 +304,7 @@ const CashBookPage = () => {
         darkMode ? "bg-gradient-to-br from-gray-900 to-gray-800" : "bg-gray-50"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto  py-8">
         {/* Header */}
         <header className="mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
