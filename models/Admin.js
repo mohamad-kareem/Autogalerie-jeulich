@@ -1,3 +1,4 @@
+// ✅ Optimized Admin Model (models/Admin.js)
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
@@ -7,6 +8,7 @@ const adminSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      index: true,
     },
     email: {
       type: String,
@@ -31,31 +33,36 @@ const adminSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    lastLogin: {
-      type: Date,
-    },
+    lastLogin: Date,
     active: {
       type: Boolean,
       default: true,
+      index: true,
     },
+    currentStatus: {
+      type: String,
+      enum: ["in", "out"],
+      default: "out",
+      index: true,
+    },
+    lastPunch: Date,
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
 
+adminSchema.index({ email: 1 }, { unique: true });
 adminSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  try {
-    const salt = await bcrypt.genSalt(12);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
 });
 
-adminSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+adminSchema.methods.comparePassword = async function (candidate) {
+  return bcrypt.compare(candidate, this.password);
 };
 
-const Admin = mongoose.models.Admin || mongoose.model("Admin", adminSchema);
-export default Admin;
+export default mongoose.models.Admin || mongoose.model("Admin", adminSchema);

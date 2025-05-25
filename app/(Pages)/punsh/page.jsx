@@ -1,191 +1,113 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import {
-  FiLogIn,
-  FiLogOut,
-  FiClock,
-  FiUser,
-  FiTrash2,
-  FiFilter,
-  FiX,
-  FiChevronDown,
-  FiChevronUp,
-  FiCalendar,
-} from "react-icons/fi";
-import { FaUserClock, FaLocationArrow } from "react-icons/fa";
-import { MdOutlineSecurity } from "react-icons/md";
-import { IoMdTime } from "react-icons/io";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "react-hot-toast";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import {
+  FiLogIn,
+  FiLogOut,
+  FiUser,
+  FiFilter,
+  FiTrash2,
+  FiClock,
+  FiCalendar,
+} from "react-icons/fi";
+import { FaUserClock, FaBusinessTime } from "react-icons/fa";
+import { IoMdTime, IoMdLocate } from "react-icons/io";
 
-// Dealership coordinates
 const dealershipCoords = { lat: 50.9116416, lng: 6.373376 };
 
 export default function PunchClockPage() {
-  const { data: session, status: authStatus } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
-  // State management
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentStatus, setCurrentStatus] = useState("out");
-  const [location, setLocation] = useState(null);
-  const [distance, setDistance] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // Records management with lazy loading
   const [records, setRecords] = useState([]);
   const [showRecords, setShowRecords] = useState(false);
-  const [hasFetchedRecords, setHasFetchedRecords] = useState(false);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const hasFetched = useRef(false);
 
-  // Filtering and deletion
   const [selectedAdmin, setSelectedAdmin] = useState("all");
-  const [dateFilter, setDateFilter] = useState({
-    start: null,
-    end: null,
-    type: "none",
-  });
-  const [deleteRange, setDeleteRange] = useState({
-    start: null,
-    end: null,
-  });
-  const [showFilters, setShowFilters] = useState(false);
-  const [showDelete, setShowDelete] = useState(false);
+  const [dateFilter, setDateFilter] = useState({ start: null, end: null });
+  const [deleteRange, setDeleteRange] = useState({ start: null, end: null });
+  const [summary, setSummary] = useState([]);
 
-  // Authentication check
   useEffect(() => {
-    if (authStatus === "unauthenticated") router.push("/login");
-  }, [authStatus, router]);
+    if (status === "unauthenticated") router.push("/login");
+  }, [status]);
 
-  // Update current time every second
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Calculate distance between two coordinates
-  const calculateDistance = useCallback((a, b) => {
-    const R = 6371; // Earth's radius in km
-    const dLat = ((b.lat - a.lat) * Math.PI) / 180;
-    const dLon = ((b.lng - a.lng) * Math.PI) / 180;
-    const x =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos((a.lat * Math.PI) / 180) *
-        Math.cos((b.lat * Math.PI) / 180) *
-        Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x)) * 1000; // Distance in meters
-  }, []);
-
-  // Get current location
-  const getLocation = useCallback(async () => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        return reject("Geolocation not supported.");
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const coords = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          const dist = calculateDistance(coords, dealershipCoords);
-          setLocation(coords);
-          setDistance(dist);
-          resolve({ coords, distance: dist });
-        },
-        (error) => {
-          console.error("Geolocation error:", error);
-          reject("Location access denied or unavailable.");
-        },
-        {
-          enableHighAccuracy: true, // << This is key
-          timeout: 10000, // Optional: how long to wait before failing (in ms)
-          maximumAge: 0, // Optional: don't use a cached position
-        }
-      );
-    });
-  }, [calculateDistance]);
-
-  // Fetch only the latest record to determine current status
-  const fetchCurrentStatus = useCallback(async () => {
+  const fetchStatus = useCallback(async () => {
     if (!session?.user?.id) return;
-
-    try {
-      const res = await fetch("/api/punch/latest", {
-        headers: {
-          "x-admin-id": session.user.id,
-        },
-      });
-      const data = await res.json();
-      setCurrentStatus(data?.type || "out");
-    } catch (error) {
-      console.error("Status check error:", error);
-    }
+    const res = await fetch("/api/punch/latest", {
+      headers: { "x-admin-id": session.user.id },
+    });
+    const data = await res.json();
+    setCurrentStatus(data?.type || "out");
   }, [session]);
 
-  // Fetch records only when needed (lazy loading)
-  const fetchPunchRecords = useCallback(
-    async (force = false) => {
-      if (!session?.user?.id || (!force && hasFetchedRecords)) return;
+  const fetchRecords = useCallback(async () => {
+    setIsLoading(true);
+    const res = await fetch("/api/punch");
+    const data = await res.json();
+    setRecords(data);
+    hasFetched.current = true;
+    setIsLoading(false);
+  }, []);
 
-      try {
-        setIsLoading(true);
-        const res = await fetch("/api/punch");
-        const data = await res.json();
-        setRecords(data);
-        setHasFetchedRecords(true);
-      } catch (error) {
-        console.error("Fetch error:", error);
-        toast.error("Failed to load records");
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [session, hasFetchedRecords]
-  );
-
-  // Toggle records visibility with lazy loading
-  const toggleRecords = useCallback(() => {
-    if (!showRecords && !hasFetchedRecords) {
-      fetchPunchRecords();
-    }
-    setShowRecords(!showRecords);
-  }, [showRecords, hasFetchedRecords, fetchPunchRecords]);
-
-  // Initial load - only fetch current status
   useEffect(() => {
-    if (session?.user?.id) {
-      fetchCurrentStatus();
-    }
-  }, [session, fetchCurrentStatus]);
+    if (!showRecords) return;
+    fetch("/api/punch/summary")
+      .then((res) => res.json())
+      .then(setSummary)
+      .catch(() => toast.error("Zusammenfassung konnte nicht geladen werden"));
+  }, [showRecords]);
 
-  const handlePunchAction = async (type) => {
-    if (!session?.user?.id) return;
+  useEffect(() => {
+    if (session?.user?.id) fetchStatus();
+  }, [session, fetchStatus]);
 
-    if (type === "in" && currentStatus === "in") {
-      toast.error("Already clocked in");
-      return;
-    }
+  const getLocation = async () => {
+    return new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const dLat = ((lat - dealershipCoords.lat) * Math.PI) / 180;
+          const dLng = ((lng - dealershipCoords.lng) * Math.PI) / 180;
+          const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos((lat * Math.PI) / 180) *
+              Math.cos((dealershipCoords.lat * Math.PI) / 180) *
+              Math.sin(dLng / 2) ** 2;
+          const distance =
+            6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1000;
+          resolve({ lat, lng, distance });
+        },
+        (err) => reject(err),
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+  };
 
-    if (type === "out" && currentStatus === "out") {
-      toast.error("Already clocked out");
-      return;
-    }
-
+  const handlePunch = async (type) => {
+    if (currentStatus === type || isLoading) return;
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      const { coords, distance } = await getLocation();
-
-      // Check if within 800m of dealership
-      if (distance > 800) {
-        toast.error("You must be at the dealership to punch in/out");
-        return;
-      }
+      const { lat, lng, distance } = await getLocation();
+      if (distance > 800)
+        return toast.error(
+          "Sie müssen sich innerhalb von 800m vom Autohaus befinden, um ein-/auszustempeln"
+        );
 
       const res = await fetch("/api/punch", {
         method: "POST",
@@ -195,671 +117,450 @@ export default function PunchClockPage() {
         },
         body: JSON.stringify({
           type,
-          location: { ...coords, verified: true, distance },
+          location: { lat, lng, distance, verified: true },
         }),
       });
 
-      const data = await res.json();
-      if (data.success) {
-        // Update status and refresh latest record
-        await fetchCurrentStatus();
-        toast.success(`Clocked ${type === "in" ? "in" : "out"} successfully`);
-
-        // If records are visible, refresh them
-        if (showRecords) {
-          await fetchPunchRecords();
-        }
+      const result = await res.json();
+      if (result.success) {
+        toast.success(
+          `Erfolgreich ${type === "in" ? "eingestempelt" : "ausgestempelt"}`
+        );
+        await fetchStatus();
+        if (showRecords) await fetchRecords();
+      } else {
+        toast.error(
+          result.error || "Fehler bei der Verarbeitung Ihrer Anfrage"
+        );
       }
-    } catch (error) {
-      toast.error(error.message || "Action failed. Please try again.");
+    } catch (err) {
+      toast.error("Standortdienstfehler - bitte GPS aktivieren");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDeleteRange = async () => {
-    if (!deleteRange.start || !deleteRange.end) {
-      toast.error("Select both start and end dates");
-      return;
-    }
-
-    if (
-      !window.confirm(
-        `Delete records between ${deleteRange.start.toLocaleDateString()} and ${deleteRange.end.toLocaleDateString()}?`
-      )
-    )
-      return;
-
-    try {
-      setIsDeleting(true);
-      const res = await fetch("/api/punch/delete-range", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-id": session.user.id,
-        },
-        body: JSON.stringify({
-          start: deleteRange.start,
-          end: deleteRange.end,
-          adminId: selectedAdmin !== "all" ? session.user.id : null,
-        }),
-      });
-
-      if (!res.ok) throw new Error("Deletion failed");
-      const { deletedCount } = await res.json();
-      toast.success(`${deletedCount} records deleted`);
-      // Refresh records if they're visible
-      if (showRecords) {
-        await fetchPunchRecords();
-      }
-      setDeleteRange({ start: null, end: null });
-    } catch (error) {
-      toast.error(error.message || "Deletion failed");
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const applyDateFilter = (type) => {
-    let start, end;
-    const today = new Date();
-
-    switch (type) {
-      case "today":
-        start = new Date(today.setHours(0, 0, 0, 0));
-        end = new Date(today.setHours(23, 59, 59, 999));
-        break;
-      case "month":
-        start = new Date(today.getFullYear(), today.getMonth(), 1);
-        end = new Date(
-          today.getFullYear(),
-          today.getMonth() + 1,
-          0,
-          23,
-          59,
-          59
-        );
-        break;
-      case "none":
-        start = null;
-        end = null;
-        break;
-      default:
-        return;
-    }
-
-    setDateFilter({
-      ...dateFilter,
-      type: type === "none" ? "none" : "range",
-      start,
-      end,
+  const filtered = useMemo(() => {
+    return records.filter((r) => {
+      const matchAdmin =
+        selectedAdmin === "all" || r.admin?.name === selectedAdmin;
+      const recordDate = new Date(r.time);
+      const matchDate =
+        (!dateFilter.start || recordDate >= dateFilter.start) &&
+        (!dateFilter.end || recordDate <= dateFilter.end);
+      return matchAdmin && matchDate;
     });
-  };
+  }, [records, selectedAdmin, dateFilter]);
 
-  const clearFilters = () => {
-    setDateFilter({ start: null, end: null, type: "none" });
-    setSelectedAdmin("all");
-  };
-
-  // Helper functions
-  const formatTime = (date) =>
-    new Date(date).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-  const formatDate = (date) =>
-    new Date(date).toLocaleDateString(undefined, {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+  const paginated = useMemo(() => {
+    const perPage = 10; // Reduced for mobile
+    return filtered.slice((page - 1) * perPage, page * perPage);
+  }, [filtered, page]);
 
   const allAdmins = useMemo(() => {
     const names = new Set(records.map((r) => r.admin?.name).filter(Boolean));
     return Array.from(names).sort();
   }, [records]);
 
-  const filteredRecords = useMemo(() => {
-    let result = records;
+  const handleDelete = async () => {
+    if (!deleteRange.start || !deleteRange.end)
+      return toast.error("Bitte wählen Sie zuerst einen Datumsbereich aus");
+    if (
+      !window.confirm(
+        "Sind Sie sicher, dass Sie diese Datensätze löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden."
+      )
+    )
+      return;
 
-    if (selectedAdmin !== "all") {
-      result = result.filter((r) => r.admin?.name === selectedAdmin);
+    setIsLoading(true);
+    const res = await fetch("/api/punch/delete-range", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-id": session.user.id,
+      },
+      body: JSON.stringify({
+        start: deleteRange.start,
+        end: deleteRange.end,
+        adminId: selectedAdmin !== "all" ? session.user.id : null,
+      }),
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      toast.success(
+        `Erfolgreich ${data.deletedCount} Datensatz/Datensätze gelöscht`
+      );
+      setDeleteRange({ start: null, end: null });
+      hasFetched.current = false;
+      fetchRecords();
+    } else {
+      toast.error("Löschen fehlgeschlagen - bitte versuchen Sie es erneut");
     }
+    setIsLoading(false);
+  };
 
-    if (dateFilter.type !== "none" && dateFilter.start && dateFilter.end) {
-      result = result.filter((record) => {
-        const recordDate = new Date(record.time);
-        return recordDate >= dateFilter.start && recordDate <= dateFilter.end;
-      });
-    }
+  const formatTime = (d) =>
+    new Date(d).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const formatDate = (d) => new Date(d).toLocaleDateString();
 
-    return result;
-  }, [records, selectedAdmin, dateFilter]);
-
-  const groupedRecords = useMemo(() => {
-    return filteredRecords.reduce((acc, record) => {
-      const d = new Date(record.time);
-      const monthYear = `${d.toLocaleString("default", {
-        month: "long",
-      })} ${d.getFullYear()}`;
-      const adminName = record.admin?.name || "Unknown";
-      const key = `${monthYear} • ${adminName}`;
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(record);
-      acc[key].sort((a, b) => new Date(b.time) - new Date(a.time));
-      return acc;
-    }, {});
-  }, [filteredRecords]);
-
-  if (authStatus !== "authenticated") {
+  if (status !== "authenticated")
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
-        <div className="animate-pulse flex items-center space-x-4">
-          <div className="h-8 w-8 rounded-full bg-lime-400 opacity-80"></div>
-          <span className="text-lg font-medium text-gray-100">
-            Verifying credentials...
-          </span>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="animate-pulse text-gray-600 text-sm md:text-base">
+          Authentifizierung wird geladen...
         </div>
       </div>
     );
-  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header */}
-        <header className="mb-6">
-          <div className="flex flex-col space-y-4">
-            <div className="flex items-center">
-              <h1 className="text-base sm:text-2xl font-bold flex items-center gap-2">
-                <FaUserClock className="text-lime-400" />
-                <span>Time Tracker</span>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 p-2 md:p-4 lg:p-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header Section */}
+        <header className="mb-4 md:mb-6 lg:mb-8">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-2">
+              <FaUserClock className="text-xl md:text-2xl text-emerald-400" />
+              <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-white">
+                Mitarbeiter Zeiterfassung
               </h1>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-2 text-sm text-gray-300">
-                <FiUser className="text-sm" />
-                <span>{session.user.name}</span>
-                <span>•</span>
+            <div className="flex flex-wrap items-center gap-2 bg-gray-800/50 rounded-lg p-2 text-xs md:text-sm">
+              <div className="flex items-center gap-1">
+                <FiUser className="text-emerald-400" />
+                <span className="truncate max-w-[100px] md:max-w-none">
+                  {session.user.name}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <FiCalendar className="text-emerald-400" />
                 <span>{formatDate(currentTime)}</span>
               </div>
-
-              <div className="flex items-center gap-4">
-                <div className="bg-gray-800 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                  <IoMdTime className="text-lime-400" />
-                  <span className="font-medium">{formatTime(currentTime)}</span>
-                </div>
-                <div
-                  className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm
-                  ${
-                    currentStatus === "in"
-                      ? "bg-lime-900/50 text-lime-400"
-                      : "bg-gray-800 text-gray-400"
-                  }`}
-                >
-                  <span
-                    className={`h-2 w-2 rounded-full ${
-                      currentStatus === "in" ? "bg-lime-400" : "bg-gray-500"
-                    }`}
-                  ></span>
-                  <span>{currentStatus === "in" ? "Active" : "Inactive"}</span>
-                </div>
+              <div className="flex items-center gap-1">
+                <IoMdTime className="text-emerald-400" />
+                <span>{formatTime(currentTime)}</span>
+              </div>
+              <div
+                className={`px-2 py-0.5 rounded-full text-xs ${
+                  currentStatus === "in"
+                    ? "bg-emerald-900 text-emerald-200"
+                    : "bg-gray-700 text-gray-300"
+                }`}
+              >
+                {currentStatus === "in" ? "Eingestempelt" : "Ausgestempelt"}
               </div>
             </div>
           </div>
         </header>
 
-        {/* Punch Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
-          <button
-            onClick={() => handlePunchAction("in")}
-            disabled={currentStatus === "in" || isLoading}
-            className={`p-4 rounded-lg transition-all flex items-center justify-center gap-2
-              ${
-                currentStatus === "in" || isLoading
-                  ? "bg-gray-800/50 text-gray-500 cursor-not-allowed"
-                  : "bg-gradient-to-r from-lime-600 to-lime-500 hover:shadow-lg hover:shadow-lime-500/20 cursor-pointer"
-              }`}
-          >
-            <FiLogIn className="text-lg" />
-            <span>Clock In</span>
-          </button>
+        {/* Punch Controls */}
+        <section className="mb-4 md:mb-6 lg:mb-8">
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg md:rounded-xl p-4 md:p-6 shadow-lg">
+            <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4 flex items-center gap-2">
+              <FaBusinessTime className="text-emerald-400" />
+              Stempelaktionen
+            </h2>
 
-          <button
-            onClick={() => handlePunchAction("out")}
-            disabled={currentStatus !== "in" || isLoading}
-            className={`p-4 rounded-lg transition-all flex items-center justify-center gap-2
-              ${
-                currentStatus !== "in" || isLoading
-                  ? "bg-gray-800/50 text-gray-500 cursor-not-allowed"
-                  : "bg-gradient-to-r from-red-900/50 to-red-700/20 border border-gray-700 hover:shadow-lg cursor-pointer"
-              }`}
-          >
-            <FiLogOut className="text-lg" />
-            <span>Clock Out</span>
-          </button>
-        </div>
+            <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+              <button
+                onClick={() => handlePunch("in")}
+                disabled={currentStatus === "in" || isLoading}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-3 rounded-lg text-sm md:text-base ${
+                  currentStatus === "in" || isLoading
+                    ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                    : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-md hover:shadow-emerald-500/20"
+                }`}
+              >
+                <FiLogIn className="text-base md:text-lg" />
+                Einstempeln
+              </button>
 
-        {/* Records Toggle */}
-        <div className="mb-6">
-          <button
-            onClick={toggleRecords}
-            className={`w-full p-4 rounded-lg transition-all flex items-center justify-between ${
-              showRecords
-                ? "bg-gray-800/50"
-                : "bg-gray-800/30 hover:bg-gray-800/50"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <FiCalendar className="text-lime-400" />
-              <span className="text-sm sm:text-xl">
-                {showRecords ? "Hide Records" : "Show Records"}
-              </span>
+              <button
+                onClick={() => handlePunch("out")}
+                disabled={currentStatus !== "in" || isLoading}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-3 rounded-lg text-sm md:text-base ${
+                  currentStatus !== "in" || isLoading
+                    ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                    : "bg-rose-600 hover:bg-rose-500 text-white shadow-md hover:shadow-rose-500/20"
+                }`}
+              >
+                <FiLogOut className="text-base md:text-lg" />
+                Ausstempeln
+              </button>
             </div>
-            {showRecords ? <FiChevronUp /> : <FiChevronDown />}
-          </button>
-        </div>
 
-        {/* Records Section - Only rendered when visible */}
+            <div className="mt-4 md:mt-6 flex justify-center">
+              <button
+                onClick={() => {
+                  setShowRecords((prev) => {
+                    const show = !prev;
+                    if (show && !hasFetched.current) fetchRecords();
+                    return show;
+                  });
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs md:text-sm transition-colors"
+              >
+                {showRecords ? (
+                  <>
+                    <FiClock className="text-emerald-400" />
+                    Zeiterfassungen ausblenden
+                  </>
+                ) : (
+                  <>
+                    <FiClock className="text-emerald-400" />
+                    Zeiterfassungen anzeigen
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Records Section */}
         {showRecords && (
-          <>
-            {/* Filters */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 mb-6 overflow-hidden">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-800/30 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <FiFilter className="text-lime-400" />
-                  <span className="text-sm sm:text-xl">Filters</span>
-                </div>
-                {showFilters ? <FiChevronUp /> : <FiChevronDown />}
-              </button>
-
-              {showFilters && (
-                <div className="px-5 pb-5 pt-2 border-t border-gray-700">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Employee
-                      </label>
-                      <select
-                        value={selectedAdmin}
-                        onChange={(e) => setSelectedAdmin(e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-lime-500"
-                      >
-                        <option value="all">All Employees</option>
-                        {allAdmins.map((name) => (
-                          <option key={name} value={name}>
-                            {name === session.user.name
-                              ? `${name} (You)`
-                              : name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Date Range
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() => applyDateFilter("today")}
-                          className={`px-3 py-1.5 text-xs rounded transition-colors ${
-                            dateFilter.type === "range" &&
-                            new Date(dateFilter.start).toDateString() ===
-                              new Date().toDateString()
-                              ? "bg-lime-600 text-white"
-                              : "bg-gray-700 hover:bg-gray-600"
-                          }`}
-                        >
-                          Today
-                        </button>
-                        <button
-                          onClick={() => applyDateFilter("month")}
-                          className={`px-3 py-1.5 text-xs rounded transition-colors ${
-                            dateFilter.type === "range" &&
-                            dateFilter.start?.getMonth() ===
-                              new Date().getMonth()
-                              ? "bg-lime-600 text-white"
-                              : "bg-gray-700 hover:bg-gray-600"
-                          }`}
-                        >
-                          This Month
-                        </button>
-                        <button
-                          onClick={() => applyDateFilter("none")}
-                          className={`px-3 py-1.5 text-xs rounded transition-colors ${
-                            dateFilter.type === "none"
-                              ? "bg-lime-600 text-white"
-                              : "bg-gray-700 hover:bg-gray-600"
-                          }`}
-                        >
-                          All Time
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {(dateFilter.type !== "none" || selectedAdmin !== "all") && (
-                    <div className="mt-4 flex justify-end">
-                      <button
-                        onClick={clearFilters}
-                        className="text-sm text-gray-400 hover:text-lime-400 transition-colors flex items-center gap-1"
-                      >
-                        <FiX className="h-4 w-4" />
-                        Clear filters
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Delete Section */}
-            <div className="bg-gray-800/50  rounded-xl border border-gray-700 mb-8">
-              <button
-                onClick={() => setShowDelete(!showDelete)}
-                className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-800/30 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <FiTrash2 className="text-rose-400" />
-                  <span className="text-sm sm:text-xl">Delete Records</span>
-                </div>
-                {showDelete ? <FiChevronUp /> : <FiChevronDown />}
-              </button>
-
-              {showDelete && (
-                <div className="px-5 pb-5 pt-2 border-t border-gray-700">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Start Date
-                        </label>
-                        <DatePicker
-                          selected={deleteRange.start}
-                          onChange={(date) =>
-                            setDeleteRange({ ...deleteRange, start: date })
-                          }
-                          selectsStart
-                          startDate={deleteRange.start}
-                          endDate={deleteRange.end}
-                          placeholderText="Select start"
-                          className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          End Date
-                        </label>
-                        <DatePicker
-                          selected={deleteRange.end}
-                          onChange={(date) =>
-                            setDeleteRange({ ...deleteRange, end: date })
-                          }
-                          selectsEnd
-                          startDate={deleteRange.start}
-                          endDate={deleteRange.end}
-                          minDate={deleteRange.start}
-                          placeholderText="Select end"
-                          className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleDeleteRange}
-                      disabled={
-                        !deleteRange.start || !deleteRange.end || isDeleting
-                      }
-                      className={`w-full bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-md flex items-center justify-center gap-2 transition-colors ${
-                        !deleteRange.start || !deleteRange.end || isDeleting
-                          ? "opacity-50 cursor-not-allowed"
-                          : ""
-                      }`}
-                    >
-                      {isDeleting ? "Processing..." : "Delete Records"}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-            {/* Monthly Worked Hours Summary */}
-            {/* Monthly Worked Hours Summary */}
-            {/* Monthly Worked Hours Summary */}
-            <div className="bg-gray-800/50 rounded-xl border border-gray-700 mb-8 p-5">
-              <h2 className="text-sm sm:text-xl font-semibold text-gray-200 mb-4 flex items-center gap-2">
-                <FiClock className="text-lime-400" />
-                Gearbeitet Stunden (diesen Monat)
+          <section className="mb-4 md:mb-6 lg:mb-8">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg md:rounded-xl p-4 md:p-6 shadow-lg">
+              <h2 className="text-base md:text-lg font-semibold mb-4 md:mb-6 flex items-center gap-2">
+                <FiFilter className="text-emerald-400" />
+                Zeiterfassungsverwaltung
               </h2>
 
-              {allAdmins.length === 0 ? (
-                <p className="text-sm text-gray-400">Keine Daten verfügbar.</p>
-              ) : (
-                <ul className="space-y-3">
-                  {allAdmins.map((name) => {
-                    // Get and sort all records for this admin in current month
-                    const adminRecords = records
-                      .filter(
-                        (r) =>
-                          r.admin?.name === name &&
-                          new Date(r.time).getMonth() ===
-                            new Date().getMonth() &&
-                          new Date(r.time).getFullYear() ===
-                            new Date().getFullYear()
-                      )
-                      .sort((a, b) => new Date(a.time) - new Date(b.time));
+              {/* Filters Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
+                <div className="space-y-3 md:space-y-4">
+                  <div className="space-y-1 md:space-y-2">
+                    <label className="block text-xs md:text-sm font-medium text-gray-300">
+                      Mitarbeiterfilter
+                    </label>
+                    <select
+                      value={selectedAdmin}
+                      onChange={(e) => setSelectedAdmin(e.target.value)}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 md:px-3 md:py-2 text-xs md:text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                    >
+                      <option value="all">Alle Mitarbeiter</option>
+                      {allAdmins.map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                    let totalMs = 0;
-                    const sessions = [];
-                    let currentSession = null;
-
-                    // Process records to calculate time
-                    adminRecords.forEach((record) => {
-                      if (record.type === "in") {
-                        currentSession = { start: new Date(record.time) };
-                      } else if (
-                        record.type === "out" &&
-                        currentSession?.start
-                      ) {
-                        currentSession.end = new Date(record.time);
-                        const duration =
-                          currentSession.end - currentSession.start;
-                        sessions.push({
-                          start: currentSession.start,
-                          end: currentSession.end,
-                          duration,
-                        });
-                        totalMs += duration;
-                        currentSession = null;
-                      }
-                    });
-
-                    // Handle currently active session (clocked in but not out)
-                    if (currentSession?.start) {
-                      const duration = new Date() - currentSession.start;
-                      sessions.push({
-                        start: currentSession.start,
-                        end: null, // indicates still active
-                        duration,
-                      });
-                      totalMs += duration;
-                    }
-
-                    // Convert to hours and minutes
-                    const totalHours = Math.floor(totalMs / (1000 * 60 * 60));
-                    const totalMinutes = Math.floor(
-                      (totalMs / (1000 * 60)) % 60
-                    );
-
-                    return (
-                      <li
-                        key={name}
-                        className="flex flex-col bg-gray-900/40 px-4 py-3 rounded-lg border border-gray-700"
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm sm:text-base font-medium text-gray-200">
-                            {name === session.user.name ? `${name} (Du)` : name}
-                          </span>
-                          <span className="text-sm text-lime-400">
-                            {totalHours}h {totalMinutes}min
-                            {currentSession && (
-                              <span className="text-xs text-gray-400 ml-1">
-                                (aktiv)
+                  {/* Summary Section */}
+                  {summary.length > 0 && (
+                    <div className="space-y-1 md:space-y-2">
+                      <label className="block text-xs md:text-sm font-medium text-gray-300">
+                        Arbeitsstunden
+                      </label>
+                      <div className="bg-gray-700/50 rounded-lg p-2 md:p-3 border border-gray-600">
+                        <div className="space-y-1 md:space-y-2">
+                          {summary.map((s, i) => (
+                            <div
+                              key={i}
+                              className="flex justify-between items-center text-xs md:text-sm"
+                            >
+                              <span className="text-gray-300 truncate max-w-[120px] md:max-w-none">
+                                {s.name}
                               </span>
-                            )}
-                          </span>
+                              <span className="font-medium text-emerald-400">
+                                {s.hours} h
+                              </span>
+                            </div>
+                          ))}
                         </div>
-
-                        {/* Show individual sessions if needed */}
-                        {sessions.length > 0 && (
-                          <div className="mt-2 text-xs text-gray-400">
-                            {sessions.map((session, i) => (
-                              <div key={i}>
-                                {session.start.toLocaleTimeString()} -{" "}
-                                {session.end
-                                  ? session.end.toLocaleTimeString()
-                                  : "now"}
-                                :{" "}
-                                {Math.floor(
-                                  session.duration / (1000 * 60 * 60)
-                                )}
-                                h{" "}
-                                {Math.floor(
-                                  (session.duration / (1000 * 60)) % 60
-                                )}
-                                min
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-
-            {/* Records Table */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
-              <div className="px-4 sm:px-6 py-4 border-b border-gray-700 flex justify-between items-center">
-                <h2 className="text-sm sm:text-lg font-medium flex items-center gap-2">
-                  <FiCalendar className="text-lime-400" />
-                  <span>Time Records</span>
-                  {filteredRecords.length > 0 && (
-                    <span className="text-sm font-normal text-gray-400 ml-2">
-                      ({filteredRecords.length})
-                    </span>
-                  )}
-                </h2>
-                <button
-                  onClick={() => fetchPunchRecords(true)}
-                  disabled={isLoading}
-                  className="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded flex items-center gap-1"
-                >
-                  {isLoading ? (
-                    <>
-                      <span className="animate-spin inline-block h-3 w-3 border border-lime-400 rounded-full border-t-transparent"></span>
-                      <span>Refreshing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Refresh</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {isLoading && !hasFetchedRecords ? (
-                <div className="flex justify-center py-12">
-                  <div className="animate-spin h-10 w-10 border-2 border-lime-400 rounded-full border-t-transparent"></div>
-                </div>
-              ) : Object.keys(groupedRecords).length > 0 ? (
-                <div className="divide-y divide-gray-700">
-                  {Object.entries(groupedRecords).map(([key, recs]) => (
-                    <div key={key} className="p-4">
-                      <h3 className="text-md font-semibold text-gray-300 mb-3">
-                        {key}
-                      </h3>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-700">
-                          <thead className="bg-gray-800">
-                            <tr>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                Date & Time
-                              </th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                Status
-                              </th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                Location
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-700">
-                            {recs.map((record, idx) => (
-                              <tr key={idx} className="hover:bg-gray-800/30">
-                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
-                                  {new Date(record.time).toLocaleString([], {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </td>
-                                <td className="px-4 py-3 whitespace-nowrap">
-                                  <span
-                                    className={`px-2 py-1 inline-flex text-xs leading-4 font-medium rounded-full ${
-                                      record.type === "in"
-                                        ? "bg-lime-900/50 text-lime-400"
-                                        : "bg-gray-700 text-gray-400"
-                                    }`}
-                                  >
-                                    {record.type === "in"
-                                      ? "Clocked In"
-                                      : "Clocked Out"}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-400">
-                                  {record.location?.verified ? (
-                                    <span className="inline-flex items-center text-lime-400">
-                                      <FaLocationArrow className="mr-1.5" />
-                                      Verified ({record.location.distance}m)
-                                    </span>
-                                  ) : (
-                                    <span>Not verified</span>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
-              ) : (
-                <div className="py-12 text-center">
-                  <FiClock className="mx-auto h-12 w-12 text-gray-600" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-300">
-                    No time records found
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {selectedAdmin !== "all" || dateFilter.type !== "none"
-                      ? "Try adjusting your filters"
-                      : "Clock in to start recording your time"}
-                  </p>
+
+                <div className="space-y-1 md:space-y-2">
+                  <label className="block text-xs md:text-sm font-medium text-gray-300">
+                    Datumsbereich Filter
+                  </label>
+                  <div className="flex gap-1 md:gap-2">
+                    <DatePicker
+                      selected={dateFilter.start}
+                      onChange={(d) =>
+                        setDateFilter((f) => ({ ...f, start: d }))
+                      }
+                      placeholderText="Startdatum"
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 md:px-3 md:py-2 text-xs md:text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                      dateFormat="dd.MM.yyyy"
+                    />
+                    <DatePicker
+                      selected={dateFilter.end}
+                      onChange={(d) => setDateFilter((f) => ({ ...f, end: d }))}
+                      placeholderText="Enddatum"
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 md:px-3 md:py-2 text-xs md:text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                      dateFormat="dd.MM.yyyy"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Delete Section */}
+              <div className="mb-6 p-3 bg-gray-700/30 rounded-lg border border-gray-600/50">
+                <h3 className="text-xs md:text-sm font-semibold mb-2 md:mb-3 flex items-center gap-2 text-rose-400">
+                  <FiTrash2 />
+                  Datensätze löschen
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-end">
+                  <div className="space-y-1">
+                    <label className="block text-xs text-gray-400">
+                      Startdatum
+                    </label>
+                    <DatePicker
+                      selected={deleteRange.start}
+                      onChange={(d) =>
+                        setDeleteRange((r) => ({ ...r, start: d }))
+                      }
+                      placeholderText="Startdatum"
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition"
+                      dateFormat="dd.MM.yyyy"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs text-gray-400">
+                      Enddatum
+                    </label>
+                    <DatePicker
+                      selected={deleteRange.end}
+                      onChange={(d) =>
+                        setDeleteRange((r) => ({ ...r, end: d }))
+                      }
+                      placeholderText="Enddatum"
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition"
+                      dateFormat="dd.MM.yyyy"
+                    />
+                  </div>
+                  <button
+                    onClick={handleDelete}
+                    disabled={
+                      isLoading || !deleteRange.start || !deleteRange.end
+                    }
+                    className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs ${
+                      isLoading || !deleteRange.start || !deleteRange.end
+                        ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                        : "bg-rose-700 hover:bg-rose-600 text-white shadow-md hover:shadow-rose-500/20"
+                    }`}
+                  >
+                    <FiTrash2 />
+                    Bereich löschen
+                  </button>
+                </div>
+              </div>
+
+              {/* Records Table */}
+              {/* Records Table */}
+              <div className="overflow-x-auto rounded-lg border border-gray-700">
+                <table className="min-w-full divide-y divide-gray-700">
+                  <thead className="bg-gray-700/50">
+                    <tr>
+                      <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Mitarbeiter
+                      </th>
+                      <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Datum & Zeit
+                      </th>
+                      <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Aktion
+                      </th>
+                      <th className="px-2 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <div className="flex items-center gap-1">
+                          <IoMdLocate className="text-xs md:text-sm" />
+                          <span>Entfernung</span>
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-gray-800/50 divide-y divide-gray-700">
+                    {paginated.length > 0 ? (
+                      paginated.map((r, i) => (
+                        <tr
+                          key={i}
+                          className="hover:bg-gray-700/30 transition-colors"
+                        >
+                          <td className="px-2 py-2 md:px-4 md:py-3 whitespace-nowrap text-xs md:text-sm text-gray-300">
+                            {r.admin?.name || "Unbekannt"}
+                          </td>
+                          <td className="px-2 py-2 md:px-4 md:py-3 whitespace-nowrap text-xs md:text-sm">
+                            {new Date(r.time).toLocaleString([], {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </td>
+                          <td className="px-2 py-2 md:px-4 md:py-3 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`px-1.5 py-0.5 rounded-full text-xs ${
+                                  r.type === "in"
+                                    ? "bg-emerald-900/50 text-emerald-200"
+                                    : "bg-rose-900/50 text-rose-200"
+                                }`}
+                              >
+                                {r.type === "in" ? "EIN" : "AUS"}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-2 py-2 md:px-4 md:py-3 whitespace-nowrap text-xs md:text-sm text-gray-300">
+                            {r.location?.distance
+                              ? `${r.location.distance.toFixed(0)}m`
+                              : "N/A"}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="4"
+                          className="px-2 py-4 md:px-4 md:py-6 text-center text-xs md:text-sm text-gray-400"
+                        >
+                          Keine Datensätze gefunden
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {filtered.length > 0 && (
+                <div className="flex items-center justify-between mt-3 px-1 md:px-2">
+                  <button
+                    onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                    disabled={page === 1}
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                      page === 1
+                        ? "text-gray-500 cursor-not-allowed"
+                        : "text-gray-300 hover:bg-gray-700"
+                    }`}
+                  >
+                    Zurück
+                  </button>
+                  <span className="text-xs md:text-sm text-gray-400">
+                    Seite {page} von {Math.ceil(filtered.length / 10)}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setPage((p) => (p * 10 < filtered.length ? p + 1 : p))
+                    }
+                    disabled={page * 10 >= filtered.length}
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                      page * 10 >= filtered.length
+                        ? "text-gray-500 cursor-not-allowed"
+                        : "text-gray-300 hover:bg-gray-700"
+                    }`}
+                  >
+                    Weiter
+                  </button>
                 </div>
               )}
             </div>
-          </>
+          </section>
         )}
       </div>
     </div>
