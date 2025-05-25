@@ -215,7 +215,7 @@ export default function PunchClockPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 p-2 md:p-4 lg:p-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
         {/* Header Section */}
         <header className="mb-4 md:mb-6 lg:mb-8">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">

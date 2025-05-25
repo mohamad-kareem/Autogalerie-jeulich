@@ -19,7 +19,7 @@ export default function LandingChoices() {
       ],
       buttonText: "🔍 Gebrauchtwagen suchen",
       link: "/gebrauchtwagen",
-      image: ch,
+      image: ch1,
       alt: "Person searching for cars online",
     },
     {
@@ -31,7 +31,7 @@ export default function LandingChoices() {
       ],
       buttonText: "Vergleiche Autos ↔",
       link: "/vergleich",
-      image: ch1,
+      image: ch,
       alt: "Two cars being compared",
     },
   ];
@@ -92,7 +92,7 @@ export default function LandingChoices() {
 
                 {/* Enhanced Image container */}
                 <motion.div
-                  className="bg-neutral-950 hidden md:block relative w-44 h-44 flex-shrink-0 rounded-xl overflow-hidden border border-gray-700/20 shadow-lg group-hover:shadow-red-500/20 transition-all duration-500"
+                  className="bg-neutral-950 hidden md:block relative w-45 h-50 flex-shrink-0 rounded-xl overflow-hidden border border-gray-700/20 shadow-lg group-hover:shadow-red-500/20 transition-all duration-500"
                   whileHover={{ scale: 1.05 }}
                 >
                   <Image
