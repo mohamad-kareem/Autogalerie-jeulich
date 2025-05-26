@@ -104,9 +104,9 @@ export default function PunchClockPage() {
     setIsLoading(true);
     try {
       const { lat, lng, distance } = await getLocation();
-      if (distance > 800)
+      if (distance > 1200)
         return toast.error(
-          "Sie müssen sich innerhalb von 800m vom Autohaus befinden, um ein-/auszustempeln"
+          "Sie müssen sich innerhalb von 400m vom Autohaus befinden, um ein-/auszustempeln"
         );
 
       const res = await fetch("/api/punch", {
@@ -507,9 +507,9 @@ export default function PunchClockPage() {
                             </div>
                           </td>
                           <td className="px-2 py-2 md:px-4 md:py-3 whitespace-nowrap text-xs md:text-sm text-gray-300">
-                            {r.location?.distance
-                              ? `${r.location.distance.toFixed(0)}m`
-                              : "N/A"}
+                            {r.location?.verified
+                              ? "Verifiziert"
+                              : "Nicht verifiziert"}
                           </td>
                         </tr>
                       ))
