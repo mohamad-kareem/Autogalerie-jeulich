@@ -20,14 +20,13 @@ import { IoMdTime, IoMdLocate } from "react-icons/io";
 import * as turf from "@turf/turf";
 const dealershipCoords = turf.polygon([
   [
-    [6.372910570860682, 50.91925460980741],
-    [6.37252290964787, 50.9190555582006],
-    [6.372316871833618, 50.91864657452106],
-    [6.371911712294946, 50.917653350101574],
-    [6.374001206269753, 50.91724518531211],
-    [6.375536608894464, 50.91744520741162],
-    [6.375223024347434, 50.91884587776181],
-    [6.372910570860682, 50.91925460980741], // closing point (same as start)
+    [6.376432058630144, 50.919904579340965],
+    [6.374847791035535, 50.92048710055829],
+    [6.3725912895963575, 50.92096252161582],
+    [6.370803271224787, 50.91947370235164],
+    [6.371389202661675, 50.916821435558745],
+    [6.376204902773395, 50.91639346234888],
+    [6.376432058630144, 50.919904579340965],
   ],
 ]);
 
@@ -93,6 +92,7 @@ export default function PunchClockPage() {
         (pos) => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
+
           const point = turf.point([lng, lat]);
           const isInside = turf.booleanPointInPolygon(point, dealershipCoords);
           resolve({ lat, lng, isInside });
