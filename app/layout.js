@@ -8,16 +8,16 @@ export const metadata = {
   description:
     "Premium Fahrzeugflotte · Standort. Alte Dürenerstraße 4, 52428 Jülich · Telefon. +49 2461 9163780 · Email. info@autogalerie-juelich.de",
   icons: {
-    icon: "/mylogo.png",
-    shortcut: "/mylogo.png",
-    apple: "/mylogo.png",
+    icon: "/Logo.png",
+    shortcut: "/Logo.png",
+    apple: "/Logo.png",
   },
   openGraph: {
     title: "Autogalerie Jülich",
     description: "Premium Fahrzeugflotte in Jülich · Jetzt entdecken!",
     images: [
       {
-        url: "/mylogo.png",
+        url: "/Logo.png",
         width: 1200,
         height: 630,
         alt: "Autogalerie Jülich Logo",
