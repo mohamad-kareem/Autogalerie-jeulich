@@ -17,7 +17,7 @@ export const metadata = {
     description: "Premium Fahrzeugflotte in Jülich · Jetzt entdecken!",
     images: [
       {
-        url: "/Logo.png",
+        url: "dacia4.png",
         width: 1200,
         height: 630,
         alt: "Autogalerie Jülich Logo",
