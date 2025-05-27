@@ -17,8 +17,19 @@ import {
 } from "react-icons/fi";
 import { FaUserClock, FaBusinessTime } from "react-icons/fa";
 import { IoMdTime, IoMdLocate } from "react-icons/io";
-
-const dealershipCoords = { lat: 50.9116416, lng: 6.373376 };
+import * as turf from "@turf/turf";
+const dealershipCoords = turf.polygon([
+  [
+    [6.372910570860682, 50.91925460980741],
+    [6.37252290964787, 50.9190555582006],
+    [6.372316871833618, 50.91864657452106],
+    [6.371911712294946, 50.917653350101574],
+    [6.374001206269753, 50.91724518531211],
+    [6.375536608894464, 50.91744520741162],
+    [6.375223024347434, 50.91884587776181],
+    [6.372910570860682, 50.91925460980741], // closing point (same as start)
+  ],
+]);
 
 export default function PunchClockPage() {
   const { data: session, status } = useSession();
@@ -82,16 +93,9 @@ export default function PunchClockPage() {
         (pos) => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
-          const dLat = ((lat - dealershipCoords.lat) * Math.PI) / 180;
-          const dLng = ((lng - dealershipCoords.lng) * Math.PI) / 180;
-          const a =
-            Math.sin(dLat / 2) ** 2 +
-            Math.cos((lat * Math.PI) / 180) *
-              Math.cos((dealershipCoords.lat * Math.PI) / 180) *
-              Math.sin(dLng / 2) ** 2;
-          const distance =
-            6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1000;
-          resolve({ lat, lng, distance });
+          const point = turf.point([lng, lat]);
+          const isInside = turf.booleanPointInPolygon(point, dealershipCoords);
+          resolve({ lat, lng, isInside });
         },
         (err) => reject(err),
         { enableHighAccuracy: true, timeout: 10000 }
@@ -102,12 +106,16 @@ export default function PunchClockPage() {
   const handlePunch = async (type) => {
     if (currentStatus === type || isLoading) return;
     setIsLoading(true);
+
     try {
-      const { lat, lng, distance } = await getLocation();
-      if (distance > 1200)
-        return toast.error(
-          "Sie müssen sich innerhalb von 400m vom Autohaus befinden, um ein-/auszustempeln"
+      const { lat, lng, isInside } = await getLocation();
+
+      if (!isInside) {
+        toast.error(
+          "Sie befinden sich außerhalb des erlaubten Bereichs des Autohauses."
         );
+        return;
+      }
 
       const res = await fetch("/api/punch", {
         method: "POST",
@@ -117,7 +125,7 @@ export default function PunchClockPage() {
         },
         body: JSON.stringify({
           type,
-          location: { lat, lng, distance, verified: true },
+          location: { lat, lng, verified: true },
         }),
       });
 
@@ -129,12 +137,12 @@ export default function PunchClockPage() {
         await fetchStatus();
         if (showRecords) await fetchRecords();
       } else {
-        toast.error(
-          result.error || "Fehler bei der Verarbeitung Ihrer Anfrage"
-        );
+        toast.error(result.error || "Fehler bei der Stempelung");
       }
     } catch (err) {
-      toast.error("Standortdienstfehler - bitte GPS aktivieren");
+      toast.error(
+        "Standort konnte nicht ermittelt werden. Bitte GPS aktivieren."
+      );
     } finally {
       setIsLoading(false);
     }
