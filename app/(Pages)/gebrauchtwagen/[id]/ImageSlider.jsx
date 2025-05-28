@@ -127,7 +127,7 @@ const ImageSlider = ({ images = [], car = {} }) => {
 
       {/* Fullscreen Modal */}
       {fullscreenImage !== null && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4">
           <div className="relative w-full h-full flex items-center justify-center">
             <button
               onClick={() => setFullscreenImage(null)}
@@ -177,7 +177,7 @@ const ImageSlider = ({ images = [], car = {} }) => {
               </>
             )}
 
-            <div className="relative w-full h-full max-w-6xl">
+            <div className="relative w-[90vw] h-[90vh] max-w-6xl pointer-events-none">
               <Image
                 src={imageUrls[fullscreenImage] || "/default-car.jpg"}
                 alt={`${altText} (Fullscreen)`}

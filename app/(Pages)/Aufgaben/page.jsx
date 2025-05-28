@@ -14,11 +14,14 @@ import {
   FiRefreshCw,
   FiSun,
   FiMoon,
+  FiCalendar,
 } from "react-icons/fi";
 import Image from "next/image";
 import toast from "react-hot-toast";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { FixedSizeList as List } from "react-window";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import { TouchBackend } from "react-dnd-touch-backend";
+import { isMobile } from "react-device-detect";
 
 const needsOptions = [
   "Reklamation",
@@ -33,6 +36,10 @@ const needsOptions = [
 ];
 
 const priorityOptions = ["low", "medium", "high"];
+
+const ItemTypes = {
+  TASK: "task",
+};
 
 const PriorityBadge = React.memo(({ priority, darkMode }) => {
   const priorityStyles = {
@@ -67,126 +74,199 @@ const PriorityBadge = React.memo(({ priority, darkMode }) => {
   );
 });
 
+const DraggableTask = ({
+  task,
+  index,
+  moveTask,
+  darkMode,
+  handleEditTask,
+  handleDeleteTask,
+  admins,
+}) => {
+  const ref = React.useRef(null);
+
+  const [{ isDragging }, drag] = useDrag({
+    type: ItemTypes.TASK,
+    item: { id: task.id, index },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  const [, drop] = useDrop({
+    accept: ItemTypes.TASK,
+    hover(item, monitor) {
+      if (!ref.current) return;
+      const dragIndex = item.index;
+      const hoverIndex = index;
+
+      if (dragIndex === hoverIndex) return;
+
+      const hoverBoundingRect = ref.current?.getBoundingClientRect();
+      const hoverMiddleY =
+        (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      const clientOffset = monitor.getClientOffset();
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) return;
+      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) return;
+
+      moveTask(dragIndex, hoverIndex);
+      item.index = hoverIndex;
+    },
+  });
+
+  drag(drop(ref));
+
+  return (
+    <div
+      ref={ref}
+      style={{ opacity: isDragging ? 0.5 : 1 }}
+      className={`mb-3 rounded-lg border shadow-sm transition-all ${
+        darkMode
+          ? "bg-gray-700 border-gray-600 hover:border-blue-500"
+          : "bg-white border-orange-200 hover:border-orange-400"
+      }`}
+    >
+      <TaskCard
+        task={task}
+        darkMode={darkMode}
+        handleEditTask={handleEditTask}
+        handleDeleteTask={handleDeleteTask}
+        admins={admins}
+      />
+    </div>
+  );
+};
+
 const TaskCard = React.memo(
   ({ task, darkMode, handleEditTask, handleDeleteTask, admins }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
-      <div
-        className={`h-full mb-3 rounded-lg border shadow-sm transition-all ${
-          darkMode
-            ? "bg-gray-700 border-gray-600 hover:border-blue-500"
-            : "bg-white border-orange-200 hover:border-orange-400"
-        }`}
-      >
-        <div className="p-3">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <h3
-                className={`font-medium ${
-                  darkMode ? "text-white" : "text-gray-900"
-                }`}
-              >
-                {task.car}
-              </h3>
-              <div className="mt-1 flex items-center gap-2">
-                <span
-                  className={`text-xs px-2 py-1 rounded-md ${
-                    darkMode
-                      ? "bg-blue-900 text-blue-200"
-                      : "bg-orange-100 text-orange-800"
-                  }`}
-                >
-                  {task.needs}
-                </span>
-                <PriorityBadge priority={task.priority} darkMode={darkMode} />
-              </div>
-            </div>
-            <div className="flex space-x-1">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEditTask(task.id);
-                }}
-                className={`p-1 rounded-lg transition-colors ${
-                  darkMode
-                    ? "text-blue-400 hover:bg-gray-600"
-                    : "text-orange-600 hover:bg-orange-100"
-                }`}
-                title="Bearbeiten"
-              >
-                <FiEdit2 size={16} />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteTask(task.id);
-                }}
-                className={`p-1 rounded-lg transition-colors ${
-                  darkMode
-                    ? "text-red-400 hover:bg-gray-600"
-                    : "text-red-600 hover:bg-red-100"
-                }`}
-                title="Löschen"
-              >
-                <FiTrash2 size={16} />
-              </button>
-            </div>
-          </div>
-
-          {task.description && (
-            <p
-              className={`mt-2 text-sm ${
-                darkMode ? "text-gray-300" : "text-gray-600"
+      <div className="h-full p-3">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <h3
+              className={`font-medium ${
+                darkMode ? "text-white" : "text-gray-900"
               }`}
             >
-              {isExpanded
-                ? task.description
-                : `${task.description.substring(0, 100)}${
-                    task.description.length > 100 ? "..." : ""
-                  }`}
-            </p>
-          )}
-
-          <div className="mt-3 flex items-center justify-between">
-            {task.assignedTo ? (
-              <div className="flex items-center">
-                <div className="relative w-6 h-6 rounded-full overflow-hidden mr-2 border border-orange-200">
-                  <Image
-                    src={task.assignedTo.image}
-                    alt={task.assignedTo.name}
-                    width={24}
-                    height={24}
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div
-                className={`flex items-center text-xs ${
-                  darkMode ? "text-blue-300" : "text-orange-500"
+              {task.car}
+            </h3>
+            <div className="mt-1 flex items-center gap-2">
+              <span
+                className={`text-xs px-2 py-1 rounded-md ${
+                  darkMode
+                    ? "bg-blue-900 text-blue-200"
+                    : "bg-orange-100 text-orange-800"
                 }`}
               >
-                <FiUser className="mr-1" />
-                <span>unbekannt</span>
-              </div>
-            )}
-
+                {task.needs}
+              </span>
+              <PriorityBadge priority={task.priority} darkMode={darkMode} />
+            </div>
+          </div>
+          <div className="flex space-x-1">
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className={`text-xs ${
-                darkMode ? "text-blue-400" : "text-orange-600"
-              } hover:underline cursor-pointer`}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditTask(task.id);
+              }}
+              className={`p-1 rounded-lg transition-colors ${
+                darkMode
+                  ? "text-blue-400 hover:bg-gray-600"
+                  : "text-orange-600 hover:bg-orange-100"
+              }`}
+              title="Bearbeiten"
             >
-              {isExpanded ? "Weniger anzeigen" : "Mehr anzeigen"}
+              <FiEdit2 size={16} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteTask(task.id);
+              }}
+              className={`p-1 rounded-lg transition-colors ${
+                darkMode
+                  ? "text-red-400 hover:bg-gray-600"
+                  : "text-red-600 hover:bg-red-100"
+              }`}
+              title="Löschen"
+            >
+              <FiTrash2 size={16} />
             </button>
           </div>
+        </div>
 
-          {isExpanded && (
-            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-              <div className="grid grid-cols-1 gap-2 text-xs">
+        {task.description && (
+          <p
+            className={`mt-2 text-sm ${
+              darkMode ? "text-gray-300" : "text-gray-600"
+            }`}
+          >
+            {isExpanded
+              ? task.description
+              : `${task.description.substring(0, 100)}${
+                  task.description.length > 100 ? "..." : ""
+                }`}
+          </p>
+        )}
+
+        <div className="mt-3 flex items-center justify-between">
+          {task.assignedTo ? (
+            <div className="flex items-center">
+              <div className="relative w-6 h-6 rounded-full overflow-hidden mr-2 border border-orange-200">
+                <Image
+                  src={task.assignedTo.image}
+                  alt={task.assignedTo.name}
+                  width={24}
+                  height={24}
+                  className="object-cover"
+                />
+              </div>
+            </div>
+          ) : (
+            <div
+              className={`flex items-center text-xs ${
+                darkMode ? "text-blue-300" : "text-orange-500"
+              }`}
+            >
+              <FiUser className="mr-1" />
+              <span>unbekannt</span>
+            </div>
+          )}
+
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={`text-xs ${
+              darkMode ? "text-blue-400" : "text-orange-600"
+            } hover:underline cursor-pointer`}
+          >
+            {isExpanded ? "Weniger anzeigen" : "Mehr anzeigen"}
+          </button>
+        </div>
+
+        {isExpanded && (
+          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+            <div className="grid grid-cols-1 gap-2 text-xs">
+              <div className="flex items-center">
+                <FiCalendar
+                  className={`mr-2 ${
+                    darkMode ? "text-blue-400" : "text-orange-500"
+                  }`}
+                />
+                <span className={darkMode ? "text-gray-300" : "text-gray-600"}>
+                  {new Date(task.createdAt).toLocaleDateString("de-DE", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })}
+                </span>
+              </div>
+              {task.assignedBy && (
                 <div className="flex items-center">
-                  <FiCalendar
+                  <FiUser
                     className={`mr-2 ${
                       darkMode ? "text-blue-400" : "text-orange-500"
                     }`}
@@ -194,31 +274,13 @@ const TaskCard = React.memo(
                   <span
                     className={darkMode ? "text-gray-300" : "text-gray-600"}
                   >
-                    {new Date(task.createdAt).toLocaleDateString("de-DE", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })}
+                    Besitzer: {task.assignedBy.name}
                   </span>
                 </div>
-                {task.assignedBy && (
-                  <div className="flex items-center">
-                    <FiUser
-                      className={`mr-2 ${
-                        darkMode ? "text-blue-400" : "text-orange-500"
-                      }`}
-                    />
-                    <span
-                      className={darkMode ? "text-gray-300" : "text-gray-600"}
-                    >
-                      Besitzer: {task.assignedBy.name}
-                    </span>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -234,42 +296,31 @@ const TaskColumn = React.memo(
     admins,
     onAddTask,
     columnId,
+    moveTask,
+    moveTaskToColumn,
   }) => {
-    const Row = ({ index, style }) => {
-      const task = tasks[index];
-      return (
-        <div style={style} className="px-1">
-          <Draggable key={task.id} draggableId={task.id} index={index}>
-            {(provided) => (
-              <div
-                ref={provided.innerRef}
-                {...provided.draggableProps}
-                {...provided.dragHandleProps}
-                className="py-1"
-              >
-                <TaskCard
-                  task={task}
-                  darkMode={darkMode}
-                  handleEditTask={handleEditTask}
-                  handleDeleteTask={handleDeleteTask}
-                  admins={admins}
-                />
-              </div>
-            )}
-          </Draggable>
-        </div>
-      );
-    };
+    const [{ isOver }, drop] = useDrop({
+      accept: ItemTypes.TASK,
+      drop: (item) => {
+        if (item.status !== columnId) {
+          moveTaskToColumn(item.id, columnId);
+        }
+      },
+      collect: (monitor) => ({
+        isOver: monitor.isOver(),
+      }),
+    });
 
     return (
       <div
+        ref={drop}
         className={`rounded-xl p-3 w-full ${
           columnId === "todo" ? "lg:w-3/4" : "lg:w-1/4"
         } shadow-inner transition-colors duration-300 ${
           darkMode
             ? "bg-gray-800"
             : "bg-gradient-to-b from-orange-100 to-amber-100"
-        }`}
+        } ${isOver ? (darkMode ? "bg-gray-700" : "bg-orange-200") : ""}`}
       >
         <div className="flex items-center justify-between mb-2">
           <h3
@@ -298,70 +349,28 @@ const TaskColumn = React.memo(
           </button>
         </div>
 
-        <Droppable
-          droppableId={columnId}
-          mode="virtual"
-          renderClone={(provided, snapshot, rubric) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.draggableProps}
-              {...provided.dragHandleProps}
-              className="p-1"
-            >
-              <TaskCard
-                task={tasks[rubric.source.index]}
-                darkMode={darkMode}
-                handleEditTask={handleEditTask}
-                handleDeleteTask={handleDeleteTask}
-                admins={admins}
-              />
-            </div>
-          )}
+        <div
+          className={`${
+            columnId === "todo"
+              ? "grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
+              : "space-y-3"
+          }`}
         >
-          {(provided) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              className={`${
-                columnId === "todo"
-                  ? "grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
-                  : "space-y-3"
-              }`}
-            >
-              {columnId === "todo" ? (
-                tasks.map((task, index) => (
-                  <Draggable key={task.id} draggableId={task.id} index={index}>
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                      >
-                        <TaskCard
-                          task={task}
-                          darkMode={darkMode}
-                          handleEditTask={handleEditTask}
-                          handleDeleteTask={handleDeleteTask}
-                          admins={admins}
-                        />
-                      </div>
-                    )}
-                  </Draggable>
-                ))
-              ) : (
-                <List
-                  height={Math.min(600, tasks.length * 150)}
-                  itemCount={tasks.length}
-                  itemSize={150}
-                  width="100%"
-                  outerRef={provided.innerRef}
-                >
-                  {Row}
-                </List>
-              )}
-            </div>
-          )}
-        </Droppable>
+          {tasks.map((task, index) => (
+            <DraggableTask
+              key={task.id}
+              task={task}
+              index={index}
+              moveTask={(dragIndex, hoverIndex) =>
+                moveTask(columnId, dragIndex, hoverIndex)
+              }
+              darkMode={darkMode}
+              handleEditTask={handleEditTask}
+              handleDeleteTask={handleDeleteTask}
+              admins={admins}
+            />
+          ))}
+        </div>
       </div>
     );
   }
@@ -594,6 +603,53 @@ const TaskFormModal = React.memo(
   }
 );
 
+const TaskBoard = ({
+  tasks,
+  darkMode,
+  handleEditTask,
+  handleDeleteTask,
+  admins,
+  handleAddTask,
+  filteredTasks,
+  moveTask,
+  moveTaskToColumn,
+}) => {
+  const tasksByStatus = useMemo(() => {
+    return {
+      todo: filteredTasks.filter((t) => t && t.status === "todo"),
+      in_progress: filteredTasks.filter((t) => t && t.status === "in_progress"),
+    };
+  }, [filteredTasks]);
+
+  const columns = useMemo(
+    () => [
+      { id: "todo", title: "Zu erledigen" },
+      { id: "in_progress", title: "In Bearbeitung" },
+    ],
+    []
+  );
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 items-start">
+      {columns.map((column) => (
+        <TaskColumn
+          key={column.id}
+          title={column.title}
+          tasks={tasksByStatus[column.id] || []}
+          darkMode={darkMode}
+          handleEditTask={handleEditTask}
+          handleDeleteTask={handleDeleteTask}
+          admins={admins}
+          onAddTask={handleAddTask}
+          columnId={column.id}
+          moveTask={moveTask}
+          moveTaskToColumn={moveTaskToColumn}
+        />
+      ))}
+    </div>
+  );
+};
+
 export default function AdvancedTrelloPage() {
   const [tasks, setTasks] = useState([]);
   const [admins, setAdmins] = useState([]);
@@ -611,14 +667,7 @@ export default function AdvancedTrelloPage() {
   const [filters, setFilters] = useState({ needs: "", search: "" });
   const [darkMode, setDarkMode] = useState(false);
 
-  const columns = useMemo(
-    () => [
-      { id: "todo", title: "Zu erledigen" },
-      { id: "in_progress", title: "In Bearbeitung" },
-    ],
-    []
-  );
-
+  // Initialize dark mode
   useEffect(() => {
     const savedMode = localStorage.getItem("darkMode");
     if (savedMode !== null) {
@@ -631,6 +680,7 @@ export default function AdvancedTrelloPage() {
     }
   }, []);
 
+  // Apply dark mode class
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark");
@@ -640,36 +690,38 @@ export default function AdvancedTrelloPage() {
     localStorage.setItem("darkMode", darkMode);
   }, [darkMode]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const [tasksRes, adminsRes] = await Promise.all([
-          fetch("/api/tasks"),
-          fetch("/api/admins"),
-        ]);
+  // Fetch data with error handling and loading states
+  const fetchData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const [tasksRes, adminsRes] = await Promise.all([
+        fetch("/api/tasks"),
+        fetch("/api/admins"),
+      ]);
 
-        if (!tasksRes.ok || !adminsRes.ok) {
-          throw new Error("Failed to fetch data");
-        }
-
-        const [tasksData, adminsData] = await Promise.all([
-          tasksRes.json(),
-          adminsRes.json(),
-        ]);
-
-        setTasks(tasksData.map((t) => ({ ...t, id: t._id })));
-        setAdmins(adminsData);
-      } catch (err) {
-        console.error(err);
-        toast.error("Fehler beim Laden der Daten");
-      } finally {
-        setIsLoading(false);
+      if (!tasksRes.ok || !adminsRes.ok) {
+        throw new Error("Failed to fetch data");
       }
-    };
 
-    fetchData();
+      const [tasksData, adminsData] = await Promise.all([
+        tasksRes.json(),
+        adminsRes.json(),
+      ]);
+
+      setTasks(tasksData.map((t) => ({ ...t, id: t._id })));
+      setAdmins(adminsData);
+    } catch (err) {
+      console.error(err);
+      toast.error("Fehler beim Laden der Daten");
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -701,7 +753,7 @@ export default function AdvancedTrelloPage() {
     }
 
     try {
-      const url = editingTaskId ? "/api/tasks" : "/api/tasks";
+      const url = "/api/tasks";
       const method = editingTaskId ? "PATCH" : "POST";
       const body = JSON.stringify({
         ...(editingTaskId && { id: editingTaskId }),
@@ -843,25 +895,30 @@ export default function AdvancedTrelloPage() {
     }
   }, [darkMode]);
 
-  const onDragEnd = useCallback(
-    async (result) => {
-      const { destination, source, draggableId } = result;
+  const moveTask = useCallback((columnId, dragIndex, hoverIndex) => {
+    setTasks((prevTasks) => {
+      const columnTasks = prevTasks.filter((task) => task.status === columnId);
 
-      if (!destination) return;
-      if (
-        destination.droppableId === source.droppableId &&
-        destination.index === source.index
-      ) {
-        return;
-      }
+      if (!columnTasks[dragIndex]) return prevTasks;
 
-      const task = tasks.find((t) => t.id === draggableId);
-      if (!task) return;
+      const newColumnTasks = [...columnTasks];
+      const [movedTask] = newColumnTasks.splice(dragIndex, 1);
+      newColumnTasks.splice(hoverIndex, 0, movedTask);
+
+      const otherTasks = prevTasks.filter((task) => task.status !== columnId);
+
+      return [...otherTasks, ...newColumnTasks];
+    });
+  }, []);
+
+  const moveTaskToColumn = useCallback(
+    async (taskId, newColumnId) => {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task || task.status === newColumnId) return;
 
       // Optimistic update
-      const updatedTask = { ...task, status: destination.droppableId };
       setTasks((prev) =>
-        prev.map((t) => (t.id === draggableId ? updatedTask : t))
+        prev.map((t) => (t.id === taskId ? { ...t, status: newColumnId } : t))
       );
 
       try {
@@ -869,14 +926,16 @@ export default function AdvancedTrelloPage() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            id: draggableId,
-            status: destination.droppableId,
+            id: taskId,
+            status: newColumnId,
           }),
         });
       } catch (error) {
         console.error("Error updating task status:", error);
         // Revert on error
-        setTasks((prev) => prev.map((t) => (t.id === draggableId ? task : t)));
+        setTasks((prev) =>
+          prev.map((t) => (t.id === taskId ? { ...t, status: task.status } : t))
+        );
         toast.error("Fehler beim Aktualisieren des Status");
       }
     },
@@ -896,13 +955,6 @@ export default function AdvancedTrelloPage() {
       return matchesNeed && matchesSearch;
     });
   }, [tasks, filters.needs, filters.search]);
-
-  const tasksByStatus = useMemo(() => {
-    return {
-      todo: filteredTasks.filter((t) => t.status === "todo"),
-      in_progress: filteredTasks.filter((t) => t.status === "in_progress"),
-    };
-  }, [filteredTasks]);
 
   const handleFilterChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -929,209 +981,205 @@ export default function AdvancedTrelloPage() {
   }
 
   return (
-    <div
-      className={`min-h-screen ${
-        darkMode
-          ? "bg-gray-900"
-          : "bg-gradient-to-b from-orange-500 to-amber-900"
-      } p-2 sm:p-4`}
-    >
-      <div className="w-full max-w-[98vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
-        <div className="flex flex-wrap justify-between items-center mb-4 gap-3">
-          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-            <h1
-              className={`text-base sm:text-lg md:text-xl font-bold ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Aufgaben
-            </h1>
-
-            <button
-              onClick={refreshData}
-              className={`p-1 sm:p-2 rounded-lg ${
-                darkMode
-                  ? "text-blue-400 hover:bg-gray-700"
-                  : "text-black hover:bg-orange-100"
-              }`}
-              title="Daten aktualisieren"
-            >
-              <FiRefreshCw className="text-base sm:text-lg" />
-            </button>
-
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className={`p-1 sm:p-2 rounded-lg ${
-                darkMode
-                  ? "text-yellow-300 hover:bg-gray-700"
-                  : "text-black hover:bg-orange-100"
-              }`}
-              title={
-                darkMode ? "Zu Light Mode wechseln" : "Zu Dark Mode wechseln"
-              }
-            >
-              {darkMode ? (
-                <FiSun className="text-base sm:text-lg" />
-              ) : (
-                <FiMoon className="text-base sm:text-lg" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        <div
-          className={`mb-4 p-3 sm:p-4 rounded-lg ${
-            darkMode ? "bg-gray-800" : "bg-white shadow"
-          }`}
-        >
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiSearch
-                    className={darkMode ? "text-gray-400" : "text-orange-500"}
-                  />
-                </div>
-                <input
-                  type="text"
-                  name="search"
-                  value={filters.search}
-                  onChange={handleFilterChange}
-                  placeholder="Aufgaben suchen..."
-                  className={`block w-full pl-10 pr-3 py-2 rounded-lg border text-xs sm:text-sm transition-all ${
-                    darkMode
-                      ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                      : "bg-white border-orange-200 placeholder-orange-400"
-                  }`}
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <select
-                name="needs"
-                value={filters.needs}
-                onChange={handleFilterChange}
-                className={`rounded-lg px-3 py-2 text-xs sm:text-sm border ${
-                  darkMode
-                    ? "bg-gray-700 border-gray-600 text-white"
-                    : "bg-white border-orange-200"
+    <DndProvider backend={isMobile ? TouchBackend : HTML5Backend}>
+      <div
+        className={`min-h-screen ${
+          darkMode
+            ? "bg-gray-900"
+            : "bg-gradient-to-b from-orange-500 to-amber-900"
+        } p-2 sm:p-4`}
+      >
+        <div className="w-full max-w-[98vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
+          <div className="flex flex-wrap justify-between items-center mb-4 gap-3">
+            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+              <h1
+                className={`text-base sm:text-lg md:text-xl font-bold ${
+                  darkMode ? "text-white" : "text-gray-900"
                 }`}
               >
-                <option value="">Alle Kategorien</option>
-                {needsOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
+                Aufgaben
+              </h1>
 
               <button
-                onClick={() => handleAddTask("todo")}
-                className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 ${
+                onClick={refreshData}
+                className={`p-1 sm:p-2 rounded-lg ${
                   darkMode
-                    ? "bg-blue-600 hover:bg-blue-700 text-white"
-                    : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
+                    ? "text-blue-400 hover:bg-gray-700"
+                    : "text-black hover:bg-orange-100"
                 }`}
+                title="Daten aktualisieren"
               >
-                <FiPlus size={14} /> Aufgabe
+                <FiRefreshCw className="text-base sm:text-lg" />
+              </button>
+
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className={`p-1 sm:p-2 rounded-lg ${
+                  darkMode
+                    ? "text-yellow-300 hover:bg-gray-700"
+                    : "text-black hover:bg-orange-100"
+                }`}
+                title={
+                  darkMode ? "Zu Light Mode wechseln" : "Zu Dark Mode wechseln"
+                }
+              >
+                {darkMode ? (
+                  <FiSun className="text-base sm:text-lg" />
+                ) : (
+                  <FiMoon className="text-base sm:text-lg" />
+                )}
               </button>
             </div>
           </div>
-        </div>
 
-        <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 items-start">
-            {columns.map((column) => (
-              <TaskColumn
-                key={column.id}
-                title={column.title}
-                tasks={tasksByStatus[column.id] || []}
-                darkMode={darkMode}
-                handleEditTask={handleEditTask}
-                handleDeleteTask={handleDeleteTask}
-                admins={admins}
-                onAddTask={handleAddTask}
-                columnId={column.id}
-              />
-            ))}
-          </div>
-        </DragDropContext>
-
-        {filteredTasks.length === 0 && (
           <div
-            className={`mt-8 p-6 text-center rounded-lg ${
+            className={`mb-4 p-3 sm:p-4 rounded-lg ${
               darkMode ? "bg-gray-800" : "bg-white shadow"
             }`}
           >
-            <div
-              className={`mx-auto h-16 w-16 sm:h-24 sm:w-24 mb-3 sm:mb-4 flex items-center justify-center ${
-                darkMode ? "text-blue-400" : "text-orange-500"
-              }`}
-            >
-              <FiFileText size={32} className="sm:size-12 opacity-50" />
-            </div>
-            <h3
-              className={`text-base sm:text-lg font-semibold mb-1 ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
-              {filters.needs || filters.search
-                ? "Keine passenden Aufgaben gefunden"
-                : "Keine Aufgaben vorhanden"}
-            </h3>
-            <p
-              className={`max-w-md mx-auto mb-3 sm:mb-4 text-xs sm:text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
-            >
-              {filters.needs || filters.search
-                ? "Es gibt keine Aufgaben, die Ihren aktuellen Filtern entsprechen."
-                : "Es wurden noch keine Aufgaben erstellt."}
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3">
-              {(filters.needs || filters.search) && (
-                <button
-                  onClick={() => setFilters({ needs: "", search: "" })}
-                  className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium ${
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiSearch
+                      className={darkMode ? "text-gray-400" : "text-orange-500"}
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    name="search"
+                    value={filters.search}
+                    onChange={handleFilterChange}
+                    placeholder="Aufgaben suchen..."
+                    className={`block w-full pl-10 pr-3 py-2 rounded-lg border text-xs sm:text-sm transition-all ${
+                      darkMode
+                        ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                        : "bg-white border-orange-200 placeholder-orange-400"
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <select
+                  name="needs"
+                  value={filters.needs}
+                  onChange={handleFilterChange}
+                  className={`rounded-lg px-3 py-2 text-xs sm:text-sm border ${
                     darkMode
-                      ? "bg-gray-700 hover:bg-gray-600 text-white"
-                      : "bg-orange-100 hover:bg-orange-200 text-orange-800"
+                      ? "bg-gray-700 border-gray-600 text-white"
+                      : "bg-white border-orange-200"
                   }`}
                 >
-                  Filter zurücksetzen
+                  <option value="">Alle Kategorien</option>
+                  {needsOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={() => handleAddTask("todo")}
+                  className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 ${
+                    darkMode
+                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                      : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
+                  }`}
+                >
+                  <FiPlus size={14} /> Aufgabe
                 </button>
-              )}
-              <button
-                onClick={() => handleAddTask("todo")}
-                className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium ${
-                  darkMode
-                    ? "bg-blue-600 hover:bg-blue-700 text-white"
-                    : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
-                }`}
-              >
-                <FiPlus className="mr-1 inline" /> Neue Aufgabe erstellen
-              </button>
+              </div>
             </div>
           </div>
+
+          <TaskBoard
+            tasks={tasks}
+            darkMode={darkMode}
+            handleEditTask={handleEditTask}
+            handleDeleteTask={handleDeleteTask}
+            admins={admins}
+            handleAddTask={handleAddTask}
+            filteredTasks={filteredTasks}
+            moveTask={moveTask}
+            moveTaskToColumn={moveTaskToColumn}
+          />
+
+          {filteredTasks.length === 0 && (
+            <div
+              className={`mt-8 p-6 text-center rounded-lg ${
+                darkMode ? "bg-gray-800" : "bg-white shadow"
+              }`}
+            >
+              <div
+                className={`mx-auto h-16 w-16 sm:h-24 sm:w-24 mb-3 sm:mb-4 flex items-center justify-center ${
+                  darkMode ? "text-blue-400" : "text-orange-500"
+                }`}
+              >
+                <FiFileText size={32} className="sm:size-12 opacity-50" />
+              </div>
+              <h3
+                className={`text-base sm:text-lg font-semibold mb-1 ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}
+              >
+                {filters.needs || filters.search
+                  ? "Keine passenden Aufgaben gefunden"
+                  : "Keine Aufgaben vorhanden"}
+              </h3>
+              <p
+                className={`max-w-md mx-auto mb-3 sm:mb-4 text-xs sm:text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                {filters.needs || filters.search
+                  ? "Es gibt keine Aufgaben, die Ihren aktuellen Filtern entsprechen."
+                  : "Es wurden noch keine Aufgaben erstellt."}
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3">
+                {(filters.needs || filters.search) && (
+                  <button
+                    onClick={() => setFilters({ needs: "", search: "" })}
+                    className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium ${
+                      darkMode
+                        ? "bg-gray-700 hover:bg-gray-600 text-white"
+                        : "bg-orange-100 hover:bg-orange-200 text-orange-800"
+                    }`}
+                  >
+                    Filter zurücksetzen
+                  </button>
+                )}
+                <button
+                  onClick={() => handleAddTask("todo")}
+                  className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium ${
+                    darkMode
+                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                      : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
+                  }`}
+                >
+                  <FiPlus className="mr-1 inline" /> Neue Aufgabe erstellen
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Task Form Modal */}
+        {isModalOpen && (
+          <TaskFormModal
+            isOpen={isModalOpen}
+            onClose={resetForm}
+            taskForm={taskForm}
+            handleInputChange={handleInputChange}
+            handleSubmit={handleSubmitTask}
+            isEditing={!!editingTaskId}
+            darkMode={darkMode}
+            needsOptions={needsOptions}
+            priorityOptions={priorityOptions}
+            admins={admins}
+          />
         )}
       </div>
-
-      {/* Task Form Modal */}
-      {isModalOpen && (
-        <TaskFormModal
-          isOpen={isModalOpen}
-          onClose={resetForm}
-          taskForm={taskForm}
-          handleInputChange={handleInputChange}
-          handleSubmit={handleSubmitTask}
-          isEditing={!!editingTaskId}
-          darkMode={darkMode}
-          needsOptions={needsOptions}
-          priorityOptions={priorityOptions}
-          admins={admins}
-        />
-      )}
-    </div>
+    </DndProvider>
   );
 }
