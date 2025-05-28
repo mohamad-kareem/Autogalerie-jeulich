@@ -4,6 +4,8 @@ import Link from "next/link";
 import Button from "@/app/(components)/helpers/Button";
 import Footbar from "@/app/(components)/mainpage/Footbar";
 import Head from "next/head";
+import garantieLogo from "@/app/(assets)/garantie.jpg";
+import Image from "next/image";
 
 import {
   FiShield,
@@ -22,357 +24,283 @@ import {
   FiAlertCircle,
   FiAward,
   FiMapPin,
+  FiGlobe,
+  FiDollarSign,
+  FiTrendingUp,
+  FiShieldOff,
 } from "react-icons/fi";
 
 export default function GarantiePage() {
   return (
     <>
       <Head>
-        <title>Home | Auto Galerie Jülich</title>
+        <title>Garantie | Auto Galerie Jülich</title>
         <meta name="robots" content="index,follow" />
         <meta
           name="description"
-          content="Auto Galerie Jülich – Beste Gebrauchtwagen in NRW."
+          content="Premium-Garantie für Gebrauchtwagen in Kooperation mit CarGarantie® - Sicherheit und Schutz für Ihr Fahrzeug"
         />
       </Head>
-      <div className="min-h-screen bg-neutral-50 overflow-x-hidden  ">
-        {/* Hero Section - Made more compact on mobile */}
-        <section className="relative bg-black text-white py-16 sm:py-24 lg:py-28 text-center mb-8 sm:mb-10 overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/pattern.png')] bg-cover opacity-20" />
-          <div className="relative z-10 px-4 sm:px-6 max-w-4xl mx-auto">
-            <span className="inline-flex items-center bg-white/20 px-3 py-1 rounded-full text-xs sm:text-sm font-medium mb-4 sm:mb-6 text-red-500 sm:text-red-600 mt-4 sm:mt-0">
-              <FiShield className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-              Premium Protection
-            </span>
-            <h1 className="text-xl sm:text-4xl lg:text-5xl font-serif font-bold leading-snug sm:leading-tight mb-4 sm:mb-6">
-              Unser Garantieversprechen
-            </h1>
-            <div className="w-16 sm:w-24 h-1 bg-red-900 mx-auto mb-6 sm:mb-8" />
-            <p className="text-base sm:text-lg lg:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Jedes bei uns gekaufte Fahrzeug wird mit einer{" "}
-              <span className="font-semibold text-red-400 sm:text-red-600">
-                12-monatigen Premium-Garantie
-              </span>{" "}
-              ausgeliefert.
-            </p>
+      <div className="min-h-screen bg-gray-100 overflow-x-hidden">
+        {/* Hero Section */}
+        <section className="relative bg-gradient-to-r from-black to-red-950 text-white py-20 sm:py-28 lg:py-32 text-center mb-12 overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/pattern.png')] bg-cover opacity-10" />
+          <div className="relative z-10 px-4 sm:px-6 max-w-5xl mx-auto">
+            <div className="flex flex-col items-center mb-6 sm:mb-8">
+              <div className="flex items-center bg-white/10 px-4 py-2 rounded-full text-sm sm:text-base font-medium text-white mb-6">
+                <FiShield className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                <span className="mr-2">Premium Protection by</span>
+              </div>
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-serif font-bold leading-tight mb-6">
+                Unser Garantie-Versprechen
+              </h1>
+              <div className="w-24 h-1.5 bg-red-900 mx-auto mb-8" />
+              <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
+                Jedes Fahrzeug wird mit einer individuellen{" "}
+                <span className="font-semibold text-white">
+                  CarGarantie® Absicherung
+                </span>{" "}
+                ausgeliefert - maßgeschneidert für Ihr Auto.
+              </p>
+            </div>
           </div>
         </section>
 
-        {/* Warranty Badge - Stacked on mobile */}
-        <div className="relative max-w-4xl mx-auto mb-16 sm:mb-20 px-4">
-          <div className="absolute -inset-1 bg-gradient-to-r from-red-500 to-red-300 rounded-xl sm:rounded-2xl blur-md opacity-30" />
-          <div className="relative bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl border border-gray-100 overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+        {/* Warranty Benefits */}
+        <div className="relative max-w-6xl mx-auto mb-20 px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: <FiDollarSign className="h-8 w-8 text-red-600" />,
+                title: "Kostenschutz",
+                desc: "Volle Absicherung bei Reparaturen",
+                bg: "bg-gradient-to-br from-white to-red-50",
+              },
+              {
+                icon: <FiGlobe className="h-8 w-8 text-red-600" />,
+                title: "Europaweit",
+                desc: "Gültig in über 5.000 Partnerwerkstätten",
+                bg: "bg-gradient-to-br from-white to-blue-50",
+              },
+              {
+                icon: <FiTrendingUp className="h-8 w-8 text-red-600" />,
+                title: "Wertsteigerung",
+                desc: "Erhöht den Wiederverkaufswert",
+                bg: "bg-gradient-to-br from-white to-green-50",
+              },
+            ].map((item, idx) => (
+              <div
+                key={idx}
+                className={`${item.bg} rounded-xl shadow-lg border border-gray-200 p-8 text-center transition-all hover:shadow-xl hover:-translate-y-1`}
+              >
+                <div className="mx-auto bg-white w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-sm border border-gray-200">
+                  {item.icon}
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {item.title}
+                </h3>
+                <p className="text-gray-600">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-8 flex justify-center">
+            <Image
+              src={garantieLogo}
+              alt="CarGarantie Logo"
+              width={160}
+              height={40}
+              className="h-20 object-contain opacity-90"
+            />
+          </div>
+        </div>
+
+        {/* Coverage Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 max-w-6xl mx-auto mb-20">
+          {/* Protection Benefits */}
+          <div className="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-gray-900 to-red-900 p-6">
+              <div className="flex items-center">
+                <FiCheckCircle className="h-8 w-8 text-white mr-4" />
+                <h2 className="text-2xl font-bold text-white">
+                  Ihr CarGarantie® Schutz
+                </h2>
+              </div>
+              <p className="text-red-200 mt-2">
+                Individuelle Pakete für jeden Bedarf
+              </p>
+            </div>
+            <div className="p-6 space-y-5">
               {[
                 {
-                  icon: (
-                    <FiClock className="h-6 sm:h-8 w-6 sm:w-8 text-red-600" />
-                  ),
-                  title: "12 Monate",
-                  desc: "Garantiedauer",
+                  icon: <FiShield className="h-5 w-5 text-green-600" />,
+                  title: "Flexible Laufzeiten",
+                  desc: "12, 24 oder 36 Monate Schutz - passend zu Ihrem Fahrzeug",
                 },
                 {
-                  icon: (
-                    <FiAward className="h-6 sm:h-8 w-6 sm:w-8 text-red-600" />
-                  ),
-                  title: "Deutschlandweit",
-                  desc: "Gültig in allen Partnerwerkstätten",
+                  icon: <FiClock className="h-5 w-5 text-green-600" />,
+                  title: "Keine Vorleistungen",
+                  desc: "Wir übernehmen die Abwicklung mit der Werkstatt",
                 },
                 {
-                  icon: (
-                    <FiMapPin className="h-6 sm:h-8 w-6 sm:w-8 text-red-600" />
-                  ),
-                  title: "20.000 km",
-                  desc: "Oder 12 Monate (je nachdem was zuerst eintritt)",
+                  icon: <FiDollarSign className="h-5 w-5 text-green-600" />,
+                  title: "Transparente Konditionen",
+                  desc: "Keine versteckten Kosten oder Überraschungen",
+                },
+                {
+                  icon: <FiTruck className="h-5 w-5 text-green-600" />,
+                  title: "Schnelle Hilfe",
+                  desc: "24/7 Notfallservice im gesamten EU-Raum",
                 },
               ].map((item, idx) => (
-                <div key={idx} className="p-6 sm:p-8 text-center">
-                  <div className="mx-auto bg-red-50 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4">
-                    {item.icon}
+                <div
+                  key={idx}
+                  className="flex items-start p-4 bg-gray-50 rounded-lg border border-gray-200"
+                >
+                  <span className="mt-0.5 mr-3">{item.icon}</span>
+                  <div>
+                    <h4 className="font-medium text-gray-900">{item.title}</h4>
+                    <p className="text-sm text-gray-600">{item.desc}</p>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1">
-                    {item.title}
-                  </h3>
-                  <p className="text-sm sm:text-base text-gray-500">
-                    {item.desc}
-                  </p>
                 </div>
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Coverage Section - Stacked on mobile */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 px-4 max-w-7xl mx-auto mb-16 sm:mb-24">
-          {/* Covered Components */}
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg border border-gray-100">
-            <div className="p-6 sm:p-8 lg:p-10">
-              <div className="flex items-center mb-6 sm:mb-8">
-                <div className="bg-green-100 p-2 sm:p-3 rounded-lg sm:rounded-xl mr-4 sm:mr-5 border border-green-200">
-                  <FiCheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
-                    Abgedeckte Komponenten
-                  </h2>
-                  <p className="text-green-600 text-sm sm:text-base font-medium">
-                    Volle Absicherung der Hauptsysteme
-                  </p>
-                </div>
+          {/* Coverage Options */}
+          <div className="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-gray-900 to-blue-900 p-6">
+              <div className="flex items-center">
+                <FiSettings className="h-8 w-8 text-white mr-4" />
+                <h2 className="text-2xl font-bold text-white">Schutzumfänge</h2>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                {[
-                  {
-                    icon: <FiSettings className="h-4 w-4 sm:h-5 sm:w-5" />,
-                    title: "Motor & Getriebe",
-                    desc: "Alle wesentlichen Bauteile",
-                  },
-                  {
-                    icon: <FiCpu className="h-4 w-4 sm:h-5 sm:w-5" />,
-                    title: "Elektronik",
-                    desc: "Steuergeräte & Sensoren",
-                  },
-                  {
-                    icon: <FiLayers className="h-4 w-4 sm:h-5 sm:w-5" />,
-                    title: "Antriebsstrang",
-                    desc: "Differential, Antriebswellen",
-                  },
-                  {
-                    icon: <FiTruck className="h-4 w-4 sm:h-5 sm:w-5" />,
-                    title: "Fahrwerk",
-                    desc: "Aufhängung & Federung",
-                  },
-                  {
-                    icon: <FiSliders className="h-4 w-4 sm:h-5 sm:w-5" />,
-                    title: "Klimaanlage",
-                    desc: "Kompressor & Kältemittel",
-                  },
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-gray-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-gray-200"
-                  >
-                    <div className="flex items-start">
-                      <span className="text-green-500 mt-0.5 mr-2 sm:mr-3">
-                        {item.icon}
-                      </span>
-                      <div>
-                        <h4 className="font-medium text-sm sm:text-base text-gray-900">
-                          {item.title}
-                        </h4>
-                        <p className="text-xs sm:text-sm text-gray-500">
-                          {item.desc}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Excluded Items */}
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg border border-gray-100">
-            <div className="p-6 sm:p-8 lg:p-10">
-              <div className="flex items-center mb-6 sm:mb-8">
-                <div className="bg-red-100 p-2 sm:p-3 rounded-lg sm:rounded-xl mr-4 sm:mr-5 border border-red-200">
-                  <FiXCircle className="h-6 w-6 sm:h-8 sm:w-8 text-red-500" />
-                </div>
-                <div>
-                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
-                    Nicht abgedeckt
-                  </h2>
-                  <p className="text-red-500 sm:text-red-600 text-sm sm:text-base font-medium">
-                    Reguläre Verschleißteile
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-3 sm:space-y-4">
-                {[
-                  {
-                    icon: <FiDroplet className="h-4 w-4 sm:h-5 sm:w-5" />,
-                    title: "Bremsen",
-                    items: ["Beläge", "Scheiben", "Flüssigkeit"],
-                  },
-                  {
-                    icon: <FiCalendar className="h-4 w-4 sm:h-5 sm:w-5" />,
-                    title: "Reifen",
-                    items: ["Sommer/Winterreifen", "Notrad", "Schläuche"],
-                  },
-                  {
-                    icon: <FiSliders className="h-4 w-4 sm:h-5 sm:w-5" />,
-                    title: "Filter",
-                    items: ["Luftfilter", "Ölfilter", "Innenraumfilter"],
-                  },
-                  {
-                    icon: <FiDroplet className="h-4 w-4 sm:h-5 sm:w-5" />,
-                    title: "Flüssigkeiten",
-                    items: ["Motoröl", "Kühlmittel", "Scheibenwaschmittel"],
-                  },
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-gray-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-gray-200"
-                  >
-                    <div className="flex items-start">
-                      <span className="text-red-500 mt-0.5 mr-2 sm:mr-3">
-                        {item.icon}
-                      </span>
-                      <div>
-                        <h4 className="font-medium text-sm sm:text-base text-gray-900">
-                          {item.title}
-                        </h4>
-                        <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
-                          {item.items.map((subItem, subIdx) => (
-                            <span
-                              key={subIdx}
-                              className="bg-white px-2 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm text-gray-600 border border-gray-200"
-                            >
-                              {subItem}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Conditions & CTA - Stacked on mobile */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 px-4 max-w-7xl mx-auto mb-16 sm:mb-20">
-          {/* Conditions */}
-          <div className="lg:col-span-2">
-            <div className="bg-gradient-to-br from-black/80 to-red-800 text-white rounded-xl sm:rounded-2xl p-6 sm:p-8 lg:p-10">
-              <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">
-                Garantiebedingungen
-              </h3>
-              <div className="space-y-4 sm:space-y-6">
-                {[
-                  {
-                    title: "Wartungspflicht",
-                    content:
-                      "Einhaltung aller vom Hersteller vorgeschriebenen Wartungsintervalle und Serviceleistungen durch autorisierte Werkstätten.",
-                  },
-                  {
-                    title: "Reparaturanforderungen",
-                    content:
-                      "Alle Reparaturen müssen durch unsere autorisierten Partnerwerkstätten durchgeführt werden. Selbst durchgeführte Reparaturen führen zum Garantieverlust.",
-                  },
-                  {
-                    title: "Dokumentation",
-                    content:
-                      "Vorlage des vollständigen Servicehefts mit Stempel der autorisierten Werkstatt bei Garantieansprüchen erforderlich.",
-                  },
-                  {
-                    title: "Übertragbarkeit",
-                    content:
-                      "Die Garantie ist nicht übertragbar bei Weiterverkauf des Fahrzeugs und erlischt in diesem Fall.",
-                  },
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="border-l-2 border-red-400 pl-4 sm:pl-5"
-                  >
-                    <h4 className="font-semibold text-base sm:text-lg mb-1 sm:mb-1.5">
-                      {item.title}
-                    </h4>
-                    <p className="text-gray-300 text-sm sm:text-base">
-                      {item.content}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Contact Box */}
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl border border-gray-200 p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
-            <div>
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
-                Garantie in Anspruch nehmen
-              </h3>
-              <p className="text-gray-600 text-sm sm:text-base mb-4 sm:mb-6">
-                Unser Garantieservice steht Ihnen montags bis freitags von 8:00
-                bis 18:00 Uhr zur Verfügung.
+              <p className="text-blue-200 mt-2">
+                Drei maßgeschneiderte Optionen
               </p>
-
-              <div className="space-y-3 sm:space-y-4">
-                <div className=" mb-3 sm:mb-4">
-                  <Link href="/kontakt" passHref>
-                    <Button className="w-full">
-                      <span className="flex items-center justify-center ">
-                        <FiMail className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                        Kontaktieren Sie uns
-                      </span>
-                    </Button>
-                  </Link>
-                </div>
-
-                <div className="bg-gray-50 p-4 sm:p-5 rounded-lg border border-gray-200">
-                  <div className="">
-                    <FiPhone className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 mt-0.5 mr-2 sm:mr-3" />
-                    <div>
-                      <h4 className="font-medium text-sm sm:text-base text-gray-900">
-                        Telefonische Beratung
-                      </h4>
-                      <p className="text-red-500 sm:text-red-600 font-medium text-sm sm:text-base">
-                        +49 (0)2461 9163780
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start">
-                    <FiMail className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 mt-0.5 mr-2 sm:mr-3" />
-                    <div>
-                      <h4 className="font-medium text-sm sm:text-base text-gray-900">
-                        E-Mail
-                      </h4>
-                      <p className="text-red-500 sm:text-red-600 font-medium text-sm sm:text-base break-all">
-                        info@autogalerie-juelich.de
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
-
-            <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
-              <div className="flex items-start">
-                <FiAlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 mt-0.5 mr-2 sm:mr-3" />
-                <p className="text-xs sm:text-sm text-gray-500">
-                  Bitte halten Sie Ihre Fahrzeugpapiere und den Kaufvertrag
-                  bereit, wenn Sie Garantieansprüche geltend machen.
+            <div className="p-6 space-y-5">
+              {[
+                {
+                  icon: <FiCpu className="h-5 w-5 text-blue-600" />,
+                  title: "Basis-Schutz",
+                  items: [
+                    "Motor & Getriebe",
+                    "Antriebsstrang",
+                    "Hauptelektronik",
+                  ],
+                },
+                {
+                  icon: <FiLayers className="h-5 w-5 text-blue-600" />,
+                  title: "Komfort-Paket",
+                  items: [
+                    "Alle Basis-Komponenten",
+                    "Klimaanlage",
+                    "Fahrerassistenzsysteme",
+                  ],
+                },
+                {
+                  icon: <FiShieldOff className="h-5 w-5 text-blue-600" />,
+                  title: "Nicht enthalten",
+                  items: [
+                    "Verschleißteile",
+                    "Karosserieschäden",
+                    "Unfallfolgen",
+                  ],
+                },
+              ].map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-start p-4 bg-gray-50 rounded-lg border border-gray-200"
+                >
+                  <span className="mt-0.5 mr-3">{item.icon}</span>
+                  <div>
+                    <h4 className="font-medium text-gray-900">{item.title}</h4>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {item.items.map((subItem, subIdx) => (
+                        <span
+                          key={subIdx}
+                          className="bg-white px-3 py-1 rounded-full text-sm text-gray-600 border border-gray-200 shadow-sm"
+                        >
+                          {subItem}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="pt-4 border-t border-gray-200 text-center">
+                <Image
+                  src={garantieLogo}
+                  alt="CarGarantie Logo"
+                  width={160}
+                  height={40}
+                  className="h-8 object-contain mx-auto"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Alle Garantien werden durch CarGarantie® bereitgestellt
                 </p>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Conditions */}
+        <div className="px-4 max-w-6xl mx-auto mb-20">
+          <div className="bg-gradient-to-br from-gray-900 to-red-900 text-white rounded-xl p-8">
+            <div className="flex justify-between items-start mb-6">
+              <h3 className="text-2xl font-bold">CarGarantie® Leistungen</h3>
+            </div>
+            <div className="space-y-6">
+              {[
+                {
+                  title: "Fahrzeugprüfung",
+                  content:
+                    "Vor Vertragsabschluss erfolgt eine detaillierte technische Untersuchung durch unsere Sachverständigen.",
+                },
+                {
+                  title: "Europaweiter Schutz",
+                  content:
+                    "Die Garantie gilt in über 5.000 zertifizierten Werkstätten in ganz Europa.",
+                },
+                {
+                  title: "Transparente Abwicklung",
+                  content:
+                    "Keine versteckten Kosten - alle Leistungen sind im Vertrag klar definiert.",
+                },
+                {
+                  title: "Schnelle Hilfe",
+                  content:
+                    "24-Stunden-Pannenhilfe inklusive - weltweit gültig für die Vertragslaufzeit.",
+                },
+              ].map((item, idx) => (
+                <div key={idx} className="border-l-2 border-red-400 pl-5">
+                  <h4 className="font-semibold text-lg mb-2">{item.title}</h4>
+                  <p className="text-gray-300">{item.content}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Legal Note */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg p-6 sm:p-8 lg:p-10  mb-16 sm:mb-20  border border-gray-200">
+        <div className="bg-white rounded-xl shadow-xl p-8 mb-20 border border-gray-200 mx-4 max-w-6xl mx-auto">
           <div className="flex items-start">
-            <FiAward className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500 mt-0.5  sm:mr-4" />
+            <FiAward className="h-6 w-6 text-gray-500 mt-0.5 mr-4" />
             <div>
-              <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-2 sm:mb-3">
+              <h4 className="text-lg font-bold text-gray-900 mb-3">
                 Rechtliche Hinweise
               </h4>
-              <p className="text-gray-600 text-sm sm:text-base mb-3 sm:mb-4">
-                Diese Garantiebedingungen stellen eine freiwillige Leistung
-                unseres Unternehmens dar und gehen über die gesetzliche
-                Gewährleistung hinaus. Die Garantie gilt nur für den Erstkäufer
-                und ist nicht übertragbar. Voraussetzung ist die korrekte
-                Wartung des Fahrzeugs gemäß Herstellervorgaben.
-              </p>
-              <p className="text-gray-600 text-sm sm:text-base">
-                Änderungen und Irrtümer vorbehalten. Stand:{" "}
+              <p className="text-gray-600">
+                Die CarGarantie® ist eine freiwillige Leistung der Auto Galerie
+                Jülich in Kooperation mit unserem Partner CarGarantie®. Sie
+                stellt keine gesetzliche Gewährleistung dar. Der genaue Umfang
+                ergibt sich aus dem individuellen Garantievertrag. Voraussetzung
+                ist ein einwandfreier technischer Zustand des Fahrzeugs bei
+                Vertragsabschluss. Änderungen und Irrtümer vorbehalten. Stand:{" "}
                 {new Date().toLocaleDateString("de-DE", {
                   year: "numeric",
                   month: "long",
                 })}
-                . Die vollständigen Garantiebedingungen erhalten Sie bei
-                Fahrzeugübergabe.
+                .
               </p>
             </div>
           </div>

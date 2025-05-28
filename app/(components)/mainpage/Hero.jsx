@@ -19,9 +19,9 @@ import InfoBar from "../InfoBar/Info";
 const slides = [
   {
     image: Bild3,
-    title: "Premium Fahrzeugflotte",
+    title: "Hochwertige Fahrzeuge",
     subtitle: "Entdecken Sie unsere exklusiven Fahrzeugmodelle",
-    features: ["0% Finanzierung möglich", "Sofort-Zusage"],
+    features: ["Finanzierung möglich", "TÜV-geprüft"],
     overlay:
       "linear-gradient(135deg, rgba(20,30,40,0.7) 0%, rgba(50,10,10,0.5) 100%)",
   },
@@ -29,7 +29,7 @@ const slides = [
     image: Bild4,
     title: "Individuelle Finanzierung",
     subtitle: "Maßgeschneiderte Lösungen für Ihre Mobilitätsträume",
-    features: ["+200 Fahrzeuge verfügbar", "12 Monate Garantie", "TÜV-geprüft"],
+    features: ["12 Monate Garantie", "Sofort-Zusage"],
     overlay:
       "linear-gradient(135deg, rgba(10,20,40,0.7) 0%, rgba(30,10,50,0.5) 100%)",
   },
@@ -37,7 +37,7 @@ const slides = [
     image: Bild2,
     title: "Premium Servicepakete",
     subtitle: "Rundum-sorglos-Pakete für Ihre Mobilität",
-    features: ["Kostenlose Inspektion", "Mietwagen-Service", "24h Pannenhilfe"],
+    features: ["+70 Fahrzeuge verfügbar"],
     overlay:
       "linear-gradient(135deg, rgba(30,20,30,0.7) 0%, rgba(10,30,40,0.5) 100%)",
   },
@@ -129,8 +129,8 @@ export default function UltraModernHero() {
           </AnimatePresence>
         </motion.div>
 
-        <div className="relative z-10 h-full flex items-center px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16">
-          <div className="container mx-auto">
+        <div className="relative z-10 h-full flex items-center px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 ">
+          <div className="container mx-auto ml-2">
             <motion.div
               initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -148,7 +148,7 @@ export default function UltraModernHero() {
                 className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 bg-white rounded-lg sm:rounded-xl mb-4 sm:mb-6 shadow-lg"
               >
                 <span className="text-xs sm:text-sm font-semibold tracking-wider text-black">
-                  PREMIUM AUTOHANDEL
+                  Premium Qualität
                 </span>
               </motion.div>
 

@@ -1,5 +1,4 @@
-// models/Task.js
-import mongoose from "mongoose";
+import mongoose from "mongoose"; // ✅ REQUIRED
 
 const taskSchema = new mongoose.Schema({
   car: {
@@ -35,6 +34,11 @@ const taskSchema = new mongoose.Schema({
     type: String,
     enum: ["low", "medium", "high"],
     default: "medium",
+  },
+  status: {
+    type: String,
+    enum: ["todo", "in_progress", "done"],
+    default: "todo",
   },
   createdAt: { type: Date, default: Date.now },
 });

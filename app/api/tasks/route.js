@@ -18,14 +18,13 @@ export async function GET() {
 export async function POST(request) {
   await connectDB();
 
-  // Ensure user is authenticated
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const creatorId = session.user.id;
 
-  const { car, needs, description, assignedTo, priority } =
+  const creatorId = session.user.id;
+  const { car, needs, description, assignedTo, priority, status } =
     await request.json();
 
   if (!car || !car.trim()) {
@@ -35,7 +34,15 @@ export async function POST(request) {
     );
   }
 
-  const data = { car, needs, description, priority, assignedBy: creatorId };
+  const data = {
+    car,
+    needs,
+    description,
+    priority,
+    status, // ✅ include this
+    assignedBy: creatorId,
+  };
+
   if (assignedTo) data.assignedTo = assignedTo;
 
   const task = await Task.create(data);
@@ -43,12 +50,13 @@ export async function POST(request) {
     { path: "assignedTo", select: "name image" },
     { path: "assignedBy", select: "name image" },
   ]);
+
   return NextResponse.json(task);
 }
 
 export async function PATCH(request) {
   await connectDB();
-  const { id, car, needs, description, assignedTo, priority } =
+  const { id, car, needs, description, assignedTo, priority, status } =
     await request.json();
 
   if (!car || !car.trim()) {
@@ -58,7 +66,7 @@ export async function PATCH(request) {
     );
   }
 
-  const updates = { car, needs, description, priority };
+  const updates = { car, needs, description, priority, status }; // include status here
   if (assignedTo) updates.assignedTo = assignedTo;
 
   const task = await Task.findByIdAndUpdate(id, updates, { new: true })

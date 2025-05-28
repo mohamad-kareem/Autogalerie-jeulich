@@ -58,21 +58,22 @@ const ImageSlider = ({ images = [], car = {} }) => {
                   prev === 0 ? imageUrls.length - 1 : prev - 1
                 )
               }
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-red-500 text-gray-800 p-3 rounded-full shadow-md transition-all opacity-100 lg:opacity-0 group-hover:opacity-100 hover:scale-110"
+              className="absolute left-1 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-red-500 text-gray-800 p-2 md:p-3 rounded-full shadow-md transition-all opacity-100 lg:opacity-0 group-hover:opacity-100 hover:scale-110"
               aria-label="Prev"
             >
-              <FiArrowLeft className="w-5 h-5" />
+              <FiArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
             </button>
+
             <button
               onClick={() =>
                 setActiveImage((prev) =>
                   prev === imageUrls.length - 1 ? 0 : prev + 1
                 )
               }
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-red-500 text-gray-800 p-3 rounded-full shadow-md transition-all opacity-100 lg:opacity-0 group-hover:opacity-100 hover:scale-110"
+              className="absolute right-1 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-red-500 text-gray-800 p-2 md:p-3 rounded-full shadow-md transition-all opacity-100 lg:opacity-0 group-hover:opacity-100 hover:scale-110"
               aria-label="Next"
             >
-              <FiArrowLeft className="w-5 h-5 rotate-180" />
+              <FiArrowLeft className="w-4 h-4 md:w-5 md:h-5 rotate-180" />
             </button>
 
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 text-gray-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
@@ -156,21 +157,22 @@ const ImageSlider = ({ images = [], car = {} }) => {
                       prev === 0 ? imageUrls.length - 1 : prev - 1
                     )
                   }
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 rounded-full hover:bg-white/10 transition-all"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 md:p-3 rounded-full hover:bg-white/10 transition-all"
                   aria-label="Prev"
                 >
-                  <FiArrowLeft className="w-8 h-8" />
+                  <FiArrowLeft className="w-6 h-6 md:w-8 md:h-8" />
                 </button>
+
                 <button
                   onClick={() =>
                     setFullscreenImage((prev) =>
                       prev === imageUrls.length - 1 ? 0 : prev + 1
                     )
                   }
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 rounded-full hover:bg-white/10 transition-all"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 md:p-3 rounded-full hover:bg-white/10 transition-all"
                   aria-label="Next"
                 >
-                  <FiArrowLeft className="w-8 h-8 rotate-180" />
+                  <FiArrowLeft className="w-6 h-6 md:w-8 md:h-8 rotate-180" />
                 </button>
               </>
             )}

@@ -113,7 +113,7 @@ export default function ContactPage({ carId, carName, carLink }) {
             <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-4xl">
               Kontaktieren Sie uns
             </h1>
-            <p className="mt-6 text-xl text-red-200 max-w-3xl mx-auto">
+            <p className="mt-6 text-2xl text-white max-w-3xl mx-auto">
               Wir beraten Sie gerne persönlich zu Ihrem nächsten Fahrzeug.
             </p>
           </div>
@@ -364,7 +364,7 @@ export default function ContactPage({ carId, carName, carLink }) {
         </div>
 
         {/* Öffnungszeiten */}
-        <div className="bg-gray-100 py-16">
+        <div className=" py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 max-w-4xl mx-auto">
               <div className="p-8 sm:p-10">
