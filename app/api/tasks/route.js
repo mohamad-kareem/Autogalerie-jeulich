@@ -1,4 +1,3 @@
-// app/api/tasks/route.js
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Task from "@/models/Task";
@@ -11,7 +10,7 @@ export async function GET() {
     .sort({ createdAt: -1 })
     .populate("assignedTo", "name image")
     .populate("assignedBy", "name image")
-    .lean();
+    .lean(); // ✅ Return plain JS objects for speed
   return NextResponse.json(tasks);
 }
 
@@ -39,19 +38,20 @@ export async function POST(request) {
     needs,
     description,
     priority,
-    status, // ✅ include this
+    status,
     assignedBy: creatorId,
   };
 
   if (assignedTo) data.assignedTo = assignedTo;
 
-  const task = await Task.create(data);
-  await task.populate([
-    { path: "assignedTo", select: "name image" },
-    { path: "assignedBy", select: "name image" },
-  ]);
+  // ✅ Create task, then immediately fetch with .lean()
+  const created = await Task.create(data);
+  const populated = await Task.findById(created._id)
+    .populate("assignedTo", "name image")
+    .populate("assignedBy", "name image")
+    .lean(); // ✅ lean here
 
-  return NextResponse.json(task);
+  return NextResponse.json(populated);
 }
 
 export async function PATCH(request) {
@@ -66,18 +66,20 @@ export async function PATCH(request) {
     );
   }
 
-  const updates = { car, needs, description, priority, status }; // include status here
+  const updates = { car, needs, description, priority, status };
   if (assignedTo) updates.assignedTo = assignedTo;
 
-  const task = await Task.findByIdAndUpdate(id, updates, { new: true })
+  const updated = await Task.findByIdAndUpdate(id, updates, { new: true })
     .populate("assignedTo", "name image")
-    .populate("assignedBy", "name image");
-  return NextResponse.json(task);
+    .populate("assignedBy", "name image")
+    .lean(); // ✅ lean here too
+
+  return NextResponse.json(updated);
 }
 
 export async function DELETE(request) {
   await connectDB();
   const { id } = await request.json();
   await Task.findByIdAndDelete(id);
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true }); // ✅ Simple response, no extra data
 }

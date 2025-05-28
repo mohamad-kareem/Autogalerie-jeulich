@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   FiPlus,
   FiEdit2,
@@ -24,6 +24,7 @@ import {
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import debounce from "lodash.debounce";
 
 const needsOptions = [
   "Reklamation",
@@ -72,13 +73,13 @@ const PriorityBadge = ({ priority, darkMode }) => {
   );
 };
 
-const TaskCard = ({
+const TaskCard = React.memo(function TaskCard({
   task,
   darkMode,
   handleEditTask,
   handleDeleteTask,
   admins,
-}) => {
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -235,9 +236,9 @@ const TaskCard = ({
       </div>
     </div>
   );
-};
+});
 
-const TaskColumn = ({
+const TaskColumn = React.memo(function TaskColumn({
   title,
   tasks,
   darkMode,
@@ -246,7 +247,7 @@ const TaskColumn = ({
   admins,
   onAddTask,
   columnId,
-}) => {
+}) {
   return (
     <div
       className={`rounded-xl p-3 w-full ${
@@ -333,7 +334,7 @@ const TaskColumn = ({
       </Droppable>
     </div>
   );
-};
+});
 
 const TaskFormModal = ({
   isOpen,
@@ -604,34 +605,39 @@ export default function AdvancedTrelloPage() {
   }, [darkMode]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchTasks = async () => {
       try {
         setIsLoading(true);
-        const [tasksResponse, adminsResponse] = await Promise.all([
-          fetch("/api/tasks"),
-          fetch("/api/admins"),
-        ]);
-
-        if (!tasksResponse.ok || !adminsResponse.ok) {
-          throw new Error("Failed to fetch data");
-        }
-
-        const [tasksData, adminsData] = await Promise.all([
-          tasksResponse.json(),
-          adminsResponse.json(),
-        ]);
-
-        setTasks(tasksData.map((task) => ({ ...task, id: task._id })));
-        setAdmins(adminsData);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Fetch error:", error);
-        toast.error("Fehler beim Laden der Daten");
+        const res = await fetch("/api/tasks");
+        if (!res.ok) throw new Error("Fehler beim Laden der Aufgaben");
+        const data = await res.json();
+        setTasks(data.map((t) => ({ ...t, id: t._id })));
+      } catch (err) {
+        console.error(err);
+        toast.error("Fehler beim Laden der Aufgaben");
+      } finally {
         setIsLoading(false);
       }
     };
 
-    fetchData();
+    fetchTasks();
+
+    // Fetch admins later when browser is idle
+    if ("requestIdleCallback" in window) {
+      requestIdleCallback(() => {
+        fetch("/api/admins")
+          .then((res) => res.json())
+          .then(setAdmins)
+          .catch(() => toast.error("Fehler beim Laden der Admins"));
+      });
+    } else {
+      setTimeout(() => {
+        fetch("/api/admins")
+          .then((res) => res.json())
+          .then(setAdmins)
+          .catch(() => toast.error("Fehler beim Laden der Admins"));
+      }, 500);
+    }
   }, []);
 
   const handleInputChange = (e) => {
@@ -788,10 +794,12 @@ export default function AdvancedTrelloPage() {
     }
   };
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
-  };
+  const handleFilterChange = useMemo(() => {
+    return debounce((e) => {
+      const { name, value } = e.target;
+      setFilters((prev) => ({ ...prev, [name]: value }));
+    }, 300);
+  }, []);
 
   const refreshData = async () => {
     try {
@@ -874,22 +882,28 @@ export default function AdvancedTrelloPage() {
     return matchesNeed && matchesSearch;
   });
 
-  const getTasksByStatus = (status) => {
-    return filteredTasks.filter((task) => task.status === status);
-  };
+  const tasksByStatus = useMemo(() => {
+    return {
+      todo: filteredTasks.filter((t) => t.status === "todo"),
+      in_progress: filteredTasks.filter((t) => t.status === "in_progress"),
+    };
+  }, [filteredTasks]);
 
   if (isLoading) {
     return (
       <div
-        className={`min-h-screen flex items-center justify-center ${
+        className={`min-h-screen p-4 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${
           darkMode ? "bg-gray-900" : "bg-orange-50"
         }`}
       >
-        <div
-          className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${
-            darkMode ? "border-blue-500" : "border-orange-500"
-          }`}
-        ></div>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            key={i}
+            className={`animate-pulse rounded-lg h-40 w-full ${
+              darkMode ? "bg-gray-700" : "bg-orange-100"
+            }`}
+          ></div>
+        ))}
       </div>
     );
   }
@@ -1016,7 +1030,7 @@ export default function AdvancedTrelloPage() {
               <TaskColumn
                 key={column.id}
                 title={column.title}
-                tasks={getTasksByStatus(column.id)}
+                tasks={tasksByStatus[column.id] || []}
                 darkMode={darkMode}
                 handleEditTask={handleEditTask}
                 handleDeleteTask={handleDeleteTask}
@@ -1089,18 +1103,20 @@ export default function AdvancedTrelloPage() {
       </div>
 
       {/* Task Form Modal */}
-      <TaskFormModal
-        isOpen={isModalOpen}
-        onClose={resetForm}
-        taskForm={taskForm}
-        handleInputChange={handleInputChange}
-        handleSubmit={handleSubmitTask}
-        isEditing={!!editingTaskId}
-        darkMode={darkMode}
-        needsOptions={needsOptions}
-        priorityOptions={priorityOptions}
-        admins={admins}
-      />
+      {isModalOpen && (
+        <TaskFormModal
+          isOpen={isModalOpen}
+          onClose={resetForm}
+          taskForm={taskForm}
+          handleInputChange={handleInputChange}
+          handleSubmit={handleSubmitTask}
+          isEditing={!!editingTaskId}
+          darkMode={darkMode}
+          needsOptions={needsOptions}
+          priorityOptions={priorityOptions}
+          admins={admins}
+        />
+      )}
     </div>
   );
 }

@@ -26,6 +26,7 @@
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",
     "jspdf": "^3.0.1",
+    "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.487.0",
     "mongoose": "^8.13.2",
     "next": "15.2.4",

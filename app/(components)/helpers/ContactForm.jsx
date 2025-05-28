@@ -8,6 +8,7 @@ const ContactForm = ({ car, onSuccess }) => {
     name: "",
     email: "",
     phone: "",
+    subject: "",
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,8 +36,14 @@ const ContactForm = ({ car, onSuccess }) => {
 
       if (!response.ok) throw new Error("Failed to send message");
       toast.success("Nachricht erfolgreich gesendet!");
-      setFormData({ name: "", email: "", phone: "", message: "" });
-      if (onSuccess) onSuccess(); // Optional: close modal on success
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        subject: "",
+        message: "",
+      });
+      if (onSuccess) onSuccess();
     } catch {
       toast.error("Fehler beim Senden der Nachricht");
     } finally {
@@ -47,6 +54,8 @@ const ContactForm = ({ car, onSuccess }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <input type="hidden" name="car" value={car._id} />
+
+      {/* Name */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Name*
@@ -60,6 +69,8 @@ const ContactForm = ({ car, onSuccess }) => {
           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 text-sm"
         />
       </div>
+
+      {/* E-Mail */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           E-Mail*
@@ -73,6 +84,8 @@ const ContactForm = ({ car, onSuccess }) => {
           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 text-sm"
         />
       </div>
+
+      {/* Telefon */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Telefon
@@ -85,6 +98,33 @@ const ContactForm = ({ car, onSuccess }) => {
           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 text-sm"
         />
       </div>
+
+      {/* Betreff */}
+      <div>
+        <label
+          htmlFor="subject"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Betreff*
+        </label>
+        <select
+          id="subject"
+          name="subject"
+          value={formData.subject}
+          onChange={handleChange}
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 text-sm"
+        >
+          <option value="">Bitte wählen</option>
+          <option value="Allgemeine Anfrage">Allgemeine Anfrage</option>
+          <option value="Probefahrt vereinbaren">Probefahrt vereinbaren</option>
+          <option value="Finanzierungsanfrage">Finanzierungsanfrage</option>
+          <option value="Inzahlungnahme">Inzahlungnahme</option>
+          <option value="Service-Termin">Service-Termin</option>
+        </select>
+      </div>
+
+      {/* Nachricht */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Nachricht*
@@ -99,6 +139,8 @@ const ContactForm = ({ car, onSuccess }) => {
           placeholder={`Ich interessiere mich für den ${car.name} ${car.model} (${car.registration}, ${car.kilometers} km)...`}
         ></textarea>
       </div>
+
+      {/* Submit */}
       <div>
         <button
           type="submit"
@@ -109,6 +151,8 @@ const ContactForm = ({ car, onSuccess }) => {
           {isSubmitting ? "Wird gesendet..." : "Nachricht senden"}
         </button>
       </div>
+
+      {/* Footer */}
       <p className="text-xs text-gray-500">
         * Pflichtfelder. Wir werden Ihre Daten nur zur Bearbeitung Ihrer Anfrage
         verwenden.
