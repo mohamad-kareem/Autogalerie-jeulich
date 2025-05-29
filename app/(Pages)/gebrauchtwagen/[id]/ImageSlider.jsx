@@ -131,11 +131,11 @@ const ImageSlider = ({ images = [], car = {} }) => {
           <div className="relative w-full h-full flex items-center justify-center">
             <button
               onClick={() => setFullscreenImage(null)}
-              className="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-all"
+              className="absolute top-15 right-4 bg-red-950  text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-all"
               aria-label="Close"
             >
               <svg
-                className="h-8 w-8"
+                className="h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -157,10 +157,10 @@ const ImageSlider = ({ images = [], car = {} }) => {
                       prev === 0 ? imageUrls.length - 1 : prev - 1
                     )
                   }
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 md:p-3 rounded-full hover:bg-white/10 transition-all"
+                  className="absolute left-0 sm:left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 md:p-3 rounded-full hover:bg-white/10 transition-all z-50"
                   aria-label="Prev"
                 >
-                  <FiArrowLeft className="w-6 h-6 md:w-8 md:h-8" />
+                  <FiArrowLeft className="w-6 h-6 md:w-8 md:h-8 bg-red-950 rounded-lg" />
                 </button>
 
                 <button
@@ -169,10 +169,10 @@ const ImageSlider = ({ images = [], car = {} }) => {
                       prev === imageUrls.length - 1 ? 0 : prev + 1
                     )
                   }
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 md:p-3 rounded-full hover:bg-white/10 transition-all"
+                  className="absolute right-0 sm:right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 md:p-3 rounded-full hover:bg-white/10 transition-all z-50"
                   aria-label="Next"
                 >
-                  <FiArrowLeft className="w-6 h-6 md:w-8 md:h-8 rotate-180" />
+                  <FiArrowLeft className="w-6 h-6 md:w-8 md:h-8 rotate-180 bg-red-950 rounded-lg" />
                 </button>
               </>
             )}

@@ -117,8 +117,8 @@ const prettifyValue = (category, value) => {
       THREE: "3 Türen",
       FOUR: "4 Türen",
       FIVE: "5 Türen",
-      FOUR_OR_FIVE: "4 oder 5 Türen",
-      "four or five": "4 oder 5 Türen", // in case it's lowercase text from API
+      FOUR_OR_FIVE: "4/5 Türen",
+      "four or five": "45 Türen", // in case it's lowercase text from API
     },
     gearbox: {
       MANUAL_GEAR: "Schaltgetriebe",
@@ -930,9 +930,9 @@ function CarDetailContent({ car }) {
 
           {/* Contact Modal */}
           {showContactForm && (
-            <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-2 md:p-4 backdrop-blur-sm">
+            <div className="fixed inset-0  bg-black/70 z-50 flex items-center justify-center p-2 pb-8  backdrop-blur-sm pt-25 ">
               <div className="bg-white rounded-lg md:rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-lg md:shadow-2xl">
-                <div className="bg-gradient-to-r from-red-600 to-red-800 p-4 md:p-6 rounded-t-lg md:rounded-t-xl">
+                <div className="bg-gradient-to-r from-red-600 to-red-800 p-2 md:p-4 rounded-t-lg md:rounded-t-xl">
                   <div className="flex justify-between items-center">
                     <div>
                       <h3 className="text-xl md:text-2xl font-bold text-white">

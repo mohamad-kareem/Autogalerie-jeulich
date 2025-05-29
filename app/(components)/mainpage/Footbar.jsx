@@ -70,7 +70,7 @@ const Footbar = () => {
                   <span className="font-medium text-white">
                     Montag bis Freitag:
                   </span>{" "}
-                  9:30 – 18:00 Uhr
+                  10:00 – 18:00 Uhr
                 </div>
               </li>
               <li className="flex items-start">

@@ -27,10 +27,10 @@ export default function LandingSlide() {
         {/* Left Arrow Button */}
         <button
           type="button"
-          className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 bg-gradient-to-br from-red-600 to-black rounded-full  p-1 sm:p-2 hover:from-white hover:to-white  z-10 transition"
+          className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
           onClick={() => scroll("left")}
         >
-          <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6 text-black" />
+          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 hover:text-white" />
         </button>
 
         {/* Scrollable Container */}
@@ -63,10 +63,10 @@ export default function LandingSlide() {
         {/* Right Arrow Button */}
         <button
           type="button"
-          className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 bg-gradient-to-br from-red-600 to-black rounded-full shadow p-1 sm:p-2 hover:from-white hover:to-white  z-10 transition"
+          className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
           onClick={() => scroll("right")}
         >
-          <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6 text-gray-600" />
+          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 hover:text-white" />
         </button>
         {/* Glow Effects */}
         <div className="absolute -bottom-20 -left-20 w-300 h-64 rounded-full bg-red-500/5 blur-3xl pointer-events-none" />

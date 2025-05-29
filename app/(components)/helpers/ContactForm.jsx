@@ -52,7 +52,7 @@ const ContactForm = ({ car, onSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 ">
       <input type="hidden" name="car" value={car._id} />
 
       {/* Name */}

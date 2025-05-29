@@ -378,7 +378,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                       <div className="flex-1 border-b border-gray-200 pb-2">
                         <div className="flex justify-between">
                           <span className="font-medium">Montag - Freitag</span>
-                          <span>09:00 - 18:00 Uhr</span>
+                          <span>10:00 - 18:00 Uhr</span>
                         </div>
                       </div>
                     </div>

@@ -11,7 +11,18 @@ import {
   Fuel,
   Zap,
 } from "lucide-react";
-
+const maps = {
+  fuel: {
+    DIESEL: "Diesel",
+    PETROL: "Benzin",
+    ELECTRIC: "Elektrisch",
+    HYBRID: "Hybrid",
+    LPG: "Autogas (LPG)",
+    CNG: "Erdgas (CNG)",
+    HYDROGEN: "Wasserstoff",
+    OTHER: "Andere",
+  },
+};
 export default function RandomCarSlider() {
   const [cars, setCars] = useState([]);
   const sliderRef = useRef(null);
@@ -45,9 +56,9 @@ export default function RandomCarSlider() {
     <section className="py-12 relative w-full overflow-hidden px-4 sm:px-6 lg:px-16 bg-black pb-20 ">
       <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
         <h2 className="text-lg sm:text-xl md:text-2xl font-medium text-white mb-4 tracking-wide">
-          Premium Selection
+          Premium-Auswahl
         </h2>
-        <div className="border-b border-gray-700 mb-6 w-full"></div>
+        <div className="border-b border-gray-700 mb-6 w-52"></div>
 
         {/* Left Arrow Button */}
         <button
@@ -66,7 +77,7 @@ export default function RandomCarSlider() {
           {cars.map((car) => (
             <div
               key={car._id}
-              className="min-w-[260px] sm:min-w-[280px] bg-gradient-to-br from-black/50 to-white/40 hover:from-red-900 hover:to-black/20 rounded-lg p-4 flex-shrink-0 flex flex-col items-center justify-between text-center shadow-lg transition-all duration-300 border border-white/10 hover:border-white/10"
+              className="min-w-[260px] sm:min-w-[280px] bg-gradient-to-br from-black/50 to-white/40 hover:from-red-900 hover:to-black/20 rounded-lg p-4 flex-shrink-0 flex flex-col items-center justify-between text-center shadow-lg transition-all duration-300 border border-white/5 hover:border-white/5"
             >
               {/* Image Container */}
               <div className="w-full h-32 mb-4 rounded-lg overflow-hidden bg-black/40 flex items-center justify-center p-2">
@@ -123,7 +134,7 @@ export default function RandomCarSlider() {
                   </div>
                   <div className="flex items-center justify-center gap-1">
                     <Fuel className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
-                    {car.fuel || "-"}
+                    {maps.fuel[car.fuel] || car.fuel || "-"}
                   </div>
                   <div className="flex items-center justify-center gap-1">
                     <Zap className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
@@ -135,7 +146,8 @@ export default function RandomCarSlider() {
                   href={`/gebrauchtwagen/${car._id}`}
                   className="mt-4 inline-flex items-center justify-center gap-1 text-xs sm:text-sm font-normal text-gray-300 hover:text-white transition-all"
                 >
-                  View Details <ChevronRight className="h-3 w-3 mt-0.5" />
+                  Einzelheiten anzeigen{" "}
+                  <ChevronRight className="h-3 w-3 mt-0.5" />
                 </Link>
               </div>
             </div>
