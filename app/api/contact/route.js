@@ -4,9 +4,29 @@ import nodemailer from "nodemailer";
 
 export async function POST(request) {
   try {
-    const { name, email, phone, subject, message, carId, carName, carLink } =
-      await request.json();
+    const {
+      name,
+      email,
+      phone,
+      subject,
+      message,
+      carId,
+      carName,
+      carLink,
+      date,
+    } = await request.json();
 
+    const formatDateTime = (value) => {
+      if (!value) return "Nicht angegeben";
+      const dateObj = new Date(value);
+      return dateObj.toLocaleString("de-DE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    };
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT),
@@ -118,6 +138,14 @@ export async function POST(request) {
             <p><span class="label">Betreff:</span> ${
               subject || "Kein Betreff angegeben"
             }</p>
+          ${
+            date
+              ? `<p><span class="label">Wunschdatum:</span> ${formatDateTime(
+                  date
+                )}</p>`
+              : ""
+          }
+
           </div>
           
           <div class="message-box">
@@ -165,6 +193,7 @@ Name: ${name || "Nicht angegeben"}
 E-Mail: ${email}
 ${phone ? `Telefon: ${phone}\n` : ""}
 Betreff: ${subject || "Kein Betreff angegeben"}
+${date ? `Wunschdatum: ${formatDateTime(date)}\n` : ""}
 
 Nachricht:
 ${message}
@@ -186,7 +215,7 @@ Autogalerie Jülich GmbH • ${new Date().toLocaleDateString("de-DE")}
 
     const mailOptions = {
       from: `"Autogalerie Jülich" <${process.env.SMTP_USER}>`,
-      to: process.env.COMPANY_EMAIL || "anfrage@juelicherautozentrum.de",
+      to: process.env.COMPANY_EMAIL || "autogalerie.jülich@web.de",
       subject: emailSubject,
       text: textTemplate,
       html: htmlTemplate,

@@ -4,13 +4,26 @@ import { FiSend } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 
 const ContactForm = ({ car, onSuccess }) => {
+  const formatRegistration = (value) => {
+    if (!value || value.length !== 6) return "EZ unbekannt";
+    const year = value.slice(0, 4);
+    const month = value.slice(4, 6);
+    return `${month}/${year}`;
+  };
+
+  const defaultMessage = `Ich interessiere mich für den ${car.make} ${
+    car.modelDescription || car.model
+  } (${formatRegistration(car.firstRegistration)}, ${car.mileage || 0} km)...`;
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     subject: "",
-    message: "",
+    message: defaultMessage,
+    date: "",
   });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
@@ -29,7 +42,7 @@ const ContactForm = ({ car, onSuccess }) => {
         body: JSON.stringify({
           ...formData,
           carId: car._id,
-          carName: `${car.name} ${car.model}`,
+          carName: `${car.make} ${car.modelDescription || car.model}`,
           carLink: typeof window !== "undefined" ? window.location.href : "",
         }),
       });
@@ -42,6 +55,7 @@ const ContactForm = ({ car, onSuccess }) => {
         phone: "",
         subject: "",
         message: "",
+        date: "",
       });
       if (onSuccess) onSuccess();
     } catch {
@@ -123,6 +137,19 @@ const ContactForm = ({ car, onSuccess }) => {
           <option value="Service-Termin">Service-Termin</option>
         </select>
       </div>
+      {/* Wunschdatum */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Wunschdatum & Uhrzeit
+        </label>
+        <input
+          type="datetime-local"
+          name="date"
+          value={formData.date}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 text-sm"
+        />
+      </div>
 
       {/* Nachricht */}
       <div>
@@ -136,7 +163,7 @@ const ContactForm = ({ car, onSuccess }) => {
           onChange={handleChange}
           required
           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 text-sm"
-          placeholder={`Ich interessiere mich für den ${car.name} ${car.model} (${car.registration}, ${car.kilometers} km)...`}
+          placeholder={defaultMessage}
         ></textarea>
       </div>
 
