@@ -44,7 +44,7 @@ const initialFormData = {
 };
 
 export default function AdminDashboard() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState("contacts");
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -85,7 +85,8 @@ export default function AdminDashboard() {
   }, [activeTab]);
 
   useEffect(() => {
-    const savedMode = localStorage.getItem("darkMode") === "true";
+    const saved = localStorage.getItem("darkMode");
+    const savedMode = saved === null ? true : saved === "true";
     setDarkMode(savedMode);
     document.documentElement.classList.toggle("dark", savedMode);
   }, []);
