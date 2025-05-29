@@ -52,7 +52,7 @@ export default function PunchQRPage() {
       } catch (err) {
         toast.error("Stempelung fehlgeschlagen. Bitte erneut versuchen.");
       } finally {
-        router.push("/dashboard");
+        router.push("/");
       }
     };
 

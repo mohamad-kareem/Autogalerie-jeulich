@@ -517,7 +517,7 @@ export default function PunchClockPage() {
                           <td className="px-2 py-2 md:px-4 md:py-3 whitespace-nowrap text-xs md:text-sm text-gray-300">
                             {r.location?.verified
                               ? "Verifiziert"
-                              : "Nicht verifiziert"}
+                              : "Qr Verifiziert"}
                           </td>
                         </tr>
                       ))
