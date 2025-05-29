@@ -5,7 +5,7 @@ import { useState } from "react";
 const FinanceCalculatorAdvanced = ({ price }) => {
   const [downPayment, setDownPayment] = useState(0);
   const [term, setTerm] = useState(36);
-  const [interestRate] = useState(4.9); // Effektiver Jahreszins
+  const interestRate = 7.99; // Effektiver Jahreszins (used internally only)
   const [monthlyRate, setMonthlyRate] = useState(null);
 
   const calculate = () => {
@@ -73,17 +73,7 @@ const FinanceCalculatorAdvanced = ({ price }) => {
         </select>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Effektiver Jahreszins
-        </label>
-        <input
-          type="text"
-          value={`${interestRate}%`}
-          readOnly
-          className="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-sm"
-        />
-      </div>
+      {/* Zinssatz is hidden from customer view */}
 
       <button
         onClick={calculate}
@@ -102,9 +92,8 @@ const FinanceCalculatorAdvanced = ({ price }) => {
       )}
 
       <p className="mt-4 text-xs text-gray-500">
-        * Unverbindliches Finanzierungsbeispiel bei einem effektiven Jahreszins
-        von {interestRate}%. Bonität vorausgesetzt. Änderungen und Irrtümer
-        vorbehalten.
+        * Unverbindliches Finanzierungsbeispiel. Bonität vorausgesetzt.
+        Änderungen und Irrtümer vorbehalten.
       </p>
     </div>
   );
