@@ -23,6 +23,7 @@ const carSchema = new mongoose.Schema({
   mileage: { type: Number },
   vin: { type: String },
   power: { type: Number },
+  cubicCapacity: { type: Number },
   gearbox: { type: String },
   fuel: { type: String },
   images: { type: [imageSchema], default: [] },

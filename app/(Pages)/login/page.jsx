@@ -1,8 +1,7 @@
-// app/admin/login/page.jsx (Server Component)
+// app/(Pages)/login/page.jsx
 import LoginPage from "./LoginPage";
 
-export default function AdminLoginWrapper({ searchParams }) {
-  const callbackUrl = searchParams?.callbackUrl; // No default
-
+export default async function AdminLoginWrapper({ searchParams }) {
+  const callbackUrl = searchParams?.callbackUrl || "/";
   return <LoginPage callbackUrl={callbackUrl} />;
 }

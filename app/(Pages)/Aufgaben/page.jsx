@@ -1,27 +1,28 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import {
+  FiCalendar,
   FiPlus,
   FiEdit2,
   FiTrash2,
   FiCheck,
   FiX,
+  FiChevronUp,
+  FiChevronDown,
   FiFilter,
   FiSearch,
   FiUser,
+  FiKey,
   FiFileText,
   FiRefreshCw,
   FiSun,
   FiMoon,
-  FiCalendar,
+  FiInfo,
+  FiAlertCircle,
 } from "react-icons/fi";
 import Image from "next/image";
 import toast from "react-hot-toast";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import { TouchBackend } from "react-dnd-touch-backend";
-import { isMobile } from "react-device-detect";
 
 const needsOptions = [
   "Reklamation",
@@ -37,14 +38,10 @@ const needsOptions = [
 
 const priorityOptions = ["low", "medium", "high"];
 
-const ItemTypes = {
-  TASK: "task",
-};
-
-const PriorityBadge = React.memo(({ priority, darkMode }) => {
+const PriorityBadge = ({ priority, darkMode }) => {
   const priorityStyles = {
     light: {
-      high: "bg-gradient-to-br from-red-500 to-orange-500",
+      high: "bg-gradient-to-br from-red-400 to-red-500",
       medium: "bg-gradient-to-br from-green-400 to-green-500",
       low: "bg-gradient-to-br from-blue-200 to-blue-300",
     },
@@ -63,7 +60,7 @@ const PriorityBadge = React.memo(({ priority, darkMode }) => {
 
   return (
     <span
-      className={`px-2 py-1 inline-flex text-xs font-medium rounded-full ${
+      className={`px-3 py-1 inline-flex text-xs font-medium rounded-full ${
         darkMode
           ? priorityStyles.dark[priority]
           : priorityStyles.light[priority]
@@ -72,365 +69,60 @@ const PriorityBadge = React.memo(({ priority, darkMode }) => {
       {priorityText[priority]}
     </span>
   );
-});
+};
 
-const DraggableTask = ({
-  task,
-  index,
-  moveTask,
-  darkMode,
-  handleEditTask,
-  handleDeleteTask,
-  admins,
-}) => {
-  const ref = React.useRef(null);
-
-  const [{ isDragging }, drag] = useDrag({
-    type: ItemTypes.TASK,
-    item: { id: task.id, index },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
-
-  const [, drop] = useDrop({
-    accept: ItemTypes.TASK,
-    hover(item, monitor) {
-      if (!ref.current) return;
-      const dragIndex = item.index;
-      const hoverIndex = index;
-
-      if (dragIndex === hoverIndex) return;
-
-      const hoverBoundingRect = ref.current?.getBoundingClientRect();
-      const hoverMiddleY =
-        (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-      const clientOffset = monitor.getClientOffset();
-      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
-
-      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) return;
-      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) return;
-
-      moveTask(dragIndex, hoverIndex);
-      item.index = hoverIndex;
-    },
-  });
-
-  drag(drop(ref));
-
-  return (
-    <div
-      ref={ref}
-      style={{ opacity: isDragging ? 0.5 : 1 }}
-      className={`mb-3 rounded-lg border shadow-sm transition-all ${
-        darkMode
-          ? "bg-gray-700 border-gray-600 hover:border-blue-500"
-          : "bg-white border-orange-200 hover:border-orange-400"
-      }`}
-    >
-      <TaskCard
-        task={task}
-        darkMode={darkMode}
-        handleEditTask={handleEditTask}
-        handleDeleteTask={handleDeleteTask}
-        admins={admins}
-      />
-    </div>
+const SortIcon = ({ direction, darkMode }) => {
+  return direction === "asc" ? (
+    <FiChevronUp
+      size={14}
+      className={darkMode ? "text-blue-300" : "text-blue-500"}
+    />
+  ) : (
+    <FiChevronDown
+      size={14}
+      className={darkMode ? "text-blue-300" : "text-blue-500"}
+    />
   );
 };
 
-const TaskCard = React.memo(
-  ({ task, darkMode, handleEditTask, handleDeleteTask, admins }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-
-    return (
-      <div className="h-full p-3">
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <h3
-              className={`font-medium ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
-              {task.car}
-            </h3>
-            <div className="mt-1 flex items-center gap-2">
-              <span
-                className={`text-xs px-2 py-1 rounded-md ${
-                  darkMode
-                    ? "bg-blue-900 text-blue-200"
-                    : "bg-orange-100 text-orange-800"
-                }`}
-              >
-                {task.needs}
-              </span>
-              <PriorityBadge priority={task.priority} darkMode={darkMode} />
-            </div>
-          </div>
-          <div className="flex space-x-1">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEditTask(task.id);
-              }}
-              className={`p-1 rounded-lg transition-colors ${
-                darkMode
-                  ? "text-blue-400 hover:bg-gray-600"
-                  : "text-orange-600 hover:bg-orange-100"
-              }`}
-              title="Bearbeiten"
-            >
-              <FiEdit2 size={16} />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteTask(task.id);
-              }}
-              className={`p-1 rounded-lg transition-colors ${
-                darkMode
-                  ? "text-red-400 hover:bg-gray-600"
-                  : "text-red-600 hover:bg-red-100"
-              }`}
-              title="Löschen"
-            >
-              <FiTrash2 size={16} />
-            </button>
-          </div>
-        </div>
-
-        {task.description && (
-          <p
-            className={`mt-2 text-sm ${
-              darkMode ? "text-gray-300" : "text-gray-600"
-            }`}
-          >
-            {isExpanded
-              ? task.description
-              : `${task.description.substring(0, 100)}${
-                  task.description.length > 100 ? "..." : ""
-                }`}
-          </p>
-        )}
-
-        <div className="mt-3 flex items-center justify-between">
-          {task.assignedTo ? (
-            <div className="flex items-center">
-              <div className="relative w-6 h-6 rounded-full overflow-hidden mr-2 border border-orange-200">
-                <Image
-                  src={task.assignedTo.image}
-                  alt={task.assignedTo.name}
-                  width={24}
-                  height={24}
-                  className="object-cover"
-                />
-              </div>
-            </div>
-          ) : (
-            <div
-              className={`flex items-center text-xs ${
-                darkMode ? "text-blue-300" : "text-orange-500"
-              }`}
-            >
-              <FiUser className="mr-1" />
-              <span>unbekannt</span>
-            </div>
-          )}
-
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className={`text-xs ${
-              darkMode ? "text-blue-400" : "text-orange-600"
-            } hover:underline cursor-pointer`}
-          >
-            {isExpanded ? "Weniger anzeigen" : "Mehr anzeigen"}
-          </button>
-        </div>
-
-        {isExpanded && (
-          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-            <div className="grid grid-cols-1 gap-2 text-xs">
-              <div className="flex items-center">
-                <FiCalendar
-                  className={`mr-2 ${
-                    darkMode ? "text-blue-400" : "text-orange-500"
-                  }`}
-                />
-                <span className={darkMode ? "text-gray-300" : "text-gray-600"}>
-                  {new Date(task.createdAt).toLocaleDateString("de-DE", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                  })}
-                </span>
-              </div>
-              {task.assignedBy && (
-                <div className="flex items-center">
-                  <FiUser
-                    className={`mr-2 ${
-                      darkMode ? "text-blue-400" : "text-orange-500"
-                    }`}
-                  />
-                  <span
-                    className={darkMode ? "text-gray-300" : "text-gray-600"}
-                  >
-                    Besitzer: {task.assignedBy.name}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-);
-
-const TaskColumn = React.memo(
-  ({
-    title,
-    tasks,
-    darkMode,
-    handleEditTask,
-    handleDeleteTask,
-    admins,
-    onAddTask,
-    columnId,
-    moveTask,
-    moveTaskToColumn,
-  }) => {
-    const [{ isOver }, drop] = useDrop({
-      accept: ItemTypes.TASK,
-      drop: (item) => {
-        if (item.status !== columnId) {
-          moveTaskToColumn(item.id, columnId);
-        }
-      },
-      collect: (monitor) => ({
-        isOver: monitor.isOver(),
-      }),
-    });
-
-    return (
-      <div
-        ref={drop}
-        className={`rounded-xl p-3 w-full ${
-          columnId === "todo" ? "lg:w-3/4" : "lg:w-1/4"
-        } shadow-inner transition-colors duration-300 ${
-          darkMode
-            ? "bg-gray-800"
-            : "bg-gradient-to-b from-orange-100 to-amber-100"
-        } ${isOver ? (darkMode ? "bg-gray-700" : "bg-orange-200") : ""}`}
-      >
-        <div className="flex items-center justify-between mb-2">
-          <h3
-            className={`text-lg font-bold tracking-tight ${
-              darkMode ? "text-white" : "text-gray-800"
-            }`}
-          >
-            {title}{" "}
-            <span className="text-xs font-normal opacity-60">
-              ({tasks.length})
-            </span>
-          </h3>
-          <button
-            onClick={() => onAddTask(columnId)}
-            className={`p-2 rounded-full group ${
-              darkMode
-                ? "text-blue-400 hover:bg-gray-700"
-                : "text-orange-600 hover:bg-orange-200"
-            }`}
-            title="Aufgabe hinzufügen"
-          >
-            <FiPlus
-              size={18}
-              className="group-hover:rotate-90 transition-transform"
-            />
-          </button>
-        </div>
-
+const TaskFormSection = ({
+  isEditing,
+  taskForm,
+  handleInputChange,
+  resetForm,
+  handleSubmit,
+  darkMode,
+  needsOptions,
+  priorityOptions,
+  admins,
+}) => {
+  return (
+    <tr className={darkMode ? "bg-gray-700" : "bg-blue-50"}>
+      <td colSpan="6" className="px-6 py-6">
         <div
-          className={`${
-            columnId === "todo"
-              ? "grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
-              : "space-y-3"
-          }`}
-        >
-          {tasks.map((task, index) => (
-            <DraggableTask
-              key={task.id}
-              task={task}
-              index={index}
-              moveTask={(dragIndex, hoverIndex) =>
-                moveTask(columnId, dragIndex, hoverIndex)
-              }
-              darkMode={darkMode}
-              handleEditTask={handleEditTask}
-              handleDeleteTask={handleDeleteTask}
-              admins={admins}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-);
-
-const TaskFormModal = React.memo(
-  ({
-    isOpen,
-    onClose,
-    taskForm,
-    handleInputChange,
-    handleSubmit,
-    isEditing,
-    darkMode,
-    needsOptions,
-    priorityOptions,
-    admins,
-  }) => {
-    if (!isOpen) return null;
-
-    return (
-      <div
-        className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
-          darkMode ? "bg-black/70" : "bg-black/50"
-        }`}
-      >
-        <div
-          className={`rounded-xl border w-full max-w-2xl max-h-[90vh] overflow-y-auto ${
+          className={`rounded-lg border p-6 ${
             darkMode
               ? "bg-gray-800 border-gray-600"
-              : "bg-white border-orange-200"
-          } shadow-xl`}
+              : "bg-white border-blue-200"
+          } shadow-sm`}
         >
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2
-                className={`text-xl font-semibold ${
-                  darkMode ? "text-white" : "text-gray-900"
-                }`}
-              >
-                {isEditing ? "Aufgabe bearbeiten" : "Neue Aufgabe erstellen"}
-              </h2>
-              <button
-                onClick={onClose}
-                className={`p-2 rounded-full ${
-                  darkMode
-                    ? "hover:bg-gray-700 text-gray-300"
-                    : "hover:bg-orange-100 text-orange-500"
-                }`}
-              >
-                <FiX size={20} />
-              </button>
-            </div>
+          <h3
+            className={`text-lg font-semibold mb-6 pb-2 border-b ${
+              darkMode
+                ? "border-gray-700 text-white"
+                : "border-blue-100 text-blue-800"
+            }`}
+          >
+            {isEditing ? "Aufgabe bearbeiten" : "Neue Aufgabe erstellen"}
+          </h3>
 
-            <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
               <div>
                 <label
                   htmlFor="car"
-                  className={`block text-sm font-medium mb-1 ${
-                    darkMode ? "text-blue-300" : "text-orange-600"
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-blue-300" : "text-blue-600"
                   }`}
                 >
                   Fahrzeug *
@@ -443,87 +135,95 @@ const TaskFormModal = React.memo(
                   onChange={handleInputChange}
                   placeholder="z.B. BMW 320d, VW Golf"
                   required
-                  className={`w-full rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all ${
+                  className={`w-full rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
                     darkMode
                       ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                      : "border-orange-200 placeholder-orange-400"
+                      : "border-blue-200 placeholder-blue-300"
                   }`}
                 />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="needs"
-                    className={`block text-sm font-medium mb-1 ${
-                      darkMode ? "text-blue-300" : "text-orange-600"
-                    }`}
-                  >
-                    Kategorie
-                  </label>
-                  <select
-                    id="needs"
-                    name="needs"
-                    value={taskForm.needs}
-                    onChange={handleInputChange}
-                    className={`w-full rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all ${
-                      darkMode
-                        ? "bg-gray-700 border-gray-600 text-white"
-                        : "border-orange-200"
-                    }`}
-                  >
-                    {needsOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="priority"
-                    className={`block text-sm font-medium mb-1 ${
-                      darkMode ? "text-blue-300" : "text-orange-600"
-                    }`}
-                  >
-                    Priorität
-                  </label>
-                  <div className="flex gap-2">
-                    {priorityOptions.map((option) => (
-                      <div key={option} className="flex-1">
-                        <input
-                          type="radio"
-                          id={`priority-${option}`}
-                          name="priority"
-                          value={option}
-                          checked={taskForm.priority === option}
-                          onChange={handleInputChange}
-                          className="hidden peer"
-                        />
-                        <label
-                          htmlFor={`priority-${option}`}
-                          className={`w-full block text-center py-2 px-3 text-sm rounded-lg cursor-pointer transition-all ${
-                            darkMode
-                              ? "peer-checked:bg-blue-600 peer-checked:text-white bg-gray-700 text-gray-300 hover:bg-gray-600"
-                              : "peer-checked:bg-orange-600 peer-checked:text-white bg-orange-100 text-orange-800 hover:bg-orange-200"
-                          }`}
-                        >
-                          {option === "high" && "Hoch"}
-                          {option === "medium" && "Mittel"}
-                          {option === "low" && "Niedrig"}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <p
+                  className={`mt-1 text-xs ${
+                    darkMode ? "text-blue-400" : "text-blue-500"
+                  }`}
+                >
+                  <FiInfo className="inline mr-1" /> Bitte geben Sie das
+                  Fahrzeugmodell ein
+                </p>
               </div>
 
               <div>
                 <label
+                  htmlFor="needs"
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-blue-300" : "text-blue-600"
+                  }`}
+                >
+                  Kategorie
+                </label>
+                <select
+                  id="needs"
+                  name="needs"
+                  value={taskForm.needs}
+                  onChange={handleInputChange}
+                  className={`w-full rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                    darkMode
+                      ? "bg-gray-700 border-gray-600 text-white"
+                      : "border-blue-200"
+                  }`}
+                >
+                  {needsOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="priority"
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-blue-300" : "text-blue-600"
+                  }`}
+                >
+                  Priorität
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {priorityOptions.map((option) => (
+                    <div key={option} className="flex items-center">
+                      <input
+                        type="radio"
+                        id={`priority-${option}`}
+                        name="priority"
+                        value={option}
+                        checked={taskForm.priority === option}
+                        onChange={handleInputChange}
+                        className="hidden peer"
+                      />
+                      <label
+                        htmlFor={`priority-${option}`}
+                        className={`w-full py-2 px-3 text-center text-sm rounded-lg cursor-pointer transition-all ${
+                          darkMode
+                            ? "peer-checked:bg-blue-600 peer-checked:text-white bg-gray-700 text-gray-300 hover:bg-gray-600"
+                            : "peer-checked:bg-blue-600 peer-checked:text-white bg-blue-100 text-blue-800 hover:bg-blue-200"
+                        }`}
+                      >
+                        {option === "high" && "Hoch"}
+                        {option === "medium" && "Mittel"}
+                        {option === "low" && "Niedrig"}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label
                   htmlFor="assignedTo"
-                  className={`block text-sm font-medium mb-1 ${
-                    darkMode ? "text-blue-300" : "text-orange-600"
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-blue-300" : "text-blue-600"
                   }`}
                 >
                   Zuweisen an
@@ -533,13 +233,13 @@ const TaskFormModal = React.memo(
                   name="assignedTo"
                   value={taskForm.assignedTo}
                   onChange={handleInputChange}
-                  className={`w-full rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all ${
+                  className={`w-full rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
                     darkMode
                       ? "bg-gray-700 border-gray-600 text-white"
-                      : "border-orange-200"
+                      : "border-blue-200"
                   }`}
                 >
-                  <option value="">unbekannt</option>
+                  <option value="">Nicht zugewiesen</option>
                   {admins.map((admin) => (
                     <option key={admin._id} value={admin._id}>
                       {admin.name}
@@ -551,8 +251,8 @@ const TaskFormModal = React.memo(
               <div>
                 <label
                   htmlFor="description"
-                  className={`block text-sm font-medium mb-1 ${
-                    darkMode ? "text-blue-300" : "text-orange-600"
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-blue-300" : "text-blue-600"
                   }`}
                 >
                   Beschreibung
@@ -564,95 +264,73 @@ const TaskFormModal = React.memo(
                   onChange={handleInputChange}
                   placeholder="Detaillierte Beschreibung der Aufgabe..."
                   rows={4}
-                  className={`w-full rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all ${
+                  className={`w-full rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
                     darkMode
                       ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                      : "border-orange-200 placeholder-orange-400"
+                      : "border-blue-200 placeholder-blue-300"
                   }`}
                 />
+                <p
+                  className={`mt-1 text-xs ${
+                    darkMode ? "text-blue-400" : "text-blue-500"
+                  }`}
+                >
+                  <FiInfo className="inline mr-1" /> Optional, aber empfohlen
+                </p>
               </div>
             </div>
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={onClose}
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                  darkMode
-                    ? "text-gray-300 hover:text-white bg-gray-700 hover:bg-gray-600"
-                    : "text-orange-700 hover:text-orange-900 bg-orange-100 hover:bg-orange-200"
-                }`}
-              >
-                Abbrechen
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!taskForm.car.trim()}
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                  darkMode
-                    ? "bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-800 disabled:opacity-70"
-                    : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white disabled:opacity-70"
-                }`}
-              >
-                {isEditing ? "Speichern" : "Erstellen"}
-              </button>
-            </div>
           </div>
+
+          <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={resetForm}
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
+                darkMode
+                  ? "text-gray-300 hover:text-white bg-gray-700 hover:bg-gray-600"
+                  : "text-gray-700 hover:text-gray-900 bg-gray-100 hover:bg-gray-200"
+              }`}
+            >
+              <FiX size={16} /> Abbrechen
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!taskForm.car.trim()}
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm ${
+                darkMode
+                  ? "bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-800 disabled:opacity-70"
+                  : "bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400 disabled:opacity-70"
+              }`}
+            >
+              <FiCheck size={16} /> {isEditing ? "Speichern" : "Erstellen"}
+            </button>
+          </div>
+
+          {!taskForm.car.trim() && (
+            <div
+              className={`mt-4 p-3 rounded-lg flex items-start ${
+                darkMode
+                  ? "bg-red-900/30 text-red-300"
+                  : "bg-red-50 text-red-600"
+              }`}
+            >
+              <FiAlertCircle className="flex-shrink-0 mt-0.5 mr-2" />
+              <p className="text-sm">
+                Bitte geben Sie ein Fahrzeug an, um fortzufahren.
+              </p>
+            </div>
+          )}
         </div>
-      </div>
-    );
-  }
-);
-
-const TaskBoard = ({
-  tasks,
-  darkMode,
-  handleEditTask,
-  handleDeleteTask,
-  admins,
-  handleAddTask,
-  filteredTasks,
-  moveTask,
-  moveTaskToColumn,
-}) => {
-  const tasksByStatus = useMemo(() => {
-    return {
-      todo: filteredTasks.filter((t) => t && t.status === "todo"),
-      in_progress: filteredTasks.filter((t) => t && t.status === "in_progress"),
-    };
-  }, [filteredTasks]);
-
-  const columns = useMemo(
-    () => [
-      { id: "todo", title: "Zu erledigen" },
-      { id: "in_progress", title: "In Bearbeitung" },
-    ],
-    []
-  );
-
-  return (
-    <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 items-start">
-      {columns.map((column) => (
-        <TaskColumn
-          key={column.id}
-          title={column.title}
-          tasks={tasksByStatus[column.id] || []}
-          darkMode={darkMode}
-          handleEditTask={handleEditTask}
-          handleDeleteTask={handleDeleteTask}
-          admins={admins}
-          onAddTask={handleAddTask}
-          columnId={column.id}
-          moveTask={moveTask}
-          moveTaskToColumn={moveTaskToColumn}
-        />
-      ))}
-    </div>
+      </td>
+    </tr>
   );
 };
 
-export default function AdvancedTrelloPage() {
+export default function TasksPage() {
   const [tasks, setTasks] = useState([]);
   const [admins, setAdmins] = useState([]);
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [expandedTaskId, setExpandedTaskId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [taskForm, setTaskForm] = useState({
     car: "",
@@ -660,14 +338,14 @@ export default function AdvancedTrelloPage() {
     description: "",
     assignedTo: "",
     priority: "medium",
-    status: "todo",
   });
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTaskId, setEditingTaskId] = useState(null);
   const [filters, setFilters] = useState({ needs: "", search: "" });
+  const [sortConfig, setSortConfig] = useState({
+    key: "createdAt",
+    direction: "desc",
+  });
   const [darkMode, setDarkMode] = useState(false);
 
-  // Initialize dark mode
   useEffect(() => {
     const savedMode = localStorage.getItem("darkMode");
     if (savedMode !== null) {
@@ -680,7 +358,6 @@ export default function AdvancedTrelloPage() {
     }
   }, []);
 
-  // Apply dark mode class
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark");
@@ -690,46 +367,44 @@ export default function AdvancedTrelloPage() {
     localStorage.setItem("darkMode", darkMode);
   }, [darkMode]);
 
-  // Fetch data with error handling and loading states
-  const fetchData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const [tasksRes, adminsRes] = await Promise.all([
-        fetch("/api/tasks"),
-        fetch("/api/admins"),
-      ]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [tasksResponse, adminsResponse] = await Promise.all([
+          fetch("/api/tasks"),
+          fetch("/api/admins"),
+        ]);
 
-      if (!tasksRes.ok || !adminsRes.ok) {
-        throw new Error("Failed to fetch data");
+        if (!tasksResponse.ok || !adminsResponse.ok) {
+          throw new Error("Failed to fetch data");
+        }
+
+        const [tasksData, adminsData] = await Promise.all([
+          tasksResponse.json(),
+          adminsResponse.json(),
+        ]);
+
+        setTasks(tasksData.map((task) => ({ ...task, id: task._id })));
+        setAdmins(adminsData);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Fetch error:", error);
+        toast.error("Fehler beim Laden der Daten");
+        setIsLoading(false);
       }
+    };
 
-      const [tasksData, adminsData] = await Promise.all([
-        tasksRes.json(),
-        adminsRes.json(),
-      ]);
-
-      setTasks(tasksData.map((t) => ({ ...t, id: t._id })));
-      setAdmins(adminsData);
-    } catch (err) {
-      console.error(err);
-      toast.error("Fehler beim Laden der Daten");
-    } finally {
-      setIsLoading(false);
-    }
+    fetchData();
   }, []);
 
-  // Initial data fetch
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const handleInputChange = useCallback((e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setTaskForm((prev) => ({ ...prev, [name]: value }));
-  }, []);
+  };
 
-  const resetForm = useCallback(() => {
-    setIsModalOpen(false);
+  const resetForm = () => {
+    setIsAddingTask(false);
     setEditingTaskId(null);
     setTaskForm({
       car: "",
@@ -737,338 +412,302 @@ export default function AdvancedTrelloPage() {
       description: "",
       assignedTo: "",
       priority: "medium",
-      status: "todo",
     });
-  }, []);
+  };
 
-  const handleAddTask = useCallback((columnId) => {
-    setTaskForm((prev) => ({ ...prev, status: columnId }));
-    setIsModalOpen(true);
-  }, []);
-
-  const handleSubmitTask = useCallback(async () => {
+  const handleAddTask = async () => {
     if (!taskForm.car.trim()) {
       toast.error("Bitte Fahrzeug angeben!");
       return;
     }
 
     try {
-      const url = "/api/tasks";
-      const method = editingTaskId ? "PATCH" : "POST";
-      const body = JSON.stringify({
-        ...(editingTaskId && { id: editingTaskId }),
-        car: taskForm.car,
-        needs: taskForm.needs,
-        description: taskForm.description,
-        priority: taskForm.priority,
-        status: taskForm.status,
-        ...(taskForm.assignedTo && { assignedTo: taskForm.assignedTo }),
-      });
-
-      const response = await fetch(url, {
-        method,
+      const response = await fetch("/api/tasks", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body,
+        body: JSON.stringify({
+          car: taskForm.car,
+          needs: taskForm.needs,
+          description: taskForm.description,
+          priority: taskForm.priority,
+          ...(taskForm.assignedTo && { assignedTo: taskForm.assignedTo }),
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Fehler beim Speichern");
+        throw new Error(errorData.error || "Fehler beim Erstellen");
       }
 
-      const result = await response.json();
-      setTasks((prev) =>
-        editingTaskId
-          ? prev.map((task) =>
-              task.id === result._id ? { ...result, id: result._id } : task
-            )
-          : [{ ...result, id: result._id }, ...prev]
-      );
-
-      toast.success(
-        `Aufgabe erfolgreich ${editingTaskId ? "aktualisiert" : "erstellt"}!`,
-        {
-          style: {
-            background: darkMode ? "#1E40AF" : "#F97316",
-            color: "#fff",
-          },
-          iconTheme: {
-            primary: darkMode ? "#1E3A8A" : "#EA580C",
-            secondary: "#fff",
-          },
-        }
-      );
+      const newTask = await response.json();
+      setTasks((prev) => [{ ...newTask, id: newTask._id }, ...prev]);
+      toast.success("Aufgabe erfolgreich erstellt!", {
+        style: {
+          background: darkMode ? "#1E40AF" : "#2563EB",
+          color: "#fff",
+        },
+        iconTheme: {
+          primary: darkMode ? "#1E3A8A" : "#1E40AF",
+          secondary: "#fff",
+        },
+      });
       resetForm();
     } catch (error) {
-      console.error("Error saving task:", error);
-      toast.error(error.message || "Fehler beim Speichern der Aufgabe");
+      console.error("Error adding task:", error);
+      toast.error(error.message || "Fehler beim Erstellen der Aufgabe");
     }
-  }, [taskForm, editingTaskId, darkMode, resetForm]);
+  };
 
-  const handleEditTask = useCallback(
-    (taskId) => {
-      const taskToEdit = tasks.find((task) => task.id === taskId);
-      if (!taskToEdit) return;
+  const handleEditTask = (taskId) => {
+    const taskToEdit = tasks.find((task) => task.id === taskId);
+    if (!taskToEdit) return;
 
-      setEditingTaskId(taskId);
-      setTaskForm({
-        car: taskToEdit.car,
-        needs: taskToEdit.needs,
-        description: taskToEdit.description,
-        assignedTo: taskToEdit.assignedTo?._id || "",
-        priority: taskToEdit.priority,
-        status: taskToEdit.status || "todo",
+    setEditingTaskId(taskId);
+    setTaskForm({
+      car: taskToEdit.car,
+      needs: taskToEdit.needs,
+      description: taskToEdit.description,
+      assignedTo: taskToEdit.assignedTo?._id || "",
+      priority: taskToEdit.priority,
+    });
+  };
+
+  const handleUpdateTask = async () => {
+    if (!taskForm.car.trim()) {
+      toast.error("Bitte Fahrzeug angeben!");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/tasks", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingTaskId,
+          car: taskForm.car,
+          needs: taskForm.needs,
+          description: taskForm.description,
+          priority: taskForm.priority,
+          ...(taskForm.assignedTo && { assignedTo: taskForm.assignedTo }),
+        }),
       });
-      setIsModalOpen(true);
-    },
-    [tasks]
-  );
 
-  const handleDeleteTask = useCallback(
-    async (taskId) => {
-      if (!confirm("Möchten Sie diese Aufgabe wirklich löschen?")) return;
-
-      try {
-        const response = await fetch("/api/tasks", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: taskId }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Fehler beim Löschen");
-        }
-
-        setTasks((prev) => prev.filter((task) => task.id !== taskId));
-        toast.success("Aufgabe erfolgreich gelöscht!", {
-          style: {
-            background: darkMode ? "#1E40AF" : "#F97316",
-            color: "#fff",
-          },
-          iconTheme: {
-            primary: darkMode ? "#1E3A8A" : "#EA580C",
-            secondary: "#fff",
-          },
-        });
-      } catch (error) {
-        console.error("Error deleting task:", error);
-        toast.error("Fehler beim Löschen der Aufgabe");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Fehler beim Aktualisieren");
       }
-    },
-    [darkMode]
-  );
 
-  const refreshData = useCallback(async () => {
+      const updatedTask = await response.json();
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === updatedTask._id
+            ? { ...updatedTask, id: updatedTask._id }
+            : task
+        )
+      );
+      toast.success("Aufgabe erfolgreich aktualisiert!", {
+        style: {
+          background: darkMode ? "#1E40AF" : "#2563EB",
+          color: "#fff",
+        },
+        iconTheme: {
+          primary: darkMode ? "#1E3A8A" : "#1E40AF",
+          secondary: "#fff",
+        },
+      });
+      resetForm();
+    } catch (error) {
+      console.error("Error updating task:", error);
+      toast.error(error.message || "Fehler beim Aktualisieren der Aufgabe");
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    if (!confirm("Möchten Sie diese Aufgabe wirklich löschen?")) return;
+
+    try {
+      const response = await fetch("/api/tasks", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: taskId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Fehler beim Löschen");
+      }
+
+      setTasks((prev) => prev.filter((task) => task.id !== taskId));
+      toast.success("Aufgabe erfolgreich gelöscht!", {
+        style: {
+          background: darkMode ? "#1E40AF" : "#2563EB",
+          color: "#fff",
+        },
+        iconTheme: {
+          primary: darkMode ? "#1E3A8A" : "#1E40AF",
+          secondary: "#fff",
+        },
+      });
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast.error("Fehler beim Löschen der Aufgabe");
+    }
+  };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const requestSort = (key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (a[sortConfig.key] < b[sortConfig.key]) {
+      return sortConfig.direction === "asc" ? -1 : 1;
+    }
+    if (a[sortConfig.key] > b[sortConfig.key]) {
+      return sortConfig.direction === "asc" ? 1 : -1;
+    }
+    return 0;
+  });
+
+  const filteredTasks = sortedTasks.filter((task) => {
+    const matchesNeed = !filters.needs || task.needs === filters.needs;
+    const matchesSearch =
+      !filters.search ||
+      task.car.toLowerCase().includes(filters.search.toLowerCase()) ||
+      (task.description &&
+        task.description.toLowerCase().includes(filters.search.toLowerCase()));
+    return matchesNeed && matchesSearch;
+  });
+
+  const refreshData = async () => {
     try {
       setIsLoading(true);
-      const [tasksRes, adminsRes] = await Promise.all([
+      const [tasksResponse, adminsResponse] = await Promise.all([
         fetch("/api/tasks"),
         fetch("/api/admins"),
       ]);
 
-      if (!tasksRes.ok || !adminsRes.ok) {
+      if (!tasksResponse.ok || !adminsResponse.ok) {
         throw new Error("Failed to fetch data");
       }
 
       const [tasksData, adminsData] = await Promise.all([
-        tasksRes.json(),
-        adminsRes.json(),
+        tasksResponse.json(),
+        adminsResponse.json(),
       ]);
 
       setTasks(tasksData.map((task) => ({ ...task, id: task._id })));
       setAdmins(adminsData);
+      setIsLoading(false);
       toast.success("Daten aktualisiert", {
         style: {
-          background: darkMode ? "#1E40AF" : "#F97316",
+          background: darkMode ? "#1E40AF" : "#2563EB",
           color: "#fff",
         },
         iconTheme: {
-          primary: darkMode ? "#1E3A8A" : "#EA580C",
+          primary: darkMode ? "#1E3A8A" : "#1E40AF",
           secondary: "#fff",
         },
       });
     } catch (error) {
       console.error("Refresh error:", error);
       toast.error("Fehler beim Aktualisieren");
-    } finally {
       setIsLoading(false);
     }
-  }, [darkMode]);
-
-  const moveTask = useCallback((columnId, dragIndex, hoverIndex) => {
-    setTasks((prevTasks) => {
-      const columnTasks = prevTasks.filter((task) => task.status === columnId);
-
-      if (!columnTasks[dragIndex]) return prevTasks;
-
-      const newColumnTasks = [...columnTasks];
-      const [movedTask] = newColumnTasks.splice(dragIndex, 1);
-      newColumnTasks.splice(hoverIndex, 0, movedTask);
-
-      const otherTasks = prevTasks.filter((task) => task.status !== columnId);
-
-      return [...otherTasks, ...newColumnTasks];
-    });
-  }, []);
-
-  const moveTaskToColumn = useCallback(
-    async (taskId, newColumnId) => {
-      const task = tasks.find((t) => t.id === taskId);
-      if (!task || task.status === newColumnId) return;
-
-      // Optimistic update
-      setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, status: newColumnId } : t))
-      );
-
-      try {
-        await fetch("/api/tasks", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: taskId,
-            status: newColumnId,
-          }),
-        });
-      } catch (error) {
-        console.error("Error updating task status:", error);
-        // Revert on error
-        setTasks((prev) =>
-          prev.map((t) => (t.id === taskId ? { ...t, status: task.status } : t))
-        );
-        toast.error("Fehler beim Aktualisieren des Status");
-      }
-    },
-    [tasks]
-  );
-
-  const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
-      const matchesNeed = !filters.needs || task.needs === filters.needs;
-      const matchesSearch =
-        !filters.search ||
-        task.car.toLowerCase().includes(filters.search.toLowerCase()) ||
-        (task.description &&
-          task.description
-            .toLowerCase()
-            .includes(filters.search.toLowerCase()));
-      return matchesNeed && matchesSearch;
-    });
-  }, [tasks, filters.needs, filters.search]);
-
-  const handleFilterChange = useCallback((e) => {
-    const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
-  }, []);
+  };
 
   if (isLoading) {
     return (
       <div
-        className={`min-h-screen p-4 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${
-          darkMode ? "bg-gray-900" : "bg-orange-50"
-        }`}
+        className={`min-h-screen ${
+          darkMode
+            ? "bg-gray-900"
+            : "bg-gradient-to-br from-blue-300 to-blue-900"
+        } p-10 md:pl-17 mt-10`}
       >
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div
-            key={i}
-            className={`animate-pulse rounded-lg h-40 w-full ${
-              darkMode ? "bg-gray-700" : "bg-orange-100"
-            }`}
-          ></div>
-        ))}
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-center items-center h-64">
+            <div
+              className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${
+                darkMode ? "border-blue-500" : "border-white"
+              }`}
+            ></div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <DndProvider backend={isMobile ? TouchBackend : HTML5Backend}>
-      <div
-        className={`min-h-screen ${
-          darkMode
-            ? "bg-gray-900"
-            : "bg-gradient-to-b from-orange-500 to-amber-900"
-        } p-2 sm:p-4`}
-      >
-        <div className="w-full max-w-[98vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
-          <div className="flex flex-wrap justify-between items-center mb-4 gap-3">
-            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-              <h1
-                className={`text-base sm:text-lg md:text-xl font-bold ${
-                  darkMode ? "text-white" : "text-gray-900"
-                }`}
-              >
-                Aufgaben
-              </h1>
-
-              <button
-                onClick={refreshData}
-                className={`p-1 sm:p-2 rounded-lg ${
-                  darkMode
-                    ? "text-blue-400 hover:bg-gray-700"
-                    : "text-black hover:bg-orange-100"
-                }`}
-                title="Daten aktualisieren"
-              >
-                <FiRefreshCw className="text-base sm:text-lg" />
-              </button>
-
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className={`p-1 sm:p-2 rounded-lg ${
-                  darkMode
-                    ? "text-yellow-300 hover:bg-gray-700"
-                    : "text-black hover:bg-orange-100"
-                }`}
-                title={
-                  darkMode ? "Zu Light Mode wechseln" : "Zu Dark Mode wechseln"
-                }
-              >
-                {darkMode ? (
-                  <FiSun className="text-base sm:text-lg" />
-                ) : (
-                  <FiMoon className="text-base sm:text-lg" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div
-            className={`mb-4 p-3 sm:p-4 rounded-lg ${
-              darkMode ? "bg-gray-800" : "bg-white shadow"
+    <div
+      className={`min-h-screen ${
+        darkMode ? "bg-gray-900" : "bg-gradient-to-br from-blue-400 to-blue-950"
+      } p-4`}
+    >
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
+        <div className="flex flex-col gap-2 sm:gap-3 md:gap-4 mb-4">
+          <h1
+            className={`text-xl sm:text-2xl font-bold ${
+              darkMode ? "text-white" : "text-white"
             }`}
           >
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiSearch
-                      className={darkMode ? "text-gray-400" : "text-orange-500"}
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    name="search"
-                    value={filters.search}
-                    onChange={handleFilterChange}
-                    placeholder="Aufgaben suchen..."
-                    className={`block w-full pl-10 pr-3 py-2 rounded-lg border text-xs sm:text-sm transition-all ${
-                      darkMode
-                        ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                        : "bg-white border-orange-200 placeholder-orange-400"
-                    }`}
-                  />
-                </div>
-              </div>
+            Aufgabenverwaltung
+          </h1>
 
-              <div className="flex gap-3">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <p className={darkMode ? "text-blue-300" : "text-blue-100"}>
+              {filteredTasks.length}{" "}
+              {filteredTasks.length === 1 ? "Aufgabe" : "Aufgaben"} gefunden
+            </p>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className={`p-2 mr-3 sm:mr-0 rounded-lg ${
+                darkMode
+                  ? "bg-blue-800 text-yellow-300 hover:bg-blue-700"
+                  : "bg-blue-100 text-blue-800 hover:bg-blue-200"
+              } transition-colors`}
+              title={
+                darkMode ? "Zu Light Mode wechseln" : "Zu Dark Mode wechseln"
+              }
+            >
+              {darkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
+            </button>
+          </div>
+        </div>
+
+        <div
+          className={`rounded-xl shadow-md overflow-hidden mb-8 ${
+            darkMode ? "bg-gray-800" : "bg-white"
+          }`}
+        >
+          <div
+            className={`px-6 py-4 border-b ${
+              darkMode
+                ? "border-gray-700 bg-gray-700"
+                : "border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100"
+            } flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4`}
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+              <div className="flex items-center">
+                <FiFilter
+                  className={
+                    darkMode ? "text-blue-400 mr-2" : "text-blue-500 mr-2"
+                  }
+                />
                 <select
                   name="needs"
                   value={filters.needs}
                   onChange={handleFilterChange}
-                  className={`rounded-lg px-3 py-2 text-xs sm:text-sm border ${
+                  className={`rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
                     darkMode
-                      ? "bg-gray-700 border-gray-600 text-white"
-                      : "bg-white border-orange-200"
+                      ? "bg-gray-600 border-gray-600 text-white"
+                      : "bg-white border-blue-200"
                   }`}
                 >
                   <option value="">Alle Kategorien</option>
@@ -1078,108 +717,508 @@ export default function AdvancedTrelloPage() {
                     </option>
                   ))}
                 </select>
-
-                <button
-                  onClick={() => handleAddTask("todo")}
-                  className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 ${
-                    darkMode
-                      ? "bg-blue-600 hover:bg-blue-700 text-white"
-                      : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
-                  }`}
-                >
-                  <FiPlus size={14} /> Aufgabe
-                </button>
               </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <div className="relative flex-grow sm:w-64">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FiSearch
+                    className={darkMode ? "text-blue-400" : "text-blue-400"}
+                  />
+                </div>
+                <input
+                  type="text"
+                  name="search"
+                  value={filters.search}
+                  onChange={handleFilterChange}
+                  placeholder="Aufgaben suchen..."
+                  className={`block w-full pl-10 pr-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all ${
+                    darkMode
+                      ? "bg-gray-600 border-gray-600 text-white placeholder-gray-300"
+                      : "bg-white border-blue-200"
+                  }`}
+                />
+              </div>
+
+              <button
+                onClick={() => setIsAddingTask(true)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm ${
+                  darkMode
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                }`}
+              >
+                <FiPlus size={16} /> Neue Aufgabe
+              </button>
             </div>
           </div>
 
-          <TaskBoard
-            tasks={tasks}
-            darkMode={darkMode}
-            handleEditTask={handleEditTask}
-            handleDeleteTask={handleDeleteTask}
-            admins={admins}
-            handleAddTask={handleAddTask}
-            filteredTasks={filteredTasks}
-            moveTask={moveTask}
-            moveTaskToColumn={moveTaskToColumn}
-          />
-
-          {filteredTasks.length === 0 && (
-            <div
-              className={`mt-8 p-6 text-center rounded-lg ${
-                darkMode ? "bg-gray-800" : "bg-white shadow"
-              }`}
-            >
-              <div
-                className={`mx-auto h-16 w-16 sm:h-24 sm:w-24 mb-3 sm:mb-4 flex items-center justify-center ${
-                  darkMode ? "text-blue-400" : "text-orange-500"
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className={darkMode ? "bg-gray-700" : "bg-blue-50"}>
+                <tr>
+                  <th
+                    onClick={() => requestSort("car")}
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer transition-colors ${
+                      darkMode
+                        ? "text-blue-300 hover:bg-gray-600"
+                        : "text-blue-600 hover:bg-blue-100"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1">
+                      Fahrzeug
+                      {sortConfig.key === "car" && (
+                        <SortIcon
+                          direction={sortConfig.direction}
+                          darkMode={darkMode}
+                        />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => requestSort("needs")}
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer transition-colors ${
+                      darkMode
+                        ? "text-blue-300 hover:bg-gray-600"
+                        : "text-blue-600 hover:bg-blue-100"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1">
+                      Kategorie
+                      {sortConfig.key === "needs" && (
+                        <SortIcon
+                          direction={sortConfig.direction}
+                          darkMode={darkMode}
+                        />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                      darkMode ? "text-blue-300" : "text-blue-600"
+                    }`}
+                  >
+                    Beschreibung
+                  </th>
+                  <th
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                      darkMode ? "text-blue-300" : "text-blue-600"
+                    }`}
+                  >
+                    Zugewiesen
+                  </th>
+                  <th
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                      darkMode ? "text-blue-300" : "text-blue-600"
+                    }`}
+                  >
+                    Priorität
+                  </th>
+                  <th
+                    className={`px-6 py-3 text-right text-xs font-medium uppercase tracking-wider ${
+                      darkMode ? "text-blue-300" : "text-blue-600"
+                    }`}
+                  >
+                    Aktionen
+                  </th>
+                </tr>
+              </thead>
+              <tbody
+                className={`divide-y ${
+                  darkMode
+                    ? "divide-gray-700 bg-gray-800"
+                    : "divide-gray-200 bg-white"
                 }`}
               >
-                <FiFileText size={32} className="sm:size-12 opacity-50" />
+                {isAddingTask && (
+                  <TaskFormSection
+                    isEditing={false}
+                    taskForm={taskForm}
+                    handleInputChange={handleInputChange}
+                    resetForm={resetForm}
+                    handleSubmit={handleAddTask}
+                    darkMode={darkMode}
+                    needsOptions={needsOptions}
+                    priorityOptions={priorityOptions}
+                    admins={admins}
+                  />
+                )}
+
+                {editingTaskId && (
+                  <TaskFormSection
+                    isEditing={true}
+                    taskForm={taskForm}
+                    handleInputChange={handleInputChange}
+                    resetForm={resetForm}
+                    handleSubmit={handleUpdateTask}
+                    darkMode={darkMode}
+                    needsOptions={needsOptions}
+                    priorityOptions={priorityOptions}
+                    admins={admins}
+                  />
+                )}
+
+                {filteredTasks.map((task) => (
+                  <React.Fragment key={task.id}>
+                    <tr
+                      className={`cursor-pointer transition-colors ${
+                        darkMode ? "hover:bg-gray-700" : "hover:bg-blue-50"
+                      } ${
+                        expandedTaskId === task.id
+                          ? darkMode
+                            ? "bg-gray-700"
+                            : "bg-blue-50"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        setExpandedTaskId(
+                          expandedTaskId === task.id ? null : task.id
+                        )
+                      }
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div
+                          className={`text-sm font-semibold ${
+                            darkMode ? "text-white" : "text-blue-900"
+                          }`}
+                        >
+                          {task.car}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div
+                          className={`text-sm px-3 py-1 rounded-md inline-block ${
+                            darkMode
+                              ? "bg-blue-900 text-blue-200"
+                              : "bg-blue-100 text-blue-800"
+                          }`}
+                        >
+                          {task.needs}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div
+                          className={`text-sm max-w-xs truncate ${
+                            darkMode ? "text-gray-300" : "text-gray-600"
+                          }`}
+                        >
+                          {task.description || (
+                            <span
+                              className={
+                                darkMode
+                                  ? "text-gray-400 italic"
+                                  : "text-gray-400 italic"
+                              }
+                            >
+                              Keine Beschreibung
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {task.assignedTo ? (
+                          <div className="flex items-center">
+                            <div className="relative w-8 h-8 rounded-full overflow-hidden mr-2 border border-blue-200">
+                              <Image
+                                src={task.assignedTo.image}
+                                alt={task.assignedTo.name}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <span
+                              className={`text-sm ${
+                                darkMode ? "text-white" : "text-blue-800"
+                              }`}
+                            >
+                              {task.assignedTo.name}
+                            </span>
+                          </div>
+                        ) : (
+                          <div
+                            className={`flex items-center ${
+                              darkMode ? "text-blue-300" : "text-blue-400"
+                            }`}
+                          >
+                            <FiUser className="mr-2" />
+                            <span className="text-sm">Nicht zugewiesen</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <PriorityBadge
+                          priority={task.priority}
+                          darkMode={darkMode}
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditTask(task.id);
+                          }}
+                          className={`p-2 rounded-lg transition-colors ${
+                            darkMode
+                              ? "text-blue-400 hover:bg-gray-600"
+                              : "text-blue-600 hover:bg-blue-100"
+                          }`}
+                          title="Bearbeiten"
+                        >
+                          <FiEdit2 />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteTask(task.id);
+                          }}
+                          className={`p-2 rounded-lg transition-colors ${
+                            darkMode
+                              ? "text-red-400 hover:bg-gray-600"
+                              : "text-red-600 hover:bg-red-100"
+                          }`}
+                          title="Löschen"
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </td>
+                    </tr>
+
+                    {expandedTaskId === task.id && (
+                      <tr className={darkMode ? "bg-gray-700" : "bg-blue-50"}>
+                        <td colSpan="6" className="px-6 py-4">
+                          <div
+                            className={`p-6 rounded-lg border ${
+                              darkMode
+                                ? "bg-gray-800 border-gray-600 shadow-xs"
+                                : "bg-white border-blue-200 shadow-xs"
+                            }`}
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                              <div className="md:col-span-2">
+                                <div className="flex items-center mb-4">
+                                  <div
+                                    className={`w-4 h-4 rounded-full mr-3 flex-shrink-0 ${
+                                      darkMode ? "bg-blue-500" : "bg-blue-500"
+                                    }`}
+                                  ></div>
+                                  <h3
+                                    className={`text-lg font-semibold ${
+                                      darkMode ? "text-white" : "text-blue-800"
+                                    }`}
+                                  >
+                                    Aufgabendetails
+                                  </h3>
+                                </div>
+                                <div className="prose prose-sm max-w-none">
+                                  {task.description ? (
+                                    <div
+                                      className={`whitespace-pre-line p-4 rounded-lg border ${
+                                        darkMode
+                                          ? "bg-gray-700 border-gray-600 text-gray-200"
+                                          : "bg-blue-50 border-blue-200 text-gray-600"
+                                      }`}
+                                    >
+                                      {task.description}
+                                    </div>
+                                  ) : (
+                                    <div
+                                      className={`italic p-4 rounded-lg border ${
+                                        darkMode
+                                          ? "bg-gray-700 border-gray-600 text-gray-400"
+                                          : "bg-blue-50 border-blue-200 text-blue-400"
+                                      }`}
+                                    >
+                                      Keine Beschreibung vorhanden
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="space-y-4">
+                                <div className="flex items-center">
+                                  <div
+                                    className={`w-4 h-4 rounded-full mr-3 flex-shrink-0 ${
+                                      darkMode ? "bg-blue-500" : "bg-blue-500"
+                                    }`}
+                                  ></div>
+                                  <h3
+                                    className={`text-lg font-semibold ${
+                                      darkMode ? "text-white" : "text-blue-800"
+                                    }`}
+                                  >
+                                    Weitere Details
+                                  </h3>
+                                </div>
+
+                                <div className="space-y-4">
+                                  <div className="flex items-start">
+                                    <div className="flex-shrink-0 mt-1">
+                                      <FiCalendar
+                                        className={
+                                          darkMode
+                                            ? "text-blue-400"
+                                            : "text-blue-400"
+                                        }
+                                      />
+                                    </div>
+                                    <div className="ml-3">
+                                      <p
+                                        className={`text-sm font-medium ${
+                                          darkMode
+                                            ? "text-blue-400"
+                                            : "text-blue-500"
+                                        }`}
+                                      >
+                                        Erstellt am
+                                      </p>
+                                      <p
+                                        className={`text-sm ${
+                                          darkMode
+                                            ? "text-white"
+                                            : "text-blue-800"
+                                        }`}
+                                      >
+                                        {new Date(
+                                          task.createdAt
+                                        ).toLocaleDateString("de-DE", {
+                                          day: "2-digit",
+                                          month: "2-digit",
+                                          year: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {task.assignedBy && (
+                                    <div className="flex items-start">
+                                      <div className="flex-shrink-0 mt-1">
+                                        <FiUser
+                                          className={
+                                            darkMode
+                                              ? "text-blue-400"
+                                              : "text-blue-400"
+                                          }
+                                        />
+                                      </div>
+                                      <div className="ml-3">
+                                        <p
+                                          className={`text-sm font-medium ${
+                                            darkMode
+                                              ? "text-blue-400"
+                                              : "text-blue-500"
+                                          }`}
+                                        >
+                                          Erstellt von
+                                        </p>
+                                        <div className="flex items-center mt-1">
+                                          <div className="relative w-6 h-6 rounded-full overflow-hidden mr-2 border border-blue-200">
+                                            <Image
+                                              src={task.assignedBy.image}
+                                              alt={task.assignedBy.name}
+                                              fill
+                                              className="object-cover"
+                                            />
+                                          </div>
+                                          <p
+                                            className={`text-sm ${
+                                              darkMode
+                                                ? "text-white"
+                                                : "text-blue-800"
+                                            }`}
+                                          >
+                                            {task.assignedBy.name}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <div className="flex items-start">
+                                    <div className="flex-shrink-0 mt-1">
+                                      <FiKey
+                                        className={
+                                          darkMode
+                                            ? "text-blue-400"
+                                            : "text-blue-400"
+                                        }
+                                      />
+                                    </div>
+                                    <div className="ml-3">
+                                      <p
+                                        className={`text-sm font-medium ${
+                                          darkMode
+                                            ? "text-blue-400"
+                                            : "text-blue-500"
+                                        }`}
+                                      >
+                                        Priorität
+                                      </p>
+                                      <div className="mt-1">
+                                        <PriorityBadge
+                                          priority={task.priority}
+                                          darkMode={darkMode}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {filteredTasks.length === 0 && !isAddingTask && !editingTaskId && (
+            <div className="p-12 text-center">
+              <div
+                className={`mx-auto h-24 w-24 mb-4 flex items-center justify-center ${
+                  darkMode ? "text-blue-400" : "text-blue-400"
+                }`}
+              >
+                <FiFileText size={48} className="opacity-50" />
               </div>
               <h3
-                className={`text-base sm:text-lg font-semibold mb-1 ${
-                  darkMode ? "text-white" : "text-gray-900"
+                className={`text-lg font-semibold mb-1 ${
+                  darkMode ? "text-white" : "text-blue-800"
                 }`}
               >
                 {filters.needs || filters.search
                   ? "Keine passenden Aufgaben gefunden"
                   : "Keine Aufgaben vorhanden"}
               </h3>
-              <p
-                className={`max-w-md mx-auto mb-3 sm:mb-4 text-xs sm:text-sm ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
+              <p className="text-blue-600 max-w-md mx-auto mb-4">
                 {filters.needs || filters.search
                   ? "Es gibt keine Aufgaben, die Ihren aktuellen Filtern entsprechen."
-                  : "Es wurden noch keine Aufgaben erstellt."}
+                  : "Es wurden noch keine Aufgaben erstellt oder alle Aufgaben wurden abgeschlossen."}
               </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3">
+              <div className="flex justify-center gap-3">
                 {(filters.needs || filters.search) && (
                   <button
                     onClick={() => setFilters({ needs: "", search: "" })}
-                    className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium ${
-                      darkMode
-                        ? "bg-gray-700 hover:bg-gray-600 text-white"
-                        : "bg-orange-100 hover:bg-orange-200 text-orange-800"
-                    }`}
+                    className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center transition-colors"
                   >
                     Filter zurücksetzen
                   </button>
                 )}
                 <button
-                  onClick={() => handleAddTask("todo")}
-                  className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium ${
-                    darkMode
-                      ? "bg-blue-600 hover:bg-blue-700 text-white"
-                      : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
-                  }`}
+                  onClick={() => setIsAddingTask(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center transition-colors shadow-sm"
                 >
-                  <FiPlus className="mr-1 inline" /> Neue Aufgabe erstellen
+                  <FiPlus className="mr-2" /> Neue Aufgabe erstellen
                 </button>
               </div>
             </div>
           )}
         </div>
-
-        {/* Task Form Modal */}
-        {isModalOpen && (
-          <TaskFormModal
-            isOpen={isModalOpen}
-            onClose={resetForm}
-            taskForm={taskForm}
-            handleInputChange={handleInputChange}
-            handleSubmit={handleSubmitTask}
-            isEditing={!!editingTaskId}
-            darkMode={darkMode}
-            needsOptions={needsOptions}
-            priorityOptions={priorityOptions}
-            admins={admins}
-          />
-        )}
       </div>
-    </DndProvider>
+    </div>
   );
 }

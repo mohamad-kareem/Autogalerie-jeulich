@@ -54,6 +54,47 @@ const prettifyValue = (category, value) => {
       AUTOMATIC_CLIMATISATION_3_ZONES: "3-Zonen-Klimaautomatik",
       MANUAL_CLIMATISATION: "Manuell",
     },
+    fuel: {
+      DIESEL: "Diesel",
+      PETROL: "Benzin",
+      ELECTRIC: "Elektrisch",
+      HYBRID: "Hybrid",
+      LPG: "Autogas (LPG)",
+      CNG: "Erdgas (CNG)",
+      HYDROGEN: "Wasserstoff",
+      OTHER: "Andere",
+    },
+    category: {
+      CAR: "PKW",
+      OffRoad: "SUV / Geländewagen",
+      VAN: "Van / Kleinbus",
+      CONVERTIBLE: "Cabrio",
+      COUPE: "Coupé",
+      WAGON: "Kombi",
+      Limousine: "Limousine",
+      SmallCar: "Kleinwagen",
+      SPORTS_CAR: "Sportwagen",
+      PICKUP: "Pickup",
+      OTHER: "Andere",
+    },
+    color: {
+      BLACK: "Schwarz",
+      WHITE: "Weiß",
+      SILVER: "Silber",
+      GREY: "Grau",
+      RED: "Rot",
+      BLUE: "Blau",
+      GREEN: "Grün",
+      YELLOW: "Gelb",
+      BROWN: "Braun",
+      ORANGE: "Orange",
+      PURPLE: "Lila",
+      BEIGE: "Beige",
+      GOLD: "Gold",
+      PINK: "Rosa",
+      MULTICOLOUR: "Mehrfarbig",
+      OTHER: "Andere",
+    },
     airbag: {
       FRONT_AIRBAGS: "Front",
       SIDE_AIRBAGS: "Seiten",
@@ -353,7 +394,7 @@ function CarDetailContent({ car }) {
     {
       icon: <FaGasPump className="text-white" size={16} />,
       label: "Kraftstoff",
-      value: car.fuel,
+      value: prettifyValue("fuel", car.fuel),
     },
     {
       icon: <GiGearStick className="text-white" size={16} />,
@@ -531,7 +572,10 @@ function CarDetailContent({ car }) {
                           title="Allgemeine Daten"
                           items={[
                             { label: "VIN", value: car.vin },
-                            { label: "Fahrzeugklasse", value: car.category },
+                            {
+                              label: "Fahrzeugklasse",
+                              value: prettifyValue("category", car.category),
+                            },
                             { label: "Zustand", value: car.condition },
                             {
                               label: "Schadstoffklasse",
@@ -555,9 +599,20 @@ function CarDetailContent({ car }) {
                             { label: "Leistung", value: `${car.power} PS` },
                             {
                               label: "Hubraum",
-                              value: `${car.cubicCapacity} ccm`,
+                              value: car.cubicCapacity
+                                ? `${(car.cubicCapacity / 1000).toLocaleString(
+                                    "de-DE",
+                                    {
+                                      minimumFractionDigits: 3,
+                                      maximumFractionDigits: 3,
+                                    }
+                                  )} cm³`
+                                : "-",
                             },
-                            { label: "Kraftstoff", value: car.fuel },
+                            {
+                              label: "Kraftstoff",
+                              value: prettifyValue("fuel", car.fuel),
+                            },
                             {
                               label: "Getriebe",
                               value: prettifyValue("gearbox", car.gearbox),
@@ -577,7 +632,10 @@ function CarDetailContent({ car }) {
                           }
                           title="Außen"
                           items={[
-                            { label: "Farbe", value: car.exteriorColor },
+                            {
+                              label: "Farbe",
+                              value: prettifyValue("color", car.exteriorColor),
+                            },
                             {
                               label: "Herstellerfarbe",
                               value: car.manufacturerColorName,
@@ -604,7 +662,10 @@ function CarDetailContent({ car }) {
                               label: "Innenausstattung",
                               value: car.interiorType,
                             },
-                            { label: "Innenfarbe", value: car.interiorColor },
+                            {
+                              label: "Innenfarbe",
+                              value: prettifyValue("color", car.exteriorColor),
+                            },
                             {
                               label: "Sportsitze",
                               value: car.sportSeats ? "Ja" : "Nein",
@@ -674,9 +735,20 @@ function CarDetailContent({ car }) {
                             { label: "Leistung", value: `${car.power} PS` },
                             {
                               label: "Hubraum",
-                              value: `${car.cubicCapacity} ccm`,
+                              value: car.cubicCapacity
+                                ? `${(car.cubicCapacity / 1000).toLocaleString(
+                                    "de-DE",
+                                    {
+                                      minimumFractionDigits: 3,
+                                      maximumFractionDigits: 3,
+                                    }
+                                  )} cm³`
+                                : "-",
                             },
-                            { label: "Kraftstoff", value: car.fuel },
+                            {
+                              label: "Kraftstoff",
+                              value: prettifyValue("fuel", car.fuel),
+                            },
                             {
                               label: "Getriebe",
                               value: prettifyValue("gearbox", car.gearbox),

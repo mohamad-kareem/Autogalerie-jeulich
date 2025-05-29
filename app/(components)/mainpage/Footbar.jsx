@@ -141,7 +141,7 @@ const Footbar = () => {
                   href="mailto:info@autogalerie-juelich.de"
                   className="hover:text-white transition"
                 >
-                  info@autogalerie-juelich.de
+                  autogalerie.jülich@web.de
                 </a>
               </li>
               <li className="flex items-start">

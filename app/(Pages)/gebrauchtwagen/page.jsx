@@ -28,6 +28,12 @@ import GridBackground from "@/app/(components)/helpers/Grid";
 import { useRouter } from "next/navigation"; // <-- import this at the top
 
 // Inside your component:
+const fuelMap = {
+  PETROL: "Benzin",
+  DIESEL: "Diesel",
+  petrol: "Benzin",
+  diesel: "Diesel",
+};
 
 export default function UsedCarsPage() {
   const router = useRouter();
@@ -431,7 +437,7 @@ export default function UsedCarsPage() {
                   {/* Key Specs */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <Calendar className="h-4 w-4 text-black" />
                       <div>
                         <p className="text-xs text-gray-500">Erstzulassung</p>
                         <p className="font-medium">
@@ -442,7 +448,7 @@ export default function UsedCarsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Gauge className="h-4 w-4 text-gray-400" />
+                      <Gauge className="h-4 w-4 text-red-400" />
                       <div>
                         <p className="text-xs text-gray-500">Kilometer</p>
                         <p className="font-medium">
@@ -453,14 +459,16 @@ export default function UsedCarsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Fuel className="h-4 w-4 text-gray-400" />
+                      <Fuel className="h-4 w-4 text-green-400" />
                       <div>
                         <p className="text-xs text-gray-500">Kraftstoff</p>
-                        <p className="font-medium">{car.fuel || "-"}</p>
+                        <p className="font-medium">
+                          {fuelMap[car.fuel] || car.fuel || "-"}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-gray-400" />
+                      <Zap className="h-4 w-4 text-blue-400" />
                       <div>
                         <p className="text-xs text-gray-500">Leistung</p>
                         <p className="font-medium">
@@ -620,7 +628,7 @@ export default function UsedCarsPage() {
                         {
                           icon: <Fuel className="h-4 w-4" />,
                           label: "Kraftstoff",
-                          value: car.fuel || "-",
+                          value: fuelMap[car.fuel] || car.fuel || "-",
                         },
                         {
                           icon: <Zap className="h-4 w-4" />,

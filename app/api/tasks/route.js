@@ -1,3 +1,4 @@
+// app/api/tasks/route.js
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Task from "@/models/Task";
@@ -10,20 +11,21 @@ export async function GET() {
     .sort({ createdAt: -1 })
     .populate("assignedTo", "name image")
     .populate("assignedBy", "name image")
-    .lean(); // ✅ Return plain JS objects for speed
+    .lean();
   return NextResponse.json(tasks);
 }
 
 export async function POST(request) {
   await connectDB();
 
+  // Ensure user is authenticated
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
   const creatorId = session.user.id;
-  const { car, needs, description, assignedTo, priority, status } =
+
+  const { car, needs, description, assignedTo, priority } =
     await request.json();
 
   if (!car || !car.trim()) {
@@ -33,30 +35,20 @@ export async function POST(request) {
     );
   }
 
-  const data = {
-    car,
-    needs,
-    description,
-    priority,
-    status,
-    assignedBy: creatorId,
-  };
-
+  const data = { car, needs, description, priority, assignedBy: creatorId };
   if (assignedTo) data.assignedTo = assignedTo;
 
-  // ✅ Create task, then immediately fetch with .lean()
-  const created = await Task.create(data);
-  const populated = await Task.findById(created._id)
-    .populate("assignedTo", "name image")
-    .populate("assignedBy", "name image")
-    .lean(); // ✅ lean here
-
-  return NextResponse.json(populated);
+  const task = await Task.create(data);
+  await task.populate([
+    { path: "assignedTo", select: "name image" },
+    { path: "assignedBy", select: "name image" },
+  ]);
+  return NextResponse.json(task);
 }
 
 export async function PATCH(request) {
   await connectDB();
-  const { id, car, needs, description, assignedTo, priority, status } =
+  const { id, car, needs, description, assignedTo, priority } =
     await request.json();
 
   if (!car || !car.trim()) {
@@ -66,20 +58,18 @@ export async function PATCH(request) {
     );
   }
 
-  const updates = { car, needs, description, priority, status };
+  const updates = { car, needs, description, priority };
   if (assignedTo) updates.assignedTo = assignedTo;
 
-  const updated = await Task.findByIdAndUpdate(id, updates, { new: true })
+  const task = await Task.findByIdAndUpdate(id, updates, { new: true })
     .populate("assignedTo", "name image")
-    .populate("assignedBy", "name image")
-    .lean(); // ✅ lean here too
-
-  return NextResponse.json(updated);
+    .populate("assignedBy", "name image");
+  return NextResponse.json(task);
 }
 
 export async function DELETE(request) {
   await connectDB();
   const { id } = await request.json();
   await Task.findByIdAndDelete(id);
-  return NextResponse.json({ success: true }); // ✅ Simple response, no extra data
+  return NextResponse.json({ success: true });
 }

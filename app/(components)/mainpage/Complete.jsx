@@ -9,6 +9,7 @@ import WhyUs from "./WhyUs";
 import Rating from "./Rating";
 import Reviews from "./CustomerReviews";
 import GridBackground from "../helpers/Grid"; // Adjust path if needed
+import RandomCarSlider from "./RandomCarSlider";
 
 const Complete = () => {
   return (
@@ -16,6 +17,7 @@ const Complete = () => {
       <GridBackground /> {/* ⬅️ Grid SVG in the background */}
       <HeroSection />
       <LandingChoices />
+      <RandomCarSlider />
       <LandingSlide />
       <Rating />
       <WhyUs />
