@@ -53,7 +53,7 @@ export default function RandomCarSlider() {
   };
 
   return (
-    <section className="py-12 relative w-full overflow-hidden px-4 sm:px-6 lg:px-16 bg-black pb-20 ">
+    <section className="py-12 relative w-full overflow-hidden px-4 sm:px-6 lg:px-16  pb-20 ">
       <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
         <h2 className="text-lg sm:text-xl md:text-2xl font-medium text-white mb-4 tracking-wide">
           Premium-Auswahl
@@ -72,12 +72,12 @@ export default function RandomCarSlider() {
         {/* Scrollable Container */}
         <div
           ref={sliderRef}
-          className="flex gap-5 sm:gap-6 overflow-x-auto pb-4 scroll-smooth no-scrollbar"
+          className="flex gap-5 sm:gap-6 overflow-x-auto pb-4 scroll-smooth no-scrollbar bg-black"
         >
           {cars.map((car) => (
             <div
               key={car._id}
-              className="min-w-[260px] sm:min-w-[280px] bg-gradient-to-br from-black/50 to-white/40 hover:from-red-900 hover:to-black/20 rounded-lg p-4 flex-shrink-0 flex flex-col items-center justify-between text-center shadow-lg transition-all duration-300 border border-white/5 hover:border-white/5"
+              className="min-w-[260px] sm:min-w-[280px] bg-gradient-to-br from-black/50 to-white/40  hover:from-red-900 hover:to-black/20 rounded-lg p-4 flex-shrink-0 flex flex-col items-center justify-between text-center shadow-lg transition-all duration-300 border border-white/5 hover:border-white/5"
             >
               {/* Image Container */}
               <div className="w-full h-32 mb-4 rounded-lg overflow-hidden bg-black/40 flex items-center justify-center p-2">
