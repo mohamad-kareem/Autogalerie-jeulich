@@ -24,6 +24,7 @@
     "framer-motion": "^12.6.3",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",
+    "jsonwebtoken": "^9.0.2",
     "jspdf": "^3.0.1",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.487.0",
