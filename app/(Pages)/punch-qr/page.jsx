@@ -23,36 +23,24 @@ const dealershipCoords = turf.polygon([
 export default function PunchQRPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const codeParam = searchParams.get("code");
+  const searchParams = useSearchParams(); // ✅ Safe inside client component
 
   useEffect(() => {
-    // Block access if no ?code=... in URL
-    if (!codeParam) {
-      toast.error("❌ Ungültiger Zugriff. Bitte scannen Sie den QR-Code.");
-      router.push("/");
-      return;
-    }
-
-    // Wait until session is loaded
     if (status === "loading") return;
 
-    // Redirect to login if not authenticated
     if (status === "unauthenticated" || !session?.user?.id) {
-      router.push("/login?callbackUrl=/punch-qr?code=" + codeParam);
+      router.push("/login?callbackUrl=/punch-qr");
       return;
     }
 
     const autoPunch = async () => {
       try {
-        // Check last punch type
         const latestRes = await fetch("/api/punch/latest", {
           headers: { "x-admin-id": session.user.id },
         });
         const latest = await latestRes.json();
         const nextType = latest?.type === "in" ? "out" : "in";
 
-        // Get GPS location
         const pos = await new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
@@ -69,7 +57,6 @@ export default function PunchQRPage() {
           return router.push("/");
         }
 
-        // Submit punch
         const res = await fetch("/api/punch", {
           method: "POST",
           headers: {
@@ -83,7 +70,6 @@ export default function PunchQRPage() {
         });
 
         const result = await res.json();
-
         if (result.success) {
           toast.success(
             `✅ Erfolgreich ${
@@ -101,7 +87,7 @@ export default function PunchQRPage() {
     };
 
     autoPunch();
-  }, [status, session, router, codeParam]);
+  }, [status, session, router]);
 
   return (
     <div className="flex items-center justify-center h-screen text-white bg-gray-900 px-4 text-center">
