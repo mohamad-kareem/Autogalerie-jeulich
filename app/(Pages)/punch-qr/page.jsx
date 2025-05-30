@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
@@ -23,15 +23,24 @@ const dealershipCoords = turf.polygon([
 export default function PunchQRPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const searchParams = useSearchParams(); // ✅ Safe inside client component
-
+  const searchParams = useSearchParams();
+  const codeParam = searchParams.get("code");
+  const hasPunched = useRef(false);
   useEffect(() => {
-    if (status === "loading") return;
-
-    if (status === "unauthenticated" || !session?.user?.id) {
-      router.push("/login?callbackUrl=/punch-qr");
+    if (!codeParam) {
+      toast.error("❌ Ungültiger Zugriff. Bitte scannen Sie den QR-Code.");
+      router.push("/");
       return;
     }
+
+    if (status === "loading" || hasPunched.current) return;
+
+    if (status === "unauthenticated" || !session?.user?.id) {
+      router.push("/login?callbackUrl=/punch-qr?code=" + codeParam);
+      return;
+    }
+
+    hasPunched.current = true; // Set this before async call to prevent reruns
 
     const autoPunch = async () => {
       try {
@@ -70,6 +79,7 @@ export default function PunchQRPage() {
         });
 
         const result = await res.json();
+
         if (result.success) {
           toast.success(
             `✅ Erfolgreich ${
@@ -87,7 +97,7 @@ export default function PunchQRPage() {
     };
 
     autoPunch();
-  }, [status, session, router]);
+  }, [status, session, router, codeParam]);
 
   return (
     <div className="flex items-center justify-center h-screen text-white bg-gray-900 px-4 text-center">
