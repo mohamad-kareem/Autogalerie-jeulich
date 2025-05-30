@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import * as turf from "@turf/turf";
@@ -23,29 +23,36 @@ const dealershipCoords = turf.polygon([
 export default function PunchQRPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const codeParam = searchParams.get("code");
 
   useEffect(() => {
-    console.log("👤 SESSION:", session);
-    console.log("📶 STATUS:", status);
-
-    // Wait if still loading
-    if (status === "loading") return;
-
-    // Redirect if not logged in
-    if (status === "unauthenticated" || !session?.user?.id) {
-      router.push("/login?callbackUrl=/punch-qr");
+    // Block access if no ?code=... in URL
+    if (!codeParam) {
+      toast.error("❌ Ungültiger Zugriff. Bitte scannen Sie den QR-Code.");
+      router.push("/");
       return;
     }
 
-    // Main logic only runs if authenticated
+    // Wait until session is loaded
+    if (status === "loading") return;
+
+    // Redirect to login if not authenticated
+    if (status === "unauthenticated" || !session?.user?.id) {
+      router.push("/login?callbackUrl=/punch-qr?code=" + codeParam);
+      return;
+    }
+
     const autoPunch = async () => {
       try {
+        // Check last punch type
         const latestRes = await fetch("/api/punch/latest", {
           headers: { "x-admin-id": session.user.id },
         });
         const latest = await latestRes.json();
         const nextType = latest?.type === "in" ? "out" : "in";
 
+        // Get GPS location
         const pos = await new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
@@ -62,6 +69,7 @@ export default function PunchQRPage() {
           return router.push("/");
         }
 
+        // Submit punch
         const res = await fetch("/api/punch", {
           method: "POST",
           headers: {
@@ -75,6 +83,7 @@ export default function PunchQRPage() {
         });
 
         const result = await res.json();
+
         if (result.success) {
           toast.success(
             `✅ Erfolgreich ${
@@ -92,7 +101,7 @@ export default function PunchQRPage() {
     };
 
     autoPunch();
-  }, [status, session, router]);
+  }, [status, session, router, codeParam]);
 
   return (
     <div className="flex items-center justify-center h-screen text-white bg-gray-900 px-4 text-center">
