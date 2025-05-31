@@ -7,7 +7,7 @@ import TimeRecord from "@/models/TimeRecord";
 export async function GET() {
   try {
     await connectDB();
-    const records = await TimeRecord.find({}, "time type location admin")
+    const records = await TimeRecord.find({})
       .populate("admin", "name")
       .sort({ time: -1 })
       .lean();
@@ -26,7 +26,8 @@ export async function POST(request) {
     if (!adminId)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { type, location } = await request.json();
+    const { type, location, method } = await request.json();
+
     const admin = await Admin.findById(adminId);
     if (!admin)
       return NextResponse.json({ error: "Admin not found" }, { status: 404 });
@@ -44,6 +45,7 @@ export async function POST(request) {
       admin: admin._id,
       type,
       location,
+      method: method || "manual", // ✅ fallback in case it's missing
     });
 
     admin.currentStatus = type;

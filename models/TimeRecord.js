@@ -26,6 +26,7 @@ const timeRecordSchema = new mongoose.Schema(
       verified: Boolean,
       distance: Number,
     },
+    method: { type: String, enum: ["qr", "manual"], default: "manual" },
     deviceInfo: {
       userAgent: String,
       ipAddress: String,

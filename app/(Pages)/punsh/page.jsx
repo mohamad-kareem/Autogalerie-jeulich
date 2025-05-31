@@ -126,6 +126,7 @@ export default function PunchClockPage() {
         body: JSON.stringify({
           type,
           location: { lat, lng, verified: true },
+          method: "manual",
         }),
       });
 
@@ -515,9 +516,9 @@ export default function PunchClockPage() {
                             </div>
                           </td>
                           <td className="px-2 py-2 md:px-4 md:py-3 whitespace-nowrap text-xs md:text-sm text-gray-300">
-                            {r.location?.verified
-                              ? "Verifiziert"
-                              : "Qr Verifiziert"}
+                            {r.method === "qr"
+                              ? "QR Verifiziert"
+                              : "Verifiziert"}
                           </td>
                         </tr>
                       ))

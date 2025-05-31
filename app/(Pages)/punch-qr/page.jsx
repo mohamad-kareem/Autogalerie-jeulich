@@ -87,6 +87,7 @@ export default function PunchQRPage() {
           body: JSON.stringify({
             type: nextType,
             location: { lat, lng, verified: true },
+            method: "qr",
           }),
         });
 
