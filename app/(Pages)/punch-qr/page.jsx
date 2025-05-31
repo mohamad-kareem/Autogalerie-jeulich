@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRef, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import * as turf from "@turf/turf";
@@ -23,24 +23,36 @@ const dealershipCoords = turf.polygon([
 export default function PunchQRPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const codeParam = searchParams.get("code");
   const hasPunched = useRef(false);
+  const [codeParam, setCodeParam] = useState(undefined); // undefined to distinguish "not yet set" vs null
+
+  // Step 1: Load query param once on client
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get("code");
+      setCodeParam(code); // could be null or actual value
+    }
+  }, []);
+
+  // Step 2: Main logic after codeParam is known
+  useEffect(() => {
+    if (codeParam === undefined || status === "loading") return; // wait for both
+
     if (!codeParam) {
       toast.error("❌ Ungültiger Zugriff. Bitte scannen Sie den QR-Code.");
       router.push("/");
       return;
     }
 
-    if (status === "loading" || hasPunched.current) return;
+    if (hasPunched.current) return;
 
     if (status === "unauthenticated" || !session?.user?.id) {
       router.push("/login?callbackUrl=/punch-qr?code=" + codeParam);
       return;
     }
 
-    hasPunched.current = true; // Set this before async call to prevent reruns
+    hasPunched.current = true;
 
     const autoPunch = async () => {
       try {
@@ -97,7 +109,7 @@ export default function PunchQRPage() {
     };
 
     autoPunch();
-  }, [status, session, router, codeParam]);
+  }, [codeParam, status, session, router]);
 
   return (
     <div className="flex items-center justify-center h-screen text-white bg-gray-900 px-4 text-center">
