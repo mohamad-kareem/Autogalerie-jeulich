@@ -118,6 +118,7 @@ const prettifyValue = (category, value) => {
       FOUR: "4 Türen",
       FIVE: "5 Türen",
       FOUR_OR_FIVE: "4/5 Türen",
+      TWO_OR_THREE: "2/3 Türen",
       "four or five": "45 Türen", // in case it's lowercase text from API
     },
     gearbox: {

@@ -88,7 +88,7 @@ export default function SellCarYourWay() {
               src={Marketing}
               alt="Illustration von Auto kaufen und verkaufen"
               fill
-              className="object-cover"
+              className="object-contain"
               priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />

@@ -54,7 +54,7 @@ export default function RandomCarSlider() {
 
   return (
     <section className="py-12 relative w-full overflow-hidden px-4 sm:px-6 lg:px-16  pb-20 ">
-      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
+      <div className="w-full max-w-[95vw] xl:max-w-[1100px] 2xl:max-w-[1550px] mx-auto">
         <h2 className="text-lg sm:text-xl md:text-2xl font-medium text-white mb-4 tracking-wide">
           Premium-Auswahl
         </h2>
@@ -63,7 +63,7 @@ export default function RandomCarSlider() {
         {/* Left Arrow Button */}
         <button
           type="button"
-          className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
+          className="absolute left-1 sm:left-17 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
           onClick={() => scroll("left")}
         >
           <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 hover:text-white" />
@@ -157,7 +157,7 @@ export default function RandomCarSlider() {
         {/* Right Arrow Button */}
         <button
           type="button"
-          className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
+          className="absolute right-1 sm:right-16 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
           onClick={() => scroll("right")}
         >
           <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 hover:text-white" />

@@ -34,6 +34,15 @@ const fuelMap = {
   petrol: "Benzin",
   diesel: "Diesel",
 };
+const doors = {
+  TWO: "2 Türen",
+  THREE: "3 Türen",
+  FOUR: "4 Türen",
+  FIVE: "5 Türen",
+  FOUR_OR_FIVE: "4/5 Türen",
+  "four or five": "45 Türen",
+  TWO_OR_THREE: "2/3 Türen", // in case it's lowercase text from API
+};
 
 export default function UsedCarsPage() {
   const router = useRouter();
@@ -644,7 +653,11 @@ export default function UsedCarsPage() {
                           icon: <Car className="h-4 w-4" />,
                           label: "Türen",
                           value:
-                            car.doors?.replace(/_/g, " ").toLowerCase() || "-",
+                            doors[
+                              car.doors?.toUpperCase().replace(/ /g, "_")
+                            ] ||
+                            car.doors ||
+                            "-",
                         },
                       ].map(({ icon, label, value }, index) => (
                         <div key={index} className="flex items-center gap-2">
