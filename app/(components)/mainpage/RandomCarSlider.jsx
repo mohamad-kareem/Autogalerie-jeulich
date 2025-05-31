@@ -54,7 +54,7 @@ export default function RandomCarSlider() {
 
   return (
     <section className="py-12 relative w-full overflow-hidden px-4 sm:px-6 lg:px-16  pb-20 ">
-      <div className="w-full max-w-[95vw] xl:max-w-[1100px] 2xl:max-w-[1550px] mx-auto">
+      <div className="w-full max-w-[95vw] xl:max-w-[1100px] 2xl:max-w-[1650px] mx-auto">
         <h2 className="text-lg sm:text-xl md:text-2xl font-medium text-white mb-4 tracking-wide">
           Premium-Auswahl
         </h2>
