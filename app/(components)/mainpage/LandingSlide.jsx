@@ -27,7 +27,7 @@ export default function LandingSlide() {
         {/* Left Arrow Button */}
         <button
           type="button"
-          className="absolute left-1 sm:left-17 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
+          className="absolute left-1 sm:left-17 top-1/2 -translate-y-1/2 bg-gradient-to-br from-black/50 to-white/40 hover:from-red-900 hover:to-black/20  rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
           onClick={() => scroll("left")}
         >
           <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 hover:text-white" />
@@ -41,7 +41,7 @@ export default function LandingSlide() {
           {popularCategories.map((category, index) => (
             <div
               key={index}
-              className="min-w-[200px] sm:min-w-[220px] md:min-w-[240px] bg-gradient-to-br from-black/50 to-white/40 hover:from-red-600 hover:to-black/20 rounded-xl p-4 sm:p-6 flex-shrink-0 flex flex-col items-center justify-between text-center shadow transition duration-300"
+              className="min-w-[200px] sm:min-w-[220px] md:min-w-[240px] bg-gradient-to-br from-black/50 to-white/40 hover:from-red-900 hover:to-black/20  rounded-xl p-4 sm:p-6 flex-shrink-0 flex flex-col items-center justify-between text-center shadow transition duration-300"
             >
               <Image
                 src={category.image}
@@ -63,7 +63,7 @@ export default function LandingSlide() {
         {/* Right Arrow Button */}
         <button
           type="button"
-          className="absolute right-1 sm:right-16 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
+          className="absolute right-1 sm:right-16 top-1/2 -translate-y-1/2 bg-gradient-to-br from-black/50 to-white/40 hover:from-red-900 hover:to-black/20 rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
           onClick={() => scroll("right")}
         >
           <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 hover:text-white" />

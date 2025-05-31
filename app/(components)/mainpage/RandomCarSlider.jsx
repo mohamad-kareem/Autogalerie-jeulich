@@ -58,12 +58,12 @@ export default function RandomCarSlider() {
         <h2 className="text-lg sm:text-xl md:text-2xl font-medium text-white mb-4 tracking-wide">
           Premium-Auswahl
         </h2>
-        <div className="border-b border-gray-700 mb-6 w-52"></div>
+        <div className="border-b border-gray-700 mb-6 w-full"></div>
 
         {/* Left Arrow Button */}
         <button
           type="button"
-          className="absolute left-1 sm:left-17 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
+          className="absolute left-1 sm:left-17 top-1/2 -translate-y-1/2 bg-gradient-to-br from-black/50 to-white/40 hover:from-red-900 hover:to-black/20 rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
           onClick={() => scroll("left")}
         >
           <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 hover:text-white" />
@@ -77,7 +77,7 @@ export default function RandomCarSlider() {
           {cars.map((car) => (
             <div
               key={car._id}
-              className="min-w-[260px] sm:min-w-[280px] bg-gradient-to-br from-black/50 to-white/40  hover:from-red-900 hover:to-black/20 rounded-lg p-4 flex-shrink-0 flex flex-col items-center justify-between text-center shadow-lg transition-all duration-300 border border-white/5 hover:border-white/5"
+              className="min-w-[260px] sm:min-w-[280px] bg-gradient-to-br from-black/50 to-white/40   hover:from-red-900 hover:to-black/20 rounded-lg p-4 flex-shrink-0 flex flex-col items-center justify-between text-center shadow-lg transition-all duration-300 "
             >
               {/* Image Container */}
               <div className="w-full h-32 mb-4 rounded-lg overflow-hidden bg-black/40 flex items-center justify-center p-2">
@@ -157,7 +157,7 @@ export default function RandomCarSlider() {
         {/* Right Arrow Button */}
         <button
           type="button"
-          className="absolute right-1 sm:right-16 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
+          className="absolute right-1 sm:right-16 top-1/2 -translate-y-1/2 bg-gradient-to-br from-black/50 to-white/40 hover:from-red-900 hover:to-black/20 rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
           onClick={() => scroll("right")}
         >
           <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 hover:text-white" />
