@@ -18,8 +18,8 @@ const Complete = () => {
       <HeroSection />
       <LandingChoices />
       <RandomCarSlider />
-      <LandingSlide />
       <Rating />
+      <LandingSlide />
       <WhyUs />
       <SellCarYourWay />
       <Reviews />
