@@ -95,7 +95,7 @@ export default function SellCarYourWay() {
           </div>
 
           {/* Bottom Left Label */}
-          <div className="absolute -bottom-3 -left-3 bg-white px-2.5 py-1.5 rounded-md shadow-sm border border-gray-200 transform -rotate-1">
+          <div className="absolute -bottom-0 -left-0 bg-white px-2.5 py-1.5 rounded-md shadow-sm border border-gray-200 transform -rotate-1">
             <div className="flex items-center">
               <div className="bg-green-100 p-1.5 rounded-sm mr-1.5">
                 <FaSearch className="text-green-600 text-xl" />
@@ -105,7 +105,7 @@ export default function SellCarYourWay() {
           </div>
 
           {/* Top Right Label */}
-          <div className="absolute -top-3 -right-3 bg-white px-2.5 py-1.5 rounded-md shadow-sm border border-gray-200 transform rotate-1">
+          <div className="absolute -top-0 -right-0 bg-white px-2.5 py-1.5 rounded-md shadow-sm border border-gray-200 transform rotate-1">
             <div className="flex items-center">
               <div className="bg-blue-100 p-1.5 rounded-sm mr-1.5">
                 <MdOutlineAttachMoney className="text-green-600 text-xl" />
