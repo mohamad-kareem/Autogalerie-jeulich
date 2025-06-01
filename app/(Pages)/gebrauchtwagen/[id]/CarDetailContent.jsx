@@ -179,7 +179,7 @@ function renderDescription(description) {
       return (
         <h4
           key={index}
-          className="mt-4 mb-1 font-bold text-sm md:text-base text-gray-800"
+          className="mt-4 mb-1 font-bold text-xs sm:text-sm md:text-base text-gray-800 break-words whitespace-pre-line"
         >
           {line}
         </h4>
@@ -190,7 +190,10 @@ function renderDescription(description) {
     if (/^[\wäöüÄÖÜß\s]+:/.test(line)) {
       const [label, ...rest] = line.split(":");
       return (
-        <p key={index} className="mb-2 text-sm md:text-base text-gray-700">
+        <p
+          key={index}
+          className="mb-2 text-xs sm:text-sm md:text-base text-gray-700 break-words whitespace-pre-line"
+        >
           <strong className="font-semibold">{label.trim()}:</strong>{" "}
           {rest.join(":").trim()}
         </p>
@@ -202,7 +205,7 @@ function renderDescription(description) {
       return (
         <li
           key={index}
-          className="ml-4 list-disc text-sm md:text-base text-gray-700"
+          className="ml-4 list-disc text-xs sm:text-sm md:text-base text-gray-700 break-words whitespace-pre-line"
         >
           {line}
         </li>
@@ -574,7 +577,7 @@ function CarDetailContent({ car }) {
                 {/* Tabs */}
                 <div className="bg-white rounded-lg md:rounded-xl shadow-md md:shadow-lg overflow-hidden">
                   <div className="border-b border-gray-200 overflow-hidden">
-                    <nav className="flex -mb-px min-w-max">
+                    <nav className="flex -mb-px min-w-full overflow-x-auto scrollbar-hide">
                       <button
                         onClick={() => setActiveTab("übersicht")}
                         className={`py-3 md:py-4 px-4 md:px-6 text-center border-b-2 font-medium text-xs md:text-sm ${
@@ -945,7 +948,7 @@ function CarDetailContent({ car }) {
                         <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-gray-800">
                           Beschreibung
                         </h2>
-                        <div className="space-y-2">
+                        <div className="space-y-2 max-h-[75vh] overflow-y-auto pr-2">
                           {renderDescription(car.description)}
                         </div>
                       </div>
