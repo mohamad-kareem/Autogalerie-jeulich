@@ -1,5 +1,3 @@
-// models/Car.js
-
 import mongoose from "mongoose";
 
 const imageSchema = new mongoose.Schema({
@@ -14,22 +12,21 @@ const priceSchema = new mongoose.Schema({
 });
 
 const carSchema = new mongoose.Schema({
+  vin: { type: String, required: true, unique: true },
   make: { type: String, required: true },
   model: { type: String, required: true },
   modelDescription: { type: String },
 
-  // Existing fields
   firstRegistration: { type: String },
   mileage: { type: Number },
-  vin: { type: String },
   power: { type: Number },
   cubicCapacity: { type: Number },
   gearbox: { type: String },
   fuel: { type: String },
+
   images: { type: [imageSchema], default: [] },
   price: priceSchema,
 
-  // New fields
   category: { type: String },
   climatisation: { type: String },
   airbag: { type: String },
@@ -38,17 +35,21 @@ const carSchema = new mongoose.Schema({
   paddleShifters: { type: Boolean },
   usb: { type: Boolean },
   driveType: { type: String },
+
   consumptions: { type: Object },
   emissions: { type: Object },
   seats: { type: Number },
   doors: { type: String },
   emissionClass: { type: String },
-  newHuAu: { type: Boolean },
+  newHuAu: { type: String }, // ✅ now accepts "Juli 2026", etc.
+  fullServiceHistory: { type: Boolean }, // ✅ extracted from description
+
   parkingAssistants: { type: [String], default: [] },
   manufacturerColorName: { type: String },
   exteriorColor: { type: String },
   interiorType: { type: String },
   interiorColor: { type: String },
+
   tintedWindows: { type: Boolean },
   armRest: { type: Boolean },
   heatedWindshield: { type: Boolean },
@@ -67,6 +68,7 @@ const carSchema = new mongoose.Schema({
   headUpDisplay: { type: Boolean },
   multifunctionalWheel: { type: Boolean },
   powerAssistedSteering: { type: Boolean },
+
   bluetooth: { type: Boolean },
   cdPlayer: { type: Boolean },
   handsFreePhoneSystem: { type: Boolean },
@@ -75,6 +77,7 @@ const carSchema = new mongoose.Schema({
   voiceControl: { type: Boolean },
   touchscreen: { type: Boolean },
   radio: { type: [String], default: [] },
+
   alarmSystem: { type: Boolean },
   abs: { type: Boolean },
   distanceWarningSystem: { type: Boolean },
@@ -94,14 +97,20 @@ const carSchema = new mongoose.Schema({
   startStopSystem: { type: Boolean },
   tractionControlSystem: { type: Boolean },
   trafficSignRecognition: { type: Boolean },
+
   daytimeRunningLamps: { type: String },
   headlightType: { type: String },
   bendingLightsType: { type: String },
   headlightWasherSystem: { type: Boolean },
-  summerTires: { type: Boolean },
+  hasAllSeasonTires: { type: Boolean, default: false },
+
+  summerTires: { type: Boolean }, // ✅ now supported
+  winterTires: { type: Boolean }, // ✅ now supported
   alloyWheels: { type: Boolean },
   sportPackage: { type: Boolean },
   sportSeats: { type: Boolean },
+
+  description: { type: String }, // ✅ cleaned plain text description
 });
 
 export default mongoose.models.Car || mongoose.model("Car", carSchema);

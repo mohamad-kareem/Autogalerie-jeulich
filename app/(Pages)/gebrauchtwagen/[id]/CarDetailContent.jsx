@@ -150,6 +150,73 @@ const prettifyValue = (category, value) => {
     "-"
   );
 };
+function renderDescription(description) {
+  if (!description) return null;
+
+  // Replace weird characters with space or breaks
+  const cleaned = description
+    .replace(/∗/g, "\n") // ∗ as separator
+    .replace(/([a-z])([A-Z])/g, "$1\n$2") // Split camel-cased like "LeichtmetallfelgenTuner" into two
+    .replace(/(?<=[a-z])([A-Z])/g, "\n$1") // also catches missing space after lowercase
+    .replace(/(WIR BIETEN.*?AN:)/i, "\n$1\n") // separate the service section
+    .replace(/(?<=[a-z])([A-Z])/g, "\n$1") // just in case
+    .replace(/(Mail\s*:|WhatsApp\s*:)/gi, "\n$1") // break contact info
+    .replace(/\s{2,}/g, " ") // remove excess spacing
+    .trim();
+
+  const lines = cleaned
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return lines.map((line, index) => {
+    // Show contact or header sections as strong
+    if (
+      /^Mail\s*:|^WhatsApp\s*:|^WIR BIETEN|^Finanzierung|^Inzahlungnahme|^Zulassungsservice|^Auslieferungsservice/i.test(
+        line
+      )
+    ) {
+      return (
+        <h4
+          key={index}
+          className="mt-4 mb-1 font-bold text-sm md:text-base text-gray-800"
+        >
+          {line}
+        </h4>
+      );
+    }
+
+    // Bold if label-like (e.g., Klimatisierung: Klimaautomatik)
+    if (/^[\wäöüÄÖÜß\s]+:/.test(line)) {
+      const [label, ...rest] = line.split(":");
+      return (
+        <p key={index} className="mb-2 text-sm md:text-base text-gray-700">
+          <strong className="font-semibold">{label.trim()}:</strong>{" "}
+          {rest.join(":").trim()}
+        </p>
+      );
+    }
+
+    // Short line = feature → bullet
+    if (line.length <= 40) {
+      return (
+        <li
+          key={index}
+          className="ml-4 list-disc text-sm md:text-base text-gray-700"
+        >
+          {line}
+        </li>
+      );
+    }
+
+    // Regular paragraph
+    return (
+      <p key={index} className="mb-2 text-sm md:text-base text-gray-700">
+        {line}
+      </p>
+    );
+  });
+}
 
 const SpecCard = ({ icon, title, items }) => (
   <div className="bg-white rounded-lg md:rounded-xl p-4 md:p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
@@ -587,8 +654,32 @@ function CarDetailContent({ car }) {
                                 label: "Erstzulassung",
                                 value: formatDate(car.firstRegistration),
                               },
+                              {
+                                label: "TÜV / HU",
+                                value:
+                                  typeof car.newHuAu === "string"
+                                    ? car.newHuAu.toLowerCase().includes("neu")
+                                      ? "TÜV neu"
+                                      : `TÜV bis ${car.newHuAu}`
+                                    : "-",
+                              },
+                              ...(car.summerTires
+                                ? [{ label: "Sommerreifen", value: "Ja" }]
+                                : []),
+                              ...(car.winterTires
+                                ? [{ label: "Winterreifen", value: "Ja" }]
+                                : []),
+                              ...(car.fullServiceHistory
+                                ? [
+                                    {
+                                      label: "Scheckheft gepflegt",
+                                      value: "Ja",
+                                    },
+                                  ]
+                                : []),
                             ]}
                           />
+
                           <SpecCard
                             icon={
                               <BsSpeedometer2
@@ -625,6 +716,9 @@ function CarDetailContent({ car }) {
                                   car.driveType
                                 ),
                               },
+                              ...(car.hasAllSeasonTires
+                                ? [{ label: "Ganzjahresreifen", value: "Ja" }]
+                                : []),
                             ]}
                           />
                           <SpecCard
@@ -851,12 +945,9 @@ function CarDetailContent({ car }) {
                         <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-gray-800">
                           Beschreibung
                         </h2>
-                        <div
-                          className="prose max-w-none text-sm md:text-base text-gray-700"
-                          dangerouslySetInnerHTML={{
-                            __html: car.description.replace(/\\n/g, "<br />"),
-                          }}
-                        />
+                        <div className="space-y-2">
+                          {renderDescription(car.description)}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -906,6 +997,17 @@ function CarDetailContent({ car }) {
                       car.electricAdjustableSeats && "Elektrische Sitze",
                       car.keylessEntry && "Keyless Entry",
                       car.headUpDisplay && "Head-Up-Display",
+                      car.summerTires && "Sommerreifen",
+                      car.winterTires && "Winterreifen",
+                      car.fullServiceHistory && "Scheckheft gepflegt",
+                      car.newHuAu &&
+                        `TÜV ${
+                          typeof car.newHuAu === "string" &&
+                          car.newHuAu.includes("Neu")
+                            ? "neu"
+                            : "bis " + car.newHuAu
+                        }`,
+                      car.hasAllSeasonTires && "Ganzjahresreifen",
                     ]
                       .filter(Boolean)
                       .map((highlight, index) => (
