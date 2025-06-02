@@ -72,7 +72,7 @@ export default function RandomCarSlider() {
         {/* Scrollable Container */}
         <div
           ref={sliderRef}
-          className="flex gap-5 sm:gap-6 overflow-x-auto pb-4 scroll-smooth no-scrollbar bg-black"
+          className="flex gap-5 sm:gap-6 overflow-x-auto pb-4 scroll-smooth scrollbar-hide bg-black"
         >
           {cars.map((car) => (
             <div

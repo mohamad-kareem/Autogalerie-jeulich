@@ -36,7 +36,7 @@ export default function LandingSlide() {
         {/* Scrollable Container */}
         <div
           id="scroll-container"
-          className="flex gap-4 sm:gap-6 overflow-x-auto pb-2 scroll-smooth no-scrollbar"
+          className="flex gap-4 sm:gap-6 overflow-x-auto pb-2 scroll-smooth scrollbar-hide"
         >
           {popularCategories.map((category, index) => (
             <div
