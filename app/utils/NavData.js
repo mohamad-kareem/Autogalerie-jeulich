@@ -16,6 +16,11 @@ export const Menus = [
     //* gridCols:2
   },
   {
+    name: "Auto verkaufen",
+    href: "/addcar",
+    desc: "schnell und einfach",
+  },
+  {
     name: "Finanzierung",
     href: "/finanzierung",
     desc: "Kredit Optionen",

@@ -3,7 +3,12 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { FiArrowLeft } from "react-icons/fi";
 
-const ImageSlider = ({ images = [], car = {} }) => {
+const ImageSlider = ({
+  images = [],
+  car = {},
+  height = "h-96",
+  width = "w-full",
+}) => {
   const [activeImage, setActiveImage] = useState(0);
   const [fullscreenImage, setFullscreenImage] = useState(null);
 
@@ -38,7 +43,9 @@ const ImageSlider = ({ images = [], car = {} }) => {
           </svg>
         </button>
 
-        <div className="relative h-96 w-full transition-opacity duration-300">
+        <div
+          className={`relative ${height} ${width} transition-opacity duration-300`}
+        >
           <Image
             src={imageUrls[activeImage] || "/default-car.jpg"}
             alt={altText}

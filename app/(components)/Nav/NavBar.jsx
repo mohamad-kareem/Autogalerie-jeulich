@@ -29,7 +29,7 @@ export default function NavBar() {
     "/admin",
     "/Aufgaben",
     "/forms",
-    "/addcar",
+
     "/excel",
     "/schlussel",
     "/trello",
@@ -38,6 +38,7 @@ export default function NavBar() {
     "/Plate",
     "/Reg",
     "/punsh",
+    "/manualcars",
   ];
 
   const isAdminRoute = adminRoutes.some((route) => pathname?.startsWith(route));

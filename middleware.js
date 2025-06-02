@@ -24,7 +24,7 @@ export const config = {
     "/forgotpassword/:path*",
     "/forms/:path*",
     "/forms/:path*",
-    "/addcar/:path*",
+
     "/excel/:path*",
     "/Reg/:path*",
     "/reset-password/:path*",

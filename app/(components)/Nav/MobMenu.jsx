@@ -96,7 +96,7 @@ const MobMenu = ({ Menus }) => {
                               <li key={sub.name}>
                                 <Link
                                   href={sub.href || "#"}
-                                  className="p-3 flex items-center hover:bg-red-100 rounded-md cursor-pointer transition-colors block"
+                                  className="p-3  items-center hover:bg-red-100 rounded-md cursor-pointer transition-colors block"
                                   onClick={toggleDrawer}
                                 >
                                   {sub.name}
