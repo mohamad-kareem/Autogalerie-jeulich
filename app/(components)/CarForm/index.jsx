@@ -118,55 +118,60 @@ const AdminCarForm = () => {
     <div className="w-full max-w-6xl mx-auto px-4 py-8">
       {/* Enhanced Step Indicator */}
       <div className="mb-8">
-        <div className="flex items-center justify-between relative">
-          {/* Progress line */}
-          <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -z-10 transform -translate-y-1/2">
-            <div
-              className="h-full bg-red-600 transition-all duration-500 ease-in-out"
-              style={{
-                width: `${((step - 1) / (steps.length - 1)) * 100}%`,
-              }}
-            ></div>
-          </div>
-
-          {/* Steps */}
-          {steps.map(({ title }, index) => (
-            <div key={index} className="flex flex-col items-center z-10">
+        <div className="relative overflow-x-auto scrollbar-hide">
+          <div className="flex items-center justify-start sm:justify-between gap-4 sm:gap-0 relative min-w-max sm:min-w-0">
+            {/* Progress line */}
+            <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -z-10 transform -translate-y-1/2">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                  step > index + 1
-                    ? "bg-green-500 text-white"
-                    : step === index + 1
-                    ? "bg-red-600 text-white shadow-lg"
-                    : "bg-gray-200 text-gray-600"
-                }`}
-              >
-                {step > index + 1 ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                ) : (
-                  index + 1
-                )}
-              </div>
-              <span
-                className={`text-xs mt-2 font-medium ${
-                  step >= index + 1 ? "text-gray-800" : "text-gray-500"
-                }`}
-              >
-                {title}
-              </span>
+                className="h-full bg-red-600 transition-all duration-500 ease-in-out"
+                style={{
+                  width: `${((step - 1) / (steps.length - 1)) * 100}%`,
+                }}
+              ></div>
             </div>
-          ))}
+
+            {/* Steps */}
+            {steps.map(({ title }, index) => (
+              <div
+                key={index}
+                className="flex flex-col items-center flex-shrink-0 z-10 w-20"
+              >
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                    step > index + 1
+                      ? "bg-green-500 text-white"
+                      : step === index + 1
+                      ? "bg-red-600 text-white shadow-lg"
+                      : "bg-gray-200 text-gray-600"
+                  }`}
+                >
+                  {step > index + 1 ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  ) : (
+                    index + 1
+                  )}
+                </div>
+                <span
+                  className={`text-xs mt-2 text-center font-medium ${
+                    step >= index + 1 ? "text-gray-800" : "text-gray-500"
+                  }`}
+                >
+                  {title}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
