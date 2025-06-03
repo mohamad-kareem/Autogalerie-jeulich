@@ -1,5 +1,5 @@
+// FormSteps/BasicInfo.jsx
 import React from "react";
-
 import Button from "@/app/(components)/helpers/Button";
 import Input from "@/app/(components)/CarForm/FormElements/Input";
 import Select from "@/app/(components)/CarForm/FormElements/Select";
@@ -11,7 +11,7 @@ import {
   categoryOptions,
 } from "@/app/(components)/CarForm/constants";
 
-const BasicInfo = ({ formData, setFormData, nextStep, prevStep }) => {
+const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -23,9 +23,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep }) => {
   return (
     <div className="space-y-8">
       <div className="bg-gradient-to-r from-red-50 to-red-50 p-6 rounded-xl">
-        <h2 className="text-md sm:text-2xl font-bold text-gray-900">
-          Grundinformationen
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-900">Grundinformationen</h2>
         <p className="text-gray-600 mt-1">
           Basisinformationen über das Fahrzeug
         </p>
@@ -38,6 +36,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep }) => {
           value={formData.make}
           onChange={handleChange}
           required
+          error={errors.make}
         />
 
         <Input
@@ -45,12 +44,17 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep }) => {
           name="vin"
           value={formData.vin}
           onChange={handleChange}
+          required
+          error={errors.vin}
         />
+
         <Input
           label="Modell"
           name="model"
           value={formData.model}
           onChange={handleChange}
+          required
+          error={errors.model}
         />
 
         <Input
@@ -60,6 +64,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep }) => {
           value={formData.price}
           onChange={handleChange}
           required
+          error={errors.price}
         />
 
         <Input
@@ -69,6 +74,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep }) => {
           onChange={handleChange}
           placeholder="MM/YYYY"
           required
+          error={errors.registration}
         />
 
         <Input
@@ -78,6 +84,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep }) => {
           value={formData.kilometers}
           onChange={handleChange}
           required
+          error={errors.kilometers}
         />
 
         <Input
@@ -87,6 +94,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep }) => {
           value={formData.hp}
           onChange={handleChange}
           required
+          error={errors.hp}
         />
 
         <Select
@@ -96,6 +104,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep }) => {
           onChange={handleChange}
           options={fuelOptions}
           required
+          error={errors.fuel}
         />
 
         <Select
@@ -105,6 +114,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep }) => {
           onChange={handleChange}
           options={conditionOptions}
           required
+          error={errors.condition}
         />
 
         <Select
@@ -114,6 +124,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep }) => {
           onChange={handleChange}
           options={statusOptions}
           required
+          error={errors.status}
         />
 
         <div className="space-y-4 p-4 bg-gray-50 rounded-lg col-span-1 md:col-span-2">
@@ -143,22 +154,21 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep }) => {
           onChange={handleChange}
           options={categoryOptions}
           required
+          error={errors.category}
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-4 pt-4 border-t border-gray-200">
+      <div className="flex justify-between gap-4 pt-6 border-t border-gray-200">
         <Button
           onClick={prevStep}
-          bgColor="bg-black"
-          hoverColor="hover:bg-red-950"
+          bgColor="bg-gray-800"
+          hoverColor="hover:bg-gray-700"
           icon="FiArrowLeft"
-          size="small"
         >
           Zurück
         </Button>
-        <Button onClick={nextStep} icon="FiArrowRight" size="small">
-          <span className="hidden sm:inline">Weiter zu Technische Daten</span>
-          <span className="sm:hidden">Weiter</span>
+        <Button onClick={nextStep} icon="FiArrowRight">
+          Weiter zu Technische Daten
         </Button>
       </div>
     </div>

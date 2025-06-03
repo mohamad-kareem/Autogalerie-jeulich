@@ -16,6 +16,7 @@ const Description = ({
   handleSubmit,
   currentStep,
   totalSteps,
+  isSubmitting,
 }) => {
   React.useEffect(() => {
     return () => {
@@ -153,8 +154,13 @@ const Description = ({
         >
           Zurück
         </Button>
-        <Button type="submit" icon="FiPlus" size="small">
-          Fahrzeug hinzufügen
+        <Button
+          type="submit"
+          icon="FiPlus"
+          size="small"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Wird gesendet..." : "Fahrzeug hinzufügen"}
         </Button>
       </div>
     </div>

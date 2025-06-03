@@ -26,8 +26,6 @@ import {
   FiNavigation,
   FiCreditCard,
   FiChevronDown,
-  FiChevronUp,
-  FiSearch,
 } from "react-icons/fi";
 import { FaCar, FaGasPump, FaCarCrash, FaTools } from "react-icons/fa";
 import { GiCarDoor, GiCarSeat, GiGearStick, GiWeight } from "react-icons/gi";
@@ -39,11 +37,6 @@ export default function ManualCarsPage() {
   const [cars, setCars] = useState([]);
   const [selectedCar, setSelectedCar] = useState(null);
   const [activeTab, setActiveTab] = useState("übersicht");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState({
-    key: "createdAt",
-    direction: "descending",
-  });
   const [expandedRows, setExpandedRows] = useState({});
 
   useEffect(() => {
@@ -83,6 +76,7 @@ export default function ManualCarsPage() {
   const formatField = (value) => {
     if (value === undefined || value === null) return "—";
     if (typeof value === "boolean") return value ? "Ja" : "Nein";
+    if (Array.isArray(value)) return value.join(", ");
     return value;
   };
 
@@ -92,35 +86,6 @@ export default function ManualCarsPage() {
       [carId]: !prev[carId],
     }));
   };
-
-  const requestSort = (key) => {
-    let direction = "ascending";
-    if (sortConfig.key === key && sortConfig.direction === "ascending") {
-      direction = "descending";
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const sortedCars = [...cars].sort((a, b) => {
-    if (a[sortConfig.key] < b[sortConfig.key]) {
-      return sortConfig.direction === "ascending" ? -1 : 1;
-    }
-    if (a[sortConfig.key] > b[sortConfig.key]) {
-      return sortConfig.direction === "ascending" ? 1 : -1;
-    }
-    return 0;
-  });
-
-  const filteredCars = sortedCars.filter((car) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      car.make?.toLowerCase().includes(searchLower) ||
-      car.model?.toLowerCase().includes(searchLower) ||
-      car.registration?.toLowerCase().includes(searchLower) ||
-      car.fuel?.toLowerCase().includes(searchLower) ||
-      car.price?.toString().includes(searchTerm)
-    );
-  });
 
   const renderDetailItem = (icon, label, value, unit = "") => {
     return (
@@ -168,7 +133,7 @@ export default function ManualCarsPage() {
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="mb-6 md:mb-8">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-3">
               <FaCar className="text-red-600" />
@@ -178,34 +143,17 @@ export default function ManualCarsPage() {
               Alle von Besuchern hinzugefügten Autos überprüfen
             </p>
           </div>
-
-          <div className="relative w-full md:w-auto">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiSearch className="text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Fahrzeuge suchen..."
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
         </div>
 
         {/* Main Content */}
-        {filteredCars.length === 0 ? (
+        {cars.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
             <FiInfo className="mx-auto text-gray-400 text-4xl mb-4" />
             <h3 className="text-xl font-medium text-gray-700 mb-2">
-              {searchTerm
-                ? "Keine passenden Ergebnisse"
-                : "Keine Fahrzeuge gefunden"}
+              Keine Fahrzeuge gefunden
             </h3>
             <p className="text-gray-500">
-              {searchTerm
-                ? "Es wurden keine Fahrzeuge mit Ihren Suchkriterien gefunden"
-                : "Es wurden noch keine Fahrzeuge hinzugefügt"}
+              Es wurden noch keine Fahrzeuge hinzugefügt
             </p>
           </div>
         ) : (
@@ -213,62 +161,28 @@ export default function ManualCarsPage() {
             {/* Desktop Table */}
             <div className="hidden md:block">
               <div className="grid grid-cols-12 bg-gray-800 p-4 font-medium text-white text-sm">
-                <div
-                  className="col-span-3 flex items-center cursor-pointer hover:text-red-300 transition-colors"
-                  onClick={() => requestSort("make")}
-                >
-                  Fahrzeug
-                  {sortConfig.key === "make" && (
-                    <span className="ml-1">
-                      {sortConfig.direction === "ascending" ? "↑" : "↓"}
-                    </span>
-                  )}
-                </div>
-                <div
-                  className="col-span-2 flex items-center cursor-pointer hover:text-red-300 transition-colors"
-                  onClick={() => requestSort("price")}
-                >
-                  <FiDollarSign className="mr-1" />
+                <div className="col-span-4">Fahrzeug</div>
+                <div className="col-span-2">
+                  <FiDollarSign className="mr-1 inline" />
                   Preis
-                  {sortConfig.key === "price" && (
-                    <span className="ml-1">
-                      {sortConfig.direction === "ascending" ? "↑" : "↓"}
-                    </span>
-                  )}
                 </div>
-                <div
-                  className="col-span-2 flex items-center cursor-pointer hover:text-red-300 transition-colors"
-                  onClick={() => requestSort("kilometers")}
-                >
-                  <FiTrendingUp className="mr-1" />
+                <div className="col-span-2">
+                  <FiTrendingUp className="mr-1 inline" />
                   Kilometer
-                  {sortConfig.key === "kilometers" && (
-                    <span className="ml-1">
-                      {sortConfig.direction === "ascending" ? "↑" : "↓"}
-                    </span>
-                  )}
                 </div>
-                <div
-                  className="col-span-2 flex items-center cursor-pointer hover:text-red-300 transition-colors"
-                  onClick={() => requestSort("createdAt")}
-                >
-                  <FiCalendar className="mr-1" />
+                <div className="col-span-2">
+                  <FiCalendar className="mr-1 inline" />
                   Hinzugefügt
-                  {sortConfig.key === "createdAt" && (
-                    <span className="ml-1">
-                      {sortConfig.direction === "ascending" ? "↑" : "↓"}
-                    </span>
-                  )}
                 </div>
-                <div className="col-span-3 text-right">Aktionen</div>
+                <div className="col-span-2 text-right">Aktionen</div>
               </div>
 
-              {filteredCars.map((car) => (
+              {cars.map((car) => (
                 <div
                   key={car._id}
                   className="grid grid-cols-12 p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors items-center"
                 >
-                  <div className="col-span-3 flex items-center space-x-3">
+                  <div className="col-span-4 flex items-center space-x-3">
                     <div className="flex-shrink-0 h-12 w-16 bg-gray-200 rounded-md overflow-hidden">
                       {car.images?.[0] && (
                         <img
@@ -302,7 +216,7 @@ export default function ManualCarsPage() {
                       {new Date(car.createdAt).toLocaleDateString("de-DE")}
                     </div>
                   </div>
-                  <div className="col-span-3 flex justify-end items-center space-x-2">
+                  <div className="col-span-2 flex justify-end items-center space-x-2">
                     <button
                       onClick={() => {
                         setSelectedCar(car);
@@ -327,7 +241,7 @@ export default function ManualCarsPage() {
 
             {/* Mobile List */}
             <div className="md:hidden">
-              {filteredCars.map((car) => (
+              {cars.map((car) => (
                 <div
                   key={car._id}
                   className="border-b border-gray-200 last:border-b-0"
@@ -520,6 +434,13 @@ export default function ManualCarsPage() {
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {renderDetailItem(
+                        <FiSettings />,
+                        "Name",
+                        selectedCar.name
+                      )}
+
+                      {renderDetailItem(<FiSettings />, "VIN", selectedCar.vin)}
+                      {renderDetailItem(
                         <FiDollarSign />,
                         "Preis",
                         selectedCar.price?.toLocaleString("de-DE"),
@@ -567,6 +488,46 @@ export default function ManualCarsPage() {
                         <FiUser />,
                         "Vorbesitzer",
                         selectedCar.previousOwners
+                      )}
+                      {renderDetailItem(
+                        <GiCarDoor />,
+                        "Türen",
+                        selectedCar.doors
+                      )}
+                      {renderDetailItem(
+                        <GiCarSeat />,
+                        "Sitze",
+                        selectedCar.seats
+                      )}
+                      {renderDetailItem(
+                        <FiShield />,
+                        "Status",
+                        selectedCar.status
+                      )}
+                      {renderDetailItem(
+                        <FiSettings />,
+                        "Kategorie",
+                        selectedCar.category
+                      )}
+                      {renderDetailItem(
+                        <FiSettings />,
+                        "Aktiv",
+                        selectedCar.active
+                      )}
+                      {renderDetailItem(
+                        <FiSettings />,
+                        "Betriebsbereit",
+                        selectedCar.operational
+                      )}
+                      {renderDetailItem(
+                        <FiSettings />,
+                        "Modellreihe",
+                        selectedCar.modelSeries
+                      )}
+                      {renderDetailItem(
+                        <FiSettings />,
+                        "Ausstattungslinie",
+                        selectedCar.equipmentLine
                       )}
                     </div>
 
@@ -664,6 +625,26 @@ export default function ManualCarsPage() {
                       <FaTools />,
                       "Motorschaden",
                       selectedCar.hasEngineDamage
+                    )}
+                    {renderDetailItem(
+                      <FiSettings />,
+                      "Energieverbrauch",
+                      selectedCar.energyConsumption
+                    )}
+                    {renderDetailItem(
+                      <FiSettings />,
+                      "Klimaanlage",
+                      selectedCar.airConditioning
+                    )}
+                    {renderDetailItem(
+                      <FiSettings />,
+                      "Airbags",
+                      selectedCar.airbags
+                    )}
+                    {renderDetailItem(
+                      <FiSettings />,
+                      "Einparkhilfe",
+                      selectedCar.parkingAssistance
                     )}
                   </div>
                 )}

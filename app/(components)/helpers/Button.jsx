@@ -4,9 +4,10 @@ export default function Button({
   hoverColor = "hover:from-red-600 hover:to-red-800",
   textColor = "text-white",
   className = "",
-  fullWidth = false, // ✅ Add this line
+  fullWidth = false,
+  disabled = false, // ✅ add this
   children,
-  ...props // ✅ This now won't contain fullWidth
+  ...props
 }) {
   const baseStyles = `
     flex items-center justify-center
@@ -19,14 +20,17 @@ export default function Button({
     sm:px-5 sm:py-2.5 sm:text-base
   `;
 
-  const fullWidthClass = fullWidth ? "w-full" : ""; // ✅ Conditionally apply
+  const fullWidthClass = fullWidth ? "w-full" : "";
+  const disabledStyles = disabled ? "opacity-50 cursor-not-allowed" : "";
 
   return (
     <button
       type={type}
+      disabled={disabled} // ✅ Native HTML disabled attribute
       className={`
         ${bgColor} ${hoverColor} ${textColor}
-        ${baseStyles} ${responsivePadding} ${fullWidthClass} ${className}
+        ${baseStyles} ${responsivePadding}
+        ${fullWidthClass} ${disabledStyles} ${className}
       `}
       {...props}
     >
