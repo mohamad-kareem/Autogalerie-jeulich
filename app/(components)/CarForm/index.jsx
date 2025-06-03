@@ -1,4 +1,3 @@
-// AdminCarForm.jsx
 "use client";
 import React, { useState } from "react";
 import ContactInfo from "./FormSteps/ContactInfo";
@@ -115,35 +114,37 @@ const AdminCarForm = () => {
   const CurrentStepComponent = steps[step - 1].component;
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-8">
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 ">
       {/* Enhanced Step Indicator */}
-      <div className="mb-8">
-        <div className="relative overflow-x-auto scrollbar-hide">
-          <div className="flex items-center justify-start sm:justify-between gap-4 sm:gap-0 relative min-w-max sm:min-w-0">
-            {/* Progress line */}
-            <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -z-10 transform -translate-y-1/2">
-              <div
-                className="h-full bg-red-600 transition-all duration-500 ease-in-out"
-                style={{
-                  width: `${((step - 1) / (steps.length - 1)) * 100}%`,
-                }}
-              ></div>
-            </div>
+      <div className="mb-6">
+        <div className="relative">
+          {/* Progress line */}
+          {/* <div className="absolute top-1/2 left-0 right-0 h-1.5 bg-gray-200 rounded-full -z-10 transform -translate-y-1/2">
+            <div
+              className="h-full bg-gradient-to-r from-red-600 to-red-500 rounded-full transition-all duration-500 ease-in-out"
+              style={{
+                width: `${((step - 1) / (steps.length - 1)) * 100}%`,
+              }}
+            ></div>
+          </div> */}
 
-            {/* Steps */}
+          {/* Steps */}
+          <div className="flex justify-between relative">
             {steps.map(({ title }, index) => (
               <div
                 key={index}
-                className="flex flex-col items-center flex-shrink-0 z-10 w-20"
+                className="flex flex-col items-center"
+                onClick={() => step > index + 1 && setStep(index + 1)}
               >
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                <button
+                  type="button"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
                     step > index + 1
-                      ? "bg-green-500 text-white"
+                      ? "bg-green-500 text-white shadow-md hover:bg-green-600"
                       : step === index + 1
-                      ? "bg-red-600 text-white shadow-lg"
-                      : "bg-gray-200 text-gray-600"
-                  }`}
+                      ? "bg-gradient-to-br from-red-600 to-red-500 text-white shadow-lg"
+                      : "bg-white border-2 border-gray-300 text-gray-500 hover:border-gray-400"
+                  } ${step > index + 1 ? "cursor-pointer" : "cursor-default"}`}
                 >
                   {step > index + 1 ? (
                     <svg
@@ -161,9 +162,9 @@ const AdminCarForm = () => {
                   ) : (
                     index + 1
                   )}
-                </div>
+                </button>
                 <span
-                  className={`text-xs mt-2 text-center font-medium ${
+                  className={`text-xs mt-2 text-center font-medium whitespace-nowrap ${
                     step >= index + 1 ? "text-gray-800" : "text-gray-500"
                   }`}
                 >
@@ -178,7 +179,7 @@ const AdminCarForm = () => {
       {/* Form content */}
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-xl shadow-sm p-6"
+        className="bg-white rounded-xl shadow-md p-6 sm:p-6 border border-gray-100"
       >
         <CurrentStepComponent
           formData={formData}

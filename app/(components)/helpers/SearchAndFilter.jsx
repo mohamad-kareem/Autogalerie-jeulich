@@ -13,7 +13,19 @@ import {
   Settings,
 } from "lucide-react";
 import Button from "@/app/(components)/helpers/Button";
+const fuelMap = {
+  PETROL: "Benzin",
+  DIESEL: "Diesel",
+  petrol: "Benzin",
+  diesel: "Diesel",
+};
 
+const gearboxMap = {
+  MANUAL_GEAR: "Schaltgetriebe",
+  AUTOMATIC_GEAR: "Automatik",
+  SEMI_AUTOMATIC_GEAR: "Halbautomatik",
+  NO_GEARS: "Ohne Getriebe",
+};
 export default function SearchAndFilter({
   cars,
   loading,
@@ -28,23 +40,44 @@ export default function SearchAndFilter({
 }) {
   const filterOptions = useMemo(() => {
     const makes = new Set();
-    const fuelTypes = new Set();
-    const transmissions = new Set();
+    const fuelTypes = new Map();
+    const transmissions = new Map();
     let maxPrice = 0;
 
     cars.forEach((car) => {
       if (car.make) makes.add(car.make);
-      if (car.fuel) fuelTypes.add(car.fuel);
-      if (car.gearbox) transmissions.add(car.gearbox);
+
+      if (car.fuel) {
+        fuelTypes.set(car.fuel, fuelMap[car.fuel] || car.fuel);
+      }
+
+      if (car.gearbox) {
+        const key = car.gearbox.toUpperCase().replace(/ /g, "_");
+        transmissions.set(car.gearbox, gearboxMap[key] || car.gearbox);
+      }
+
       if (car.price?.consumerPriceGross > maxPrice) {
         maxPrice = car.price.consumerPriceGross;
       }
     });
 
     return {
-      makes: Array.from(makes).sort(),
-      fuelTypes: Array.from(fuelTypes).sort(),
-      transmissions: Array.from(transmissions).sort(),
+      makes: Array.from(makes)
+        .sort()
+        .map((make) => ({
+          value: make,
+          label: make,
+        })),
+      fuelTypes: Array.from(fuelTypes.entries()).map(([value, label]) => ({
+        value,
+        label,
+      })),
+      transmissions: Array.from(transmissions.entries()).map(
+        ([value, label]) => ({
+          value,
+          label,
+        })
+      ),
       maxPrice: Math.ceil(maxPrice / 10000) * 10000 || 100000,
     };
   }, [cars]);
@@ -132,9 +165,9 @@ export default function SearchAndFilter({
                     className="w-full text-gray-500  border border-gray-200 rounded-lg px-3 py-2.5 pr-8 appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
                   >
                     <option value="">Alle {label}</option>
-                    {options.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
+                    {options.map(({ value: optVal, label: optLabel }) => (
+                      <option key={optVal} value={optVal}>
+                        {optLabel}
                       </option>
                     ))}
                   </select>

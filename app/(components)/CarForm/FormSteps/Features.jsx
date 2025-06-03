@@ -44,13 +44,9 @@ const Features = ({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="bg-gradient-to-r from-red-50 to-red-50 p-4 sm:p-6 rounded-xl">
-        <h2 className="text-md sm:text-2xl font-bold text-gray-900">
-          Ausstattung
-        </h2>
-        <p className="text-sm sm:text-base text-gray-600 mt-1">
-          Features und Komfort des Fahrzeugs
-        </p>
+      <div className="bg-gradient-to-r from-red-50 via-white to-red-50 p-6 rounded-xl border border-gray-200 shadow-sm">
+        <h2 className="text-2xl font-bold text-gray-900"> Ausstattung</h2>
+        <p className="text-gray-600 mt-2">Features und Komfort des Fahrzeugs</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2">

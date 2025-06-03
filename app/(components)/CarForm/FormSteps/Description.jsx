@@ -67,11 +67,13 @@ const Description = ({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="bg-gradient-to-r from-red-50 to-red-50 p-4 sm:p-6 rounded-xl">
-        <h2 className="text-md sm:text-2xl font-bold text-gray-900">
+      <div className="bg-gradient-to-r from-red-50 via-white to-red-50 p-6 rounded-xl border border-gray-200 shadow-sm">
+        <h2 className="text-2xl font-bold text-gray-900">
+          {" "}
           Beschreibung & Bilder
         </h2>
-        <p className="text-sm sm:text-base text-gray-600 mt-1">
+        <p className="text-gray-600 mt-2">
+          {" "}
           Stellen Sie das Fahrzeug mit Bildern und einer detaillierten
           Beschreibung vor
         </p>

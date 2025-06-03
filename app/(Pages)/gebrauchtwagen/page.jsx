@@ -43,7 +43,12 @@ const doors = {
   "four or five": "45 Türen",
   TWO_OR_THREE: "2/3 Türen", // in case it's lowercase text from API
 };
-
+const gearbox = {
+  MANUAL_GEAR: "Schaltgetriebe",
+  AUTOMATIC_GEAR: "Automatik",
+  SEMI_AUTOMATIC_GEAR: "Halbautomatik",
+  NO_GEARS: "Ohne Getriebe",
+};
 export default function UsedCarsPage() {
   const router = useRouter();
   const [cars, setCars] = useState([]);
@@ -118,9 +123,10 @@ export default function UsedCarsPage() {
         ? parseInt(car.firstRegistration.slice(0, 4))
         : 0;
       const matchesYear = year >= filters.minYear && year <= filters.maxYear;
-
       const matchesTransmission =
         filters.transmission === "" || car.gearbox === filters.transmission;
+
+      console.log("Gear is:", car.gear);
 
       return (
         matchesSearch &&
@@ -647,7 +653,12 @@ export default function UsedCarsPage() {
                         {
                           icon: <Settings className="h-4 w-4" />,
                           label: "Getriebe",
-                          value: car.gearbox || "-",
+
+                          value: car.gearbox
+                            ? gearbox[
+                                car.gearbox.toUpperCase().replace(/ /g, "_")
+                              ] || "Unbekannt"
+                            : "-",
                         },
                         {
                           icon: <Car className="h-4 w-4" />,

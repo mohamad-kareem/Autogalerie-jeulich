@@ -24,11 +24,11 @@ const ContactInfo = ({ formData, setFormData, prevStep, nextStep }) => {
 
   return (
     <div className="space-y-6 sm:space-y-4">
-      <div className="bg-gradient-to-r from-red-50 to-red-50 p-6 sm:p-4 rounded-xl">
-        <h2 className="text-md sm:text-2xl font-bold text-gray-900">
+      <div className="bg-gradient-to-r from-red-50 via-white to-red-50 p-6 rounded-xl border border-gray-200 shadow-sm">
+        <h2 className="text-2xl font-bold text-gray-900">
           Kontaktinformationen
         </h2>
-        <p className="text-gray-600 mt-1 text-base sm:text-sm">
+        <p className="text-gray-600 mt-2">
           Persönliche Daten zur Kontaktaufnahme bei Interesse oder Rückfragen
         </p>
       </div>
