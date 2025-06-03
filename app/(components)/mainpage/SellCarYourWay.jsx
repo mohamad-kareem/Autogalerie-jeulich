@@ -68,10 +68,10 @@ export default function SellCarYourWay() {
                 <IoIosArrowForward className="ml-1 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
-            <Link href="/kontakt" passHref>
+            <Link href="/Autoverkaufen" passHref>
               <Button
-                bgColor="bg-black"
-                textColor="text-white"
+                bgColor="bg-white"
+                textColor="text-black"
                 hoverColor="hover:bg-red-950"
               >
                 <span>Auto verkaufen</span>

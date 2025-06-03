@@ -275,7 +275,7 @@ export default function PunchClockPage() {
               <button
                 onClick={() => handlePunch("in")}
                 disabled={currentStatus === "in" || isLoading}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-3 rounded-lg text-sm md:text-base ${
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 md:px-6 md:py-3 rounded-lg text-sm md:text-base ${
                   currentStatus === "in" || isLoading
                     ? "bg-gray-700 text-gray-400 cursor-not-allowed"
                     : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-md hover:shadow-emerald-500/20"

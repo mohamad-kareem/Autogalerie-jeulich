@@ -16,7 +16,7 @@ export default function Button({
   `;
 
   const responsivePadding = `
-    px-2 py-1 text-xs
+    px-2 py-2 text-xs
     sm:px-5 sm:py-2.5 sm:text-base
   `;
 

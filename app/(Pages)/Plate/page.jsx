@@ -632,7 +632,7 @@ const PlateTrackingPage = () => {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className={`px-3 py-1 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium ${
+                  className={`px-3 py-2 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium ${
                     darkMode
                       ? "bg-blue-600 hover:bg-blue-700 text-white"
                       : "bg-blue-600 hover:bg-blue-700 text-white"
