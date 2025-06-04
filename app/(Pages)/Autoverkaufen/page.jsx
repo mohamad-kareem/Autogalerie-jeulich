@@ -159,10 +159,10 @@ const PublicAddCarPage = () => {
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 transition-all duration-300 hover:shadow-2xl">
               <div className="bg-gradient-to-br from-black to-red-950 px-8 py-6">
-                <h2 className="text-2xl font-bold text-white tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight pb-1">
                   Fahrzeugbewertungsanfrage
                 </h2>
-                <p className="text-gray-300 font-light">
+                <p className="text-gray-300 font-light text-sm sm:text-md ">
                   Füllen Sie dieses Formular aus und erhalten Sie innerhalb von
                   24 Stunden Ihr wettbewerbsfähiges Angebot
                 </p>

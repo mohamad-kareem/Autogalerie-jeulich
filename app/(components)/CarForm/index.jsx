@@ -114,31 +114,32 @@ const AdminCarForm = () => {
   const CurrentStepComponent = steps[step - 1].component;
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 ">
-      {/* Enhanced Step Indicator */}
-      <div className="mb-6">
-        <div className="relative">
+    <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 md:px-6">
+      {/* Enhanced Responsive Step Indicator */}
+      <div className="mb-4 sm:mb-6 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="relative min-w-[550px] sm:min-w-0">
           {/* Progress line */}
-          {/* <div className="absolute top-1/2 left-0 right-0 h-1.5 bg-gray-200 rounded-full -z-10 transform -translate-y-1/2">
+          <div className="absolute top-1/2 left-0 right-0 h-1.5 bg-gray-200 rounded-full -z-10 transform -translate-y-1/2">
             <div
               className="h-full bg-gradient-to-r from-red-600 to-red-500 rounded-full transition-all duration-500 ease-in-out"
               style={{
                 width: `${((step - 1) / (steps.length - 1)) * 100}%`,
               }}
             ></div>
-          </div> */}
+          </div>
 
           {/* Steps */}
           <div className="flex justify-between relative">
             {steps.map(({ title }, index) => (
               <div
                 key={index}
-                className="flex flex-col items-center"
+                className="flex flex-col items-center px-1"
+                style={{ width: `${100 / steps.length}%` }}
                 onClick={() => step > index + 1 && setStep(index + 1)}
               >
                 <button
                   type="button"
-                  className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                  className={`w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
                     step > index + 1
                       ? "bg-green-500 text-white shadow-md hover:bg-green-600"
                       : step === index + 1
@@ -149,7 +150,7 @@ const AdminCarForm = () => {
                   {step > index + 1 ? (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
+                      className="h-4 w-4 sm:h-5 sm:w-5"
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >
@@ -164,7 +165,7 @@ const AdminCarForm = () => {
                   )}
                 </button>
                 <span
-                  className={`text-xs mt-2 text-center font-medium whitespace-nowrap ${
+                  className={`text-[11px] sm:text-xs mt-1 sm:mt-2 text-center font-medium whitespace-nowrap ${
                     step >= index + 1 ? "text-gray-800" : "text-gray-500"
                   }`}
                 >
@@ -179,7 +180,7 @@ const AdminCarForm = () => {
       {/* Form content */}
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-xl shadow-md p-6 sm:p-6 border border-gray-100"
+        className="bg-white rounded-lg md:rounded-xl shadow-md p-4 sm:p-5 md:p-6 border border-gray-100"
       >
         <CurrentStepComponent
           formData={formData}

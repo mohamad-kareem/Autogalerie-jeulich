@@ -1,10 +1,8 @@
 "use client";
 import Image from "next/image";
-import Bild2 from "../../(assets)/Hero2.jpeg";
-import Bild3 from "../../(assets)/yes2.png";
-import Bild4 from "../../(assets)/dacia4.png";
 import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
+import Link from "next/link";
 import {
   motion,
   AnimatePresence,
@@ -12,7 +10,11 @@ import {
   useTransform,
 } from "framer-motion";
 import { Car, ShieldCheck, Settings } from "lucide-react";
-import Link from "next/link";
+
+import Bild2 from "../../(assets)/Hero2.jpeg";
+import Bild3 from "../../(assets)/yes2.png";
+import Bild4 from "../../(assets)/dacia4.png";
+
 import Button from "../helpers/Button.jsx";
 import InfoBar from "../InfoBar/Info";
 
@@ -60,6 +62,7 @@ export default function UltraModernHero() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const constraintsRef = useRef(null);
+
   const x = useMotionValue(0);
   const xInput = [-100, 0, 100];
   const background = useTransform(x, xInput, [
@@ -93,13 +96,15 @@ export default function UltraModernHero() {
           content="Auto Galerie Jülich – Beste Gebrauchtwagen in NRW."
         />
       </Head>
+
       <section
-        className="relative w-full h-screen sm:h-[100vh] max-h-[1200px] overflow-hidden"
+        className="relative w-full h-[100dvh] sm:h-screen max-h-[1200px] overflow-hidden"
+        ref={constraintsRef}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onMouseMove={handleMouseMove}
-        ref={constraintsRef}
       >
+        {/* Background & Image */}
         <motion.div className="absolute inset-0" style={{ background }}>
           <AnimatePresence mode="wait">
             <motion.div
@@ -107,7 +112,7 @@ export default function UltraModernHero() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 1.5, ease: [0.43, 0.13, 0.23, 0.96] }}
+              transition={{ duration: 1.5 }}
               className="absolute inset-0"
             >
               <div className="relative w-full h-full">
@@ -117,51 +122,48 @@ export default function UltraModernHero() {
                   fill
                   priority
                   quality={100}
-                  className="object-cover object-center"
                   sizes="100vw"
+                  className="object-contain sm:object-cover object-center"
                 />
               </div>
               <div
-                className="absolute inset-0"
+                className="absolute "
                 style={{ background: slides[currentSlide].overlay }}
               />
             </motion.div>
           </AnimatePresence>
         </motion.div>
 
-        <div className="relative z-10 h-full flex items-center px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 ">
-          <div className="container mx-auto ml-2">
+        {/* Text Content */}
+        <div className="relative z-10 h-full flex items-center px-4 sm:px-8 md:px-12 lg:px-16">
+          <div className="container mx-auto">
             <motion.div
               initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{
-                delay: 0.4,
-                duration: 0.8,
-                ease: [0.43, 0.13, 0.23, 0.96],
-              }}
+              transition={{ delay: 0.4, duration: 0.8 }}
               className="max-w-3xl lg:max-w-4xl xl:max-w-5xl"
             >
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.6, type: "spring" }}
-                className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 bg-white rounded-lg sm:rounded-xl mb-4 sm:mb-6 shadow-lg"
+                className="inline-flex items-center px-4 py-2 bg-white rounded-xl shadow-lg mb-4 sm:mb-6"
               >
-                <span className="text-xs sm:text-sm font-semibold tracking-wider text-black">
+                <span className="text-sm font-semibold tracking-wider text-black">
                   Premium Qualität
                 </span>
               </motion.div>
 
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-5xl xl:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
                 {slides[currentSlide].title}
               </h1>
 
-              <p className="text-lg sm:text-xl md:text-xl text-white/90 mb-6 sm:mb-8 max-w-2xl">
+              <p className="text-lg sm:text-xl text-white/90 mb-6 max-w-2xl">
                 {slides[currentSlide].subtitle}
               </p>
 
               <motion.div
-                className="flex flex-wrap gap-3 sm:gap-4 mb-8 sm:mb-10"
+                className="flex flex-wrap gap-3 sm:gap-4 mb-10"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.8 }}
@@ -184,7 +186,7 @@ export default function UltraModernHero() {
               </motion.div>
 
               <motion.div
-                className="flex flex-col sm:flex-row gap-3 sm:gap-4"
+                className="flex flex-col sm:flex-row gap-3"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1 }}
@@ -204,8 +206,9 @@ export default function UltraModernHero() {
           </div>
         </div>
 
+        {/* Slide Dots */}
         <motion.div
-          className="flex absolute bottom-6 sm:bottom-8 md:bottom-10 left-0 right-0 justify-center gap-2 sm:gap-3 z-20"
+          className="flex absolute bottom-6 sm:bottom-8 left-0 right-0 justify-center gap-2 z-20"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.4 }}
@@ -214,24 +217,24 @@ export default function UltraModernHero() {
             <motion.button
               key={index}
               onClick={() => setCurrentSlide(index)}
+              aria-label={`Go to slide ${index + 1}`}
               className={`h-1.5 rounded-full transition-all duration-300 ${
                 index === currentSlide
-                  ? "w-6 sm:w-8 bg-gradient-to-r from-red-400 to-red-600"
-                  : "w-2 sm:w-3 bg-white/40 hover:bg-white/60"
+                  ? "w-6 bg-gradient-to-r from-red-400 to-red-600"
+                  : "w-2 bg-white/40 hover:bg-white/60"
               }`}
-              aria-label={`Go to slide ${index + 1}`}
               whileHover={{ scaleY: 1.5 }}
             />
           ))}
         </motion.div>
 
-        {/* Glow + Bottom Fade Effect */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Visual Effects */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_rgba(255,50,50,0.1)_0%,_transparent_70%)] opacity-30" />
-          <div className="absolute bottom-0 left-0 w-full h-32 sm:h-48 bg-gradient-to-t from-black to-transparent" />
+          <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black to-transparent" />
         </div>
 
-        {/* Micro-interaction Cursor Glow */}
+        {/* Cursor Glow */}
         <motion.div
           className="absolute top-0 left-0 w-48 h-48 sm:w-64 sm:h-64 rounded-full bg-red-500/10 blur-3xl pointer-events-none"
           style={{
@@ -240,6 +243,8 @@ export default function UltraModernHero() {
           }}
         />
       </section>
+
+      {/* Info bar after hero */}
       <InfoBar />
     </>
   );

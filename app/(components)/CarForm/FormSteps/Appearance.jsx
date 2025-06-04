@@ -22,13 +22,16 @@ const Appearance = ({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="bg-gradient-to-r from-red-50 via-white to-red-50 p-6 rounded-xl border border-gray-200 shadow-sm">
-        <h2 className="text-2xl font-bold text-gray-900">Farbe & Design</h2>
-        <p className="text-gray-600 mt-2">
-          Äußere und innere Gestaltung des Fahrzeugs
-        </p>
+      <div className="bg-gradient-to-r from-red-50 via-white to-red-50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="p-6">
+          <h2 className="text-sm sm:text-2xl font-bold text-gray-900">
+            Farbe & Design
+          </h2>
+          <p className="text-gray-600 mt-2 text-sm ">
+            Äußere und innere Gestaltung des Fahrzeugs
+          </p>
+        </div>
       </div>
-
       <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2">
         <Input
           label="Farbe (Hersteller)"

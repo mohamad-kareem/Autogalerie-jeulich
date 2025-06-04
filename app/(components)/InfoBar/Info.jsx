@@ -5,8 +5,8 @@ import { MapPin, Phone, Mail } from "lucide-react";
 
 export default function InfoBar() {
   return (
-    <div className="bg-black/95 backdrop-blur-xl border-t border-white/10 mb-30">
-      <div className="container mx-auto py-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div className="  border-t border-white/10 mb-30">
+      <div className="container mx-auto py-6 grid grid-cols-1 md:grid-cols-3 gap-8 pt-15">
         {[
           {
             icon: <MapPin size={24} className="text-red-500" />,
