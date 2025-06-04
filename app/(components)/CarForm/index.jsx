@@ -114,7 +114,7 @@ const AdminCarForm = () => {
   const CurrentStepComponent = steps[step - 1].component;
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 md:px-6">
+    <div className="w-full max-w-4xl mx-auto px-0 sm:px-4 md:px-4 lg:px-6 xl:px-8 py-2 ">
       {/* Enhanced Responsive Step Indicator */}
       <div className="mb-4 sm:mb-6 overflow-x-auto pb-2 scrollbar-hide">
         <div className="relative min-w-[550px] sm:min-w-0">
@@ -180,7 +180,7 @@ const AdminCarForm = () => {
       {/* Form content */}
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-lg md:rounded-xl shadow-md p-4 sm:p-5 md:p-6 border border-gray-100"
+        className="bg-white rounded-lg md:rounded-xl shadow-md p-4 sm:p-5 md:p-8 border border-gray-100"
       >
         <CurrentStepComponent
           formData={formData}

@@ -15,61 +15,63 @@ export default function LandingSlide() {
       behavior: "smooth",
     });
   };
-  //     py-12  relative
+
   return (
-    <section className="py-12  relative w-full overflow-hidden   shadow-even mb-8 px-4 sm:px-6 lg:px-16">
-      <div className="w-full max-w-[90vw] xl:max-w-[1100px] 2xl:max-w-[1650px] mx-auto">
-        <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-white mb-4">
+    <section className="relative w-full py-12 px-4 sm:px-6 lg:px-16 overflow-hidden shadow-even mb-8">
+      <div className="w-full max-w-7xl mx-auto">
+        {/* Title */}
+        <h2 className="text-xl sm:text-2xl font-semibold text-white mb-4">
           Unsere Kategorien
         </h2>
-        <div className="border-b border-gray-800 mb-4"></div>
+        <div className="border-b border-gray-800 mb-6"></div>
 
-        {/* Left Arrow Button */}
-        <button
-          type="button"
-          className="absolute left-1 sm:left-17 top-1/2 -translate-y-1/2 bg-gradient-to-br from-black/50 to-white/40 hover:from-red-900 hover:to-black/20  rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
-          onClick={() => scroll("left")}
-        >
-          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 hover:text-white" />
-        </button>
+        {/* Scroll Arrows */}
+        <div className="absolute inset-y-0 left-8 flex items-center z-10">
+          <button
+            onClick={() => scroll("left")}
+            className="bg-black/60 hover:bg-red-800 text-white p-2 sm:p-2.5 rounded-full shadow border border-white/10 transition"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="absolute inset-y-0 right-4 flex items-center z-10">
+          <button
+            onClick={() => scroll("right")}
+            className="bg-black/60 hover:bg-red-800 text-white p-2 sm:p-2.5 rounded-full shadow border border-white/10 transition"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
 
-        {/* Scrollable Container */}
+        {/* Scrollable Card Container */}
         <div
           id="scroll-container"
-          className="flex gap-4 sm:gap-6 overflow-x-auto pb-2 scroll-smooth scrollbar-hide"
+          className="flex gap-4 sm:gap-6 overflow-x-auto pb-2 scroll-smooth scrollbar-hide px-6 sm:px-10"
         >
           {popularCategories.map((category, index) => (
             <div
               key={index}
-              className="min-w-[200px] sm:min-w-[220px] md:min-w-[240px] bg-gradient-to-br from-black/50 to-white/40 hover:from-red-900 hover:to-black/20  rounded-xl p-4 sm:p-6 flex-shrink-0 flex flex-col items-center justify-between text-center shadow transition duration-300"
+              className="min-w-[180px] sm:min-w-[200px] md:min-w-[220px] bg-gradient-to-br from-black/80 to-gray-900 hover:from-red-900 hover:to-black/30 transition duration-300 rounded-xl p-4 flex-shrink-0 shadow-md text-center"
             >
               <Image
                 src={category.image}
                 alt={category.alt}
                 width={100}
                 height={100}
-                className="object-contain mb-4"
+                className="object-contain mx-auto mb-4"
               />
-              <h3 className="font-semibold text-white text-base sm:text-lg">
+              <h3 className="text-white text-base sm:text-lg font-semibold">
                 {category.title}
               </h3>
-              <p className="text-red-600 text-xs sm:text-sm mt-1">
+              <p className="text-red-500 text-xs sm:text-sm mt-1">
                 {category.description}
               </p>
             </div>
           ))}
         </div>
 
-        {/* Right Arrow Button */}
-        <button
-          type="button"
-          className="absolute right-1 sm:right-16 top-1/2 -translate-y-1/2 bg-gradient-to-br from-black/50 to-white/40 hover:from-red-900 hover:to-black/20 rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
-          onClick={() => scroll("right")}
-        >
-          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 hover:text-white" />
-        </button>
-        {/* Glow Effects */}
-        <div className="absolute -bottom-20 -left-20 w-300 h-64 rounded-full bg-red-500/5 blur-3xl pointer-events-none" />
+        {/* Subtle Glow */}
+        <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-red-600/10 blur-[100px] rounded-full pointer-events-none" />
       </div>
     </section>
   );

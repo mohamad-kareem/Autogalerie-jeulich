@@ -11,6 +11,7 @@ import {
   Fuel,
   Zap,
 } from "lucide-react";
+
 const maps = {
   fuel: {
     DIESEL: "Diesel",
@@ -23,6 +24,7 @@ const maps = {
     OTHER: "Andere",
   },
 };
+
 export default function RandomCarSlider() {
   const [cars, setCars] = useState([]);
   const sliderRef = useRef(null);
@@ -44,8 +46,7 @@ export default function RandomCarSlider() {
   const scroll = (direction) => {
     const container = sliderRef.current;
     if (!container) return;
-
-    const amount = window.innerWidth <= 640 ? 300 : 330;
+    const amount = window.innerWidth <= 640 ? 260 : 330;
     container.scrollBy({
       left: direction === "left" ? -amount : amount,
       behavior: "smooth",
@@ -53,62 +54,69 @@ export default function RandomCarSlider() {
   };
 
   return (
-    <section className="py-12 relative w-full overflow-hidden px-4 sm:px-6 lg:px-16  pb-20 ">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="text-lg sm:text-xl md:text-2xl font-medium text-white mb-4 tracking-wide">
+    <section className="relative w-full px-4 sm:px-6 lg:px-16 py-14 bg-black">
+      <div className="max-w-7xl mx-auto">
+        <h2 className="text-xl sm:text-2xl font-semibold text-white mb-6">
           Premium-Auswahl
         </h2>
-        <div className="border-b border-gray-700 mb-6 w-full"></div>
 
-        {/* Left Arrow Button */}
-        <button
-          type="button"
-          className="absolute left-1 sm:left-17 top-1/2 -translate-y-1/2 bg-gradient-to-br from-black/50 to-white/40 hover:from-red-900 hover:to-black/20 rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
-          onClick={() => scroll("left")}
-        >
-          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 hover:text-white" />
-        </button>
-
-        {/* Scrollable Container */}
-        <div
-          ref={sliderRef}
-          className="flex gap-5 sm:gap-6 overflow-x-auto pb-4 scroll-smooth scrollbar-hide bg-black"
-        >
-          {cars.map((car) => (
-            <div
-              key={car._id}
-              className="min-w-[260px] sm:min-w-[280px] bg-gradient-to-br from-black/50 to-white/40   hover:from-red-900 hover:to-black/20 rounded-lg p-4 flex-shrink-0 flex flex-col items-center justify-between text-center shadow-lg transition-all duration-300 "
+        <div className="relative">
+          {/* Arrows */}
+          <div className="absolute inset-y-0 left-0 flex items-center z-10">
+            <button
+              onClick={() => scroll("left")}
+              className="bg-black/60 hover:bg-red-800 text-white p-2 sm:p-2.5 rounded-full shadow border border-white/10 transition"
             >
-              {/* Image Container */}
-              <div className="w-full h-32 mb-4 rounded-lg overflow-hidden bg-black/40 flex items-center justify-center p-2">
-                {car.images?.[0]?.ref ? (
-                  <img
-                    src={car.images[0].ref}
-                    alt={`${car.make} ${car.model}`}
-                    className="w-full h-full object-cover rounded-md transform hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-600">
-                    <CarFront className="h-10 w-10" />
-                  </div>
-                )}
-              </div>
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="absolute inset-y-0 right-0 flex items-center z-10">
+            <button
+              onClick={() => scroll("right")}
+              className="bg-black/60 hover:bg-red-800 text-white p-2 sm:p-2.5 rounded-full shadow border border-white/10 transition"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
 
-              {/* Content */}
-              <div className="w-full">
-                <h3 className="font-medium text-white text-base sm:text-lg line-clamp-1 tracking-tight">
+          {/* Scrollable Cards */}
+          <div
+            ref={sliderRef}
+            className="flex gap-5 sm:gap-6 overflow-x-auto scroll-smooth scrollbar-hide px-6 sm:px-10"
+          >
+            {cars.map((car) => (
+              <div
+                key={car._id}
+                className="min-w-[250px] sm:min-w-[280px] bg-gradient-to-br from-black/80 to-gray-900 rounded-xl border border-gray-800 p-4 flex-shrink-0 shadow-lg transition duration-300 hover:shadow-red-800/20"
+              >
+                {/* Image */}
+                <div className="w-full h-32 mb-4 rounded-lg overflow-hidden bg-gray-900 flex items-center justify-center">
+                  {car.images?.[0]?.ref ? (
+                    <img
+                      src={car.images[0].ref}
+                      alt={`${car.make} ${car.model}`}
+                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <CarFront className="w-8 h-8 text-gray-600" />
+                  )}
+                </div>
+
+                {/* Details */}
+                <h3 className="text-white font-medium text-base sm:text-lg truncate">
                   {car.make} {car.model}
                 </h3>
+
                 {car.modelDescription && (
-                  <p className="text-gray-400 text-xs mt-1 line-clamp-1 font-light">
+                  <p className="text-gray-400 text-sm mt-1 truncate">
                     {car.modelDescription}
                   </p>
                 )}
 
                 {/* Price */}
                 {car.price?.consumerPriceGross && (
-                  <p className="text-red-500 font-medium text-sm sm:text-base mt-3">
+                  <p className="text-red-500 font-semibold text-sm mt-3">
                     {parseFloat(car.price.consumerPriceGross).toLocaleString(
                       "de-DE",
                       {
@@ -120,51 +128,43 @@ export default function RandomCarSlider() {
                   </p>
                 )}
 
-                {/* Key Info */}
+                {/* Stats */}
                 <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-gray-400 font-light">
-                  <div className="flex items-center justify-center gap-1">
-                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
                     {car.firstRegistration
                       ? car.firstRegistration.slice(0, 4)
                       : "-"}
                   </div>
-                  <div className="flex items-center justify-center gap-1">
-                    <Gauge className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+                  <div className="flex items-center gap-1">
+                    <Gauge className="w-4 h-4" />
                     {car.mileage ? `${car.mileage.toLocaleString()} km` : "-"}
                   </div>
-                  <div className="flex items-center justify-center gap-1">
-                    <Fuel className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+                  <div className="flex items-center gap-1">
+                    <Fuel className="w-4 h-4" />
                     {maps.fuel[car.fuel] || car.fuel || "-"}
                   </div>
-                  <div className="flex items-center justify-center gap-1">
-                    <Zap className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+                  <div className="flex items-center gap-1">
+                    <Zap className="w-4 h-4" />
                     {car.power ? `${car.power} PS` : "-"}
                   </div>
                 </div>
 
+                {/* Link */}
                 <Link
                   href={`/gebrauchtwagen/${car._id}`}
-                  className="mt-4 inline-flex items-center justify-center gap-1 text-xs sm:text-sm font-normal text-gray-300 hover:text-white transition-all"
+                  className="mt-4 inline-flex items-center gap-1 text-xs text-red-400 hover:text-white transition"
                 >
-                  Einzelheiten anzeigen{" "}
-                  <ChevronRight className="h-3 w-3 mt-0.5" />
+                  Einzelheiten anzeigen
+                  <ChevronRight className="w-4 h-4 mt-0.5" />
                 </Link>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Right Arrow Button */}
-        <button
-          type="button"
-          className="absolute right-1 sm:right-16 top-1/2 -translate-y-1/2 bg-gradient-to-br from-black/50 to-white/40 hover:from-red-900 hover:to-black/20 rounded-full p-2 sm:p-3 border border-gray-700 hover:border-gray-500 z-10 transition-all duration-300"
-          onClick={() => scroll("right")}
-        >
-          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300 hover:text-white" />
-        </button>
-
-        {/* Subtle Glow Effect */}
-        <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-red-500/3 blur-[100px] pointer-events-none"></div>
+        {/* Glow Effect */}
+        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-red-600/10 rounded-full blur-[100px] pointer-events-none" />
       </div>
     </section>
   );

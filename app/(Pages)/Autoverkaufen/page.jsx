@@ -22,13 +22,10 @@ const PublicAddCarPage = () => {
     <main className="bg-gradient-to-br from-black/95 to-red-950">
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-black to-red-950 py-16 md:py-28 px-4 sm:px-6 lg:px-8 text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0 bg-[url('/pattern.svg')] bg-[length:100px_100px]"></div>
-        </div>
         <div className="max-w-7xl mx-auto text-center relative z-10 space-y-6">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight tracking-tight">
             Verkaufen Sie Ihr Auto <br className="hidden sm:block" />
-            <span className="text-red-400">mühelos</span>
+            <span className="text-red-600">mühelos</span>
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl max-w-3xl mx-auto text-gray-300 font-light leading-relaxed">
             Erhalten Sie innerhalb von Minuten ein wettbewerbsfähiges,
@@ -167,7 +164,7 @@ const PublicAddCarPage = () => {
                   24 Stunden Ihr wettbewerbsfähiges Angebot
                 </p>
               </div>
-              <div className="p-10  pt-4">
+              <div className="p-2  pt-4">
                 <AdminCarForm />
               </div>
             </div>

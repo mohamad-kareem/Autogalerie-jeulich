@@ -5,9 +5,9 @@ export default function Button({
   textColor = "text-white",
   className = "",
   fullWidth = false,
-  disabled = false, // ✅ add this
+  disabled = false,
   children,
-  ...props
+  ...props // we'll filter props below
 }) {
   const baseStyles = `
     flex items-center justify-center
@@ -23,16 +23,19 @@ export default function Button({
   const fullWidthClass = fullWidth ? "w-full" : "";
   const disabledStyles = disabled ? "opacity-50 cursor-not-allowed" : "";
 
+  // Destructure & discard unwanted props before passing to <button>
+  const { icon, size, ...filteredProps } = props;
+
   return (
     <button
       type={type}
-      disabled={disabled} // ✅ Native HTML disabled attribute
+      disabled={disabled}
       className={`
         ${bgColor} ${hoverColor} ${textColor}
         ${baseStyles} ${responsivePadding}
         ${fullWidthClass} ${disabledStyles} ${className}
       `}
-      {...props}
+      {...filteredProps}
     >
       {children}
     </button>

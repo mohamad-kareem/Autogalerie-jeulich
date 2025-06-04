@@ -66,9 +66,9 @@ export default function UltraModernHero() {
   const x = useMotionValue(0);
   const xInput = [-100, 0, 100];
   const background = useTransform(x, xInput, [
-    "linear-gradient(135deg, #0e1a25 0%, #2a0a0a 100%)",
-    "linear-gradient(135deg, #0a1428 0%, #1e0a32 100%)",
-    "linear-gradient(135deg, #1e141e 0%, #0a1e28 100%)",
+    "linear-gradient(135deg, #2a0000 0%, #000000 100%)", // black-cherry to pure black
+    "linear-gradient(135deg, #3b0101 0%, #080808 100%)", // deep wine red to charcoal
+    "linear-gradient(135deg, #4a0d0d 0%, #111111 100%)", // vibrant red to near black
   ]);
 
   useEffect(() => {
