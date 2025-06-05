@@ -66,9 +66,9 @@ export default function UltraModernHero() {
   const x = useMotionValue(0);
   const xInput = [-100, 0, 100];
   const background = useTransform(x, xInput, [
-    "linear-gradient(135deg, #2a0000 0%, #000000 100%)", // black-cherry to pure black
-    "linear-gradient(135deg, #3b0101 0%, #080808 100%)", // deep wine red to charcoal
-    "linear-gradient(135deg, #4a0d0d 0%, #111111 100%)", // vibrant red to near black
+    "linear-gradient(135deg, #2a0000 0%, #000000 100%)",
+    "linear-gradient(135deg, #3b0101 0%, #080808 100%)",
+    "linear-gradient(135deg, #4a0d0d 0%, #111111 100%)",
   ]);
 
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function UltraModernHero() {
       }
     }, 7000);
     return () => clearInterval(interval);
-  }, [isHovered, currentSlide]);
+  }, [isHovered]);
 
   const handleMouseMove = (e) => {
     const { left, width } = e.currentTarget.getBoundingClientRect();
@@ -97,8 +97,92 @@ export default function UltraModernHero() {
         />
       </Head>
 
+      {/* ==========================
+           MOBILE HERO ( <640px )
+           ========================== */}
+      <section className="sm:hidden">
+        {/* For mobile, we simply stack: image at top, then text below */}
+        <div className="w-full h-[250px] relative mt-16">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentSlide}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.2 }}
+              className="absolute inset-0"
+            >
+              <Image
+                src={slides[currentSlide].image}
+                alt={`Slide ${currentSlide + 1}`}
+                fill
+                priority
+                quality={80}
+                sizes="100vw"
+                className="object-cover"
+              />
+              <div
+                className="absolute "
+                style={{ background: slides[currentSlide].overlay }}
+              />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <div className="px-4 py-6 bg-black">
+          <div className="max-w-xl mx-auto text-center">
+            <div className="inline-flex items-center px-3 py-1 bg-white rounded-xl shadow-lg mb-2">
+              <span className="text-xs font-semibold tracking-wider text-black">
+                Premium Qualität
+              </span>
+            </div>
+
+            <h2 className="text-xl font-bold text-white mb-2">
+              {slides[currentSlide].title}
+            </h2>
+            <p className="text-sm text-white/90 mb-4">
+              {slides[currentSlide].subtitle}
+            </p>
+
+            <div className="flex flex-wrap justify-center gap-3 mb-6">
+              {slides[currentSlide].features.map((feature, i) => (
+                <FeatureIcon
+                  key={i}
+                  icon={
+                    i === 0 ? (
+                      <Car size={16} className="text-red-500" />
+                    ) : i === 1 ? (
+                      <ShieldCheck size={16} className="text-red-500" />
+                    ) : (
+                      <Settings size={16} className="text-red-500" />
+                    )
+                  }
+                  text={feature}
+                />
+              ))}
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <Button>
+                <Link href="/gebrauchtwagen">
+                  <span>Fahrzeuge entdecken</span>
+                </Link>
+              </Button>
+              <Button>
+                <Link href="/kontakt">
+                  <span>Beratungstermin</span>
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================
+           DESKTOP HERO ( ≥640px )
+           ========================== */}
       <section
-        className="relative w-full h-[100dvh] sm:h-screen max-h-[1200px] overflow-hidden"
+        className="hidden sm:block relative w-full h-[100dvh] max-h-[1200px] overflow-hidden"
         ref={constraintsRef}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -127,7 +211,7 @@ export default function UltraModernHero() {
                 />
               </div>
               <div
-                className="absolute "
+                className="absolute inset-0"
                 style={{ background: slides[currentSlide].overlay }}
               />
             </motion.div>
@@ -186,7 +270,7 @@ export default function UltraModernHero() {
               </motion.div>
 
               <motion.div
-                className="flex flex-col sm:flex-row gap-3 "
+                className="flex flex-col sm:flex-row gap-3"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1 }}
@@ -244,7 +328,7 @@ export default function UltraModernHero() {
         />
       </section>
 
-      {/* Info bar after hero */}
+      {/* Info bar (shared) */}
       <InfoBar />
     </>
   );
