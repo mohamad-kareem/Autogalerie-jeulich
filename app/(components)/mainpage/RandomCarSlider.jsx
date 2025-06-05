@@ -109,8 +109,9 @@ export default function RandomCarSlider() {
                 </h3>
 
                 {car.modelDescription && (
-                  <p className="text-gray-400 text-sm mt-1 truncate">
-                    {car.modelDescription}
+                  <p className="text-gray-400 text-sm mt-1">
+                    {car.modelDescription.split(" ").slice(0, 3).join(" ")}
+                    {car.modelDescription.split(" ").length > 3 && "..."}
                   </p>
                 )}
 

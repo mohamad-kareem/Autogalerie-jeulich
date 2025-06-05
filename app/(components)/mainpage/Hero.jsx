@@ -149,16 +149,16 @@ export default function UltraModernHero() {
                 transition={{ delay: 0.6, type: "spring" }}
                 className="inline-flex items-center px-4 py-2 bg-white rounded-xl shadow-lg mb-4 sm:mb-6"
               >
-                <span className="text-sm font-semibold tracking-wider text-black">
+                <span className="text-xs sm:text-sm font-semibold tracking-wider text-black">
                   Premium Qualität
                 </span>
               </motion.div>
 
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
+              <h1 className="text-2xl sm:text-5xl md:text-6xl font-bold text-white mb-3 leading-tight">
                 {slides[currentSlide].title}
               </h1>
 
-              <p className="text-lg sm:text-xl text-white/90 mb-6 max-w-2xl">
+              <p className="text-md sm:text-xl text-white/90 mb-4 max-w-2xl">
                 {slides[currentSlide].subtitle}
               </p>
 
@@ -186,7 +186,7 @@ export default function UltraModernHero() {
               </motion.div>
 
               <motion.div
-                className="flex flex-col sm:flex-row gap-3"
+                className="flex flex-col sm:flex-row gap-3 "
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1 }}
