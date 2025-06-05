@@ -24,7 +24,7 @@ export default function Button({
   const disabledStyles = disabled ? "opacity-50 cursor-not-allowed" : "";
 
   // Destructure & discard unwanted props before passing to <button>
-  const { icon, size, ...filteredProps } = props;
+  const { icon, size, loading, ...filteredProps } = props;
 
   return (
     <button

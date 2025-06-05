@@ -26,6 +26,7 @@ import {
   FiNavigation,
   FiCreditCard,
   FiChevronDown,
+  FiChevronUp, // ✅ ADD THIS
 } from "react-icons/fi";
 import { FaCar, FaGasPump, FaCarCrash, FaTools } from "react-icons/fa";
 import { GiCarDoor, GiCarSeat, GiGearStick, GiWeight } from "react-icons/gi";
@@ -307,7 +308,8 @@ export default function ManualCarsPage() {
 
                       <div className="flex space-x-2 pt-2">
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation(); // ⛔ Stop row toggle
                             setSelectedCar(car);
                             setActiveTab("übersicht");
                           }}
@@ -315,8 +317,12 @@ export default function ManualCarsPage() {
                         >
                           <FiEye className="mr-1" /> Details
                         </button>
+
                         <button
-                          onClick={() => handleDelete(car._id)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // ⛔ Stop row toggle
+                            handleDelete(car._id);
+                          }}
                           className="flex-1 flex items-center justify-center py-2 px-3 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700"
                         >
                           <FiTrash2 className="mr-1" /> Löschen
