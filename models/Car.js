@@ -1,116 +1,150 @@
 import mongoose from "mongoose";
 
-const imageSchema = new mongoose.Schema({
-  ref: { type: String, required: true },
-  hash: { type: String, required: true },
-});
+// ⬛ Image Subschema
+const imageSchema = new mongoose.Schema(
+  {
+    ref: { type: String, required: true },
+    hash: { type: String, required: true },
+  },
+  { _id: false }
+);
 
-const priceSchema = new mongoose.Schema({
-  consumerPriceGross: { type: String, required: true },
-  type: { type: String, required: true },
-  currency: { type: String, required: true },
-});
+// ⬛ Price Subschema
+const priceSchema = new mongoose.Schema(
+  {
+    consumerPriceGross: { type: String, required: true },
+    type: { type: String, required: true },
+    currency: { type: String, required: true },
+  },
+  { _id: false }
+);
 
-const carSchema = new mongoose.Schema({
-  vin: { type: String, required: true, unique: true },
-  make: { type: String, required: true },
-  model: { type: String, required: true },
-  modelDescription: { type: String },
+// ⬛ Main Car Schema
+const carSchema = new mongoose.Schema(
+  {
+    vin: {
+      type: String,
+      default: null,
+    },
 
-  firstRegistration: { type: String },
-  mileage: { type: Number },
-  power: { type: Number },
-  cubicCapacity: { type: Number },
-  gearbox: { type: String },
-  fuel: { type: String },
+    make: { type: String, required: true },
+    model: { type: String, required: true },
+    modelDescription: { type: String },
 
-  images: { type: [imageSchema], default: [] },
-  price: priceSchema,
+    firstRegistration: { type: String },
+    mileage: { type: Number },
+    power: { type: Number },
+    cubicCapacity: { type: Number },
+    gearbox: { type: String },
+    fuel: { type: String },
 
-  category: { type: String },
-  climatisation: { type: String },
-  airbag: { type: String },
-  ambientLighting: { type: Boolean },
-  onBoardComputer: { type: Boolean },
-  paddleShifters: { type: Boolean },
-  usb: { type: Boolean },
-  driveType: { type: String },
+    images: { type: [imageSchema], default: [] },
+    price: priceSchema,
 
-  consumptions: { type: Object },
-  emissions: { type: Object },
-  seats: { type: Number },
-  doors: { type: String },
-  emissionClass: { type: String },
-  newHuAu: { type: String }, // ✅ now accepts "Juli 2026", etc.
-  fullServiceHistory: { type: Boolean }, // ✅ extracted from description
+    category: { type: String },
+    climatisation: { type: String },
+    airbag: { type: String },
+    ambientLighting: { type: Boolean },
+    onBoardComputer: { type: Boolean },
+    paddleShifters: { type: Boolean },
+    usb: { type: Boolean },
+    driveType: { type: String },
 
-  parkingAssistants: { type: [String], default: [] },
-  manufacturerColorName: { type: String },
-  exteriorColor: { type: String },
-  interiorType: { type: String },
-  interiorColor: { type: String },
+    consumptions: { type: Object },
+    emissions: { type: Object },
+    seats: { type: Number },
+    doors: { type: String },
+    emissionClass: { type: String },
+    newHuAu: { type: String },
+    fullServiceHistory: { type: Boolean },
 
-  tintedWindows: { type: Boolean },
-  armRest: { type: Boolean },
-  heatedWindshield: { type: Boolean },
-  electricWindows: { type: Boolean },
-  electricTailgate: { type: Boolean },
-  electricExteriorMirrors: { type: Boolean },
-  foldingExteriorMirrors: { type: Boolean },
-  electricAdjustableSeats: { type: Boolean },
-  memorySeats: { type: Boolean },
-  leatherSteeringWheel: { type: Boolean },
-  panoramicGlassRoof: { type: Boolean },
-  sunroof: { type: Boolean },
-  keylessEntry: { type: Boolean },
-  electricHeatedSeats: { type: Boolean },
-  centralLocking: { type: Boolean },
-  headUpDisplay: { type: Boolean },
-  multifunctionalWheel: { type: Boolean },
-  powerAssistedSteering: { type: Boolean },
+    parkingAssistants: { type: [String], default: [] },
+    manufacturerColorName: { type: String },
+    exteriorColor: { type: String },
+    interiorType: { type: String },
+    interiorColor: { type: String },
 
-  bluetooth: { type: Boolean },
-  cdPlayer: { type: Boolean },
-  handsFreePhoneSystem: { type: Boolean },
-  wirelessCharging: { type: Boolean },
-  navigationSystem: { type: Boolean },
-  voiceControl: { type: Boolean },
-  touchscreen: { type: Boolean },
-  radio: { type: [String], default: [] },
+    tintedWindows: { type: Boolean },
+    armRest: { type: Boolean },
+    heatedWindshield: { type: Boolean },
+    electricWindows: { type: Boolean },
+    electricTailgate: { type: Boolean },
+    electricExteriorMirrors: { type: Boolean },
+    foldingExteriorMirrors: { type: Boolean },
+    electricAdjustableSeats: { type: Boolean },
+    memorySeats: { type: Boolean },
+    leatherSteeringWheel: { type: Boolean },
+    panoramicGlassRoof: { type: Boolean },
+    sunroof: { type: Boolean },
+    keylessEntry: { type: Boolean },
+    electricHeatedSeats: { type: Boolean },
+    centralLocking: { type: Boolean },
+    headUpDisplay: { type: Boolean },
+    multifunctionalWheel: { type: Boolean },
+    powerAssistedSteering: { type: Boolean },
 
-  alarmSystem: { type: Boolean },
-  abs: { type: Boolean },
-  distanceWarningSystem: { type: Boolean },
-  glareFreeHighBeam: { type: Boolean },
-  immobilizer: { type: Boolean },
-  esp: { type: Boolean },
-  highBeamAssist: { type: Boolean },
-  speedLimiter: { type: Boolean },
-  isofix: { type: Boolean },
-  lightSensor: { type: Boolean },
-  frontFogLights: { type: Boolean },
-  collisionAvoidance: { type: Boolean },
-  emergencyCallSystem: { type: Boolean },
-  automaticRainSensor: { type: Boolean },
-  tirePressureMonitoring: { type: Boolean },
-  laneDepartureWarning: { type: Boolean },
-  startStopSystem: { type: Boolean },
-  tractionControlSystem: { type: Boolean },
-  trafficSignRecognition: { type: Boolean },
+    bluetooth: { type: Boolean },
+    cdPlayer: { type: Boolean },
+    handsFreePhoneSystem: { type: Boolean },
+    wirelessCharging: { type: Boolean },
+    navigationSystem: { type: Boolean },
+    voiceControl: { type: Boolean },
+    touchscreen: { type: Boolean },
+    radio: { type: [String], default: [] },
 
-  daytimeRunningLamps: { type: String },
-  headlightType: { type: String },
-  bendingLightsType: { type: String },
-  headlightWasherSystem: { type: Boolean },
-  hasAllSeasonTires: { type: Boolean, default: false },
+    alarmSystem: { type: Boolean },
+    abs: { type: Boolean },
+    distanceWarningSystem: { type: Boolean },
+    glareFreeHighBeam: { type: Boolean },
+    immobilizer: { type: Boolean },
+    esp: { type: Boolean },
+    highBeamAssist: { type: Boolean },
+    speedLimiter: { type: Boolean },
+    isofix: { type: Boolean },
+    lightSensor: { type: Boolean },
+    frontFogLights: { type: Boolean },
+    collisionAvoidance: { type: Boolean },
+    emergencyCallSystem: { type: Boolean },
+    automaticRainSensor: { type: Boolean },
+    tirePressureMonitoring: { type: Boolean },
+    laneDepartureWarning: { type: Boolean },
+    startStopSystem: { type: Boolean },
+    tractionControlSystem: { type: Boolean },
+    trafficSignRecognition: { type: Boolean },
 
-  summerTires: { type: Boolean }, // ✅ now supported
-  winterTires: { type: Boolean }, // ✅ now supported
-  alloyWheels: { type: Boolean },
-  sportPackage: { type: Boolean },
-  sportSeats: { type: Boolean },
+    daytimeRunningLamps: { type: String },
+    headlightType: { type: String },
+    bendingLightsType: { type: String },
+    headlightWasherSystem: { type: Boolean },
 
-  description: { type: String }, // ✅ cleaned plain text description
-});
+    hasAllSeasonTires: { type: Boolean, default: false },
+    summerTires: { type: Boolean },
+    winterTires: { type: Boolean },
+    alloyWheels: { type: Boolean },
+    sportPackage: { type: Boolean },
+    sportSeats: { type: Boolean },
 
+    description: { type: String },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// ✅ Unique VINs (but allow nulls)
+carSchema.index({ vin: 1 }, { unique: true, sparse: true });
+
+// ✅ Fallback compound index for VIN-less duplicates
+carSchema.index(
+  {
+    make: 1,
+    model: 1,
+    modelDescription: 1,
+    mileage: 1,
+    firstRegistration: 1,
+  },
+  { name: "fallback_no_vin_match" }
+);
+
+// ✅ Export
 export default mongoose.models.Car || mongoose.model("Car", carSchema);

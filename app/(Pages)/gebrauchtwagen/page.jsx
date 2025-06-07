@@ -75,6 +75,10 @@ export default function UsedCarsPage() {
     try {
       const res = await fetch("/api/cars");
       const data = await res.json();
+      data.forEach((car, index) => {
+        console.log(`Car ${index + 1} modelDescription:`, car.modelDescription);
+      });
+
       setCars(data);
     } catch (error) {
       console.error("Failed to fetch cars:", error);

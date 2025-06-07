@@ -51,8 +51,8 @@ export default function Rating() {
             <Image
               src={Rate}
               alt="Kundenbewertung"
-              width={300}
-              height={400}
+              width={200}
+              height={300}
               className="w-full max-w-[300px] h-auto rounded-2xl"
             />
           </div>
