@@ -127,16 +127,19 @@ export default function UltraModernHero() {
               />
             </motion.div>
           </AnimatePresence>
-        </div>
 
-        <div className="px-4 py-6 bg-black">
-          <div className="max-w-xl mx-auto text-center">
-            <div className="inline-flex items-center px-3 py-1 bg-white rounded-xl shadow-lg mb-2">
+          {/* Premium Qualität badge inside the image */}
+          <div className="absolute top-4 left-4 z-10">
+            <div className="inline-flex items-center px-3 py-1 bg-white rounded-xl shadow-lg">
               <span className="text-xs font-semibold tracking-wider text-black">
                 Premium Qualität
               </span>
             </div>
+          </div>
+        </div>
 
+        <div className="px-4 py-6 bg-black">
+          <div className="max-w-xl mx-auto text-center">
             <h2 className="text-xl font-bold text-white mb-2">
               {slides[currentSlide].title}
             </h2>
@@ -211,7 +214,7 @@ export default function UltraModernHero() {
                 />
               </div>
               <div
-                className="absolute inset-0"
+                className="absolute "
                 style={{ background: slides[currentSlide].overlay }}
               />
             </motion.div>
