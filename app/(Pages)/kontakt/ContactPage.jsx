@@ -81,9 +81,9 @@ export default function ContactPage({ carId, carName, carLink }) {
         />
       </Head>
 
-      <div className="bg-gray-50 min-h-screen">
+      <div className="bg-gray-100 min-h-screen">
         {/* Hero Section */}
-        <div className="relative bg-black h-[400px] sm:h-[400px]">
+        <div className="relative bg-black h-[400px] sm:h-[400px] mt-16">
           <div className="absolute inset-0 overflow-hidden opacity-60">
             {/* Small screens (fill + cover) */}
             <div className="relative h-[400px] sm:h-[400px] lg:hidden">
@@ -122,73 +122,6 @@ export default function ContactPage({ carId, carName, carLink }) {
         {/* Main Content */}
         <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Contact Information */}
-            <div className="space-y-8">
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-                <div className="p-8">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                    Autogalerie Jülich
-                  </h2>
-                  <div className="space-y-6">
-                    <div className="flex items-start">
-                      <MapPinIcon className="h-6 w-6 text-red-600 mt-1 flex-shrink-0" />
-                      <div className="ml-4">
-                        <h3 className="text-lg font-medium text-gray-900">
-                          Adresse
-                        </h3>
-                        <p className="mt-1 text-gray-600">
-                          Alte Dürenerstraße 4<br />
-                          52428 Jülich
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <PhoneIcon className="h-6 w-6 text-red-600 mt-1 flex-shrink-0" />
-                      <div className="ml-4">
-                        <h3 className="text-lg font-medium text-gray-900">
-                          Telefon
-                        </h3>
-                        <p className="mt-1 text-gray-600">
-                          +49 (0)2461 9163780
-                        </p>
-                        <p className="mt-2 text-sm text-gray-500">
-                          Mo–Fr 9:00–18:00 • Sa 10:00–14:00
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <EnvelopeIcon className="h-6 w-6 text-red-600 mt-1 flex-shrink-0" />
-                      <div className="ml-4">
-                        <h3 className="text-lg font-medium text-gray-900">
-                          E-Mail
-                        </h3>
-                        <a
-                          href="mailto:anfrage@juelicherautozentrum.de"
-                          className="mt-1 text-gray-600 hover:text-red-600 transition-colors"
-                        >
-                          autogalerie.jülich@web.de
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Map */}
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 h-96">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2515.2826803796497!2d6.37113927576914!3d50.918487653555246!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47bf5c0643671421%3A0x2fbe6b78cebf739a!2sAlte%20D%C3%BCrener%20Str.%204%2C%2052428%20J%C3%BClich!5e0!3m2!1sen!2sde!4v1745751132011!5m2!1sen!2sde"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen=""
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  className="rounded-xl"
-                ></iframe>
-              </div>
-            </div>
-
             {/* Contact Form */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 p-8">
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -214,7 +147,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       required
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 p-3"
+                      className=" mt-1 block w-full rounded-md border-gray-400 shadow-sm focus:border-red-500 focus:ring-red-500 p-3"
                     />
                   </div>
                   <div>
@@ -359,6 +292,72 @@ export default function ContactPage({ carId, carName, carLink }) {
                     : "Nachricht senden"}
                 </button>
               </form>
+            </div>
+            {/* Contact Information */}
+            <div className="space-y-8">
+              <div className="bg-gradient-to-r from-black to-red-950 rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                <div className="p-8">
+                  <h2 className="text-3xl font-bold text-white mb-6">
+                    Autogalerie Jülich
+                  </h2>
+                  <div className="space-y-6">
+                    <div className="flex items-start">
+                      <MapPinIcon className="h-6 w-6 text-red-600 mt-1 flex-shrink-0" />
+                      <div className="ml-4">
+                        <h3 className="text-lg font-medium text-white">
+                          Adresse
+                        </h3>
+                        <p className="mt-1 text-gray-500">
+                          Alte Dürenerstraße 4<br />
+                          52428 Jülich
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <PhoneIcon className="h-6 w-6 text-red-600 mt-1 flex-shrink-0" />
+                      <div className="ml-4">
+                        <h3 className="text-lg font-medium text-white">
+                          Telefon
+                        </h3>
+                        <p className="mt-1 text-gray-500">
+                          +49 (0)2461 9163780
+                        </p>
+                        <p className="mt-2 text-sm text-gray-500">
+                          Mo–Fr 9:00–18:00 • Sa 10:00–14:00
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <EnvelopeIcon className="h-6 w-6 text-red-600 mt-1 flex-shrink-0" />
+                      <div className="ml-4">
+                        <h3 className="text-lg font-medium text-white">
+                          E-Mail
+                        </h3>
+                        <a
+                          href="mailto:anfrage@juelicherautozentrum.de"
+                          className="mt-1 text-gray-500 hover:text-red-600 transition-colors"
+                        >
+                          autogalerie.jülich@web.de
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Map */}
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 h-96">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2515.2826803796497!2d6.37113927576914!3d50.918487653555246!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47bf5c0643671421%3A0x2fbe6b78cebf739a!2sAlte%20D%C3%BCrener%20Str.%204%2C%2052428%20J%C3%BClich!5e0!3m2!1sen!2sde!4v1745751132011!5m2!1sen!2sde"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen=""
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="rounded-xl"
+                ></iframe>
+              </div>
             </div>
           </div>
         </div>

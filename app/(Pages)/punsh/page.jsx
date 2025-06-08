@@ -46,7 +46,6 @@ export default function PunchClockPage() {
   const [selectedAdmin, setSelectedAdmin] = useState("all");
   const [dateFilter, setDateFilter] = useState({ start: null, end: null });
   const [deleteRange, setDeleteRange] = useState({ start: null, end: null });
-  const [summary, setSummary] = useState([]);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -74,14 +73,6 @@ export default function PunchClockPage() {
     hasFetched.current = true;
     setIsLoading(false);
   }, []);
-
-  useEffect(() => {
-    if (!showRecords) return;
-    fetch("/api/punch/summary")
-      .then((res) => res.json())
-      .then(setSummary)
-      .catch(() => toast.error("Zusammenfassung konnte nicht geladen werden"));
-  }, [showRecords]);
 
   useEffect(() => {
     if (session?.user?.id) fetchStatus();
@@ -165,6 +156,33 @@ export default function PunchClockPage() {
     const perPage = 10; // Reduced for mobile
     return filtered.slice((page - 1) * perPage, page * perPage);
   }, [filtered, page]);
+
+  const summary = useMemo(() => {
+    const byAdmin = {};
+
+    // sort current, filtered records
+    const sorted = [...filtered].sort(
+      (a, b) => new Date(a.time) - new Date(b.time)
+    );
+
+    // pair IN/OUT and accumulate
+    for (const r of sorted) {
+      const name = r.admin?.name || "Unknown";
+      if (!byAdmin[name]) byAdmin[name] = { lastIn: null, totalMs: 0 };
+      if (r.type === "in" && !byAdmin[name].lastIn) {
+        byAdmin[name].lastIn = new Date(r.time);
+      } else if (r.type === "out" && byAdmin[name].lastIn) {
+        const diff = new Date(r.time) - byAdmin[name].lastIn;
+        if (diff > 0) byAdmin[name].totalMs += diff;
+        byAdmin[name].lastIn = null;
+      }
+    }
+    // convert ms → hours, 2 decimals
+    return Object.entries(byAdmin).map(([name, { totalMs }]) => ({
+      name,
+      hours: +(totalMs / 1000 / 60 / 60).toFixed(2),
+    }));
+  }, [filtered]);
 
   const allAdmins = useMemo(() => {
     const names = new Set(records.map((r) => r.admin?.name).filter(Boolean));
