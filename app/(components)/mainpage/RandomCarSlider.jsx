@@ -12,17 +12,15 @@ import {
   Zap,
 } from "lucide-react";
 
-const maps = {
-  fuel: {
-    DIESEL: "Diesel",
-    PETROL: "Benzin",
-    ELECTRIC: "Elektrisch",
-    HYBRID: "Hybrid",
-    LPG: "Autogas (LPG)",
-    CNG: "Erdgas (CNG)",
-    HYDROGEN: "Wasserstoff",
-    OTHER: "Andere",
-  },
+const fuelMap = {
+  DIESEL: "Diesel",
+  PETROL: "Benzin",
+  ELECTRIC: "Elektrisch",
+  HYBRID: "Hybrid",
+  LPG: "Autogas (LPG)",
+  CNG: "Erdgas (CNG)",
+  HYDROGEN: "Wasserstoff",
+  OTHER: "Andere",
 };
 
 export default function RandomCarSlider() {
@@ -30,25 +28,29 @@ export default function RandomCarSlider() {
   const sliderRef = useRef(null);
 
   useEffect(() => {
-    const fetchRandomCars = async () => {
+    async function fetchCars() {
       try {
         const res = await fetch("/api/cars");
         const data = await res.json();
+        // Shuffle
         const shuffled = data.sort(() => 0.5 - Math.random());
         setCars(shuffled.slice(0, 6));
-      } catch (err) {
-        console.error("Failed to fetch cars", err);
+      } catch (e) {
+        console.error("Error fetching cars", e);
       }
-    };
-    fetchRandomCars();
+    }
+    fetchCars();
   }, []);
 
-  const scroll = (direction) => {
+  const scrollByOffset = (dir = "right") => {
     const container = sliderRef.current;
     if (!container) return;
-    const amount = window.innerWidth <= 640 ? 260 : 330;
+    const offset =
+      window.innerWidth < 768
+        ? container.clientWidth / 1.5
+        : container.clientWidth / 3;
     container.scrollBy({
-      left: direction === "left" ? -amount : amount,
+      left: dir === "left" ? -offset : offset,
       behavior: "smooth",
     });
   };
@@ -56,68 +58,61 @@ export default function RandomCarSlider() {
   return (
     <section className="relative w-full px-4 sm:px-6 lg:px-16 py-14 bg-black">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-xl sm:text-2xl font-semibold text-white mb-6">
+        <h2 className="text-2xl sm:text-3xl font-semibold text-white mb-6">
           Premium-Auswahl
         </h2>
 
-        <div className="relative">
-          {/* Arrows */}
-          <div className="absolute inset-y-0 left-0 flex items-center z-10">
-            <button
-              onClick={() => scroll("left")}
-              className="bg-black/60 hover:bg-red-800 text-white p-2 sm:p-2.5 rounded-full shadow border border-white/10 transition"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="absolute inset-y-0 right-0 flex items-center z-10">
-            <button
-              onClick={() => scroll("right")}
-              className="bg-black/60 hover:bg-red-800 text-white p-2 sm:p-2.5 rounded-full shadow border border-white/10 transition"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
+        <div className="relative group">
+          {/* Left Arrow */}
+          <button
+            onClick={() => scrollByOffset("left")}
+            className="absolute top-1/2 left-2 sm:left-4 transform -translate-y-1/2 bg-black/50 hover:bg-red-700 text-white p-2 rounded-full shadow-lg z-20 opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="w-6 h-6 sm:w-7 sm:h-7" />
+          </button>
 
-          {/* Scrollable Cards */}
+          {/* Slider Container */}
           <div
             ref={sliderRef}
-            className="flex gap-5 sm:gap-6 overflow-x-auto scroll-smooth scrollbar-hide px-6 sm:px-10"
+            className="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide scroll-snap-x scroll-smooth px-2 sm:px-6"
+            style={{ scrollSnapType: "x mandatory" }}
           >
             {cars.map((car) => (
               <div
                 key={car._id}
-                className="min-w-[250px] sm:min-w-[280px] bg-gradient-to-br from-black/80 to-gray-900 rounded-xl border border-gray-800 p-4 flex-shrink-0 shadow-lg transition duration-300 hover:shadow-red-800/20"
+                className="snap-center flex-shrink-0 w-60 sm:w-64 md:w-72 lg:w-80 bg-gradient-to-br from-black/80 to-gray-900 rounded-xl border border-gray-800 p-4 shadow-lg hover:shadow-red-800/30 transition-transform transform hover:scale-105"
               >
                 {/* Image */}
-                <div className="w-full h-32 mb-4 rounded-lg overflow-hidden bg-gray-900 flex items-center justify-center">
+                <div className="w-full h-36 rounded-lg overflow-hidden bg-gray-900 flex items-center justify-center mb-4">
                   {car.images?.[0]?.ref ? (
                     <img
                       src={car.images[0].ref}
                       alt={`${car.make} ${car.model}`}
-                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                      className="w-full h-full object-cover"
                       loading="lazy"
                     />
                   ) : (
-                    <CarFront className="w-8 h-8 text-gray-600" />
+                    <CarFront className="w-10 h-10 text-gray-500" />
                   )}
                 </div>
 
-                {/* Details */}
-                <h3 className="text-white font-medium text-base sm:text-lg truncate">
+                {/* Title */}
+                <h3 className="text-white font-medium text-lg truncate">
                   {car.make} {car.model}
                 </h3>
 
+                {/* Short Description */}
                 {car.modelDescription && (
                   <p className="text-gray-400 text-sm mt-1">
-                    {car.modelDescription.split(" ").slice(0, 3).join(" ")}
-                    {car.modelDescription.split(" ").length > 3 && "..."}
+                    {car.modelDescription.split(" ").slice(0, 4).join(" ")}
+                    {car.modelDescription.split(" ").length > 4 && "…"}
                   </p>
                 )}
 
                 {/* Price */}
                 {car.price?.consumerPriceGross && (
-                  <p className="text-red-500 font-semibold text-sm mt-3">
+                  <p className="text-red-500 font-semibold text-base mt-3">
                     {parseFloat(car.price.consumerPriceGross).toLocaleString(
                       "de-DE",
                       {
@@ -129,13 +124,11 @@ export default function RandomCarSlider() {
                   </p>
                 )}
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-gray-400 font-light">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-400 mt-4">
                   <div className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
-                    {car.firstRegistration
-                      ? car.firstRegistration.slice(0, 4)
-                      : "-"}
+                    {car.firstRegistration?.slice(0, 4) || "-"}
                   </div>
                   <div className="flex items-center gap-1">
                     <Gauge className="w-4 h-4" />
@@ -143,7 +136,7 @@ export default function RandomCarSlider() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Fuel className="w-4 h-4" />
-                    {maps.fuel[car.fuel] || car.fuel || "-"}
+                    {fuelMap[car.fuel] || car.fuel || "-"}
                   </div>
                   <div className="flex items-center gap-1">
                     <Zap className="w-4 h-4" />
@@ -151,21 +144,30 @@ export default function RandomCarSlider() {
                   </div>
                 </div>
 
-                {/* Link */}
+                {/* Details Link */}
                 <Link
                   href={`/gebrauchtwagen/${car._id}`}
-                  className="mt-4 inline-flex items-center gap-1 text-xs text-red-400 hover:text-white transition"
+                  className="inline-flex items-center text-sm text-red-400 hover:text-white mt-4"
                 >
                   Einzelheiten anzeigen
-                  <ChevronRight className="w-4 h-4 mt-0.5" />
+                  <ChevronRight className="w-4 h-4 ml-1" />
                 </Link>
               </div>
             ))}
           </div>
+
+          {/* Right Arrow */}
+          <button
+            onClick={() => scrollByOffset("right")}
+            className="absolute top-1/2 right-2 sm:right-4 transform -translate-y-1/2 bg-black/50 hover:bg-red-700 text-white p-2 rounded-full shadow-lg z-20 opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7" />
+          </button>
         </div>
 
-        {/* Glow Effect */}
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-red-600/10 rounded-full blur-[100px] pointer-events-none" />
+        {/* Decorative Glow */}
+        <div className="hidden lg:block absolute -bottom-32 -left-32 w-96 h-96 bg-red-600/10 rounded-full blur-2xl pointer-events-none" />
       </div>
     </section>
   );

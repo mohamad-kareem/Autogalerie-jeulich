@@ -17,20 +17,20 @@ export default function Rating() {
   }, [inView]);
 
   return (
-    <section className="relative w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto py-12 px-4 sm:px-6 lg:px-16 mb-8 overflow-hidden shadow-even">
+    <section className="relative w-full py-12 px-4 sm:px-6 lg:px-16 mb-12 overflow-hidden bg-black">
       <motion.div
         ref={ref}
         initial={{ opacity: 0, y: 60 }}
         animate={hasAnimated ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-20 items-center"
+        className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-center"
       >
-        {/* Left - Text */}
+        {/* Text Content */}
         <div>
-          <h2 className="text-xl sm:text-xl md:text-2xl lg:text-2xl font-bold text-white mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4">
             Unsere Kunden sind mit Autogalerie Jülich zufrieden.
           </h2>
-          <p className="text-sm sm:text-base md:text-lg leading-relaxed mb-6 text-gray-500">
+          <p className="text-base sm:text-lg md:text-xl leading-relaxed text-gray-400 mb-6">
             Bei uns stehen Sie im Mittelpunkt! Unser Team sorgt für einen
             reibungslosen Ablauf, besten Kundenservice und kompetente Beratung.
             Ob beim Kauf oder Verkauf eines Fahrzeugs – Ihr Autohaus in Jülich
@@ -41,26 +41,27 @@ export default function Rating() {
             href="https://www.mobile.de/bewertungen/AutogalerieJuelich#1"
             passHref
           >
-            <Button>Geben Sie uns Ihr Feedback</Button>
+            <Button size="lg">Geben Sie uns Ihr Feedback</Button>
           </Link>
         </div>
 
-        {/* Right - Image */}
-        <div className="flex justify-center">
-          <div className="p-4 border-6 border-black rounded-3xl shadow-lg bg-white">
+        {/* Rating Image */}
+        <div className="flex justify-center md:justify-end">
+          <div className="p-2 sm:p-4 border-4 border-gray-800 rounded-3xl shadow-lg bg-white">
             <Image
               src={Rate}
               alt="Kundenbewertung"
-              width={200}
-              height={300}
-              className="w-full max-w-[300px] h-auto rounded-2xl"
+              width={300}
+              height={360}
+              className="w-40 sm:w-48 md:w-56 lg:w-64 h-auto rounded-2xl"
+              loading="lazy"
             />
           </div>
         </div>
       </motion.div>
 
       {/* Glow Effects */}
-      <div className="absolute -bottom-20 -left-20 w-300 h-64 rounded-full bg-red-500/5 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-72 h-72 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
     </section>
   );
 }

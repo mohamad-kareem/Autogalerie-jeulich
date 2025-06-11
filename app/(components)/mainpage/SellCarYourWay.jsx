@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { useInView } from "react-intersection-observer";
 import { FaSearch } from "react-icons/fa";
 import { MdOutlineAttachMoney } from "react-icons/md";
 import { IoIosArrowForward } from "react-icons/io";
@@ -9,117 +12,123 @@ import Button from "../helpers/Button";
 import Link from "next/link";
 
 export default function SellCarYourWay() {
-  return (
-    <section className="relative w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto py-8 px-2 sm:px-4 lg:px-12 pt-20 pb-30 overflow-hidden shadow-even">
-      {/* Glow Effects */}
-      <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-red-500/10 blur-3xl pointer-events-none" />
-      <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.2 });
+  const [hasAnimated, setHasAnimated] = useState(false);
 
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-center">
-        {/* Text Section */}
-        <div className="space-y-4 sm:space-y-5">
-          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white leading-tight mt-2">
-            Kaufen oder verkaufen Sie Autos –
+  useEffect(() => {
+    if (inView) {
+      setHasAnimated(true);
+    }
+  }, [inView]);
+
+  return (
+    <section className="relative w-full py-12 px-4 sm:px-6 lg:px-16 mb-12 overflow-hidden bg-black">
+      <motion.div
+        ref={ref}
+        initial={{ opacity: 0, y: 60 }}
+        animate={hasAnimated ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-center"
+      >
+        {/* Text Block */}
+        <div className="space-y-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight">
+            Kaufen oder verkaufen Sie Autos – ganz nach Ihrem Wunsch
           </h2>
 
-          {/* Feature 1 */}
-          <div className="flex items-start space-x-4 sm:space-x-5 mt-4">
-            <div className="flex-shrink-0 relative">
-              <div className="absolute -inset-1 bg-red-100 rounded-lg transform rotate-3 opacity-30"></div>
-              <div className="relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-white rounded-lg border border-gray-200 shadow-sm">
-                <FaSearch className="text-red-600 text-sm sm:text-base" />
+          {/* Feature: Browse */}
+          <div className="flex items-start space-x-4">
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-0 bg-red-100 rounded-lg rotate-3 opacity-30" />
+              <div className="relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg border border-gray-200 shadow-sm">
+                <FaSearch className="text-red-600 text-lg sm:text-xl" />
               </div>
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-semibold text-white">
-                Durchstöbern Sie unsere Autosammlung
+              <h3 className="text-base sm:text-lg font-semibold text-white">
+                Entdecken Sie unsere Fahrzeugauswahl
               </h3>
-              <p className="text-gray-400 text-xs sm:text-sm mt-1">
-                Entdecken Sie qualitativ hochwertige neue und gebrauchte Autos.
-                Finden Sie das perfekte Fahrzeug für Ihren Lebensstil.
+              <p className="text-gray-400 text-sm sm:text-base mt-1">
+                Stöbern Sie in hochwertigen neuen und gebrauchten Autos. Finden
+                Sie das ideale Fahrzeug für Sie.
               </p>
             </div>
           </div>
 
-          {/* Feature 2 */}
-          <div className="flex items-start space-x-4 sm:space-x-5 mt-4">
-            <div className="flex-shrink-0 relative">
-              <div className="absolute -inset-1 bg-blue-100 rounded-lg transform -rotate-3 opacity-30"></div>
-              <div className="relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-white rounded-lg border border-gray-200 shadow-sm">
-                <MdOutlineAttachMoney className="text-green-600 text-base sm:text-lg" />
+          {/* Feature: Sell */}
+          <div className="flex items-start space-x-4">
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-0 bg-blue-100 rounded-lg -rotate-3 opacity-30" />
+              <div className="relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg border border-gray-200 shadow-sm">
+                <MdOutlineAttachMoney className="text-green-600 text-lg sm:text-xl" />
               </div>
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-semibold text-white">
+              <h3 className="text-base sm:text-lg font-semibold text-white">
                 Verkaufen Sie uns Ihr Auto
               </h3>
-              <p className="text-gray-400 text-xs sm:text-sm mt-1">
-                Erhalten Sie ein schnelles, faires Angebot von unserem Team.
-                Kein Aufwand – wir kümmern uns um alles.
+              <p className="text-gray-400 text-sm sm:text-base mt-1">
+                Erhalten Sie ein schnelles, faires Angebot. Wir übernehmen alle
+                Formalitäten für Sie.
               </p>
             </div>
           </div>
 
-          {/* Buttons */}
-          <div className="flex flex-wrap gap-2 sm:gap-3 pt-3">
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-4 pt-4">
             <Link href="/gebrauchtwagen" passHref>
-              <Button className="text-sm sm:text-base px-4 py-2">
-                <span>Jetzt entdecken</span>
-                <IoIosArrowForward className="ml-1 text-sm sm:text-base transition-transform group-hover:translate-x-1" />
+              <Button size="lg" className="group">
+                Jetzt entdecken
+                <IoIosArrowForward className="ml-2 text-lg transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
             <Link href="/Autoverkaufen" passHref>
               <Button
+                size="lg"
                 bgColor="bg-white"
                 textColor="text-black"
                 hoverColor="hover:bg-red-950"
-                className="text-sm sm:text-base px-4 py-2"
+                className="group"
               >
-                <span>Auto verkaufen</span>
-                <IoIosArrowForward className="ml-1 text-sm sm:text-base transition-transform group-hover:translate-x-1" />
+                Auto verkaufen
+                <IoIosArrowForward className="ml-2 text-lg transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
           </div>
         </div>
 
-        {/* Image Section */}
-        <div className="relative w-full h-60 sm:h-60 md:h-72 lg:h-[300px] mt-20">
-          <div className="relative w-full h-full rounded-lg overflow-hidden shadow-md">
-            <Image
-              src={Marketing}
-              alt="Illustration von Auto kaufen und verkaufen"
-              fill
-              className="object-contain"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-          </div>
+        {/* Image Illustration */}
+        <div className="flex justify-center lg:justify-end ">
+          <div className="relative w-full md:w-3/4 lg:w-full max-w-xl">
+            <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-lg">
+              <Image
+                src={Marketing}
+                alt="Illustration Auto kaufen und verkaufen"
+                fill
+                className="object-contain"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
 
-          {/* Bottom Left Label */}
-          <div className="absolute -bottom-0 left-18 bg-white px-2 py-1 rounded-md shadow-sm border border-gray-200 transform -rotate-1">
-            <div className="flex items-center">
-              <div className="bg-green-100 p-1 rounded-sm mr-1">
+              <div className="absolute bottom-4 left-8 bg-white px-3 py-1 rounded-md shadow-sm border border-gray-200 -rotate-2 flex items-center space-x-1">
                 <FaSearch className="text-green-600 text-lg sm:text-xl" />
+                <span className="text-xs sm:text-sm font-medium text-gray-700">
+                  Kaufen
+                </span>
               </div>
-              <span className="text-[10px] sm:text-xs font-medium text-gray-700">
-                Kaufen
-              </span>
-            </div>
-          </div>
-
-          {/* Top Right Label */}
-          <div className="absolute -top-0 right-18 bg-white px-2 py-1 rounded-md shadow-sm border border-gray-200 transform rotate-1">
-            <div className="flex items-center">
-              <div className="bg-blue-100 p-1 rounded-sm mr-1">
+              <div className="absolute top-4 right-8 bg-white px-3 py-1 rounded-md shadow-sm border border-gray-200 rotate-2 flex items-center space-x-1">
                 <MdOutlineAttachMoney className="text-green-600 text-lg sm:text-xl" />
+                <span className="text-xs sm:text-sm font-medium text-gray-700">
+                  Verkaufen
+                </span>
               </div>
-              <span className="text-[10px] sm:text-xs font-medium text-gray-700">
-                Verkaufen
-              </span>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
+
+      {/* Glow Effect */}
+      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-72 h-72 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
     </section>
   );
 }

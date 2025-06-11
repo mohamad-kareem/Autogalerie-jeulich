@@ -12,10 +12,10 @@ export default function Reviews() {
           <span className="relative inline-block text-[10px] font-semibold uppercase tracking-widest text-red-500 mb-2 pl-6 before:content-[''] before:absolute before:left-0 before:top-1/2 before:w-5 before:h-0.5 before:bg-red-500">
             Kundenstimmen
           </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-300 mb-3">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-300 mb-3">
             Vertrauen, das <span className="text-red-600">überzeugt</span>
           </h2>
-          <p className="text-sm sm:text-base text-gray-700 max-w-xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-xl text-gray-700 max-w-xl mx-auto leading-relaxed">
             Unsere Kunden sind begeistert – lesen Sie ihre Erfahrungen.
           </p>
         </div>
@@ -25,7 +25,7 @@ export default function Reviews() {
           {CusReviews.map((review, index) => (
             <div
               key={index}
-              className={`border-l-4 border-red-500 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-3 sm:p-4 ${review.bg}`}
+              className={`border-l-4 border-red-500 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-5 sm:p-8 ${review.bg}`}
             >
               {/* Stars */}
               <div className="flex items-center text-yellow-400 mb-2">
@@ -41,7 +41,7 @@ export default function Reviews() {
               </div>
 
               {/* Quote */}
-              <blockquote className="italic text-gray-700 mb-3 sm:mb-4">
+              <blockquote className="italic text-gray-700 mb-3 sm:mb-4 text-sm sm:text-xl">
                 "{review.quote}"
               </blockquote>
 

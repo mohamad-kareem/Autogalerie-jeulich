@@ -17,27 +17,29 @@ export default function LandingSlide() {
   };
 
   return (
-    <section className="relative w-full py-12 px-4 sm:px-6 lg:px-16 overflow-hidden shadow-even mb-8">
-      <div className="w-full max-w-7xl mx-auto">
+    <section className="relative w-full py-12 px-4 sm:px-6 lg:px-8 overflow-hidden shadow-even mb-8 ">
+      <div className="w-full max-w-7xl mx-auto relative">
         {/* Title */}
-        <h2 className="text-xl sm:text-2xl font-semibold text-white mb-4">
-          Unsere Kategorien
-        </h2>
-        <div className="border-b border-gray-800 mb-6"></div>
+        <div className="px-4 sm:px-6">
+          <h2 className="text-xl sm:text-2xl font-semibold text-white mb-4">
+            Unsere Kategorien
+          </h2>
+          <div className="border-b border-gray-800 mb-6"></div>
+        </div>
 
-        {/* Scroll Arrows */}
-        <div className="absolute inset-y-0 left-8 flex items-center z-10">
+        {/* Scroll Arrows - improved positioning */}
+        <div className="absolute inset-y-0 left-0 flex items-center z-10 pl-2">
           <button
             onClick={() => scroll("left")}
-            className="bg-black/60 hover:bg-red-800 text-white p-2 sm:p-2.5 rounded-full shadow border border-white/10 transition"
+            className="bg-black/60 hover:bg-red-800 text-white p-2 sm:p-2.5 rounded-full shadow-lg border border-white/10 transition-all transform hover:scale-110"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
         </div>
-        <div className="absolute inset-y-0 right-4 flex items-center z-10">
+        <div className="absolute inset-y-0 right-0 flex items-center z-10 pr-2">
           <button
             onClick={() => scroll("right")}
-            className="bg-black/60 hover:bg-red-800 text-white p-2 sm:p-2.5 rounded-full shadow border border-white/10 transition"
+            className="bg-black/60 hover:bg-red-800 text-white p-2 sm:p-2.5 rounded-full shadow-lg border border-white/10 transition-all transform hover:scale-110"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -46,7 +48,7 @@ export default function LandingSlide() {
         {/* Scrollable Card Container */}
         <div
           id="scroll-container"
-          className="flex gap-4 sm:gap-6 overflow-x-auto pb-2 scroll-smooth scrollbar-hide px-6 sm:px-10"
+          className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 scroll-smooth scrollbar-hide px-10 sm:px-12"
         >
           {popularCategories.map((category, index) => (
             <div
