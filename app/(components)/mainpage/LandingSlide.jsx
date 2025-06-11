@@ -17,7 +17,7 @@ export default function LandingSlide() {
   };
 
   return (
-    <section className="relative w-full py-12 px-4 sm:px-6 lg:px-8 overflow-hidden shadow-even mb-8 ">
+    <section className="relative w-full py-12 px-4 sm:px-6 lg:px-8 overflow-hidden shadow-even pb-30 pt-30 ">
       <div className="w-full max-w-7xl mx-auto relative">
         {/* Title */}
         <div className="px-4 sm:px-6">
