@@ -22,7 +22,7 @@ export default function SellCarYourWay() {
   }, [inView]);
 
   return (
-    <section className="relative w-full py-16 px-4 sm:px-6 lg:px-16 overflow-hidden bg-black">
+    <section className="relative w-full py-16 px-4 sm:px-6 lg:px-16 overflow-hidden bg-black pt-30 pb-30">
       {/* Background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-red-500/10 rounded-full blur-3xl"></div>

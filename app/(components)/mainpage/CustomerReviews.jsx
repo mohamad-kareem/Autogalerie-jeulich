@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function Reviews() {
   return (
-    <section className="w-full py-8 shadow-even px-2 sm:px-4 lg:px-12 pt-16 mb-25">
+    <section className="w-full py-8 shadow-even px-2 sm:px-4 lg:px-12 pt-30 pb-30">
       <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
         {/* Header */}
         <div className="text-center mb-8 md:mb-12">
