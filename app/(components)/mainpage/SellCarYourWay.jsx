@@ -39,7 +39,7 @@ export default function SellCarYourWay() {
         {/* Text Block */}
         <div className="space-y-8">
           <div className="space-y-4">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-red-800 leading-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-red-800 leading-tight">
               Kaufen oder verkaufen Sie Autos – ganz nach Ihrem Wunsch
             </h2>
             <p className="text-gray-300 text-lg">
