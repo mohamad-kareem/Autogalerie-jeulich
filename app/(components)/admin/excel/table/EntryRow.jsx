@@ -1,3 +1,4 @@
+
 // components/EntryRow.jsx
 "use client";
 

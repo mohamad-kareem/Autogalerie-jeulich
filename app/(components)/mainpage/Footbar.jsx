@@ -1,10 +1,9 @@
 import React from "react";
-import { FaFacebook } from "react-icons/fa";
-
+import { FaFacebook, FaUserShield } from "react-icons/fa";
+import Link from "next/link";
 const Footbar = () => {
   return (
-    // <footer className="bg-gradient-to-b from-gray-900 to-black text-white py-16 px-6 md:px-20 mt-20 w-full border-t-4 border-red-600">
-    <footer className="bg-gradient-to-br from-black to-red-950 text-white py-16 px-6 md:px-20  w-full border-t-4 border-red-600">
+    <footer className="bg-gradient-to-br from-black to-red-950 text-white py-16 px-6 md:px-20 w-full border-t-4 border-red-600">
       <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
         {/* Main Content */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
@@ -25,7 +24,7 @@ const Footbar = () => {
                   d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
                 />
               </svg>
-              <span className="text-xl  font-bold text-white">
+              <span className="text-xl font-bold text-white">
                 Autogalerie <span className="text-red-500">Jülich</span>
               </span>
             </div>
@@ -33,7 +32,7 @@ const Footbar = () => {
               Ihr zuverlässiger Partner für hochwertige Fahrzeuge und
               exzellenten Service.
             </p>
-            <div className="flex justify-center space-x-4 mt-4 ">
+            <div className="flex justify-center space-x-4 mt-4">
               <a
                 href="https://www.facebook.com/p/Autogalerie-J%C3%BClich-100063891427082/"
                 target="_blank"
@@ -42,6 +41,16 @@ const Footbar = () => {
               >
                 <FaFacebook className="w-5 h-5" />
               </a>
+              <Link
+                href="/login"
+                className="text-gray-400 hover:text-white transition group relative"
+                title="Admin Anmeldung "
+              >
+                <FaUserShield className="w-5 h-5" />
+                <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs  text-gray-500 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  Admin Bereich
+                </span>
+              </Link>
             </div>
           </div>
 
@@ -251,7 +260,7 @@ const Footbar = () => {
         </div>
 
         {/* Bottom Text */}
-        <div className="flex justify-center items-center">
+        <div className="flex flex-col md:flex-row justify-center items-center gap-4">
           <p className="text-sm text-gray-500 mb-4 md:mb-0">
             © 2025{" "}
             <span className="font-semibold text-white">Autogalerie Jülich</span>

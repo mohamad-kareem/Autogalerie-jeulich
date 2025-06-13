@@ -31,14 +31,14 @@ export default function LoginPage({ callbackUrl }) {
         callbackUrl,
       });
 
-      if (result?.error) throw new Error("Invalid email or password");
+      if (result?.error)
+        throw new Error("Ungültige E-Mail-Adresse oder Passwort");
 
       if (result?.ok) {
         if (callbackUrl) {
-          router.push(callbackUrl); // Only redirect if it's defined
+          router.push(callbackUrl);
         } else {
-          // Optional: go to home or show message
-          router.push("/"); // or show a toast: "Login successful"
+          router.push("/");
         }
       }
     } catch (err) {
@@ -57,15 +57,14 @@ export default function LoginPage({ callbackUrl }) {
           className="flex items-center text-red-700 hover:text-red-800 mb-4"
         >
           <FiArrowLeft className="mr-2" />
-          Back to Home
+          Zurück zur Startseite
         </Link>
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="bg-gradient-to-br from-red-600 to-black p-6 text-center">
-            <h1 className="text-2xl font-bold text-white">Admin Login</h1>
-            <p className="text-red-100 mt-1">
-              Sign in to your administrator account
-            </p>
+            <h1 className="text-2xl font-bold text-white">
+              Administrator Anmeldung
+            </h1>
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
@@ -81,7 +80,7 @@ export default function LoginPage({ callbackUrl }) {
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700"
               >
-                Email Address
+                E-Mail-Adresse
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -95,7 +94,7 @@ export default function LoginPage({ callbackUrl }) {
                   value={credentials.email}
                   onChange={handleChange}
                   required
-                  placeholder="admin@example.com"
+                  placeholder="admin@beispiel.de"
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                 />
               </div>
@@ -106,7 +105,7 @@ export default function LoginPage({ callbackUrl }) {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700"
               >
-                Password
+                Passwort
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -128,7 +127,9 @@ export default function LoginPage({ callbackUrl }) {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-red-600"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={
+                    showPassword ? "Passwort verbergen" : "Passwort anzeigen"
+                  }
                 >
                   {showPassword ? (
                     <svg
@@ -174,7 +175,7 @@ export default function LoginPage({ callbackUrl }) {
                 href="/forgotpassword"
                 className="text-sm font-medium text-red-600 hover:text-red-700"
               >
-                Forgot password?
+                Passwort vergessen?
               </Link>
             </div>
 
@@ -209,12 +210,16 @@ export default function LoginPage({ callbackUrl }) {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Signing in...
+                  Anmelden…
                 </span>
               ) : (
-                "Sign In"
+                "Anmelden"
               )}
             </button>
+
+            <div className="text-gray-500 mt-1 text-sm flex justify-center">
+              <p>Dieses Formular ist nur für Administratoren.</p>
+            </div>
           </form>
         </div>
       </div>
