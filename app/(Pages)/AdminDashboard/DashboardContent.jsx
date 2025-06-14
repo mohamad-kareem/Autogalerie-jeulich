@@ -105,8 +105,8 @@ const DashboardContent = ({ user, onProfileClick }) => {
             <NavigationCard
               href="/manualcars"
               icon={<FiCheckSquare />}
-              title="einkaufen"
-              description="Kauf von Autos von Besuchern"
+              title="Posteingang"
+              description=" eingegangenen Fahrzeugangebote und Nachrichten von Kunden"
               accentColor="red"
             />
             <NavigationCard

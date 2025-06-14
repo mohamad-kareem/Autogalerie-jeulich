@@ -355,8 +355,8 @@ export default function TrelloClone() {
                   className="w-8 h-8 rounded-full border-2 border-gray-700 hover:border-amber-500 transition-all"
                 />
                 <span
-                  className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded opacity-100 md:opacity-0 md:group-hover:opacity-100
- transition-opacity"
+                  className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded
+  hidden md:block opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   {admin.name}
                 </span>

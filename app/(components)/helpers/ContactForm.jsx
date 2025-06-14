@@ -4,6 +4,7 @@ import { FiSend } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 
 const ContactForm = ({ car, onSuccess }) => {
+  // Helper function to format registration date
   const formatRegistration = (value) => {
     if (!value || value.length !== 6) return "EZ unbekannt";
     const year = value.slice(0, 4);
@@ -11,10 +12,12 @@ const ContactForm = ({ car, onSuccess }) => {
     return `${month}/${year}`;
   };
 
+  // Default message template
   const defaultMessage = `Ich interessiere mich für den ${car.make} ${
     car.modelDescription || car.model
   } (${formatRegistration(car.firstRegistration)}, ${car.mileage || 0} km)...`;
 
+  // Form state
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -26,50 +29,100 @@ const ContactForm = ({ car, onSuccess }) => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Handle form field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/contact", {
+      // Prepare submission data
+      const submissionData = {
+        ...formData,
+        carId: car._id,
+        carName: `${car.make} ${car.modelDescription || car.model}`,
+        carLink: typeof window !== "undefined" ? window.location.href : "",
+      };
+
+      // Step 1: Save to database
+      const dbResponse = await fetch("/api/submit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          carId: car._id,
-          carName: `${car.make} ${car.modelDescription || car.model}`,
-          carLink: typeof window !== "undefined" ? window.location.href : "",
-        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(submissionData),
       });
 
-      if (!response.ok) throw new Error("Failed to send message");
-      toast.success("Nachricht erfolgreich gesendet!");
+      if (!dbResponse.ok) {
+        throw new Error(
+          "Datenbankfehler: Anfrage konnte nicht gespeichert werden"
+        );
+      }
+
+      const dbResult = await dbResponse.json();
+
+      // Step 2: Send email
+      const emailResponse = await fetch("/api/email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(submissionData),
+      });
+
+      if (!emailResponse.ok) {
+        throw new Error(
+          dbResult.success
+            ? "Anfrage gespeichert, aber E-Mail konnte nicht versendet werden"
+            : "E-Mail konnte nicht versendet werden"
+        );
+      }
+
+      // Success case
+      toast.success("Ihre Anfrage wurde erfolgreich übermittelt!");
+
+      // Reset form
       setFormData({
         name: "",
         email: "",
         phone: "",
         subject: "",
-        message: "",
+        message: defaultMessage,
         date: "",
       });
+
+      // Call success callback if provided
       if (onSuccess) onSuccess();
-    } catch {
-      toast.error("Fehler beim Senden der Nachricht");
+    } catch (error) {
+      // Error handling
+      console.error("Submission error:", error);
+
+      if (error.message.includes("gespeichert")) {
+        toast.success(
+          "Ihre Anfrage wurde gespeichert, aber die Bestätigung konnte nicht versendet werden"
+        );
+      } else {
+        toast.error(
+          error.message ||
+            "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut."
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 ">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Hidden car ID field */}
       <input type="hidden" name="car" value={car._id} />
 
-      {/* Name */}
+      {/* Name field */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Name*
@@ -84,7 +137,7 @@ const ContactForm = ({ car, onSuccess }) => {
         />
       </div>
 
-      {/* E-Mail */}
+      {/* Email field */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           E-Mail*
@@ -99,7 +152,7 @@ const ContactForm = ({ car, onSuccess }) => {
         />
       </div>
 
-      {/* Telefon */}
+      {/* Phone field */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Telefon
@@ -113,16 +166,12 @@ const ContactForm = ({ car, onSuccess }) => {
         />
       </div>
 
-      {/* Betreff */}
+      {/* Subject dropdown */}
       <div>
-        <label
-          htmlFor="subject"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
+        <label className="block text-sm font-medium text-gray-700 mb-1">
           Betreff*
         </label>
         <select
-          id="subject"
           name="subject"
           value={formData.subject}
           onChange={handleChange}
@@ -137,7 +186,8 @@ const ContactForm = ({ car, onSuccess }) => {
           <option value="Service-Termin">Service-Termin</option>
         </select>
       </div>
-      {/* Wunschdatum */}
+
+      {/* Date/time field */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Wunschdatum & Uhrzeit
@@ -151,7 +201,7 @@ const ContactForm = ({ car, onSuccess }) => {
         />
       </div>
 
-      {/* Nachricht */}
+      {/* Message textarea */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Nachricht*
@@ -163,11 +213,10 @@ const ContactForm = ({ car, onSuccess }) => {
           onChange={handleChange}
           required
           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 text-sm"
-          placeholder={defaultMessage}
         ></textarea>
       </div>
 
-      {/* Submit */}
+      {/* Submit button */}
       <div>
         <button
           type="submit"
@@ -179,7 +228,7 @@ const ContactForm = ({ car, onSuccess }) => {
         </button>
       </div>
 
-      {/* Footer */}
+      {/* Form footer */}
       <p className="text-xs text-gray-500">
         * Pflichtfelder. Wir werden Ihre Daten nur zur Bearbeitung Ihrer Anfrage
         verwenden.

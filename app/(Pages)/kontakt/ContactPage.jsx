@@ -5,6 +5,7 @@ import Image from "next/image";
 import Hero2 from "../../(assets)/Hero2.jpeg";
 import Footbar from "@/app/(components)/mainpage/Footbar";
 import Head from "next/head";
+import { toast } from "react-hot-toast";
 
 import {
   MapPinIcon,
@@ -20,6 +21,7 @@ export default function ContactPage({ carId, carName, carLink }) {
   const [phone, setPhone] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [date, setDate] = useState("");
   const [privacy, setPrivacy] = useState(false);
   const [status, setStatus] = useState("idle");
 
@@ -41,32 +43,51 @@ export default function ContactPage({ carId, carName, carLink }) {
       carId,
       carName,
       carLink,
+      date: date || null,
     };
 
     try {
-      const res = await fetch("/api/contact", {
+      // First submit to database
+      const submitRes = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
 
-      if (res.ok && data.success) {
+      const submitData = await submitRes.json();
+
+      if (!submitRes.ok || !submitData.success) {
+        throw new Error("Database submission failed");
+      }
+
+      // Then send email
+      const emailRes = await fetch("/api/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const emailData = await emailRes.json();
+
+      if (emailRes.ok && emailData.success) {
         setStatus("success");
+        // Reset form
         setFirstName("");
         setLastName("");
         setEmail("");
         setPhone("");
         setSubject("");
         setMessage("");
+        setDate("");
         setPrivacy(false);
+        toast.success("Nachricht erfolgreich gesendet!");
       } else {
-        console.error(data);
-        setStatus("error");
+        throw new Error("Email sending failed");
       }
     } catch (err) {
       console.error(err);
       setStatus("error");
+      toast.error("Fehler beim Senden. Bitte erneut versuchen.");
     }
   };
 
@@ -97,7 +118,7 @@ export default function ContactPage({ carId, carName, carLink }) {
             </div>
 
             {/* Large screens (standard image with aspect ratio) */}
-            <div className="hidden lg:block">
+            <div className="hidden lg:block ">
               <Image
                 src={Hero2}
                 alt="Dealership Showroom"
@@ -232,6 +253,25 @@ export default function ContactPage({ carId, carName, carLink }) {
                     <option value="Service-Termin">Service-Termin</option>
                   </select>
                 </div>
+
+                {/* Date */}
+                {subject === "Probefahrt vereinbaren" && (
+                  <div>
+                    <label
+                      htmlFor="date"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Gewünschter Termin
+                    </label>
+                    <input
+                      id="date"
+                      type="datetime-local"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 p-3"
+                    />
+                  </div>
+                )}
 
                 {/* Message */}
                 <div>
