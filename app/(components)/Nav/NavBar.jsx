@@ -38,7 +38,7 @@ export default function NavBar() {
     "/Plate",
     "/Reg",
     "/punsh",
-    "/manualcars",
+    "/Posteingang",
   ];
 
   const isAdminRoute = adminRoutes.some((route) => pathname?.startsWith(route));

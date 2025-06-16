@@ -103,7 +103,7 @@ const DashboardContent = ({ user, onProfileClick }) => {
               accentColor="orange"
             />
             <NavigationCard
-              href="/manualcars"
+              href="/Posteingang"
               icon={<FiCheckSquare />}
               title="Posteingang"
               description=" eingegangenen Fahrzeugangebote und Nachrichten von Kunden"

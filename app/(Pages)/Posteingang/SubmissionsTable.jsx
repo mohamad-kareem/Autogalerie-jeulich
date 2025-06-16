@@ -73,7 +73,7 @@ export default function SubmissionsTable() {
     }
   };
 
-  const truncateText = (text, maxWords = 6) => {
+  const truncateText = (text, maxWords = 5) => {
     if (!text) return "—";
     const words = text.split(/\s+/);
     if (words.length <= maxWords) return text;
@@ -271,6 +271,26 @@ export default function SubmissionsTable() {
                         {selectedSubmission.name || "—"}
                       </p>
                     </div>
+                    {selectedSubmission.carLink && (
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Fahrzeug-Link
+                        </p>
+                        <p className="text-gray-800 font-medium flex items-center gap-2">
+                          <FiNavigation className="text-black-600" />
+                          <span className="text-black">Link:</span>
+                          <a
+                            href={selectedSubmission.carLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline"
+                          >
+                            Zum Fahrzeug
+                          </a>
+                        </p>
+                      </div>
+                    )}
+
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                         E-Mail
@@ -289,6 +309,18 @@ export default function SubmissionsTable() {
                         {selectedSubmission.phone || "—"}
                       </p>
                     </div>
+                    {selectedSubmission.date && (
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Terminwunsch
+                        </p>
+                        <p className="text-gray-800 font-medium flex items-center gap-2">
+                          <FiCalendar className="text-black-600" />
+                          {formatDate(selectedSubmission.date)}
+                        </p>
+                      </div>
+                    )}
+
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Betreff
