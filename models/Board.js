@@ -1,3 +1,4 @@
+// models/Board.js
 import mongoose from "mongoose";
 
 const taskSchema = new mongoose.Schema({
@@ -5,6 +6,7 @@ const taskSchema = new mongoose.Schema({
   description: { type: String, default: "" },
   completed: { type: Boolean, default: false },
   position: { type: Number, required: true },
+  color: { type: String, default: "gray" }, // ← added
 });
 
 const columnSchema = new mongoose.Schema({

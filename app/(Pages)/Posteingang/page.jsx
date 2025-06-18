@@ -23,7 +23,7 @@ export default function AdminDashboard() {
   if (!session?.user?.isAdmin) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full mx-4 text-center">
+        <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px]  mx-4 text-center">
           <FiXCircle className="mx-auto text-red-500 text-5xl mb-4" />
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
             Zugriff verweigert

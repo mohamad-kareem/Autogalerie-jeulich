@@ -20,7 +20,7 @@ export default function SellCarYourWay() {
   }, [inView]);
 
   return (
-    <section className="relative w-full py-10 px-4 sm:py-16 sm:px-6 lg:px-16 overflow-hidden bg-gray-100">
+    <section className="relative w-full py-10 px-4 sm:py-16 sm:px-6 lg:px-16 overflow-hidden bg-gray-50">
       {/* Background gradient blobs */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-20 h-20 sm:w-32 sm:h-32 bg-red-400/20 rounded-full blur-xl sm:blur-3xl"></div>

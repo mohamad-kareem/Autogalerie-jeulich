@@ -28,18 +28,13 @@ export default function LoginPage({ callbackUrl }) {
         redirect: false,
         email: credentials.email.toLowerCase().trim(),
         password: credentials.password,
-        callbackUrl,
       });
 
       if (result?.error)
         throw new Error("Ungültige E-Mail-Adresse oder Passwort");
 
       if (result?.ok) {
-        if (callbackUrl) {
-          router.push(callbackUrl);
-        } else {
-          router.push("/");
-        }
+        router.push("/AdminDashboard");
       }
     } catch (err) {
       setError(err.message);

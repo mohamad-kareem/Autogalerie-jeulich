@@ -1,3 +1,6 @@
+// pages/api/board.js   (or app/api/board/route.js in Next 13+)
+// handles both GET and POST
+
 import { connectDB } from "@/lib/mongodb";
 import Board from "@/models/Board";
 import { NextResponse } from "next/server";
@@ -8,7 +11,8 @@ export async function GET() {
     let board = await Board.findOne().sort({ createdAt: -1 });
 
     if (!board) {
-      const defaultBoard = new Board({
+      // create default if none exists
+      board = new Board({
         name: "Auto Task Board",
         columns: [
           { name: "Reklamation", tasks: [] },
@@ -18,15 +22,14 @@ export async function GET() {
           { name: "VERKAUFT", tasks: [] },
         ],
       });
-      await defaultBoard.save();
-      return NextResponse.json(defaultBoard);
+      await board.save();
     }
 
-    // Convert _id to string for all tasks
+    // stringify ObjectIds
     const boardData = board.toObject();
-    boardData.columns = boardData.columns.map((column) => ({
-      ...column,
-      tasks: column.tasks.map((task) => ({
+    boardData.columns = boardData.columns.map((col) => ({
+      ...col,
+      tasks: col.tasks.map((task) => ({
         ...task,
         _id: task._id.toString(),
       })),
@@ -34,6 +37,7 @@ export async function GET() {
 
     return NextResponse.json(boardData);
   } catch (error) {
+    console.error("GET /api/board error:", error);
     return NextResponse.json(
       { error: "Failed to fetch board" },
       { status: 500 }
@@ -47,86 +51,83 @@ export async function POST(request) {
     const { action, payload } = await request.json();
 
     let board = await Board.findOne().sort({ createdAt: -1 });
-    if (!board) {
-      board = new Board();
-    }
+    if (!board) board = new Board();
 
     switch (action) {
       case "UPDATE_COLUMNS":
         board.columns = payload.columns;
         break;
+
       case "ADD_COLUMN":
-        board.columns.push({
-          name: payload.name,
-          tasks: [],
-        });
+        board.columns.push({ name: payload.name, tasks: [] });
         break;
+
       case "DELETE_COLUMN":
         board.columns = board.columns.filter(
           (col) => col.name !== payload.columnName
         );
         break;
+
       case "ADD_TASK": {
-        const columnToAdd = board.columns.find(
-          (col) => col.name === payload.columnName
-        );
-        if (columnToAdd) {
-          columnToAdd.tasks.push({
+        const col = board.columns.find((c) => c.name === payload.columnName);
+        if (col) {
+          col.tasks.push({
             title: payload.title,
             description: payload.description || "",
             completed: false,
-            position: columnToAdd.tasks.length,
+            position: col.tasks.length,
+            color: payload.color || "gray", // ← include color
           });
         }
         break;
       }
+
       case "UPDATE_TASK": {
-        const columnToUpdate = board.columns.find(
-          (col) => col.name === payload.columnName
-        );
-        if (columnToUpdate) {
-          const taskToUpdate = columnToUpdate.tasks.find(
+        const col = board.columns.find((c) => c.name === payload.columnName);
+        if (col) {
+          const task = col.tasks.find(
             (t) => t._id.toString() === payload.taskId
           );
-          if (taskToUpdate) {
-            Object.assign(taskToUpdate, payload.updates);
+          if (task) {
+            Object.assign(task, payload.updates);
           }
         }
         break;
       }
+
       case "REMOVE_TASK": {
-        const columnToRemoveFrom = board.columns.find(
-          (col) => col.name === payload.columnName
-        );
-        if (columnToRemoveFrom) {
-          columnToRemoveFrom.tasks = columnToRemoveFrom.tasks.filter(
+        const col = board.columns.find((c) => c.name === payload.columnName);
+        if (col) {
+          col.tasks = col.tasks.filter(
             (t) => t._id.toString() !== payload.taskId
           );
         }
         break;
       }
+
       case "UPDATE_BOARD_NAME":
         board.name = payload.name;
         break;
+
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
     await board.save();
 
-    // Convert _id to string for all tasks in the response
-    const updatedBoard = board.toObject();
-    updatedBoard.columns = updatedBoard.columns.map((column) => ({
-      ...column,
-      tasks: column.tasks.map((task) => ({
+    // respond with fresh data
+    const updated = board.toObject();
+    updated.columns = updated.columns.map((col) => ({
+      ...col,
+      tasks: col.tasks.map((task) => ({
         ...task,
         _id: task._id.toString(),
       })),
     }));
 
-    return NextResponse.json(updatedBoard);
+    return NextResponse.json(updated);
   } catch (error) {
-    console.error("Error updating board:", error);
+    console.error("POST /api/board error:", error);
     return NextResponse.json(
       { error: "Failed to update board" },
       { status: 500 }
