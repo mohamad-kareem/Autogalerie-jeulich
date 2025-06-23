@@ -6,7 +6,6 @@ import {
   FiMoreVertical,
   FiTrash2,
   FiEdit2,
-  FiCheck,
   FiCopy,
   FiMove,
   FiX,
@@ -46,7 +45,7 @@ export default function TrelloClone() {
     { value: "gray", label: "No Priority" },
   ];
 
-  // Modern color palette with blue accent
+  // Modern color palette
   const colors = {
     background: "bg-gradient-to-br from-indigo-800 to-black/70",
     columnBg: "bg-black/30",

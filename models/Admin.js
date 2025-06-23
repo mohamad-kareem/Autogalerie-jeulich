@@ -45,6 +45,11 @@ const adminSchema = new mongoose.Schema(
       default: "out",
       index: true,
     },
+    deviceId: {
+      type: String,
+      unique: true,
+      sparse: true, // only some admins will have this
+    },
     lastPunch: Date,
   },
   {

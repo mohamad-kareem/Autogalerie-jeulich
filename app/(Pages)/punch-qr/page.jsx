@@ -6,17 +6,28 @@ import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import * as turf from "@turf/turf";
 
-// Define dealership polygon
+// Utility: Get or create device ID
+function getOrCreateDeviceId() {
+  if (typeof window === "undefined") return null;
+  let id = localStorage.getItem("deviceId");
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem("deviceId", id);
+  }
+  return id;
+}
+
+// Your polygon
 const dealershipCoords = turf.polygon([
   [
-    [6.379009764729091, 50.924411558743515],
-    [6.371998227581571, 50.924799992683916],
-    [6.361472975837103, 50.92194386746149],
-    [6.360609655480204, 50.913710824758624],
-    [6.372283974680613, 50.90978417030098],
-    [6.379176158553946, 50.91291200780827],
-    [6.377098417668307, 50.919543414052],
-    [6.379009764729091, 50.924411558743515],
+    [6.3855, 50.928],
+    [6.3755, 50.9283],
+    [6.3555, 50.9245],
+    [6.3543, 50.9095],
+    [6.368, 50.905],
+    [6.386, 50.9095],
+    [6.3825, 50.9205],
+    [6.3855, 50.928],
   ],
 ]);
 
@@ -24,21 +35,18 @@ export default function PunchQRPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const hasPunched = useRef(false);
-  const [codeParam, setCodeParam] = useState(undefined); // undefined to distinguish "not yet set" vs null
+  const [codeParam, setCodeParam] = useState(undefined);
 
-  // Step 1: Load query param once on client
   useEffect(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get("code");
-      setCodeParam(code); // could be null or actual value
+      setCodeParam(code);
     }
   }, []);
 
-  // Step 2: Main logic after codeParam is known
   useEffect(() => {
-    if (codeParam === undefined || status === "loading") return; // wait for both
-
+    if (codeParam === undefined || status === "loading") return;
     if (!codeParam) {
       toast.error("❌ Ungültiger Zugriff. Bitte scannen Sie den QR-Code.");
       router.push("/");
@@ -46,28 +54,43 @@ export default function PunchQRPage() {
     }
 
     if (hasPunched.current) return;
-
-    if (status === "unauthenticated" || !session?.user?.id) {
-      router.push("/login?callbackUrl=/punch-qr?code=" + codeParam);
-      return;
-    }
-
     hasPunched.current = true;
 
     const autoPunch = async () => {
       try {
-        const latestRes = await fetch("/api/punch/latest", {
-          headers: { "x-admin-id": session.user.id },
-        });
-        const latest = await latestRes.json();
-        const nextType = latest?.type === "in" ? "out" : "in";
+        // Determine next punch type if logged in
+        let adminId = session?.user?.id ?? null;
+        let nextType = "in";
 
-        const pos = await new Promise((resolve, reject) => {
+        if (!adminId) {
+          const deviceId = getOrCreateDeviceId();
+          const response = await fetch("/api/device-info", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ deviceId }),
+          });
+          const data = await response.json();
+          if (!data.success) {
+            toast.error("❌ Gerät nicht registriert. Bitte beim Admin melden.");
+            return router.push("/");
+          }
+          adminId = data.adminId;
+          nextType = data.lastType === "in" ? "out" : "in";
+        } else {
+          const latestRes = await fetch("/api/punch/latest", {
+            headers: { "x-admin-id": adminId },
+          });
+          const latest = await latestRes.json();
+          nextType = latest?.type === "in" ? "out" : "in";
+        }
+
+        // Get GPS position
+        const pos = await new Promise((resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
             timeout: 10000,
-          });
-        });
+          })
+        );
 
         const { latitude: lat, longitude: lng } = pos.coords;
         const point = turf.point([lng, lat]);
@@ -78,21 +101,21 @@ export default function PunchQRPage() {
           return router.push("/");
         }
 
+        // Send punch request
         const res = await fetch("/api/punch", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-admin-id": session.user.id,
+            "x-admin-id": adminId,
           },
           body: JSON.stringify({
             type: nextType,
             location: { lat, lng, verified: true },
-            method: "qr",
+            method: session?.user?.id ? "qr" : "device",
           }),
         });
 
         const result = await res.json();
-
         if (result.success) {
           toast.success(
             `✅ Erfolgreich ${
@@ -103,6 +126,7 @@ export default function PunchQRPage() {
           toast.error(result.error || "❌ Fehler beim Einstempeln");
         }
       } catch (err) {
+        console.error(err);
         toast.error("📍 Standort konnte nicht ermittelt werden.");
       } finally {
         router.push("/");
