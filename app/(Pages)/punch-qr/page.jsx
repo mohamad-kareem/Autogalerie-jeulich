@@ -64,7 +64,7 @@ export default function PunchQRPage() {
 
         if (!adminId) {
           const deviceId = getOrCreateDeviceId();
-          const response = await fetch("/api/device-info", {
+          const response = await fetch("/api/punch/device-info", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ deviceId }),
