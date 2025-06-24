@@ -1,80 +1,59 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getOrCreateDeviceId } from "@/app/utils/device";
-import { toast } from "react-hot-toast";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "react-hot-toast";
+import { setDeviceId } from "@/app/utils/device";
 
 export default function RegisterDevicePage() {
-  const [deviceId, setDeviceId] = useState("");
   const { data: session } = useSession();
-
-  // 1. Sync localStorage with DB
-  useEffect(() => {
-    const syncDeviceId = async () => {
-      const localId = getOrCreateDeviceId();
-
-      if (!session?.user?.id) return;
-
-      const res = await fetch("/api/punch/device-info", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deviceId: localId }),
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        // ✅ Match found → device already registered
-        setDeviceId(localId);
-      } else {
-        // ❌ No match → fetch correct one from DB if available
-        const adminRes = await fetch("/api/punch/device-id", {
-          headers: { "x-admin-id": session.user.id },
-        });
-
-        const adminData = await adminRes.json();
-        if (adminData.deviceId) {
-          localStorage.setItem("deviceId", adminData.deviceId);
-          setDeviceId(adminData.deviceId);
-        } else {
-          // No device in DB yet → use local one
-          setDeviceId(localId);
-        }
-      }
-    };
-
-    syncDeviceId();
-  }, [session]);
+  const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
     if (!session?.user?.id) {
-      toast.error("❌ Not logged in");
+      toast.error("Please login first");
       return;
     }
 
-    const res = await fetch("/api/punch/register-device", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        deviceId,
-        adminId: session.user.id,
-      }),
-    });
+    setLoading(true);
+    try {
+      // Generate new device ID
+      const deviceId = crypto.randomUUID();
 
-    const result = await res.json();
-    if (result.success) toast.success("✅ Device registered!");
-    else toast.error(result.error || "❌ Registration failed.");
+      // Save to database
+      const res = await fetch("/api/punch/register-device", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminId: session.user.id, deviceId }),
+      });
+
+      const result = await res.json();
+      if (!result.success)
+        throw new Error(result.error || "Registration failed");
+
+      // Save to local storage
+      setDeviceId(deviceId);
+      toast.success("Device registered successfully!");
+    } catch (error) {
+      console.error(error);
+      toast.error(error.message || "Device registration failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="p-4 text-center">
-      <p className="mb-2">Device ID: {deviceId}</p>
+    <div className="max-w-md mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Register Device</h1>
+      <p className="mb-6">
+        Register this device to enable punch functionality without login.
+      </p>
       <button
         onClick={handleRegister}
-        className="bg-indigo-600 text-white px-4 py-2 rounded"
+        disabled={loading}
+        className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
       >
-        Register This Device
+        {loading ? "Registering..." : "Register This Device"}
       </button>
     </div>
   );

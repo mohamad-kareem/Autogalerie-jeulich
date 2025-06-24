@@ -1,23 +1,12 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
+import { getOrCreateDeviceId } from "@/utils/device";
 import * as turf from "@turf/turf";
 
-// Utility: Get or create device ID
-function getOrCreateDeviceId() {
-  if (typeof window === "undefined") return null;
-  let id = localStorage.getItem("deviceId");
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem("deviceId", id);
-  }
-  return id;
-}
-
-// Your polygon
 const dealershipCoords = turf.polygon([
   [
     [6.3855, 50.928],
@@ -32,59 +21,24 @@ const dealershipCoords = turf.polygon([
 ]);
 
 export default function PunchQRPage() {
-  const { data: session, status } = useSession();
   const router = useRouter();
-  const hasPunched = useRef(false);
-  const [codeParam, setCodeParam] = useState(undefined);
+  const { data: session, status } = useSession();
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get("code");
-      setCodeParam(code);
-    }
-  }, []);
+    if (status === "loading") return;
 
-  useEffect(() => {
-    if (codeParam === undefined || status === "loading") return;
-    if (!codeParam) {
-      toast.error("❌ Ungültiger Zugriff. Bitte scannen Sie den QR-Code.");
-      router.push("/");
-      return;
-    }
-
-    if (hasPunched.current) return;
-    hasPunched.current = true;
-
-    const autoPunch = async () => {
+    const handlePunch = async () => {
       try {
-        // Determine next punch type if logged in
-        let adminId = session?.user?.id ?? null;
-        let nextType = "in";
+        // Check if device is registered (for non-logged in users)
+        const deviceId = getOrCreateDeviceId();
+        let adminId = session?.user?.id;
 
-        if (!adminId) {
-          const deviceId = getOrCreateDeviceId();
-          const response = await fetch("/api/punch/device-info", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ deviceId }),
-          });
-          const data = await response.json();
-          if (!data.success) {
-            toast.error("❌ Gerät nicht registriert. Bitte beim Admin melden.");
-            return router.push("/");
-          }
-          adminId = data.adminId;
-          nextType = data.lastType === "in" ? "out" : "in";
-        } else {
-          const latestRes = await fetch("/api/punch/latest", {
-            headers: { "x-admin-id": adminId },
-          });
-          const latest = await latestRes.json();
-          nextType = latest?.type === "in" ? "out" : "in";
+        if (!adminId && !deviceId) {
+          toast.error("Device not registered. Please login to register.");
+          return router.push("/register-device");
         }
 
-        // Get GPS position
+        // Get location
         const pos = await new Promise((resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
@@ -97,12 +51,32 @@ export default function PunchQRPage() {
         const isInside = turf.booleanPointInPolygon(point, dealershipCoords);
 
         if (!isInside) {
-          toast.error("❌ Sie befinden sich außerhalb des erlaubten Bereichs.");
+          toast.error("You are outside the allowed area");
           return router.push("/");
         }
 
+        // Determine punch type
+        let nextType = "in";
+        if (adminId) {
+          const res = await fetch("/api/punch/latest", {
+            headers: { "x-admin-id": adminId },
+          });
+          const latest = await res.json();
+          nextType = latest?.type === "in" ? "out" : "in";
+        } else {
+          const res = await fetch("/api/punch/device-info", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ deviceId }),
+          });
+          const data = await res.json();
+          if (!data.success) throw new Error("Device not registered");
+          nextType = data.lastType === "in" ? "out" : "in";
+          adminId = data.adminId;
+        }
+
         // Send punch request
-        const res = await fetch("/api/punch", {
+        const punchRes = await fetch("/api/punch", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -115,32 +89,26 @@ export default function PunchQRPage() {
           }),
         });
 
-        const result = await res.json();
+        const result = await punchRes.json();
         if (result.success) {
-          toast.success(
-            `✅ Erfolgreich ${
-              nextType === "in" ? "eingestempelt" : "ausgestempelt"
-            }`
-          );
+          toast.success(`Successfully punched ${nextType}`);
         } else {
-          toast.error(result.error || "❌ Fehler beim Einstempeln");
+          throw new Error(result.error || "Punch failed");
         }
-      } catch (err) {
-        console.error(err);
-        toast.error("📍 Standort konnte nicht ermittelt werden.");
+      } catch (error) {
+        console.error(error);
+        toast.error(error.message || "Punch failed");
       } finally {
         router.push("/");
       }
     };
 
-    autoPunch();
-  }, [codeParam, status, session, router]);
+    handlePunch();
+  }, [status, session, router]);
 
   return (
-    <div className="flex items-center justify-center h-screen text-white bg-gray-900 px-4 text-center">
-      <p className="animate-pulse text-lg">
-        Standort wird überprüft... Bitte Ortungsdienste aktivieren.
-      </p>
+    <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+      <p className="animate-pulse">Processing punch request...</p>
     </div>
   );
 }

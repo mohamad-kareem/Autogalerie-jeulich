@@ -7,16 +7,21 @@ export async function POST(req) {
   try {
     await connectDB();
     const { deviceId } = await req.json();
-    const cleanId = deviceId?.trim();
-    console.log("🔍 Received deviceId:", cleanId);
 
-    if (!deviceId)
-      return NextResponse.json({ success: false, error: "Missing device ID" });
+    if (!deviceId) {
+      return NextResponse.json(
+        { success: false, error: "Device ID required" },
+        { status: 400 }
+      );
+    }
 
-    const admin = await Admin.findOne({ deviceId }).lean();
-    if (!admin) console.log("❌ Device ID not found in DB");
-    return NextResponse.json({ success: false, error: "Device not found" });
-    console.log("✅ Matched admin:", admin.name);
+    const admin = await Admin.findOne({ deviceId });
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, error: "Device not registered" },
+        { status: 404 }
+      );
+    }
 
     const lastRecord = await TimeRecord.findOne({ admin: admin._id })
       .sort({ time: -1 })
@@ -27,8 +32,11 @@ export async function POST(req) {
       adminId: admin._id,
       lastType: lastRecord?.type || "out",
     });
-  } catch (err) {
-    console.error("❌ Device Info Error:", err);
-    return NextResponse.json({ success: false, error: "Server error" });
+  } catch (error) {
+    console.error("Device info error:", error);
+    return NextResponse.json(
+      { success: false, error: "Server error" },
+      { status: 500 }
+    );
   }
 }
