@@ -3,14 +3,49 @@
 import { useState, useEffect } from "react";
 import { getOrCreateDeviceId } from "@/app/utils/device";
 import { toast } from "react-hot-toast";
-import { useSession } from "next-auth/react"; //
+import { useSession } from "next-auth/react";
+
 export default function RegisterDevicePage() {
   const [deviceId, setDeviceId] = useState("");
   const { data: session } = useSession();
 
+  // 1. Sync localStorage with DB
   useEffect(() => {
-    setDeviceId(getOrCreateDeviceId());
-  }, []);
+    const syncDeviceId = async () => {
+      const localId = getOrCreateDeviceId();
+
+      if (!session?.user?.id) return;
+
+      const res = await fetch("/api/punch/device-info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deviceId: localId }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        // ✅ Match found → device already registered
+        setDeviceId(localId);
+      } else {
+        // ❌ No match → fetch correct one from DB if available
+        const adminRes = await fetch("/api/punch/device-id", {
+          headers: { "x-admin-id": session.user.id },
+        });
+
+        const adminData = await adminRes.json();
+        if (adminData.deviceId) {
+          localStorage.setItem("deviceId", adminData.deviceId);
+          setDeviceId(adminData.deviceId);
+        } else {
+          // No device in DB yet → use local one
+          setDeviceId(localId);
+        }
+      }
+    };
+
+    syncDeviceId();
+  }, [session]);
 
   const handleRegister = async () => {
     if (!session?.user?.id) {

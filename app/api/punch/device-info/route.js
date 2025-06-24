@@ -7,13 +7,16 @@ export async function POST(req) {
   try {
     await connectDB();
     const { deviceId } = await req.json();
+    const cleanId = deviceId?.trim();
+    console.log("🔍 Received deviceId:", cleanId);
 
     if (!deviceId)
       return NextResponse.json({ success: false, error: "Missing device ID" });
 
     const admin = await Admin.findOne({ deviceId }).lean();
-    if (!admin)
-      return NextResponse.json({ success: false, error: "Device not found" });
+    if (!admin) console.log("❌ Device ID not found in DB");
+    return NextResponse.json({ success: false, error: "Device not found" });
+    console.log("✅ Matched admin:", admin.name);
 
     const lastRecord = await TimeRecord.findOne({ admin: admin._id })
       .sort({ time: -1 })
