@@ -1,17 +1,16 @@
-export function getOrCreateDeviceId() {
+const DEVICE_ID_KEY = "autogalerie_device_id";
+
+export const getDeviceId = () => {
   if (typeof window === "undefined") return null;
+  return localStorage.getItem(DEVICE_ID_KEY);
+};
 
-  let deviceId = localStorage.getItem("deviceId");
-  if (!deviceId) return null;
-  return deviceId;
-}
-
-export function setDeviceId(id) {
+export const setDeviceId = (id) => {
   if (typeof window === "undefined") return;
-  localStorage.setItem("deviceId", id);
-}
+  localStorage.setItem(DEVICE_ID_KEY, id);
+};
 
-export function clearDeviceId() {
+export const clearDeviceId = () => {
   if (typeof window === "undefined") return;
-  localStorage.removeItem("deviceId");
-}
+  localStorage.removeItem(DEVICE_ID_KEY);
+};

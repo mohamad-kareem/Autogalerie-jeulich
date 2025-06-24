@@ -4,19 +4,19 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
-import { getOrCreateDeviceId } from "@/app/utils/device";
+import { getDeviceId } from "@/app/utils/device";
 import * as turf from "@turf/turf";
 
 const dealershipCoords = turf.polygon([
   [
-    [6.379009764729091, 50.924411558743515],
-    [6.371998227581571, 50.924799992683916],
-    [6.361472975837103, 50.92194386746149],
-    [6.360609655480204, 50.913710824758624],
-    [6.372283974680613, 50.90978417030098],
-    [6.379176158553946, 50.91291200780827],
-    [6.377098417668307, 50.919543414052],
-    [6.379009764729091, 50.924411558743515],
+    [6.508839155528165, 50.90436744713932],
+    [6.496115167278077, 51.01498209388092],
+    [6.212961992612236, 50.99375130787689],
+    [6.228784326778197, 50.84908955286048],
+    [6.286733416318782, 50.82919939381566],
+    [6.352636188740092, 50.83441157016779],
+    [6.47001492912112, 50.855057077203426],
+    [6.508839155528165, 50.90436744713932],
   ],
 ]);
 
@@ -29,16 +29,16 @@ export default function PunchQRPage() {
 
     const handlePunch = async () => {
       try {
-        // Check if device is registered (for non-logged in users)
-        const deviceId = getOrCreateDeviceId();
+        const deviceId = getDeviceId();
         let adminId = session?.user?.id;
 
         if (!adminId && !deviceId) {
-          toast.error("Device not registered. Please login to register.");
+          toast.error(
+            "Gerät nicht registriert. Bitte anmelden zur Registrierung."
+          );
           return router.push("/register-device");
         }
 
-        // Get location
         const pos = await new Promise((resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
@@ -51,11 +51,10 @@ export default function PunchQRPage() {
         const isInside = turf.booleanPointInPolygon(point, dealershipCoords);
 
         if (!isInside) {
-          toast.error("You are outside the allowed area");
+          toast.error("Sie befinden sich außerhalb des erlaubten Bereichs");
           return router.push("/");
         }
 
-        // Determine punch type
         let nextType = "in";
         if (adminId) {
           const res = await fetch("/api/punch/latest", {
@@ -70,34 +69,44 @@ export default function PunchQRPage() {
             body: JSON.stringify({ deviceId }),
           });
           const data = await res.json();
-          if (!data.success) throw new Error("Device not registered");
+          if (!data.success) throw new Error("Gerät nicht registriert");
           nextType = data.lastType === "in" ? "out" : "in";
           adminId = data.adminId;
         }
 
-        // Send punch request
+        const headers = {
+          "Content-Type": "application/json",
+        };
+
+        if (adminId) {
+          headers["x-admin-id"] = adminId;
+        } else {
+          headers["x-device-id"] = deviceId;
+        }
+
         const punchRes = await fetch("/api/punch", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-admin-id": adminId,
-          },
+          headers,
           body: JSON.stringify({
             type: nextType,
             location: { lat, lng, verified: true },
-            method: session?.user?.id ? "qr" : "device",
+            method: adminId ? "qr" : "device",
           }),
         });
 
         const result = await punchRes.json();
         if (result.success) {
-          toast.success(`Successfully punched ${nextType}`);
+          toast.success(
+            `Erfolgreich ${
+              nextType === "in" ? "eingestempelt" : "ausgestempelt"
+            }`
+          );
         } else {
-          throw new Error(result.error || "Punch failed");
+          throw new Error(result.error || "Stempelung fehlgeschlagen");
         }
       } catch (error) {
         console.error(error);
-        toast.error(error.message || "Punch failed");
+        toast.error(error.message || "Fehler bei der Stempelung");
       } finally {
         router.push("/");
       }
@@ -108,7 +117,7 @@ export default function PunchQRPage() {
 
   return (
     <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
-      <p className="animate-pulse">Processing punch request...</p>
+      <p className="animate-pulse">Stempelung wird verarbeitet...</p>
     </div>
   );
 }

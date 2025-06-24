@@ -14,7 +14,6 @@ export async function POST(req) {
       );
     }
 
-    // Check if device ID is already registered
     const existing = await Admin.findOne({ deviceId });
     if (existing) {
       return NextResponse.json(
@@ -23,7 +22,6 @@ export async function POST(req) {
       );
     }
 
-    // Update admin with new device ID
     const admin = await Admin.findByIdAndUpdate(
       adminId,
       { deviceId },

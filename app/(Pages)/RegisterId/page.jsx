@@ -28,8 +28,9 @@ export default function RegisterDevicePage() {
       });
 
       const result = await res.json();
-      if (!result.success)
+      if (!result.success) {
         throw new Error(result.error || "Registrierung fehlgeschlagen");
+      }
 
       setDeviceId(deviceId);
       toast.success("Gerät erfolgreich registriert!");
@@ -49,7 +50,6 @@ export default function RegisterDevicePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
-          {/* Header */}
           <div className="bg-indigo-600 px-4 py-6 sm:px-6 sm:py-8 text-center">
             <h1 className="text-2xl sm:text-3xl font-bold text-white">
               Geräteregistrierung
@@ -60,10 +60,8 @@ export default function RegisterDevicePage() {
             </p>
           </div>
 
-          {/* Main Content */}
           <div className="px-4 py-6 sm:px-6 sm:py-8">
             <div className="flex flex-col md:flex-row gap-6">
-              {/* Left Column - Info */}
               <div className="md:w-1/2 space-y-4">
                 <div
                   className={`p-3 sm:p-4 rounded-lg border ${
@@ -129,7 +127,6 @@ export default function RegisterDevicePage() {
                 </div>
               </div>
 
-              {/* Right Column - Registration */}
               <div className="md:w-1/2">
                 <div className="bg-gray-50 p-4 sm:p-6 rounded-lg h-full flex flex-col">
                   <div className="flex-1">
@@ -198,7 +195,6 @@ export default function RegisterDevicePage() {
             </div>
           </div>
 
-          {/* Footer */}
           <div className="bg-gray-50 px-4 sm:px-6 py-3 border-t border-gray-200 text-center text-xs sm:text-sm text-gray-500">
             <p>
               Diese Registrierung ist mit Ihrem Konto und diesem spezifischen

@@ -1,4 +1,3 @@
-// ✅ Optimized TimeRecord Model (models/TimeRecord.js)
 import mongoose from "mongoose";
 
 const timeRecordSchema = new mongoose.Schema(
@@ -21,15 +20,21 @@ const timeRecordSchema = new mongoose.Schema(
       index: true,
     },
     location: {
-      lat: Number,
-      lng: Number,
-      verified: Boolean,
+      lat: { type: Number, required: true },
+      lng: { type: Number, required: true },
+      verified: { type: Boolean, default: false },
       distance: Number,
     },
-    method: { type: String, enum: ["qr", "manual"], default: "manual" },
+    method: {
+      type: String,
+      enum: ["qr", "manual", "device"],
+      required: true,
+      default: "manual",
+    },
     deviceInfo: {
       userAgent: String,
       ipAddress: String,
+      deviceId: String,
     },
   },
   {
@@ -39,9 +44,16 @@ const timeRecordSchema = new mongoose.Schema(
   }
 );
 
+// Indexes
 timeRecordSchema.index({ admin: 1, time: -1 });
 timeRecordSchema.index({ time: -1 });
 timeRecordSchema.index({ type: 1, time: -1 });
+timeRecordSchema.index({ "location.verified": 1 });
+
+// Virtuals
+timeRecordSchema.virtual("formattedTime").get(function () {
+  return this.time.toLocaleString("de-DE");
+});
 
 export default mongoose.models.TimeRecord ||
   mongoose.model("TimeRecord", timeRecordSchema);
