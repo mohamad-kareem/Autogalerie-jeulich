@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
-import { getOrCreateDeviceId } from "@/utils/device";
+import { getOrCreateDeviceId } from "@/app/utils/device";
 import * as turf from "@turf/turf";
 
 const dealershipCoords = turf.polygon([
