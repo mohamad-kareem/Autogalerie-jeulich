@@ -39,6 +39,7 @@ export default function NavBar() {
     "/Reg",
     "/punsh",
     "/Posteingang",
+    "/RegisterId",
   ];
 
   const isAdminRoute = adminRoutes.some((route) => pathname?.startsWith(route));

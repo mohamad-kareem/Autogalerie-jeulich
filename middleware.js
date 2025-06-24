@@ -33,5 +33,8 @@ export const config = {
     "/AdminDashboard/:path*",
     "/PersonalData/:path*",
     "/Plate/:path*",
+    "/Posteingang/:path*",
+    "/punsh/:path*",
+    "/RegisterId/:path*",
   ],
 };

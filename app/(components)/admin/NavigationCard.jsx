@@ -30,7 +30,7 @@ const NavigationCard = ({ href, icon, title, description, accentColor }) => {
   const gradientMap = {
     red: "from-red-400 to-red-300",
     green: "from-green-400 to-green-300",
-    blue: "from-blue-400 to-blue-200",
+    blue: "from-blue-400 to-blue-300",
     yellow: "from-yellow-400 to-yellow-300",
     orange: "from-orange-400 to-orange-300",
     indigo: "from-indigo-400 to-indigo-300",

@@ -13,6 +13,7 @@ import {
   FiMapPin,
   FiCalendar,
   FiChevronRight,
+  FiCpu,
 } from "react-icons/fi";
 import NavigationCard from "@/app/(components)/admin/NavigationCard";
 
@@ -143,6 +144,13 @@ const DashboardContent = ({ user, onProfileClick }) => {
               title="Admin hinzufügen"
               description="Neuen Administrator registrieren"
               accentColor="lime"
+            />
+            <NavigationCard
+              href="/RegisterId"
+              icon={<FiCpu />}
+              title="Zeiterfassungsgerät-ID registrieren"
+              description="Erfasse eine neue Geräte-ID"
+              accentColor="blue"
             />
           </div>
         </div>
