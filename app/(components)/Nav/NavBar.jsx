@@ -16,8 +16,6 @@ import { Menus } from "../../utils/NavData";
 export default function NavBar() {
   const { data: session } = useSession();
   const pathname = usePathname();
-
-  const isAdmin = session?.user?.isAdmin;
   const avatarUrl = session?.user?.image || "";
 
   const [open, setOpen] = useState(false);
@@ -29,7 +27,6 @@ export default function NavBar() {
     "/admin",
     "/Aufgaben",
     "/forms",
-
     "/excel",
     "/schlussel",
     "/trello",
@@ -39,48 +36,42 @@ export default function NavBar() {
     "/Reg",
     "/punsh",
     "/Posteingang",
-    "/RegisterId",
+    "/Zeiterfassungsverwaltung",
   ];
 
   const isAdminRoute = adminRoutes.some((route) => pathname?.startsWith(route));
 
   useEffect(() => {
     setHydrated(true);
-
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
-    };
-
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth <= 1024);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    const handleResize = () => setIsMobile(window.innerWidth <= 1024);
 
     handleScroll();
-    checkIfMobile();
+    handleResize();
 
     window.addEventListener("scroll", handleScroll);
-    window.addEventListener("resize", checkIfMobile);
-
+    window.addEventListener("resize", handleResize);
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", checkIfMobile);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
-  // ✅ Admin Dropdown Only (Floating, no Navbar)
-  if (isAdminRoute && isAdmin) {
+  if (!hydrated) return null;
+
+  // ✅ Floating Menu (on admin routes for any logged-in user)
+  if (isAdminRoute && session?.user) {
     return (
-      <div className="absolute top-4 right-4 z-50 ">
+      <div className="absolute top-4 right-4 z-50">
         <div className="relative">
           <button
             onClick={() => setOpen((v) => !v)}
             className="flex items-center p-1 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-            aria-label="Admin menu"
           >
             {avatarUrl ? (
               <Image
                 src={avatarUrl}
-                alt="Admin Avatar"
+                alt="User Avatar"
                 width={32}
                 height={32}
                 className="rounded-full object-cover w-8 h-8"
@@ -143,9 +134,9 @@ export default function NavBar() {
   return (
     <header
       className={`print:hidden fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        hydrated && scrolled
-          ? "h-14 shadow-md bg-gradient-to-br from-black/20 to-red-800 backdrop-blur-sm "
-          : "h-16 bg-gradient-to-br from-black/60 to-red-800 "
+        scrolled
+          ? "h-14 shadow-md bg-gradient-to-br from-black/20 to-red-800 backdrop-blur-sm"
+          : "h-16 bg-gradient-to-br from-black/60 to-red-800"
       }`}
     >
       <nav className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto h-full flex items-center justify-between px-2 sm:px-6">
@@ -156,42 +147,41 @@ export default function NavBar() {
             alt="Logo"
             priority
             className={`object-contain w-10 h-10 sm:w-[85px] sm:h-[110px] transition-transform duration-300 ${
-              hydrated && scrolled ? "scale-70" : "scale-100"
+              scrolled ? "scale-70" : "scale-100"
             }`}
           />
           <span
-            className={`ml-2 font-semibold whitespace-nowrap transition-all duration-300 text-white 
-      text-[10px] sm:text-base 
-      ${hydrated && scrolled ? "sm:text-sm" : "sm:text-base"}`}
+            className={`ml-2 font-semibold whitespace-nowrap transition-all duration-300 text-white text-[10px] sm:text-base ${
+              scrolled ? "sm:text-sm" : "sm:text-base"
+            }`}
           >
             Autogalerie Jülich
           </span>
         </Link>
 
         {/* Right Side */}
-        <div className="flex items-center space-x-2 sm:space-x-4 ">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           {/* Desktop Menu */}
-          <ul className="hidden lg:flex items-center space-x-2 xl:space-x-4 ">
+          <ul className="hidden lg:flex items-center space-x-2 xl:space-x-4">
             {Menus.map((menu) => (
               <DesktopMenu menu={menu} key={menu.name} scrolled={scrolled} />
             ))}
           </ul>
 
           {/* Admin Dropdown */}
-          {isAdmin && (
+          {session?.user && (
             <div className="relative">
               <button
                 onClick={() => setOpen((v) => !v)}
                 className="flex items-center p-1 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-                aria-label="Admin menu"
               >
                 {avatarUrl ? (
                   <Image
                     src={avatarUrl}
-                    alt="Admin Avatar"
+                    alt="User Avatar"
                     width={32}
                     height={32}
-                    className="rounded-full object-cover transition-all duration-300 w-8 h-8"
+                    className="rounded-full object-cover w-8 h-8"
                   />
                 ) : (
                   <User className="text-gray-600 w-6 h-6" />
@@ -216,7 +206,7 @@ export default function NavBar() {
                     <li>
                       <Link
                         href="/AdminDashboard"
-                        className="block px-4 py-2 text-sm hover:bg-gray-50 transition-colors "
+                        className="block px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
                         onClick={() => setOpen(false)}
                       >
                         Admin Dashboard
@@ -249,7 +239,7 @@ export default function NavBar() {
           <div className="lg:hidden">
             <MobMenu
               Menus={Menus}
-              isAdmin={isAdmin}
+              isAdmin={false}
               avatarUrl={avatarUrl}
               onSignOut={() => signOut({ callbackUrl: "/" })}
             />

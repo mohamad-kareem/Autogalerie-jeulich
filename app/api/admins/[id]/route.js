@@ -11,7 +11,9 @@ export async function GET(req, context) {
 
     await connectDB();
 
-    const admin = await Admin.findById(id).select("name image email").lean();
+    const admin = await Admin.findById(id)
+      .select("name image email role")
+      .lean();
 
     if (!admin) {
       return NextResponse.json({ error: "Admin not found" }, { status: 404 });

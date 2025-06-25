@@ -7,12 +7,21 @@ export async function POST(req) {
   await connectDB();
 
   try {
+    // ✅ Parse form data first
     const formData = await req.formData();
+
     const name = formData.get("name");
-    const email = formData.get("email").toLowerCase();
+    const email = formData.get("email")?.toLowerCase();
     const password = formData.get("password");
+    const role = formData.get("role") || "user"; // default to user
     const file = formData.get("image");
 
+    // ✅ Validate role
+    if (!["admin", "user"].includes(role)) {
+      return NextResponse.json({ message: "Invalid role." }, { status: 400 });
+    }
+
+    // ✅ Validate required fields
     if (!name || !email || !password) {
       return NextResponse.json(
         { message: "All fields are required." },
@@ -20,6 +29,7 @@ export async function POST(req) {
       );
     }
 
+    // ✅ Check for existing user
     const existingAdmin = await Admin.findOne({ email });
     if (existingAdmin) {
       return NextResponse.json(
@@ -28,6 +38,7 @@ export async function POST(req) {
       );
     }
 
+    // ✅ Handle image upload
     let imageUrl = "";
     if (file && file.size > 0) {
       const buffer = Buffer.from(await file.arrayBuffer());
@@ -44,11 +55,19 @@ export async function POST(req) {
       imageUrl = result.secure_url;
     }
 
-    const newAdmin = new Admin({ name, email, password, image: imageUrl });
+    // ✅ Create new admin/user
+    const newAdmin = new Admin({
+      name,
+      email,
+      password,
+      role,
+      image: imageUrl,
+    });
+
     await newAdmin.save();
 
     return NextResponse.json(
-      { message: "Admin registered successfully." },
+      { message: "Registration successful." },
       { status: 201 }
     );
   } catch (error) {

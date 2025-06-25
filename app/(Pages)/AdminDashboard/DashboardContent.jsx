@@ -9,22 +9,22 @@ import {
   FiCheckSquare,
   FiUserPlus,
   FiClock,
-  FiCamera,
-  FiMapPin,
   FiCalendar,
-  FiChevronRight,
-  FiCpu,
+  FiMapPin,
 } from "react-icons/fi";
 import NavigationCard from "@/app/(components)/admin/NavigationCard";
 
 const DashboardContent = ({ user, onProfileClick }) => {
+  console.log("🧑‍💻 Client User Role:", user?.role);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 pb-8 md:pb-12 ">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 pb-8 md:pb-12">
       <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto px-3 sm:px-4 py-6 md:py-8 lg:px-8">
+        {/* Header */}
         <div className="mb-6 md:mb-8 rounded-xl md:rounded-2xl bg-white p-4 md:p-6 shadow-sm backdrop-blur-sm">
           <div className="flex flex-col justify-between md:flex-row md:items-center">
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900 sm:text-2xl ">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 sm:text-2xl">
                 Willkommen zurück,{" "}
                 <span className="text-red-900">{user.name.split(" ")[0]}</span>!
               </h1>
@@ -33,8 +33,7 @@ const DashboardContent = ({ user, onProfileClick }) => {
               </p>
               <div className="mt-2 h-0.5 md:h-1 w-12 md:w-16 rounded-full bg-gradient-to-br from-red-600 to-black/80"></div>
             </div>
-
-            <div className="mt-3 md:mt-4 flex items-center space-x-3 md:space-x-4 ">
+            <div className="mt-3 md:mt-4 flex items-center space-x-3 md:space-x-4">
               <div className="hidden text-right md:block">
                 <p className="text-sm md:text-base font-medium text-gray-700">
                   {user.role}
@@ -58,7 +57,7 @@ const DashboardContent = ({ user, onProfileClick }) => {
           </div>
         </div>
 
-        {/* Hauptinhalt */}
+        {/* Main Content */}
         <div className="mb-6 md:mb-8">
           <div className="mb-4 md:mb-6 flex items-center justify-between">
             <h2 className="text-lg md:text-xl font-semibold text-gray-800">
@@ -75,13 +74,34 @@ const DashboardContent = ({ user, onProfileClick }) => {
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <NavigationCard
-              href="/excel"
-              icon={<FiBook />}
-              title="Buchhaltung"
-              description="Finanzdaten und Aufzeichnungen"
-              accentColor="green"
-            />
+            {/* ✅ Admin-only cards */}
+            {user.role === "admin" && (
+              <>
+                <NavigationCard
+                  href="/excel"
+                  icon={<FiBook />}
+                  title="Buchhaltung"
+                  description="Finanzdaten und Aufzeichnungen"
+                  accentColor="green"
+                />
+                <NavigationCard
+                  href="/Reg"
+                  icon={<FiUserPlus />}
+                  title="Admin hinzufügen"
+                  description="Neuen Administrator registrieren"
+                  accentColor="lime"
+                />
+                <NavigationCard
+                  href="/Zeiterfassungsverwaltung"
+                  icon={<FiClock />}
+                  title="Zeiterfassung verwalten"
+                  description="Verwalte und analysiere Arbeitszeiten effizient"
+                  accentColor="blue"
+                />
+              </>
+            )}
+
+            {/* ✅ Accessible to all authenticated users */}
             <NavigationCard
               href="/forms"
               icon={<FiFileText />}
@@ -107,7 +127,7 @@ const DashboardContent = ({ user, onProfileClick }) => {
               href="/Posteingang"
               icon={<FiCheckSquare />}
               title="Posteingang"
-              description=" eingegangenen Fahrzeugangebote und Nachrichten von Kunden"
+              description="Eingegangene Fahrzeugangebote und Nachrichten von Kunden"
               accentColor="red"
             />
             <NavigationCard
@@ -137,20 +157,6 @@ const DashboardContent = ({ user, onProfileClick }) => {
               title="Schlüssel"
               description="Schlüsselverwaltung"
               accentColor="cyan"
-            />
-            <NavigationCard
-              href="/Reg"
-              icon={<FiUserPlus />}
-              title="Admin hinzufügen"
-              description="Neuen Administrator registrieren"
-              accentColor="lime"
-            />
-            <NavigationCard
-              href="/RegisterId"
-              icon={<FiCpu />}
-              title="Zeiterfassungsgerät-ID registrieren"
-              description="Erfasse eine neue Geräte-ID"
-              accentColor="blue"
             />
           </div>
         </div>

@@ -23,7 +23,7 @@ export default function Dashboard() {
         }
 
         const adminData = await response.json();
-        setUser({ ...adminData, role: "Administrator" });
+        setUser(adminData);
       } catch (error) {
         toast.error(error.message);
       } finally {

@@ -61,7 +61,7 @@ export const authOptions = {
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
-        token.role = user.role;
+        token.role = user.role; // ✅ make sure this is here
         token.isAdmin = user.role === "admin";
       }
       return token;

@@ -17,6 +17,7 @@ export default function RegisterPage() {
     email: "",
     password: "",
     image: null,
+    role: "admin",
   });
   const [message, setMessage] = useState({ text: "", type: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,6 +53,7 @@ export default function RegisterPage() {
     data.append("name", formData.name.trim());
     data.append("email", formData.email.toLowerCase().trim());
     data.append("password", formData.password);
+    data.append("role", formData.role);
     if (formData.image) data.append("image", formData.image);
 
     try {
@@ -182,6 +184,21 @@ export default function RegisterPage() {
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+            </div>
+            {/* Role Selection */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Role
+              </label>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
+              >
+                <option value="admin">Admin</option>
+                <option value="user">User</option>
+              </select>
             </div>
 
             {/* Image Upload */}
