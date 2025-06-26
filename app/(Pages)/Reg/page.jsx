@@ -11,7 +11,7 @@ import {
 } from "react-icons/fi";
 import Link from "next/link";
 
-export default function RegisterPage() {
+export default function RegistrierungsSeite() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -63,17 +63,18 @@ export default function RegisterPage() {
       });
       const result = await res.json();
 
-      if (!res.ok) throw new Error(result.message || "Registration failed");
+      if (!res.ok)
+        throw new Error(result.message || "Registrierung fehlgeschlagen");
 
       setMessage({
-        text: "Registration successful! You can now login.",
+        text: "Registrierung erfolgreich! Sie können sich jetzt anmelden.",
         type: "success",
       });
       setFormData({ name: "", email: "", password: "", image: null });
       setPreviewImage(null);
     } catch (err) {
       setMessage({
-        text: err.message || "An error occurred during registration",
+        text: err.message || "Bei der Registrierung ist ein Fehler aufgetreten",
         type: "error",
       });
     } finally {
@@ -94,17 +95,16 @@ export default function RegisterPage() {
           className="flex items-center text-red-700 hover:text-red-800 mb-4"
         >
           <FiArrowLeft className="mr-2" />
-          Back to Dashboard
+          Zurück zum Dashboard
         </Link>
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {/* Header with gradient */}
           <div className="bg-gradient-to-br from-red-600 to-black p-6 text-center">
             <h1 className="text-2xl font-bold text-white">
-              Admin Registration
+              Administrator-Registrierung
             </h1>
             <p className="text-red-100 mt-1">
-              Create your administrator account
+              Erstellen Sie Ihren Administrator-Account
             </p>
           </div>
 
@@ -115,7 +115,7 @@ export default function RegisterPage() {
                 htmlFor="name"
                 className="block text-sm font-medium text-gray-700"
               >
-                Full Name
+                Vollständiger Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -128,19 +128,19 @@ export default function RegisterPage() {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  placeholder="Karim"
+                  placeholder="Max Mustermann"
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                 />
               </div>
             </div>
 
-            {/* Email Field */}
+            {/* Email Field - Fixed width issue */}
             <div className="space-y-2">
               <label
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700"
               >
-                Email Address
+                E-Mail-Adresse
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -153,8 +153,9 @@ export default function RegisterPage() {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  placeholder="karim@example.com"
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
+                  placeholder="max@beispiel.de"
+                  className="w-full min-w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
+                  style={{ minWidth: "100%" }}
                 />
               </div>
             </div>
@@ -165,7 +166,7 @@ export default function RegisterPage() {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700"
               >
-                Password
+                Passwort
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -183,12 +184,13 @@ export default function RegisterPage() {
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+              <p className="text-xs text-gray-500 mt-1">Mindestens 8 Zeichen</p>
             </div>
+
             {/* Role Selection */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
-                Role
+                Rolle
               </label>
               <select
                 name="role"
@@ -196,31 +198,28 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
               >
-                <option value="admin">Admin</option>
-                <option value="user">User</option>
+                <option value="admin">Administrator</option>
+                <option value="user">Benutzer</option>
               </select>
             </div>
 
             {/* Image Upload */}
             <div className="space-y-2">
-              <label
-                htmlFor="image"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Profile Picture (Optional)
+              <label className="block text-sm font-medium text-gray-700">
+                Profilbild (Optional)
               </label>
               {previewImage ? (
                 <div className="relative mt-2">
                   <img
                     src={previewImage}
-                    alt="Preview"
+                    alt="Vorschau"
                     className="h-32 w-32 rounded-full object-cover mx-auto border-2 border-red-300"
                   />
                   <button
                     type="button"
                     onClick={removeImage}
                     className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                    aria-label="Remove image"
+                    aria-label="Bild entfernen"
                   >
                     <FiX size={14} />
                   </button>
@@ -230,10 +229,10 @@ export default function RegisterPage() {
                   <div className="flex flex-col items-center justify-center">
                     <FiCamera className="text-red-500 text-2xl mb-2" />
                     <p className="text-sm text-gray-600">
-                      Click to upload image
+                      Zum Hochladen klicken
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      PNG, JPG up to 2MB
+                      PNG, JPG bis zu 2MB
                     </p>
                   </div>
                   <input
@@ -280,10 +279,10 @@ export default function RegisterPage() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Processing...
+                  Wird verarbeitet...
                 </span>
               ) : (
-                "Register Account"
+                "Account registrieren"
               )}
             </button>
 
