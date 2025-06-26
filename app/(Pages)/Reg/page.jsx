@@ -128,7 +128,7 @@ export default function RegistrierungsSeite() {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  placeholder="Max Mustermann"
+                  placeholder="Thomas Müller"
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                 />
               </div>
