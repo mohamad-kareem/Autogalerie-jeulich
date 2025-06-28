@@ -29,7 +29,7 @@ const PlateTrackingPage = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [carTypeFilter, setCarTypeFilter] = useState("");
-
+  const [vinNumbers, setVinNumbers] = useState([]);
   const [formData, setFormData] = useState({
     plateNumber: "",
     employeeName: "",
@@ -39,6 +39,7 @@ const PlateTrackingPage = () => {
     endTime: null,
     notes: "",
     carType: "",
+    vinNumber: "",
   });
   useEffect(() => {
     if (session?.user?.name) {
@@ -48,6 +49,22 @@ const PlateTrackingPage = () => {
       }));
     }
   }, [session]);
+
+  useEffect(() => {
+    const fetchVinNumbers = async () => {
+      try {
+        const res = await fetch("/api/schlussels");
+        const data = await res.json();
+        if (Array.isArray(data.schlussels)) {
+          setVinNumbers(data.schlussels.filter((s) => s.vinNumber)); // Only those with VIN
+        }
+      } catch (error) {
+        toast.error("Fehler beim Laden der VIN-Nummern");
+      }
+    };
+
+    fetchVinNumbers();
+  }, []);
 
   const [reportFilters, setReportFilters] = useState({
     startDate: new Date(new Date().setHours(0, 0, 0, 0)),
@@ -168,6 +185,7 @@ const PlateTrackingPage = () => {
         endTime: null,
         notes: "",
         carType: "", // ✅ Include carType here
+        vinNumber: "",
       });
     } catch (error) {
       toast.error(error.message);
@@ -237,6 +255,7 @@ const PlateTrackingPage = () => {
         return {
           date: entry.startTime,
           plateNumber: entry.plateNumber,
+          vinNumber: entry.vinNumber || "-", // <-- include this
           account: entry.employeeName,
           destination: entry.destination,
           endTime: entry.endTime,
@@ -466,6 +485,34 @@ const PlateTrackingPage = () => {
                     ))}
                   </select>
                 </div>
+                {/* VIN Number Dropdown */}
+                <div>
+                  <label
+                    className={`block text-xs sm:text-sm font-medium mb-1 ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    VIN-Nummer
+                  </label>
+                  <select
+                    name="vinNumber"
+                    value={formData.vinNumber}
+                    onChange={handleInputChange}
+                    className={`w-full px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                      darkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "border-gray-300 bg-white text-gray-900"
+                    }`}
+                  >
+                    <option value="">Wähle eine VIN-Nummer</option>
+                    {vinNumbers.map((vin) => (
+                      <option key={vin._id} value={vin.vinNumber}>
+                        {vin.vinNumber} ({vin.car})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   {/* Start Time */}
                   <div>
@@ -817,6 +864,13 @@ const PlateTrackingPage = () => {
                             darkMode ? "text-gray-300" : "text-gray-500"
                           }`}
                         >
+                          Fahrzeug-Ident-Nr.
+                        </th>
+                        <th
+                          className={`px-3 py-2 sm:px-6 sm:py-3 text-left text-xs sm:text-sm font-medium uppercase tracking-wider ${
+                            darkMode ? "text-gray-300" : "text-gray-500"
+                          }`}
+                        >
                           Von
                         </th>
 
@@ -899,6 +953,14 @@ const PlateTrackingPage = () => {
                               >
                                 {usage.employeeName}
                               </td>
+                              <td
+                                className={`px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm ${
+                                  darkMode ? "text-gray-300" : "text-gray-500"
+                                }`}
+                              >
+                                {usage.vinNumber || "-"}
+                              </td>
+
                               <td
                                 className={`px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm ${
                                   darkMode ? "text-gray-300" : "text-gray-500"

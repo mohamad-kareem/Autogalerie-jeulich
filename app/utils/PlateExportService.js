@@ -9,6 +9,7 @@ export const exportPlateReport = (data, fileName) => {
   const formattedData = data.map((entry) => ({
     Datum: new Date(entry.date).toLocaleDateString("de-DE"),
     Kennzeichen: entry.plateNumber,
+    "Fahrzeug-Ident-Nr.": entry.vinNumber || "-", // ✅ VIN added
     Mitarbeiter: entry.account,
     Zielort: entry.destination,
     Startzeit: new Date(entry.date).toLocaleTimeString("de-DE"),
@@ -16,8 +17,8 @@ export const exportPlateReport = (data, fileName) => {
       ? new Date(entry.endTime).toLocaleTimeString("de-DE")
       : "Aktiv",
     "Dauer (h)": entry.durationHours || "-",
-    Standort: entry.from || "-", // ✅ Correct field name
-    Fahrzeugtyp: entry.carType || "-", // ✅ Add carType
+    Standort: entry.from || "-",
+    Fahrzeugtyp: entry.carType || "-",
     Notizen: entry.notes || "-",
   }));
 

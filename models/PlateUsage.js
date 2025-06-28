@@ -5,6 +5,11 @@ const PlateUsageSchema = new mongoose.Schema({
   employeeId: { type: mongoose.Schema.Types.ObjectId, required: true },
   employeeName: { type: String, required: true },
   destination: { type: String },
+  vinNumber: {
+    type: String,
+    default: "",
+  },
+
   from: { type: String }, // ✅ FIXED: lowercase
   carType: { type: String }, // ✅ Already good
   startTime: { type: Date, required: true, default: Date.now },
