@@ -4,7 +4,7 @@ import Schlussel from "@/models/Schlussel";
 
 export async function GET(request) {
   await connectDB();
-  const schlussels = await Schlussel.find().sort({ createdAt: -1 });
+  const schlussels = await Schlussel.find().sort({ createdAt: -1 }).lean();
   return new Response(JSON.stringify({ schlussels }), {
     status: 200,
     headers: { "Content-Type": "application/json" },

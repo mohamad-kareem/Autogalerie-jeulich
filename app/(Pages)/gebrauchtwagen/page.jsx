@@ -26,6 +26,7 @@ import Button from "@/app/(components)/helpers/Button";
 import SearchAndFilter from "@/app/(components)/helpers/SearchAndFilter";
 import GridBackground from "@/app/(components)/helpers/Grid";
 import { useRouter } from "next/navigation"; // <-- import this at the top
+import { useSession } from "next-auth/react";
 
 // Inside your component:
 const fuelMap = {
@@ -69,7 +70,8 @@ export default function UsedCarsPage() {
   const [viewMode, setViewMode] = useState("grid");
   const [comparisonMode, setComparisonMode] = useState(false);
   const [selectedForComparison, setSelectedForComparison] = useState([]);
-
+  const { data: session } = useSession();
+  console.log("Session:", session?.user); // ← Add this here
   const fetchCars = async () => {
     setLoading(true);
     try {
@@ -395,6 +397,16 @@ export default function UsedCarsPage() {
 
                 {/* Image Section */}
                 <div className="relative aspect-[4/3] bg-gray-100 p-4">
+                  {car.sold && (
+                    <div className="absolute top-0 right-0 z-30 animate-fade-in">
+                      <div className="relative">
+                        <div className="absolute top-6 right-[-44px] transform rotate-45 bg-gradient-to-br from-red-700 via-red-600 to-red-800 text-white text-[13px] font-extrabold px-12 py-1 shadow-xl ring-1 ring-white drop-shadow-sm backdrop-blur-md tracking-widest rounded-sm">
+                          VERKAUFT
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {car.images?.[0]?.ref ? (
                     <img
                       src={car.images[0].ref}
@@ -528,6 +540,35 @@ export default function UsedCarsPage() {
                       </button>
                     )}
                   </div>
+                  {session?.user && (
+                    <button
+                      onClick={async () => {
+                        const res = await fetch(`/api/cars/${car._id}/sold`, {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ sold: !car.sold }),
+                        });
+
+                        if (res.ok) {
+                          const updated = await res.json();
+                          setCars((prev) =>
+                            prev.map((c) =>
+                              c._id === updated._id ? updated : c
+                            )
+                          );
+                        }
+                      }}
+                      className={`text-xs mt-2 px-3 py-1 rounded-full font-medium ${
+                        car.sold
+                          ? "bg-green-100 text-green-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {car.sold
+                        ? "Als verfügbar markieren"
+                        : "Als verkauft markieren"}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -573,7 +614,13 @@ export default function UsedCarsPage() {
 
                   {/* Image Section - Compact size */}
                   <div className="sm:w-1/4 relative pt-2">
-                    <div className="aspect-[4/3] bg-gray-100">
+                    <div className="aspect-[4/3] bg-gray-100 relative">
+                      {car.sold && (
+                        <div className="absolute top-3 left-3 z-30 bg-gradient-to-r from-red-700 to-red-900 text-white text-[13px] px-4 py-1.5 rounded-full font-bold shadow-lg ring-2 ring-red-500 animate-pulse uppercase tracking-wide backdrop-blur-md">
+                          🚫 Verkauft
+                        </div>
+                      )}
+
                       {car.images?.[0]?.ref ? (
                         <img
                           src={car.images[0].ref}
@@ -689,6 +736,39 @@ export default function UsedCarsPage() {
 
                     {/* Footer - Compact action area */}
                     <div className="flex items-center justify-between mt-auto">
+                      {session?.user && (
+                        <button
+                          onClick={async () => {
+                            const res = await fetch(
+                              `/api/cars/${car._id}/sold`,
+                              {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ sold: !car.sold }),
+                              }
+                            );
+
+                            if (res.ok) {
+                              const updated = await res.json();
+                              setCars((prev) =>
+                                prev.map((c) =>
+                                  c._id === updated._id ? updated : c
+                                )
+                              );
+                            }
+                          }}
+                          className={`text-xs px-3 py-1 rounded-full font-medium ${
+                            car.sold
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {car.sold
+                            ? "Als verfügbar markieren"
+                            : "Als verkauft markieren"}
+                        </button>
+                      )}
+
                       <div className="flex gap-2">
                         {car.warranty && (
                           <span className="flex items-center gap-1 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">

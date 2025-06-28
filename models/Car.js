@@ -50,6 +50,9 @@ const carSchema = new mongoose.Schema(
     usb: { type: Boolean },
     driveType: { type: String },
 
+    // models/Car.js
+    sold: { type: Boolean, default: false },
+
     consumptions: { type: Object },
     emissions: { type: Object },
     seats: { type: Number },

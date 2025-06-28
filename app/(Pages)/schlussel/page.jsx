@@ -27,8 +27,12 @@ export default function SchlüsselManagement() {
   const [form, setForm] = useState({
     car: "",
     schlusselNumber: "",
+    vinNumber: "", // Add VIN number
+    doorNumber: "", // Add door number
     notes: "",
     needsBenzine: false,
+    transmission: "", // ✅ NEW
+    color: "", // ✅ NEW
   });
 
   const fetchSchlussels = async () => {
@@ -85,7 +89,16 @@ export default function SchlüsselManagement() {
   };
 
   const startAdd = () => {
-    setForm({ car: "", schlusselNumber: "", notes: "", needsBenzine: false });
+    setForm({
+      car: "",
+      schlusselNumber: "",
+      vinNumber: "",
+      doorNumber: "",
+      notes: "",
+      needsBenzine: false,
+      transmission: "", // ✅
+      color: "", // ✅
+    });
     setIsAdding(true);
     setSelected(null);
   };
@@ -95,9 +108,14 @@ export default function SchlüsselManagement() {
     setForm({
       car: selected.car,
       schlusselNumber: selected.schlusselNumber,
+      vinNumber: selected.vinNumber || "",
+      doorNumber: selected.doorNumber || "",
       notes: selected.notes || "",
       needsBenzine: selected.needsBenzine || false,
+      transmission: selected.transmission || "", // ✅
+      color: selected.color || "", // ✅
     });
+
     setIsEditing(true);
   };
 
@@ -316,6 +334,7 @@ export default function SchlüsselManagement() {
                             </h3>
                             <p className="text-xs text-gray-500 flex items-center gap-2">
                               Schlüssel #{s.schlusselNumber}
+                              {s.doorNumber && <span>• {s.doorNumber}</span>}
                               {s.needsBenzine && (
                                 <FaGasPump
                                   title="Benötigt Benzin"
@@ -403,6 +422,65 @@ export default function SchlüsselManagement() {
                           placeholder="z.B. 12345"
                           required
                         />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                          VIN-Nummer
+                        </label>
+                        <input
+                          name="vinNumber"
+                          value={form.vinNumber}
+                          onChange={onInput}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
+                          placeholder="z.B. WBA12345678901234"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                          Getriebe
+                        </label>
+                        <select
+                          name="transmission"
+                          value={form.transmission}
+                          onChange={onInput}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
+                        >
+                          <option value="">Bitte wählen</option>
+                          <option value="Automatik">Automatik</option>
+                          <option value="Manuell">Manuell</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                          Farbe
+                        </label>
+                        <input
+                          name="color"
+                          value={form.color}
+                          onChange={onInput}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
+                          placeholder="z.B. Schwarz"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                          Türnummer
+                        </label>
+                        <select
+                          name="doorNumber"
+                          value={form.doorNumber}
+                          onChange={onInput}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
+                        >
+                          <option value="">Wählen Sie eine Türnummer</option>
+                          <option value="Tür 1">Tür 1</option>
+                          <option value="Tür 2">Tür 2</option>
+                          <option value="Tür 3">Tür 3</option>
+                          <option value="Tür 4">Tür 4</option>
+                          <option value="Tür 5">Tür 5</option>
+                        </select>
                       </div>
 
                       <div>
@@ -497,6 +575,42 @@ export default function SchlüsselManagement() {
                           {selected.schlusselNumber}
                         </p>
                       </div>
+                      {selected.vinNumber && (
+                        <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                            VIN-Nummer
+                          </h3>
+                          <p className="text-gray-800">{selected.vinNumber}</p>
+                        </div>
+                      )}
+                      {selected.transmission && (
+                        <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                            Getriebe
+                          </h3>
+                          <p className="text-gray-800">
+                            {selected.transmission}
+                          </p>
+                        </div>
+                      )}
+
+                      {selected.color && (
+                        <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                            Fahrzeugfarbe
+                          </h3>
+                          <p className="text-gray-800">{selected.color}</p>
+                        </div>
+                      )}
+
+                      {selected.doorNumber && (
+                        <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                            Türnummer
+                          </h3>
+                          <p className="text-gray-800">{selected.doorNumber}</p>
+                        </div>
+                      )}
 
                       <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
                         <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
