@@ -1,17 +1,9 @@
 "use client";
 import { useState } from "react";
-import {
-  FiUser,
-  FiMail,
-  FiLock,
-  FiCamera,
-  FiCheck,
-  FiX,
-  FiArrowLeft,
-} from "react-icons/fi";
+import { FiUser, FiMail, FiLock, FiCamera, FiArrowRight } from "react-icons/fi";
 import Link from "next/link";
 
-export default function RegistrierungsSeite() {
+export default function RegistrationPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -25,16 +17,12 @@ export default function RegistrierungsSeite() {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-
     if (name === "image") {
       const file = files[0];
       setFormData({ ...formData, image: file });
-
       if (file) {
         const reader = new FileReader();
-        reader.onloadend = () => {
-          setPreviewImage(reader.result);
-        };
+        reader.onloadend = () => setPreviewImage(reader.result);
         reader.readAsDataURL(file);
       } else {
         setPreviewImage(null);
@@ -63,18 +51,23 @@ export default function RegistrierungsSeite() {
       });
       const result = await res.json();
 
-      if (!res.ok)
-        throw new Error(result.message || "Registrierung fehlgeschlagen");
+      if (!res.ok) throw new Error(result.message || "Registration failed");
 
       setMessage({
-        text: "Registrierung erfolgreich! Sie können sich jetzt anmelden.",
+        text: "Account created successfully! You can now sign in.",
         type: "success",
       });
-      setFormData({ name: "", email: "", password: "", image: null });
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        image: null,
+        role: "admin",
+      });
       setPreviewImage(null);
     } catch (err) {
       setMessage({
-        text: err.message || "Bei der Registrierung ist ein Fehler aufgetreten",
+        text: err.message || "An error occurred during registration",
         type: "error",
       });
     } finally {
@@ -88,224 +81,218 @@ export default function RegistrierungsSeite() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-100 to-black/90 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Link
-          href="/AdminDashboard"
-          className="flex items-center text-red-700 hover:text-red-800 mb-4"
-        >
-          <FiArrowLeft className="mr-2" />
-          Zurück zum Dashboard
-        </Link>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="p-8">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Admin-Konto erstellen
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Richten Sie Ihre Administratoranmeldeinformationen ein
+              </p>
+            </div>
 
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="bg-gradient-to-br from-red-600 to-black p-6 text-center">
-            <h1 className="text-2xl font-bold text-white">
-              Administrator-Registrierung
-            </h1>
-            <p className="text-red-100 mt-1">
-              Erstellen Sie Ihren Administrator-Account
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
-            {/* Name Field */}
-            <div className="space-y-2">
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-gray-700"
+            {message.text && (
+              <div
+                className={`mb-6 p-3 rounded-md text-sm ${
+                  message.type === "success"
+                    ? "bg-green-50 text-green-700"
+                    : "bg-red-50 text-red-700"
+                }`}
               >
-                Vollständiger Name
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiUser className="text-red-500" />
-                </div>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  placeholder="Thomas Müller"
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-                />
+                {message.text}
               </div>
-            </div>
+            )}
 
-            {/* Email Field - Fixed width issue */}
-            <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
-              >
-                E-Mail-Adresse
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiMail className="text-red-500" />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  placeholder="max@beispiel.de"
-                  className="w-full min-w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-                  style={{ minWidth: "100%" }}
-                />
-              </div>
-            </div>
-
-            {/* Password Field */}
-            <div className="space-y-2">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Passwort
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock className="text-red-500" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  minLength="8"
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Mindestens 8 Zeichen</p>
-            </div>
-
-            {/* Role Selection */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Rolle
-              </label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-              >
-                <option value="admin">Administrator</option>
-                <option value="user">Benutzer</option>
-              </select>
-            </div>
-
-            {/* Image Upload */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Profilbild (Optional)
-              </label>
-              {previewImage ? (
-                <div className="relative mt-2">
-                  <img
-                    src={previewImage}
-                    alt="Vorschau"
-                    className="h-32 w-32 rounded-full object-cover mx-auto border-2 border-red-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                    aria-label="Bild entfernen"
-                  >
-                    <FiX size={14} />
-                  </button>
-                </div>
-              ) : (
-                <label className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-red-500 hover:bg-red-50 transition-colors">
-                  <div className="flex flex-col items-center justify-center">
-                    <FiCamera className="text-red-500 text-2xl mb-2" />
-                    <p className="text-sm text-gray-600">
-                      Zum Hochladen klicken
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
+            <form
+              onSubmit={handleSubmit}
+              className="grid grid-cols-1 md:grid-cols-2 gap-6"
+            >
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Profilbild
+                </label>
+                <div className="flex items-center space-x-4">
+                  <div className="flex-shrink-0 h-16 w-16 rounded-full bg-gray-200 overflow-hidden border border-gray-300">
+                    {previewImage ? (
+                      <img
+                        className="h-full w-full object-cover"
+                        src={previewImage}
+                        alt="Preview"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-gray-400">
+                        <FiCamera className="h-6 w-6" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <label className="cursor-pointer">
+                      <span className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        {previewImage ? "ändern" : "hochladen"}
+                      </span>
+                      <input
+                        type="file"
+                        name="image"
+                        accept="image/*"
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                    </label>
+                    {previewImage && (
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="ml-3 inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        löschen
+                      </button>
+                    )}
+                    <p className="mt-1 text-xs text-gray-500">
                       PNG, JPG bis zu 2MB
                     </p>
                   </div>
-                  <input
-                    id="image"
-                    name="image"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleChange}
-                    className="hidden"
-                  />
-                </label>
-              )}
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all shadow-md ${
-                isSubmitting
-                  ? "bg-red-600 cursor-not-allowed"
-                  : "bg-gradient-to-br from-red-600 to-black hover:from-red-600 hover:to-red-700"
-              }`}
-            >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Wird verarbeitet...
-                </span>
-              ) : (
-                "Account registrieren"
-              )}
-            </button>
-
-            {/* Message */}
-            {message.text && (
-              <div
-                className={`p-3 rounded-lg ${
-                  message.type === "success"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
-                <div className="flex items-center">
-                  {message.type === "success" ? (
-                    <FiCheck className="mr-2" />
-                  ) : (
-                    <FiX className="mr-2" />
-                  )}
-                  <span>{message.text}</span>
                 </div>
               </div>
-            )}
-          </form>
+
+              <div>
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  voller Name
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiUser className="text-gray-400" />
+                  </div>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Thomas Müller"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  E-Mail-Adresse
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiMail className="text-gray-400" />
+                  </div>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="admin@company.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Passwort
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiLock className="text-gray-400" />
+                  </div>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    minLength="8"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  mindestens 8-stellig
+                </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="role"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Rolle
+                </label>
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="admin">Administrator</option>
+                  <option value="user">benutzer</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                    isSubmitting ? "opacity-75 cursor-not-allowed" : ""
+                  }`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Konto erstellen...
+                    </>
+                  ) : (
+                    <>
+                      Konto erstellen <FiArrowRight className="ml-2" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

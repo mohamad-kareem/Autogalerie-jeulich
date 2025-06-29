@@ -6,7 +6,7 @@ import Hero2 from "../../(assets)/Hero2.jpeg";
 import Footbar from "@/app/(components)/mainpage/Footbar";
 import Head from "next/head";
 import { toast } from "react-hot-toast";
-
+import Button from "@/app/(components)/helpers/Button";
 import {
   MapPinIcon,
   PhoneIcon,
@@ -318,7 +318,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                 </div>
 
                 {/* Submit */}
-                <button
+                <Button
                   type="submit"
                   disabled={status === "loading"}
                   className="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-md font-medium transition-colors shadow-sm disabled:opacity-50"
@@ -330,7 +330,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                     : status === "error"
                     ? "Fehler – erneut versuchen"
                     : "Nachricht senden"}
-                </button>
+                </Button>
               </form>
             </div>
             {/* Contact Information */}

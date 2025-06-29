@@ -37,6 +37,8 @@ export default function NavBar() {
     "/punsh",
     "/Posteingang",
     "/Zeiterfassungsverwaltung",
+    "/login",
+    "/forgotpassword",
   ];
 
   const isAdminRoute = adminRoutes.some((route) => pathname?.startsWith(route));

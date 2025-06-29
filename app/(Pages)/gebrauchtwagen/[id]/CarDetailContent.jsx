@@ -221,41 +221,54 @@ function renderDescription(description) {
   });
 }
 
-const SpecCard = ({ icon, title, items }) => (
-  <div className="bg-white rounded-lg md:rounded-xl p-4 md:p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-    <div className="flex items-center mb-3 md:mb-4">
-      <div className="bg-red-50 p-2 md:p-3 rounded-lg mr-2 md:mr-3 text-red-600">
-        {icon}
-      </div>
-      <h3 className="text-base md:text-lg font-semibold text-gray-800">
-        {title}
-      </h3>
-    </div>
-    <div className="space-y-2 md:space-y-3">
-      {items.map((item, index) => (
-        <div
-          key={index}
-          className="flex justify-between py-1 md:py-1.5 border-b border-gray-100 last:border-0"
-        >
-          <span className="text-xs md:text-sm text-gray-600">{item.label}</span>
-          <span
-            className={`font-medium text-gray-800 ${
-              ["Klimaanlage", "Airbags", "Parkassistent"].includes(item.label)
-                ? "text-xs"
-                : "text-sm"
-            }`}
-          >
-            {item.value === "Ja" ? (
-              <BsCheck2 className="text-green-600 text-2xl" />
-            ) : (
-              item.value || "-"
-            )}
-          </span>
+const SpecCard = ({ icon, title, items }) => {
+  // Filter out items where value is "Nein"
+  const visibleItems = items.filter(
+    (item) =>
+      item.value !== "Nein" && item.value !== undefined && item.value !== null
+  );
+
+  // If nothing to show, skip rendering
+  if (visibleItems.length === 0) return null;
+
+  return (
+    <div className="bg-white rounded-lg md:rounded-xl p-4 md:p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-center mb-3 md:mb-4">
+        <div className="bg-red-50 p-2 md:p-3 rounded-lg mr-2 md:mr-3 text-red-600">
+          {icon}
         </div>
-      ))}
+        <h3 className="text-base md:text-lg font-semibold text-gray-800">
+          {title}
+        </h3>
+      </div>
+      <div className="space-y-2 md:space-y-3">
+        {visibleItems.map((item, index) => (
+          <div
+            key={index}
+            className="flex justify-between py-1 md:py-1.5 border-b border-gray-100 last:border-0"
+          >
+            <span className="text-xs md:text-sm text-gray-600">
+              {item.label}
+            </span>
+            <span
+              className={`font-medium text-gray-800 ${
+                ["Klimaanlage", "Airbags", "Parkassistent"].includes(item.label)
+                  ? "text-xs"
+                  : "text-sm"
+              }`}
+            >
+              {item.value === "Ja" ? (
+                <BsCheck2 className="text-green-600 text-2xl" />
+              ) : (
+                item.value || "-"
+              )}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 function CarDetailContent({ car }) {
   const [showContactForm, setShowContactForm] = useState(false);
@@ -692,7 +705,7 @@ function CarDetailContent({ car }) {
                             }
                             title="Technische Daten"
                             items={[
-                              { label: "Leistung", value: `${car.power} PS` },
+                              { label: "Leistung", value: `${car.power}KW` },
                               {
                                 label: "Hubraum",
                                 value: car.cubicCapacity
@@ -841,7 +854,7 @@ function CarDetailContent({ car }) {
                             }
                             title="Motor & Antrieb"
                             items={[
-                              { label: "Leistung", value: `${car.power} PS` },
+                              { label: "Leistung", value: `${car.power}KW` },
                               {
                                 label: "Hubraum",
                                 value: car.cubicCapacity

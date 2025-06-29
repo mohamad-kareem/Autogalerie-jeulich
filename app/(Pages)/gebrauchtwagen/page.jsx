@@ -503,7 +503,7 @@ export default function UsedCarsPage() {
                       <div>
                         <p className="text-xs text-gray-500">Leistung</p>
                         <p className="font-medium">
-                          {car.power ? `${car.power} PS` : "-"}
+                          {car.power ? `${car.power} KW` : "-"}
                         </p>
                       </div>
                     </div>
@@ -699,7 +699,7 @@ export default function UsedCarsPage() {
                         {
                           icon: <Zap className="h-4 w-4" />,
                           label: "Leistung",
-                          value: car.power ? `${car.power} PS` : "-",
+                          value: car.power ? `${car.power} KW` : "-",
                         },
                         {
                           icon: <Settings className="h-4 w-4" />,
