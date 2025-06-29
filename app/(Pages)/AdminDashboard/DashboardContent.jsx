@@ -103,12 +103,20 @@ const DashboardContent = ({ user, onProfileClick }) => {
 
             {/* ✅ Accessible to all authenticated users */}
             <NavigationCard
-              href="/forms"
+              href="/kaufvertrag/auswahl" // Page to choose issuer before creating contract
               icon={<FiFileText />}
-              title="Verträge"
-              description="Kaufverträge und Dokumente"
+              title="Neuen Vertrag erstellen"
+              description="Erstelle einen neuen Kaufvertrag"
               accentColor="purple"
             />
+            <NavigationCard
+              href="/kaufvertrag/liste" // Page showing submitted contracts
+              icon={<FiFileText />}
+              title="Vorherige Verträge"
+              description="Alle gespeicherten Kaufverträge anzeigen"
+              accentColor="gray"
+            />
+
             <NavigationCard
               href="/Plate"
               icon={<FiCalendar />}

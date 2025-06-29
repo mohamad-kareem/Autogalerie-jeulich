@@ -46,5 +46,6 @@ export const config = {
     "/Zeiterfassungsverwaltung/:path*",
     "/excel/:path*",
     "/Reg/:path*",
+    "/kaufvertrag",
   ],
 };

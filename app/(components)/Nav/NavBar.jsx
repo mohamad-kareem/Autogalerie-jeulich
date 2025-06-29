@@ -37,8 +37,7 @@ export default function NavBar() {
     "/punsh",
     "/Posteingang",
     "/Zeiterfassungsverwaltung",
-    "/login",
-    "/forgotpassword",
+    "/kaufvertrag",
   ];
 
   const isAdminRoute = adminRoutes.some((route) => pathname?.startsWith(route));
@@ -64,7 +63,7 @@ export default function NavBar() {
   // ✅ Floating Menu (on admin routes for any logged-in user)
   if (isAdminRoute && session?.user) {
     return (
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute top-4 right-4 z-50 print:hidden">
         <div className="relative">
           <button
             onClick={() => setOpen((v) => !v)}
@@ -143,7 +142,7 @@ export default function NavBar() {
     >
       <nav className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto h-full flex items-center justify-between px-2 sm:px-6">
         {/* Logo */}
-        <Link href="/" className="flex items-center flex-shrink-0">
+        <Link href="/" className="flex items-center flex-shrink-0 print:hidden">
           <Image
             src={Logo}
             alt="Logo"
