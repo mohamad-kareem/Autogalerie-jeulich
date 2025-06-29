@@ -543,14 +543,10 @@ export default function KaufvertragDetail() {
             }
 
             .input {
-              border: none;
-              background-color: white;
-              color: black;
-              padding: 0;
-              margin: 0;
-              font-size: 0.75rem;
-              line-height: 1rem;
-              height: auto;
+              border: none !important;
+              box-shadow: none !important;
+              background-color: white !important;
+              color: black !important;
             }
 
             input[type="date"]::-webkit-calendar-picker-indicator {
