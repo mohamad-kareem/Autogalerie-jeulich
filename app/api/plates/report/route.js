@@ -18,8 +18,8 @@ export async function GET(req) {
       query.plateNumber = plateNumber;
     }
 
-    const usage = await PlateUsage.find(query).sort({ startTime: 1 });
-
+    const usage = await PlateUsage.find(query).sort({ startTime: 1 }).lean();
+    console.log("Sample entry:", usage[0]);
     // Generate report data (could be enhanced with more analytics)
     const reportData = {
       summary: {

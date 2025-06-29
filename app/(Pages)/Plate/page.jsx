@@ -134,22 +134,36 @@ const PlateTrackingPage = () => {
   // Submit plate usage
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting formData:", formData);
 
     if (!formData.plateNumber || !formData.destination) {
       toast.error("Plate number and destination are required");
       return;
     }
 
+    // ✅ Match VIN case-insensitively
+    const selectedVin = vinNumbers.find(
+      (vin) => vin.vinNumber.toLowerCase() === formData.vinNumber.toLowerCase()
+    );
+    const carName = selectedVin?.car || "";
+
+    // ✅ Log debug info
+    console.log("Selected VIN object:", selectedVin);
+    console.log("Car name:", carName);
+
+    // ✅ Build final payload for saving
+    const payload = {
+      ...formData,
+      employeeId: session?.user?.id,
+      status: "active",
+      car: carName,
+    };
+
+    console.log("Submitting full body:", payload);
     try {
       const response = await fetch("/api/plates/usage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          employeeId: session?.user?.id,
-          status: "active",
-        }),
+        body: JSON.stringify(payload), // ✅ Use payload here
       });
 
       if (!response.ok) {
@@ -255,7 +269,8 @@ const PlateTrackingPage = () => {
         return {
           date: entry.startTime,
           plateNumber: entry.plateNumber,
-          vinNumber: entry.vinNumber || "-", // <-- include this
+          vinNumber: entry.vinNumber || "-",
+          car: entry.car || "-", // ✅ Include the car name
           account: entry.employeeName,
           destination: entry.destination,
           endTime: entry.endTime,
@@ -265,7 +280,7 @@ const PlateTrackingPage = () => {
           notes: entry.notes,
         };
       });
-
+      console.log("Exporting report rows:", exportData);
       exportPlateReport(exportData, "PlateReport");
       toast.success("Excel report downloaded successfully", {
         style: {
@@ -864,6 +879,14 @@ const PlateTrackingPage = () => {
                             darkMode ? "text-gray-300" : "text-gray-500"
                           }`}
                         >
+                          Fahrzeug
+                        </th>
+
+                        <th
+                          className={`px-3 py-2 sm:px-6 sm:py-3 text-left text-xs sm:text-sm font-medium uppercase tracking-wider ${
+                            darkMode ? "text-gray-300" : "text-gray-500"
+                          }`}
+                        >
                           Fahrzeug-Ident-Nr.
                         </th>
                         <th
@@ -952,6 +975,13 @@ const PlateTrackingPage = () => {
                                 }`}
                               >
                                 {usage.employeeName}
+                              </td>
+                              <td
+                                className={`px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm ${
+                                  darkMode ? "text-gray-300" : "text-gray-500"
+                                }`}
+                              >
+                                {usage.car || "-"}
                               </td>
                               <td
                                 className={`px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm ${

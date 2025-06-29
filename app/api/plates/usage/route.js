@@ -13,15 +13,17 @@ export async function GET() {
   }
 }
 
+// POST handler for /api/plates/usage
 export async function POST(req) {
   try {
     await connectDB();
     const data = await req.json();
-    console.log("Submitted Data:", data); // Add this for debugging
+    console.log("Submitted Data:", data); // This should include 'car'
 
     const newUsage = new PlateUsage(data);
     await newUsage.save();
     console.log("Saved usage:", newUsage);
+
     return new Response(JSON.stringify(newUsage), { status: 201 });
   } catch (error) {
     return new Response(JSON.stringify({ message: error.message }), {

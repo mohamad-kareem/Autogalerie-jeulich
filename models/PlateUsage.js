@@ -9,6 +9,7 @@ const PlateUsageSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  car: { type: String, default: "" },
 
   from: { type: String }, // ✅ FIXED: lowercase
   carType: { type: String }, // ✅ Already good
