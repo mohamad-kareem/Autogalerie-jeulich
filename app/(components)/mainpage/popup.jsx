@@ -108,7 +108,7 @@ const PreisPopup = () => {
               quality={100}
               sizes="(max-width: 1024px) 100vw, 50vw"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
             <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 text-white">
               <span className="text-xl sm:text-3xl font-bold">
                 {angebote[currentOffer].preis}
