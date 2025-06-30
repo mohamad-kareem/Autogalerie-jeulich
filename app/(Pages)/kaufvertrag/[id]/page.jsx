@@ -80,26 +80,26 @@ export default function KaufvertragDetail() {
     <div className="max-w-5xl mx-auto p-4 font-sans text-[13px] print:p-0 print:max-w-none">
       <form onSubmit={handleSubmit} className="space-y-4 print:space-y-2">
         {/* Header */}
-        <div className="flex justify-between items-center border p-7 bg-black text-white print:p-1">
-          <div className="text-left">
-            <p className="font-semibold text-lg">
+        <div className="flex flex-col sm:flex-row justify-between items-center border p-2 sm:p-7 bg-black text-white print:flex-row print:justify-between print:items-center print:p-2 print:px-6">
+          <div className="text-left w-full md:w-auto mb-2 md:mb-0 print:mb-0 print:text-left print:w-1/2">
+            <p className="font-semibold text-sm md:text-lg print:text-sm">
               E-Mail: autogalerie.juelich@web.de / Tel.: 02461/9163780
             </p>
           </div>
-          <div className="text-right">
+          <div className="text-right w-full md:w-auto print:w-1/2 print:text-right">
             <Image
               src={logo}
               alt="Logo"
               width={150}
               height={100}
-              className="object-fill"
+              className="object-fill mx-auto md:mx-0 print:ml-auto print:mr-0"
             />
           </div>
         </div>
 
         {/* Buyer Info and Invoice */}
-        <div className="flex justify-between items-start pb-2 print:pb-1">
-          <div className="text-left space-y-1 print:space-y-0 print:leading-none print:gap-0 print:m-0 w-1/2">
+        <div className="flex flex-col sm:flex-row justify-between items-start pb-2 print:pb-1 gap-4 md:gap-0">
+          <div className="text-left space-y-1 print:space-y-0 print:leading-none print:gap-0 print:m-0 w-full md:w-1/2">
             <p className="font-bold">Käuferdaten:</p>
             <input
               type="text"
@@ -123,10 +123,15 @@ export default function KaufvertragDetail() {
               className="input w-full p-1"
             />
           </div>
-          <div className="text-right space-y-1">
-            <p className="text-red-600 text-2xl print:text-2xl">Kaufvertrag</p>
-            <div className="flex justify-end items-center space-x-2 text-[13px]">
-              <label htmlFor="invoiceNumber" className="font-medium">
+          <div className="text-right space-y-1 w-full md:w-auto">
+            <p className="text-red-600 text-xl md:text-2xl print:text-2xl">
+              Kaufvertrag
+            </p>
+            <div className="flex justify-end items-center gap-2 text-[13px]">
+              <label
+                htmlFor="invoiceNumber"
+                className="font-medium whitespace-nowrap"
+              >
                 Rechnungsnummer:
               </label>
               <input
@@ -138,7 +143,7 @@ export default function KaufvertragDetail() {
                 className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px]"
               />
             </div>
-            <div className="flex justify-end items-center space-x-2 text-[13px]">
+            <div className="flex justify-end items-center gap-2 text-[13px] mt-1">
               <label
                 htmlFor="invoiceDate"
                 className="font-medium whitespace-nowrap"
@@ -158,48 +163,44 @@ export default function KaufvertragDetail() {
         </div>
 
         {/* Contact Info */}
-        <div className="space-y-1 print:space-y-0 print:leading-none w-1/2">
-          <div className="flex items-center">
-            <label className="w-40 font-semibold text-[13px]">
-              Ausweisnummer
-            </label>
-            <input
-              type="text"
-              name="idNumber"
-              value={form.idNumber}
-              onChange={handleChange}
-              className="input p-1"
-            />
-          </div>
-          <div className="flex items-center">
-            <label className="w-40 font-semibold text-[13px]">
-              Telefon / Mobil:
-            </label>
-            <input
-              type="text"
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              className="input p-1"
-            />
-          </div>
-          <div className="flex items-center">
-            <label className="w-40 font-semibold text-[13px]">
-              Persönliche E-Mail:
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              className="input p-1"
-            />
-          </div>
+        <div className="grid grid-cols-[max-content_1fr] gap-y-1 print:gap-y-0 print:leading-none w-full md:w-1/2">
+          <label className="font-semibold text-[13px] print:text-[11px] self-center">
+            Ausweisnummer
+          </label>
+          <input
+            type="text"
+            name="idNumber"
+            value={form.idNumber}
+            onChange={handleChange}
+            className="input p-1 text-[13px] print:text-[11px] w-full"
+          />
+
+          <label className="font-semibold text-[13px] print:text-[11px] self-center">
+            Telefon / Mobil
+          </label>
+          <input
+            type="text"
+            name="phone"
+            value={form.phone}
+            onChange={handleChange}
+            className="input p-1 text-[13px] print:text-[11px] w-full"
+          />
+
+          <label className="font-semibold text-[13px] print:text-[11px] self-center">
+            Persönliche E-Mail
+          </label>
+          <input
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            className="input p-1 text-[13px] print:text-[11px] w-full"
+          />
         </div>
 
         {/* Vehicle Info */}
-        <div className="pt-6 print:pt-1">
-          <div className="grid grid-cols-4 gap-2 text-[13px] font-semibold">
+        <div className="pt-4 md:pt-6 print:pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-4 md:grid-cols-4 gap-2 text-[13px] font-semibold">
             <div>
               <label htmlFor="carType">Fahrzeugtyp</label>
               <div className="h-[1px] bg-gray-400 w-full my-1" />
@@ -208,7 +209,7 @@ export default function KaufvertragDetail() {
                 name="carType"
                 value={form.carType}
                 onChange={handleChange}
-                className="input"
+                className="input w-full"
               />
             </div>
             <div>
@@ -219,7 +220,7 @@ export default function KaufvertragDetail() {
                 name="vin"
                 value={form.vin}
                 onChange={handleChange}
-                className="input"
+                className="input w-full"
               />
             </div>
             <div>
@@ -230,7 +231,7 @@ export default function KaufvertragDetail() {
                 name="firstRegistration"
                 value={form.firstRegistration}
                 onChange={handleChange}
-                className="input"
+                className="input w-full"
               />
             </div>
             <div>
@@ -241,14 +242,14 @@ export default function KaufvertragDetail() {
                 name="mileage"
                 value={form.mileage}
                 onChange={handleChange}
-                className="input"
+                className="input w-full"
               />
             </div>
           </div>
         </div>
 
         {/* Warranty */}
-        <div className="pt-6 print:mt-1">
+        <div className="pt-4 md:pt-6 print:mt-1">
           <p className="font-semibold">Gewährleistung:</p>
           <div className="p-1 text-[13px]">
             <div className="flex items-center space-x-1">
@@ -301,11 +302,11 @@ export default function KaufvertragDetail() {
         </div>
 
         {/* Documents */}
-        <div className="pt-6 print:pt-1">
+        <div className="pt-4 md:pt-6 print:pt-1">
           <p className="font-semibold text-[13px] border-b w-fit">
             Das Kfz wurde mit folgenden Papieren und Schlüsseln übergeben
           </p>
-          <div className="grid grid-cols-4 gap-1 text-[13px] pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-4 md:grid-cols-4 gap-1 text-[13px] pt-2">
             <label className="flex items-center">
               <input
                 type="checkbox"
@@ -349,8 +350,8 @@ export default function KaufvertragDetail() {
           </div>
         </div>
 
-        {/* Payment */}
-        <div className="grid grid-cols-3 gap-2 pt-6 print:pt-1">
+        {/* Payment Section */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-4 md:pt-6 print:pt-1">
           <div>
             <div className="border-b border-black inline-block text-[13px] font-semibold mb-1">
               Rechnungsbetrag (€)
@@ -399,11 +400,13 @@ export default function KaufvertragDetail() {
 
         {/* Terms */}
         <div className="mt-4 print:mt-2">
-          <div className="flex justify-between items-end font-bold text-[13px]">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end font-bold text-[13px] gap-2">
             <p>Zahlungsbedingungen</p>
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-start sm:items-center w-full sm:w-auto">
               <div className="h-12 w-40 border-b border-dashed border-gray-400 mb-1 print:h-16" />
-              <p className="text-center text-[13px]">Restbetrag erhalten</p>
+              <p className="text-left sm:text-center text-[13px]">
+                Restbetrag erhalten
+              </p>
             </div>
           </div>
 
@@ -428,20 +431,23 @@ export default function KaufvertragDetail() {
         </div>
 
         {/* Signatures */}
-        <div className="flex justify-between mt-16 print:mt-3">
-          <div className="flex flex-col items-center">
+        <div className="flex flex-col sm:flex-row justify-between mt-8 sm:mt-16 print:mt-3 gap-4 sm:gap-0">
+          <div className="flex flex-col items-start sm:items-center">
             <div className="h-12 w-40 border-b border-dashed border-gray-400 mb-1 print:h-16" />
-            <p className="text-center text-[13px]">Unterschrift Verkäufer</p>
+            <p className="text-left sm:text-center text-[13px]">
+              Unterschrift Verkäufer
+            </p>
           </div>
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-start sm:items-center">
             <div className="h-12 w-40 border-b border-dashed border-gray-400 mb-1 print:h-16" />
-            <p className="text-center text-[13px]">Unterschrift Käufer</p>
+            <p className="text-left sm:text-center text-[13px]">
+              Unterschrift Käufer
+            </p>
           </div>
         </div>
 
         {/* Bank Info */}
-        {/* Bank Info */}
-        <div className="mt-4 grid grid-cols-2 text-white print:mt-2">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 text-white print:mt-2">
           {form.issuer === "alawie" ? (
             <>
               <div className="bg-gray-600 p-2 print:p-1">
@@ -450,7 +456,7 @@ export default function KaufvertragDetail() {
                 <p className="text-[13px]">Alte Dürener straße 4</p>
                 <p className="text-[13px]">52428 Jülich</p>
               </div>
-              <div className="bg-gray-600 p-2 text-right print:p-1">
+              <div className="bg-gray-600 p-2 md:text-right print:text-right print:p-1">
                 <p className="font-semibold text-[13px]">Commerzbank</p>
                 <p className="text-[13px]">IBAN: DE06 1001 0010 0946 9021 03</p>
                 <p className="text-[13px]">BIC: PBNKDEFF</p>
@@ -464,7 +470,7 @@ export default function KaufvertragDetail() {
                 <p className="text-[13px]">Alte Dürener straße 4</p>
                 <p className="text-[13px]">52428 Jülich</p>
               </div>
-              <div className="bg-gray-600 p-2 text-right print:p-1">
+              <div className="bg-gray-600 p-2 md:text-right print:text-right print:p-1">
                 <p className="font-semibold text-[13px]">Commerzbank</p>
                 <p className="text-[13px]">IBAN: DE42 3904 0013 0446 9508 00</p>
                 <p className="text-[13px]">Ust-IdNr.:DE317574583</p>
@@ -474,7 +480,7 @@ export default function KaufvertragDetail() {
         </div>
 
         {/* Buttons */}
-        <div className="flex justify-between mt-4">
+        <div className="flex flex-col sm:flex-row justify-between mt-4 gap-2 sm:gap-0">
           <button
             type="button"
             onClick={() => router.push("/kaufvertrag/liste")}
@@ -482,7 +488,7 @@ export default function KaufvertragDetail() {
           >
             Zurück zur Liste
           </button>
-          <div className="space-x-2 print:hidden">
+          <div className="flex flex-col sm:flex-row gap-2 print:hidden">
             <button
               type="button"
               onClick={() => window.print()}
