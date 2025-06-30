@@ -8,14 +8,15 @@ import LandingSlide from "./LandingSlide";
 import WhyUs from "./WhyUs";
 import Rating from "./Rating";
 import Reviews from "./CustomerReviews";
-import GridBackground from "../helpers/Grid"; // Adjust path if needed
+import GridBackground from "../helpers/Grid";
 import RandomCarSlider from "./RandomCarSlider";
-
+import DiscountPopup from "./popup.jsx"; // Import the popup component
 const Complete = () => {
   return (
     <main className="relative bg-black text-white">
-      <GridBackground /> {/* ⬅️ Grid SVG in the background */}
+      <GridBackground /> {/*  Grid SVG in the background */}
       <HeroSection />
+      <DiscountPopup />
       <LandingChoices />
       <RandomCarSlider />
       <Rating />

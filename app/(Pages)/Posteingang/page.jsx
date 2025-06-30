@@ -20,7 +20,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!session?.user?.isAdmin) {
+  if (!session?.user) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
         <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px]  mx-4 text-center">
