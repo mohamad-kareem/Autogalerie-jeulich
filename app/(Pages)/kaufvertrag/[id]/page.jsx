@@ -394,9 +394,22 @@ export default function KaufvertragDetail() {
           </div>
         </div>
 
-        <p className="italic text-[13px]">
-          Betrag wird Bar per Abholung bezahlt
-        </p>
+        {/* Visible in UI only */}
+        <input
+          type="text"
+          name="paymentNote"
+          value={form.paymentNote || ""}
+          onChange={handleChange}
+          className="input italic text-[13px] mt-1 w-full print:hidden"
+          placeholder="Betrag wird Bar per Abholung bezahlt"
+        />
+
+        {/* Visible in print view only */}
+        {form.paymentNote && (
+          <p className="italic text-[13px] mt-2 hidden print:block">
+            {form.paymentNote}
+          </p>
+        )}
 
         {/* Terms */}
         <div className="mt-4 print:mt-2">
@@ -458,8 +471,8 @@ export default function KaufvertragDetail() {
               </div>
               <div className="bg-gray-600 p-2 md:text-right print:text-right print:p-1">
                 <p className="font-semibold text-[13px]">Commerzbank</p>
-                <p className="text-[13px]">IBAN: DE06 1001 0010 0946 9021 03</p>
-                <p className="text-[13px]">BIC: PBNKDEFF</p>
+                <p className="text-[13px]">IBAN: DE42 3904 0013 0446 9508 00</p>
+                <p className="text-[13px]">USt-IdNr.: DE317574583</p>
               </div>
             </>
           ) : (

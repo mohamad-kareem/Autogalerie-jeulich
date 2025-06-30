@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const KaufvertragSchema = new mongoose.Schema(
   {
-    issuer: String, // ← ✅ Add this line
+    issuer: String,
     buyerName: String,
     buyerStreet: String,
     buyerCity: String,
@@ -23,6 +23,7 @@ const KaufvertragSchema = new mongoose.Schema(
     keys: Number,
     total: Number,
     downPayment: Number,
+    paymentNote: String, // ← ✅ ADD THIS LINE
   },
   { timestamps: true }
 );

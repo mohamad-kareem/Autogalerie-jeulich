@@ -376,9 +376,14 @@ export default function KaufvertragClientForm() {
           </div>
         </div>
 
-        <p className="italic text-[13px]">
-          Betrag wird Bar per Abholung bezahlt
-        </p>
+        <input
+          type="text"
+          name="paymentNote"
+          value={form.paymentNote || ""}
+          onChange={handleChange}
+          className="input italic text-[13px] mt-1 w-full"
+          placeholder="Betrag wird Bar per Abholung bezahlt"
+        />
 
         {/* Terms */}
         <div className="mt-4 print:mt-2">
