@@ -64,7 +64,7 @@ export default function LoginPage({ callbackUrl }) {
               Admin Portal
             </h1>
             <p className="text-center text-gray-600 mb-8">
-              Enter your credentials to access the dashboard
+              Geben Sie Ihre Zugangsdaten ein, um auf das Dashboard zuzugreifen
             </p>
 
             {error && (
@@ -92,7 +92,7 @@ export default function LoginPage({ callbackUrl }) {
                   htmlFor="email"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Email address
+                  E-Mail-Adresse
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -118,13 +118,13 @@ export default function LoginPage({ callbackUrl }) {
                     htmlFor="password"
                     className="block text-sm font-medium text-gray-700"
                   >
-                    Password
+                    Passwort
                   </label>
                   <Link
                     href="/forgotpassword"
                     className="text-sm text-red-600 hover:text-red-500"
                   >
-                    Forgot password?
+                    Passwort vergessen?
                   </Link>
                 </div>
                 <div className="relative">
@@ -176,11 +176,11 @@ export default function LoginPage({ callbackUrl }) {
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      Signing in...
+                      Sich anmelden...
                     </>
                   ) : (
                     <>
-                      Continue <FiArrowRight className="ml-2" />
+                      fortsetzen <FiArrowRight className="ml-2" />
                     </>
                   )}
                 </Button>
