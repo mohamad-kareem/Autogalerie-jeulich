@@ -19,6 +19,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { exportPlateReport } from "@/app/utils/PlateExportService";
 import DeleteByTimeRange from "@/app/(components)/helpers/DeleteByTimeRange";
+import Select from "react-select";
 
 const PlateTrackingPage = () => {
   const { data: session } = useSession();
@@ -65,6 +66,11 @@ const PlateTrackingPage = () => {
 
     fetchVinNumbers();
   }, []);
+
+  const vinOptions = vinNumbers.map((vin) => ({
+    value: vin.vinNumber,
+    label: `${vin.vinNumber} (${vin.car})`,
+  }));
 
   const [reportFilters, setReportFilters] = useState({
     startDate: new Date(new Date().setHours(0, 0, 0, 0)),
@@ -509,23 +515,41 @@ const PlateTrackingPage = () => {
                   >
                     VIN-Nummer
                   </label>
-                  <select
-                    name="vinNumber"
-                    value={formData.vinNumber}
-                    onChange={handleInputChange}
-                    className={`w-full px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                      darkMode
-                        ? "bg-gray-700 border-gray-600 text-white"
-                        : "border-gray-300 bg-white text-gray-900"
-                    }`}
-                  >
-                    <option value="">Wähle eine VIN-Nummer</option>
-                    {vinNumbers.map((vin) => (
-                      <option key={vin._id} value={vin.vinNumber}>
-                        {vin.vinNumber} ({vin.car})
-                      </option>
-                    ))}
-                  </select>
+                  <Select
+                    options={vinOptions}
+                    value={vinOptions.find(
+                      (opt) => opt.value === formData.vinNumber
+                    )}
+                    onChange={(selected) =>
+                      setFormData({
+                        ...formData,
+                        vinNumber: selected?.value || "",
+                      })
+                    }
+                    isClearable
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    placeholder="Wähle eine VIN-Nummer"
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        backgroundColor: darkMode ? "#374151" : "#fff",
+                        borderColor: darkMode ? "#4B5563" : "#D1D5DB",
+                        color: darkMode ? "#fff" : "#111",
+                        fontSize: "0.875rem",
+                        padding: "1px",
+                      }),
+                      singleValue: (base) => ({
+                        ...base,
+                        color: darkMode ? "#fff" : "#111",
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        backgroundColor: darkMode ? "#1F2937" : "#fff",
+                        color: darkMode ? "#fff" : "#111",
+                      }),
+                    }}
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
