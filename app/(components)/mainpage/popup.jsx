@@ -62,7 +62,7 @@ const PreisPopup = () => {
     if (!isVisible) return;
     const interval = setInterval(() => {
       setCurrentOffer((prev) => (prev + 1) % angebote.length);
-    }, 5000); // Langsamere Animation für bessere Lesbarkeit
+    }, 5000);
     return () => clearInterval(interval);
   }, [isVisible]);
 
@@ -90,40 +90,41 @@ const PreisPopup = () => {
         {/* Schließen-Button */}
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-white hover:bg-gray-100 transition-colors shadow-md"
+          className="absolute top-2 right-2 z-20 p-1 sm:p-2 rounded-full bg-white hover:bg-gray-100 transition-colors shadow-md"
           aria-label="Angebot schließen"
         >
-          <X className="w-5 h-5 text-gray-700" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3">
-          {/* Fahrzeugbild */}
-          <div className="lg:col-span-2 relative h-64 lg:h-auto">
+        <div className="flex flex-col lg:flex-row">
+          {/* Fahrzeugbild - Mobile first */}
+          <div className="relative h-48 sm:h-64 w-full lg:w-2/3 lg:h-auto aspect-video lg:aspect-auto">
             <Image
               src={angebote[currentOffer].image}
               alt={angebote[currentOffer].title}
               fill
-              className="object-center "
+              className="object-center"
               priority
               quality={100}
+              sizes="(max-width: 1024px) 100vw, 50vw"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-            <div className="absolute bottom-4 left-4 text-white">
-              <span className="text-3xl font-bold">
+            <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 text-white">
+              <span className="text-xl sm:text-3xl font-bold">
                 {angebote[currentOffer].preis}
               </span>
-              <p className="text-sm">Inkl. MwSt. und Zulassung</p>
+              <p className="text-xs sm:text-sm">Inkl. MwSt. und Zulassung</p>
             </div>
           </div>
 
           {/* Angebotsdetails */}
-          <div className="p-6 lg:p-8 flex flex-col justify-between">
+          <div className="p-4 sm:p-6 lg:p-6 flex flex-col justify-between w-full lg:w-1/3">
             <div>
-              <div className="mb-4">
-                <span className="text-xs font-semibold px-3 py-1 bg-gray-100 rounded-full text-gray-700 inline-block">
+              <div className="mb-2 sm:mb-4">
+                <span className="text-xs font-semibold px-2 py-1 sm:px-3 sm:py-1 bg-gray-100 rounded-full text-gray-700 inline-block">
                   {angebote[currentOffer].highlight}
                 </span>
-                <div className="flex justify-center mt-4 space-x-2">
+                <div className="flex justify-center mt-2 sm:mt-4 space-x-1 sm:space-x-2">
                   {angebote.map((_, index) => (
                     <button
                       key={index}
@@ -137,40 +138,40 @@ const PreisPopup = () => {
                 </div>
               </div>
 
-              <h3 className="text-2xl font-bold text-gray-900 mt-4 mb-2">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mt-2 sm:mt-4 mb-1 sm:mb-2">
                 {angebote[currentOffer].title}
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
                 {angebote[currentOffer].description}
               </p>
 
-              <div className="flex items-center text-sm text-gray-500 mb-8">
-                <Clock className="w-4 h-4 mr-2" />
+              <div className="flex items-center text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
+                <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 <span>Gültig bis: {angebote[currentOffer].gültigBis}</span>
               </div>
             </div>
 
             <div>
-              <div className="mb-6">
-                <div className="flex items-center text-sm text-gray-500">
-                  <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+              <div className="mb-4 sm:mb-6">
+                <div className="flex items-center text-xs sm:text-sm text-gray-500">
+                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-green-500" />
                   <span>Nur begrenzte Verfügbarkeit</span>
                 </div>
               </div>
 
-              <div className="flex flex-col space-y-3">
+              <div className="flex flex-col space-y-2 sm:space-y-3">
                 <a
                   href={angebote[currentOffer].ctaLink}
-                  className="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg text-center transition-colors flex items-center justify-center"
+                  className="px-4 py-2 sm:px-6 sm:py-3 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg text-center transition-colors flex items-center justify-center text-sm sm:text-base"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   {angebote[currentOffer].ctaText}
-                  <ChevronRight className="w-4 h-4 ml-2" />
+                  <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
                 </a>
                 <button
                   onClick={handleClose}
-                  className="px-6 py-3 text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 sm:px-6 sm:py-3 text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors text-sm sm:text-base"
                 >
                   Weiter browsen
                 </button>
