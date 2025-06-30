@@ -32,12 +32,20 @@ export default function KaufvertragDetail() {
   const { id } = useParams();
   const router = useRouter();
   const [form, setForm] = useState(defaultForm);
+  const [rawTotal, setRawTotal] = useState("");
+  const [rawDownPayment, setRawDownPayment] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
       const res = await fetch(`/api/kaufvertrag/${id}`);
       const data = await res.json();
-      setForm({ ...defaultForm, ...data }); // ensures no undefined fields
+      setForm({ ...defaultForm, ...data });
+
+      // Format values with € symbol and German commas
+      setRawTotal(data.total ? `€ ${formatGermanNumber(data.total)}` : "");
+      setRawDownPayment(
+        data.downPayment ? `€ ${formatGermanNumber(data.downPayment)}` : ""
+      );
     };
     fetchData();
   }, [id]);
@@ -56,6 +64,18 @@ export default function KaufvertragDetail() {
     }
 
     setForm((prev) => ({ ...prev, [name]: parsedValue }));
+    setRawTotal(data.total?.toString() || "");
+    setRawDownPayment(data.downPayment?.toString() || "");
+  };
+  const formatGermanNumber = (value) =>
+    new Intl.NumberFormat("de-DE", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+
+  const parseGermanNumber = (value) => {
+    const cleaned = value.replace(/\./g, "").replace(",", ".");
+    return parseFloat(cleaned) || 0;
   };
 
   const handleSubmit = async (e) => {
@@ -357,11 +377,27 @@ export default function KaufvertragDetail() {
               Rechnungsbetrag (€)
             </div>
             <input
-              type="number"
+              type="text"
               name="total"
-              value={form.total}
+              value={rawTotal}
+              onChange={(e) => {
+                const val = e.target.value;
+                // Strip € and format on next blur
+                setRawTotal(val);
+                setForm((prev) => ({
+                  ...prev,
+                  total: parseGermanNumber(val),
+                }));
+              }}
+              onBlur={() => {
+                // Format when leaving the input
+                setRawTotal(`€ ${formatGermanNumber(form.total)}`);
+              }}
+              onFocus={() => {
+                // Remove € and show raw number for editing
+                setRawTotal(form.total?.toString() || "");
+              }}
               className="input w-full p-1"
-              onChange={handleChange}
             />
           </div>
           <div>
@@ -369,11 +405,24 @@ export default function KaufvertragDetail() {
               Anzahlung (€)
             </div>
             <input
-              type="number"
+              type="text"
               name="downPayment"
-              value={form.downPayment}
+              value={rawDownPayment}
+              onChange={(e) => {
+                const val = e.target.value;
+                setRawDownPayment(val);
+                setForm((prev) => ({
+                  ...prev,
+                  downPayment: parseGermanNumber(val),
+                }));
+              }}
+              onBlur={() => {
+                setRawDownPayment(`€ ${formatGermanNumber(form.downPayment)}`);
+              }}
+              onFocus={() => {
+                setRawDownPayment(form.downPayment?.toString() || "");
+              }}
               className="input w-full p-1"
-              onChange={handleChange}
             />
           </div>
           <div>
@@ -387,7 +436,7 @@ export default function KaufvertragDetail() {
               readOnly
               value={
                 Number.isFinite(form.total - form.downPayment)
-                  ? `€ ${(form.total - form.downPayment).toFixed(2)}`
+                  ? `€ ${formatGermanNumber(form.total - form.downPayment)}`
                   : ""
               }
             />
