@@ -14,9 +14,8 @@ import {
   FiSmartphone,
   FiShield,
   FiMapPin,
+  FiHelpCircle,
 } from "react-icons/fi";
-import { FaUserClock, FaBusinessTime } from "react-icons/fa";
-import { IoMdTime } from "react-icons/io";
 import * as turf from "@turf/turf";
 
 const dealershipCoords = turf.polygon([
@@ -32,39 +31,42 @@ const dealershipCoords = turf.polygon([
   ],
 ]);
 
-export default function PunchClockPage() {
+export default function ZeiterfassungPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [currentStatus, setCurrentStatus] = useState("out");
-  const [isLoading, setIsLoading] = useState(false);
-  const [showDevicePanel, setShowDevicePanel] = useState(false);
-  const [deviceRegistered, setDeviceRegistered] = useState(false);
+  const [statusZeiterfassung, setStatusZeiterfassung] =
+    useState("ausgestempelt");
+  const [wirdGeladen, setWirdGeladen] = useState(false);
+  const [zeigeGerätePanel, setZeigeGerätePanel] = useState(false);
+  const [gerätRegistriert] = useState(!!getDeviceId());
 
+  // Authentifizierungsprüfung
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
-    setDeviceRegistered(!!getDeviceId());
   }, [status]);
 
-  useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
-
+  // Aktuellen Status abfragen
   const fetchStatus = useCallback(async () => {
     if (!session?.user?.id) return;
-    const res = await fetch("/api/punch/latest", {
-      headers: { "x-admin-id": session.user.id },
-    });
-    const data = await res.json();
-    setCurrentStatus(data?.type || "out");
+    try {
+      const res = await fetch("/api/punch/latest", {
+        headers: { "x-admin-id": session.user.id },
+      });
+      const data = await res.json();
+      setStatusZeiterfassung(
+        data?.type === "in" ? "eingestempelt" : "ausgestempelt"
+      );
+    } catch (error) {
+      console.error("Fehler beim Abrufen des Status:", error);
+    }
   }, [session]);
 
   useEffect(() => {
     if (session?.user?.id) fetchStatus();
   }, [session, fetchStatus]);
 
+  // Aktuellen Standort ermitteln
   const getLocation = async () => {
     return new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(
@@ -81,17 +83,16 @@ export default function PunchClockPage() {
     });
   };
 
-  const handlePunch = async (type) => {
-    if (currentStatus === type || isLoading) return;
-    setIsLoading(true);
+  // Stempelung verarbeiten
+  const handleStempelung = async (typ) => {
+    if (statusZeiterfassung === typ || wirdGeladen) return;
+    setWirdGeladen(true);
 
     try {
       const { lat, lng, isInside } = await getLocation();
 
       if (!isInside) {
-        toast.error(
-          "Sie befinden sich außerhalb des erlaubten Bereichs des Autohauses."
-        );
+        toast.error("Sie müssen sich im Autohaus befinden, um zu stempeln");
         return;
       }
 
@@ -102,37 +103,40 @@ export default function PunchClockPage() {
           "x-admin-id": session.user.id,
         },
         body: JSON.stringify({
-          type,
+          type: typ === "Einstempeln" ? "in" : "out",
           location: { lat, lng, verified: true },
-          method: deviceRegistered ? "device" : "manual",
+          method: gerätRegistriert ? "device" : "manual",
         }),
       });
 
       const result = await res.json();
       if (result.success) {
         toast.success(
-          `Erfolgreich ${type === "in" ? "eingestempelt" : "ausgestempelt"}`
+          `Erfolgreich ${
+            typ === "Einstempeln" ? "eingestempelt" : "ausgestempelt"
+          }`
         );
         await fetchStatus();
       } else {
-        toast.error(result.error || "Fehler bei der Stempelung");
+        toast.error(result.error || "Stempelung fehlgeschlagen");
       }
     } catch (err) {
       toast.error(
         "Standort konnte nicht ermittelt werden. Bitte GPS aktivieren."
       );
     } finally {
-      setIsLoading(false);
+      setWirdGeladen(false);
     }
   };
 
-  const handleRegisterDevice = async () => {
+  // Gerät registrieren
+  const handleGerätRegistrierung = async () => {
     if (!session?.user?.id) {
       toast.error("Bitte zuerst einloggen");
       return;
     }
 
-    setIsLoading(true);
+    setWirdGeladen(true);
     try {
       const deviceId = crypto.randomUUID();
 
@@ -148,263 +152,224 @@ export default function PunchClockPage() {
       }
 
       setDeviceId(deviceId);
-      setDeviceRegistered(true);
-      setShowDevicePanel(false);
+      setZeigeGerätePanel(false);
       toast.success("Gerät erfolgreich registriert!");
     } catch (error) {
       console.error(error);
       toast.error(error.message || "Geräteregistrierung fehlgeschlagen");
     } finally {
-      setIsLoading(false);
+      setWirdGeladen(false);
     }
   };
 
-  const formatTime = (d) =>
-    new Date(d).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  const formatDate = (d) => new Date(d).toLocaleDateString();
-
-  if (status !== "authenticated")
+  if (status !== "authenticated") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-pulse text-gray-600 text-sm md:text-base">
-          Authentifizierung wird geladen...
+        <div className="animate-pulse text-gray-600">
+          Authentifizierung läuft...
         </div>
       </div>
     );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 p-2 md:p-4 lg:p-8">
-      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
-        {/* Header Section */}
-        <header className="mb-4 md:mb-6 lg:mb-8">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-2">
-              <FaUserClock className="text-xl md:text-2xl text-emerald-400" />
-              <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-white">
-                Mitarbeiter Zeiterfassung
+    <div className="min-h-screen bg-gray-50 text-gray-800 p-4 md:p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Kopfbereich */}
+        <header className="mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Zeiterfassungssystem
               </h1>
+              <p className="text-gray-600">Erfassen Sie Ihre Arbeitszeiten</p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 bg-gray-800/50 rounded-lg p-2 text-xs md:text-sm">
-              <div className="flex items-center gap-1">
-                <FiUser className="text-emerald-400" />
-                <span className="truncate max-w-[100px] md:max-w-none">
-                  {session.user.name}
-                </span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm">
+                <FiUser className="text-blue-600" />
+                <span className="font-medium">{session.user.name}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <FiCalendar className="text-emerald-400" />
-                <span>{formatDate(currentTime)}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <IoMdTime className="text-emerald-400" />
-                <span>{formatTime(currentTime)}</span>
-              </div>
+
               <div
-                className={`px-2 py-0.5 rounded-full text-xs ${
-                  currentStatus === "in"
-                    ? "bg-emerald-900 text-emerald-200"
-                    : "bg-gray-700 text-gray-300"
+                className={`px-3 py-2 rounded-lg font-medium ${
+                  statusZeiterfassung === "eingestempelt"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-gray-100 text-gray-800"
                 }`}
               >
-                {currentStatus === "in" ? "Eingestempelt" : "Ausgestempelt"}
+                {statusZeiterfassung === "eingestempelt"
+                  ? "Im Dienst"
+                  : "Außer Dienst"}
               </div>
             </div>
           </div>
         </header>
 
-        {/* Main Content Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-          {/* Punch Controls - Left Column */}
-          <div className="lg:col-span-2 space-y-4 md:space-y-6">
-            {/* Punch Card */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg md:rounded-xl p-4 md:p-6 shadow-lg">
-              <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4 flex items-center gap-2">
-                <FaBusinessTime className="text-emerald-400" />
-                Stempelaktionen
-              </h2>
+        {/* Hauptinhalt */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Stempelungsfunktionen */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Stempelkarte */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <h2 className="text-lg font-semibold mb-4">Stempelaktionen</h2>
 
-              <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={() => handlePunch("in")}
-                  disabled={currentStatus === "in" || isLoading}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 md:px-6 md:py-3 rounded-lg text-sm md:text-base ${
-                    currentStatus === "in" || isLoading
-                      ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                      : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-md hover:shadow-emerald-500/20"
+                  onClick={() => handleStempelung("Einstempeln")}
+                  disabled={
+                    statusZeiterfassung === "eingestempelt" || wirdGeladen
+                  }
+                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                    statusZeiterfassung === "eingestempelt" || wirdGeladen
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
                   }`}
                 >
-                  <FiLogIn className="text-base md:text-lg" />
+                  <FiLogIn />
                   Einstempeln
                 </button>
 
                 <button
-                  onClick={() => handlePunch("out")}
-                  disabled={currentStatus !== "in" || isLoading}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-3 rounded-lg text-sm md:text-base ${
-                    currentStatus !== "in" || isLoading
-                      ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                      : "bg-rose-600 hover:bg-rose-500 text-white shadow-md hover:shadow-rose-500/20"
+                  onClick={() => handleStempelung("Ausstempeln")}
+                  disabled={
+                    statusZeiterfassung !== "eingestempelt" || wirdGeladen
+                  }
+                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                    statusZeiterfassung !== "eingestempelt" || wirdGeladen
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700 text-white"
                   }`}
                 >
-                  <FiLogOut className="text-base md:text-lg" />
+                  <FiLogOut />
                   Ausstempeln
                 </button>
               </div>
-
-              <div className="mt-4 md:mt-6 flex justify-between">
-                {!deviceRegistered && (
-                  <button
-                    onClick={() => setShowDevicePanel(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs md:text-sm transition-colors"
-                  >
-                    <FiSmartphone className="text-indigo-200" />
-                    Gerät registrieren
-                  </button>
-                )}
-              </div>
             </div>
 
-            {/* Status Card */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg md:rounded-xl p-4 md:p-6 shadow-lg">
-              <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4 flex items-center gap-2">
-                <FiClock className="text-emerald-400" />
-                Aktueller Status
-              </h2>
+            {/* Statuskarte */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <h2 className="text-lg font-semibold mb-4">Aktueller Status</h2>
 
-              <div className="grid grid-cols-2 gap-3 md:gap-4">
-                <div className="bg-gray-700/50 p-3 md:p-4 rounded-lg">
-                  <p className="text-xs text-gray-400">Letzte Aktion</p>
-                  <p className="text-sm md:text-base font-medium mt-1">
-                    {currentStatus === "in" ? "Eingestempelt" : "Ausgestempelt"}
-                  </p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <FiClock className="text-blue-600" />
+                    <span>Stempelstatus</span>
+                  </div>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      statusZeiterfassung === "eingestempelt"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {statusZeiterfassung === "eingestempelt"
+                      ? "Eingestempelt"
+                      : "Ausgestempelt"}
+                  </span>
                 </div>
-                <div className="bg-gray-700/50 p-3 md:p-4 rounded-lg">
-                  <p className="text-xs text-gray-400">Gerätestatus</p>
-                  <p className="text-sm md:text-base font-medium mt-1">
-                    {deviceRegistered ? "Registriert" : "Nicht registriert"}
-                  </p>
+
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <FiSmartphone className="text-blue-600" />
+                    <span>Gerätestatus</span>
+                  </div>
+                  <span className="text-sm font-medium">
+                    {gerätRegistriert ? "Registriert" : "Nicht registriert"}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column - Device Panel */}
-          <div className="space-y-4 md:space-y-6">
-            {showDevicePanel ? (
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg md:rounded-xl p-4 md:p-6 shadow-lg border border-indigo-500/30">
+          {/* Seitenleiste */}
+          <div className="space-y-6">
+            {zeigeGerätePanel ? (
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-blue-200">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-base md:text-lg font-semibold flex items-center gap-2">
-                    <FiSmartphone className="text-indigo-400" />
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <FiSmartphone className="text-blue-600" />
                     Geräteregistrierung
                   </h2>
                   <button
-                    onClick={() => setShowDevicePanel(false)}
-                    className="text-gray-400 hover:text-white"
+                    onClick={() => setZeigeGerätePanel(false)}
+                    className="text-gray-400 hover:text-gray-600"
                   >
                     ✕
                   </button>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="bg-indigo-900/20 p-3 rounded-lg border border-indigo-700/50">
-                    <div className="flex items-start gap-2">
-                      <FiShield className="text-indigo-400 mt-0.5 flex-shrink-0" />
+                <div className="space-y-4">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <FiShield className="text-blue-600 mt-1 flex-shrink-0" />
                       <div>
-                        <h3 className="text-sm font-medium">Sicherheit</h3>
-                        <p className="text-xs text-indigo-200 mt-1">
-                          Ihre Gerätekennung wird verschlüsselt gespeichert und
-                          ist nur mit Ihrem Konto verknüpft.
+                        <h3 className="font-medium">Sicherheit</h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Ihre Gerätekennung wird sicher gespeichert und nur mit
+                          Ihrem Konto verknüpft.
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-gray-700/50 p-3 rounded-lg border border-gray-600">
-                    <div className="flex items-start gap-2">
-                      <FiMapPin className="text-emerald-400 mt-0.5 flex-shrink-0" />
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <FiMapPin className="text-blue-600 mt-1 flex-shrink-0" />
                       <div>
-                        <h3 className="text-sm font-medium">Standort</h3>
-                        <p className="text-xs text-gray-300 mt-1">
-                          Auch mit registriertem Gerät bleibt die
-                          Standortüberprüfung aktiv.
+                        <h3 className="font-medium">Standort</h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Die Standortüberprüfung bleibt auch mit registriertem
+                          Gerät aktiv.
                         </p>
                       </div>
                     </div>
                   </div>
 
                   <button
-                    onClick={handleRegisterDevice}
-                    disabled={isLoading}
-                    className={`w-full py-2 px-4 rounded-lg font-medium text-white transition-all ${
-                      isLoading
-                        ? "bg-indigo-400"
-                        : "bg-indigo-600 hover:bg-indigo-500"
-                    } flex items-center justify-center text-sm`}
+                    onClick={handleGerätRegistrierung}
+                    disabled={wirdGeladen}
+                    className={`w-full py-3 rounded-lg font-medium text-white transition-colors ${
+                      wirdGeladen
+                        ? "bg-blue-400"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    }`}
                   >
-                    {isLoading ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Wird registriert...
-                      </>
-                    ) : (
-                      "Jetzt registrieren"
-                    )}
+                    {wirdGeladen ? "Wird registriert..." : "Gerät registrieren"}
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg md:rounded-xl p-4 md:p-6 shadow-lg">
-                <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4 flex items-center gap-2">
-                  <FiSmartphone className="text-indigo-400" />
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <FiSmartphone className="text-blue-600" />
                   Schnellstempelung
                 </h2>
 
-                <p className="text-xs md:text-sm text-gray-400 mb-3">
-                  Registrieren Sie dieses Gerät für schnelle Stempelungen ohne
+                <p className="text-gray-600 mb-4">
+                  Registrieren Sie dieses Gerät für schnellere Stempelungen ohne
                   erneute Anmeldung.
                 </p>
 
                 <button
-                  onClick={() => setShowDevicePanel(true)}
-                  className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium text-white transition-colors"
+                  onClick={() => setZeigeGerätePanel(true)}
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
                 >
-                  {deviceRegistered
-                    ? "Geräteinformationen"
-                    : "Gerät registrieren"}
+                  {gerätRegistriert ? "Gerät verwalten" : "Gerät registrieren"}
                 </button>
               </div>
             )}
 
-            {/* Help Card */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg md:rounded-xl p-4 md:p-6 shadow-lg">
-              <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4 flex items-center gap-2">
-                <FiShield className="text-emerald-400" />
-                Sicherheitshinweis
+            {/* Hilfe-Karte */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <FiHelpCircle className="text-blue-600" />
+                Hinweis
               </h2>
-              <p className="text-xs md:text-sm text-gray-400">
-                Die Standortüberprüfung stellt sicher, dass Stempelungen nur
-                innerhalb des Autohauses möglich sind. Ihre Daten werden
-                verschlüsselt übertragen.
+              <p className="text-gray-600 mb-3">
+                Die Standortüberprüfung stellt sicher, dass Stempelungen nur im
+                Autohaus möglich sind.
               </p>
             </div>
           </div>
