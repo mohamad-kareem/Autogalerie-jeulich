@@ -3,11 +3,16 @@ import mongoose from "mongoose";
 
 const schlusselSchema = new mongoose.Schema({
   car: { type: String, required: true, index: true },
-  schlusselNumber: { type: String, required: true, unique: true },
-  vinNumber: { type: String, default: "" }, // ✅ optional VIN
-  doorNumber: { type: String, default: "" }, // ✅ optional door number
-  transmission: { type: String, enum: ["Automatik", "Manuell"], default: "" }, // ✅ transmission
-  color: { type: String, default: "" }, // ✅ car color
+  schlusselNumber: { type: String, required: false, unique: false },
+  vinNumber: { type: String, default: "" },
+  doorNumber: { type: String, default: "" },
+  transmission: {
+    type: String,
+    enum: ["Automatik", "Manuell"],
+    required: false,
+    default: undefined,
+  },
+  color: { type: String, default: "" },
   notes: { type: String, default: "" },
   needsBenzine: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
