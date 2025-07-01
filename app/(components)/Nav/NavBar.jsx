@@ -25,11 +25,11 @@ export default function NavBar() {
 
   const adminRoutes = [
     "/admin",
-    "/Aufgaben",
+
     "/forms",
     "/excel",
     "/schlussel",
-    "/trello",
+
     "/AdminDashboard",
     "/PersonalData",
     "/Plate",

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import logo from "@/app/(assets)/kauftraglogo.png";
+import { useSession } from "next-auth/react";
 
 export default function KaufvertragDetail() {
   const defaultForm = {
@@ -34,6 +35,8 @@ export default function KaufvertragDetail() {
   const [form, setForm] = useState(defaultForm);
   const [rawTotal, setRawTotal] = useState("");
   const [rawDownPayment, setRawDownPayment] = useState("");
+  const { data: session, status } = useSession();
+  const isAdmin = session?.user?.role === "admin";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,9 +67,8 @@ export default function KaufvertragDetail() {
     }
 
     setForm((prev) => ({ ...prev, [name]: parsedValue }));
-    setRawTotal(data.total?.toString() || "");
-    setRawDownPayment(data.downPayment?.toString() || "");
   };
+
   const formatGermanNumber = (value) =>
     new Intl.NumberFormat("de-DE", {
       minimumFractionDigits: 2,
@@ -98,10 +100,10 @@ export default function KaufvertragDetail() {
 
   return (
     <div className="max-w-5xl mx-auto p-4 font-sans text-[13px] print:p-0 print:max-w-none">
-      <form onSubmit={handleSubmit} className="space-y-4 print:space-y-2">
+      <form onSubmit={handleSubmit} className="space-y-4 print:space-y-1">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-center border p-2 sm:p-7 bg-black text-white print:flex-row print:justify-between print:items-center print:p-2 print:px-6">
-          <div className="text-left w-full md:w-auto mb-2 md:mb-0 print:mb-0 print:text-left print:w-1/2">
+          <div className="text-left w-full md:w-auto mb-2 md:mb-0 print:mb-2 print:text-left print:w-full">
             <p className="font-semibold text-sm md:text-lg print:text-sm">
               E-Mail: autogalerie.juelich@web.de / Tel.: 02461/9163780
             </p>
@@ -119,7 +121,7 @@ export default function KaufvertragDetail() {
 
         {/* Buyer Info and Invoice */}
         <div className="flex flex-col sm:flex-row justify-between items-start pb-2 print:pb-1 gap-4 md:gap-0">
-          <div className="text-left space-y-1 print:space-y-0 print:leading-none print:gap-0 print:m-0 w-full md:w-1/2">
+          <div className="text-left space-y-1 print:space-y-0 print:leading-none print:gap-0 print:mt-2 w-full md:w-1/2">
             <p className="font-bold">Käuferdaten:</p>
             <input
               type="text"
@@ -558,36 +560,41 @@ export default function KaufvertragDetail() {
             >
               Drucken
             </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              Aktualisieren
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                const confirmed = confirm(
-                  "Bist du sicher, dass du diesen Vertrag löschen möchtest?"
-                );
-                if (!confirmed) return;
 
-                try {
-                  const res = await fetch(`/api/kaufvertrag/${id}`, {
-                    method: "DELETE",
-                  });
-                  if (!res.ok) throw new Error("Fehler beim Löschen");
-                  alert("Vertrag erfolgreich gelöscht");
-                  router.push("/kaufvertrag/liste");
-                } catch (err) {
-                  alert("Löschen fehlgeschlagen.");
-                  console.error(err);
-                }
-              }}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Löschen
-            </button>
+            {isAdmin && (
+              <>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  Aktualisieren
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const confirmed = confirm(
+                      "Bist du sicher, dass du diesen Vertrag löschen möchtest?"
+                    );
+                    if (!confirmed) return;
+
+                    try {
+                      const res = await fetch(`/api/kaufvertrag/${id}`, {
+                        method: "DELETE",
+                      });
+                      if (!res.ok) throw new Error("Fehler beim Löschen");
+                      alert("Vertrag erfolgreich gelöscht");
+                      router.push("/kaufvertrag/liste");
+                    } catch (err) {
+                      alert("Löschen fehlgeschlagen.");
+                      console.error(err);
+                    }
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                >
+                  Löschen
+                </button>
+              </>
+            )}
           </div>
         </div>
 

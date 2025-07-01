@@ -74,6 +74,61 @@ const DashboardContent = ({ user, onProfileClick }) => {
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {/* ✅ Accessible to all authenticated users */}
+            <NavigationCard
+              href="/kaufvertrag/auswahl" // Page to choose issuer before creating contract
+              icon={<FiFileText />}
+              title="Neuen Vertrag erstellen"
+              description="Erstelle einen neuen Kaufvertrag"
+              accentColor="purple"
+            />
+            <NavigationCard
+              href="/kaufvertrag/liste" // Page showing submitted contracts
+              icon={<FiFileText />}
+              title="Vorherige Verträge"
+              description="Alle gespeicherten Kaufverträge anzeigen"
+              accentColor="gray"
+            />
+            <NavigationCard
+              href="/punsh"
+              icon={<FiClock />}
+              title="Stempeluhr"
+              description="Ein- und Ausstempeln für Admins"
+              accentColor="teal"
+            />
+
+            <NavigationCard
+              href="/Plate"
+              icon={<FiCalendar />}
+              title="Kennzeichen"
+              description="Temporäre Kennzeichen verwalten"
+              accentColor="indigo"
+            />
+
+            <NavigationCard
+              href="/Posteingang"
+              icon={<FiCheckSquare />}
+              title="Posteingang"
+              description="Eingegangene Fahrzeugangebote und Nachrichten von Kunden"
+              accentColor="orange"
+            />
+
+            <NavigationCard
+              href="/PersonalData"
+              icon={<FiMapPin />}
+              title="Kontakte"
+              description="Telefonnummern und Adressen"
+              accentColor="rose"
+            />
+
+            <NavigationCard
+              href="/schlussel"
+              icon={<FiKey />}
+              title="Schlüssel"
+              description="Schlüsselverwaltung"
+              accentColor="cyan"
+            />
+
             {/* ✅ Admin-only cards */}
             {user.role === "admin" && (
               <>
@@ -96,76 +151,10 @@ const DashboardContent = ({ user, onProfileClick }) => {
                   icon={<FiClock />}
                   title="Zeiterfassung verwalten"
                   description="Verwalte und analysiere Arbeitszeiten effizient"
-                  accentColor="blue"
+                  accentColor="amber"
                 />
               </>
             )}
-
-            {/* ✅ Accessible to all authenticated users */}
-            <NavigationCard
-              href="/kaufvertrag/auswahl" // Page to choose issuer before creating contract
-              icon={<FiFileText />}
-              title="Neuen Vertrag erstellen"
-              description="Erstelle einen neuen Kaufvertrag"
-              accentColor="purple"
-            />
-            <NavigationCard
-              href="/kaufvertrag/liste" // Page showing submitted contracts
-              icon={<FiFileText />}
-              title="Vorherige Verträge"
-              description="Alle gespeicherten Kaufverträge anzeigen"
-              accentColor="gray"
-            />
-
-            <NavigationCard
-              href="/Plate"
-              icon={<FiCalendar />}
-              title="Kennzeichen"
-              description="Temporäre Kennzeichen verwalten"
-              accentColor="indigo"
-            />
-            <NavigationCard
-              href="/trello"
-              icon={<FiCheckSquare />}
-              title="Trello-Board"
-              description="Projektübersicht und Status"
-              accentColor="orange"
-            />
-            <NavigationCard
-              href="/Posteingang"
-              icon={<FiCheckSquare />}
-              title="Posteingang"
-              description="Eingegangene Fahrzeugangebote und Nachrichten von Kunden"
-              accentColor="red"
-            />
-            <NavigationCard
-              href="/Aufgaben"
-              icon={<FiCheckSquare />}
-              title="Aufgaben"
-              description="Aufgabenmanagement-System"
-              accentColor="amber"
-            />
-            <NavigationCard
-              href="/PersonalData"
-              icon={<FiMapPin />}
-              title="Kontakte"
-              description="Telefonnummern und Adressen"
-              accentColor="rose"
-            />
-            <NavigationCard
-              href="/punsh"
-              icon={<FiClock />}
-              title="Stempeluhr"
-              description="Ein- und Ausstempeln für Admins"
-              accentColor="teal"
-            />
-            <NavigationCard
-              href="/schlussel"
-              icon={<FiKey />}
-              title="Schlüssel"
-              description="Schlüsselverwaltung"
-              accentColor="cyan"
-            />
           </div>
         </div>
       </div>
