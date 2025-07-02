@@ -350,7 +350,7 @@ export default function KaufvertragDetail() {
               Kfz Schein
             </label>
             <label className="flex items-center">
-              Asu/Tüv{" "}
+              Asu/Tüv:
               <input
                 type="text"
                 name="tuev"
@@ -360,7 +360,7 @@ export default function KaufvertragDetail() {
               />
             </label>
             <label className="flex items-center">
-              Schlüssel{" "}
+              Schlüssel:
               <input
                 type="number"
                 name="keys"
@@ -463,7 +463,7 @@ export default function KaufvertragDetail() {
         )}
 
         {/* Terms */}
-        <div className="mt-4 print:mt-2">
+        <div className="mb-3 print:mt-2">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end font-bold text-[13px] gap-2">
             <p>Zahlungsbedingungen</p>
             <div className="flex flex-col items-start sm:items-center w-full sm:w-auto">
@@ -495,7 +495,7 @@ export default function KaufvertragDetail() {
         </div>
 
         {/* Signatures */}
-        <div className="flex flex-col sm:flex-row justify-between mt-8 sm:mt-16 print:mt-3 gap-4 sm:gap-0">
+        <div className="flex flex-col sm:flex-row justify-between mt-8 sm:mt-18 print:mt-3 gap-4 sm:gap-0">
           <div className="flex flex-col items-start sm:items-center">
             <div className="h-12 w-40 border-b border-dashed border-gray-400 mb-1 print:h-16" />
             <p className="text-left sm:text-center text-[13px]">

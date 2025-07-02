@@ -307,7 +307,7 @@ export default function KaufvertragClientForm() {
               Kfz Schein
             </label>
             <label className="flex items-center">
-              Asu/Tüv:{" "}
+              Asu/Tüv:
               <input
                 type="text"
                 name="tuev"
@@ -316,7 +316,7 @@ export default function KaufvertragClientForm() {
               />
             </label>
             <label className="flex items-center">
-              Schlüssel:{" "}
+              Schlüssel:
               <input
                 type="number"
                 name="keys"
