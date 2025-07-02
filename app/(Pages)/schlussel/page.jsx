@@ -108,20 +108,22 @@ export default function SchlüsselManagement() {
   const startEditKey = () => {
     if (!selectedKey) return;
     setForm({
-      car: selectedKey.car,
-      schlusselNumber: selectedKey.schlusselNumber,
+      car: selectedKey.car || "",
+      schlusselNumber: selectedKey.schlusselNumber || "",
       vinNumber: selectedKey.vinNumber || "",
       doorNumber: selectedKey.doorNumber || "",
       notes: selectedKey.notes || "",
-      needsBenzine: selectedKey.needsBenzine || false,
+      needsBenzine: selectedKey.needsBenzine ?? false,
       transmission: selectedKey.transmission || "",
       color: selectedKey.color || "",
     });
+
     setIsEditing(true);
   };
 
   const saveKey = async () => {
     if (
+      form.schlusselNumber &&
       keys.some(
         (k) =>
           k.schlusselNumber === form.schlusselNumber &&
@@ -171,6 +173,7 @@ export default function SchlüsselManagement() {
         );
       }
     } catch (error) {
+      console.error("Fehler beim Speichern:", error);
       toast.error(error.message);
     }
   };
@@ -378,7 +381,7 @@ export default function SchlüsselManagement() {
                       </label>
                       <input
                         name="car"
-                        value={form.car}
+                        value={form.car || ""}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="z.B. BMW X5"
@@ -392,7 +395,7 @@ export default function SchlüsselManagement() {
                       </label>
                       <input
                         name="schlusselNumber"
-                        value={form.schlusselNumber}
+                        value={form.schlusselNumber || ""}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="z.B. 12345"
@@ -406,7 +409,7 @@ export default function SchlüsselManagement() {
                       </label>
                       <input
                         name="vinNumber"
-                        value={form.vinNumber}
+                        value={form.vinNumber || ""}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Fahrgestellnummer"
@@ -419,7 +422,7 @@ export default function SchlüsselManagement() {
                       </label>
                       <select
                         name="transmission"
-                        value={form.transmission}
+                        value={form.transmission || ""}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
@@ -435,7 +438,7 @@ export default function SchlüsselManagement() {
                       </label>
                       <input
                         name="color"
-                        value={form.color}
+                        value={form.color || ""}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Fahrzeugfarbe"
@@ -448,7 +451,7 @@ export default function SchlüsselManagement() {
                       </label>
                       <select
                         name="doorNumber"
-                        value={form.doorNumber}
+                        value={form.doorNumber || ""}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
@@ -467,7 +470,7 @@ export default function SchlüsselManagement() {
                       </label>
                       <textarea
                         name="notes"
-                        value={form.notes}
+                        value={form.notes || ""}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         rows={3}

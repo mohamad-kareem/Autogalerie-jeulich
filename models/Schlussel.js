@@ -3,7 +3,11 @@ import mongoose from "mongoose";
 
 const schlusselSchema = new mongoose.Schema({
   car: { type: String, required: true, index: true },
-  schlusselNumber: { type: String, required: false, unique: false },
+  schlusselNumber: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
   vinNumber: { type: String, default: "" },
   doorNumber: { type: String, default: "" },
   transmission: {

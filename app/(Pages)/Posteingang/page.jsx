@@ -10,7 +10,7 @@ import SubmissionsTable from "./SubmissionsTable";
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
-  const [viewMode, setViewMode] = useState("cars"); // 'cars' or 'submissions'
+  const [viewMode, setViewMode] = useState("submissions"); // 'cars' or 'submissions'
 
   if (status === "loading") {
     return (
@@ -57,17 +57,6 @@ export default function AdminDashboard() {
         {/* View Mode Toggle */}
         <div className="flex mb-6 bg-white rounded-lg shadow-sm p-1 max-w-md">
           <button
-            onClick={() => setViewMode("cars")}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
-              viewMode === "cars"
-                ? "bg-red-600 text-white"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <FaCar className="inline mr-2" />
-            Fahrzeuge
-          </button>
-          <button
             onClick={() => setViewMode("submissions")}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
               viewMode === "submissions"
@@ -77,6 +66,17 @@ export default function AdminDashboard() {
           >
             <FiMessageSquare className="inline mr-2" />
             Kontaktanfragen
+          </button>
+          <button
+            onClick={() => setViewMode("cars")}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
+              viewMode === "cars"
+                ? "bg-red-600 text-white"
+                : "text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            <FaCar className="inline mr-2" />
+            Fahrzeuge
           </button>
         </div>
 
