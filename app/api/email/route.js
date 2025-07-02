@@ -152,7 +152,9 @@ Autogalerie Jülich GmbH • ${new Date().toLocaleDateString("de-DE")}
     // Configure email options
     const mailOptions = {
       from: `"Autogalerie Jülich" <${process.env.SMTP_USER}>`,
-      to: process.env.COMPANY_EMAIL || "autogalerie.jülich@web.de",
+      to: (process.env.COMPANY_EMAIL || "autogalerie.jülich@web.de")
+        .split(",")
+        .map((e) => e.trim()),
       subject: emailSubject,
       text: textContent,
       html: htmlContent,
