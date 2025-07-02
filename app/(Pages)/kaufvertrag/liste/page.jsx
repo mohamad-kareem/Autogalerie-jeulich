@@ -412,7 +412,7 @@ export default function KaufvertragListe() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {contract.mileage
-                          ? `${contract.mileage.toLocaleString("de-DE")} km`
+                          ? `${contract.mileage.toLocaleString("de-DE")} `
                           : "-"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
