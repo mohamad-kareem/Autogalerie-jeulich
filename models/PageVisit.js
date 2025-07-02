@@ -5,7 +5,7 @@ const pageVisitSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin",
+      ref: "Admin", // or "User" depending on your schema
       required: false,
     },
     role: { type: String, enum: ["admin", "user", "guest"], default: "guest" },
