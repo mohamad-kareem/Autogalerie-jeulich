@@ -41,13 +41,16 @@ export default function SubmissionsTable() {
   };
 
   const handleDeleteSubmission = async (submissionId) => {
-    if (!confirm("Are you sure you want to delete this submission?")) return;
+    if (
+      !confirm("Sind Sie sicher, dass Sie diese Einreichung löschen möchten?")
+    )
+      return;
     try {
       const res = await fetch(`/api/submissions?id=${submissionId}`, {
         method: "DELETE",
       });
       if (res.ok) {
-        toast.success("Submission deleted successfully");
+        toast.success(" erfolgreich gelöscht");
         setSubmissions((prev) => prev.filter((s) => s._id !== submissionId));
         setSelectedSubmission(null);
       } else {
