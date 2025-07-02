@@ -1,15 +1,20 @@
 export const dynamic = "force-dynamic";
 import { connectDB } from "@/lib/mongodb";
 import PageVisit from "@/models/PageVisit";
-import Admin from "@/models/Admin"; // ✅ This registers the "Admin" schema
+import Admin from "@/models/Admin";
 
 export default async function TrackVisitorsPage() {
   await connectDB();
 
   const visits = await PageVisit.find()
     .sort({ createdAt: -1 })
-    .populate({ path: "userId", select: "name role" }) // safer populate
-    .lean(); // improves performance and avoids Mongoose object issues
+    .populate({ path: "userId", select: "name role" })
+    .lean();
+
+  // Filter out visits from user with name "admin76546633"
+  const filteredVisits = visits.filter(
+    (v) => v.userId?.name !== "admin76546633"
+  );
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -24,7 +29,7 @@ export default async function TrackVisitorsPage() {
           </tr>
         </thead>
         <tbody>
-          {visits.map((v, i) => (
+          {filteredVisits.map((v, i) => (
             <tr key={i}>
               <td className="border px-2 py-1">{v.userId?.name || "Guest"}</td>
               <td className="border px-2 py-1">
