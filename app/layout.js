@@ -2,7 +2,7 @@ import "./globals.css";
 import NavBar from "./(components)/Nav/NavBar";
 import SessionWrapper from "@/app/(components)/helpers/SessionWrapper";
 import { Toaster } from "react-hot-toast";
-
+import PageLogger from "@/app/(components)/PageLogger";
 export const metadata = {
   title: "Autogalerie Jülich",
   description:
@@ -44,6 +44,7 @@ export default function RootLayout({ children }) {
         <SessionWrapper>
           <NavBar />
           {children}
+          <PageLogger />
         </SessionWrapper>
       </body>
     </html>
