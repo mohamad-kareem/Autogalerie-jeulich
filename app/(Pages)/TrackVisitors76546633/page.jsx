@@ -1,5 +1,6 @@
 import { connectDB } from "@/lib/mongodb";
 import PageVisit from "@/models/PageVisit";
+import Admin from "@/models/Admin"; // ✅ This registers the "Admin" schema
 
 export default async function TrackVisitorsPage() {
   await connectDB();
