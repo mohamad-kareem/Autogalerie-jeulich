@@ -23,8 +23,8 @@ export default function InfoBar() {
           {
             icon: <Mail size={24} className="text-red-500" />,
             title: "Email",
-            content: "info@autogalerie-juelich.de",
-            link: "mailto:info@autogalerie-juelich.de",
+            content: "autogalerie.jülich@web.de",
+            link: "autogalerie.jülich@web.de",
           },
         ].map((item, index) => (
           <Link
