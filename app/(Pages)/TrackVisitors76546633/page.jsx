@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { connectDB } from "@/lib/mongodb";
 import PageVisit from "@/models/PageVisit";
 import Admin from "@/models/Admin"; // ✅ This registers the "Admin" schema
