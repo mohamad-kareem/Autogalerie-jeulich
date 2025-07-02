@@ -78,6 +78,39 @@ export default function SchlüsselManagement() {
     setIsEditing(false);
     setShowMobileDetail(true);
   };
+  const OPTIONAL_STRING_FIELDS = [
+    "transmission",
+    "doorNumber",
+    "color",
+    "vinNumber",
+    "notes",
+  ];
+
+  const cleanFormData = (rawForm) => {
+    const cleaned = {};
+
+    for (const key in rawForm) {
+      const value = rawForm[key];
+
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+
+        // Skip optional fields if empty
+        if (OPTIONAL_STRING_FIELDS.includes(key) && trimmed === "") {
+          continue;
+        }
+
+        cleaned[key] = trimmed;
+      } else if (typeof value === "boolean") {
+        cleaned[key] = value;
+      } else {
+        cleaned[key] =
+          value !== undefined && value !== null && value !== "" ? value : "";
+      }
+    }
+
+    return cleaned;
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -122,16 +155,33 @@ export default function SchlüsselManagement() {
   };
 
   const saveKey = async () => {
-    if (
-      form.schlusselNumber &&
-      keys.some(
+    // Normalize inputs (trim whitespace)
+    const trimmedSchlusselNumber = form.schlusselNumber?.trim();
+    const trimmedVinNumber = form.vinNumber?.trim();
+
+    // Check for duplicates if values exist
+    if (trimmedSchlusselNumber) {
+      const isDuplicateSchlussel = keys.some(
         (k) =>
-          k.schlusselNumber === form.schlusselNumber &&
+          k.schlusselNumber === trimmedSchlusselNumber &&
           (!isEditing || k._id !== selectedKey?._id)
-      )
-    ) {
-      toast.error("Schlüsselnummer existiert bereits");
-      return;
+      );
+      if (isDuplicateSchlussel) {
+        toast.error("Diese Schlüsselnummer existiert bereits.");
+        return;
+      }
+    }
+
+    if (trimmedVinNumber) {
+      const isDuplicateVin = keys.some(
+        (k) =>
+          k.vinNumber === trimmedVinNumber &&
+          (!isEditing || k._id !== selectedKey?._id)
+      );
+      if (isDuplicateVin) {
+        toast.error("Diese VIN-Nummer existiert bereits.");
+        return;
+      }
     }
 
     try {
@@ -139,39 +189,39 @@ export default function SchlüsselManagement() {
         ? `/api/schlussels/${selectedKey._id}`
         : "/api/schlussels";
       const method = isEditing ? "PUT" : "POST";
-
+      const cleanedData = cleanFormData(form);
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(cleanedData),
       });
 
-      if (res.ok) {
-        const { schlussel } = await res.json();
-        if (isEditing) {
-          setKeys((prev) =>
-            prev.map((k) => (k._id === schlussel._id ? schlussel : k))
-          );
-          setFilteredKeys((prev) =>
-            prev.map((k) => (k._id === schlussel._id ? schlussel : k))
-          );
-          setSelectedKey(schlussel);
-        } else {
-          setKeys((prev) => [schlussel, ...prev]);
-          setFilteredKeys((prev) => [schlussel, ...prev]);
-          setSelectedKey(schlussel);
-        }
-
-        setIsAdding(false);
-        setIsEditing(false);
-        toast.success(
-          `Schlüssel erfolgreich ${isEditing ? "aktualisiert" : "hinzugefügt"}`
-        );
-      } else {
-        throw new Error(
-          isEditing ? "Fehler beim Aktualisieren" : "Fehler beim Hinzufügen"
-        );
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData?.error || "Speichern fehlgeschlagen");
       }
+
+      const { schlussel } = await res.json();
+
+      if (isEditing) {
+        setKeys((prev) =>
+          prev.map((k) => (k._id === schlussel._id ? schlussel : k))
+        );
+        setFilteredKeys((prev) =>
+          prev.map((k) => (k._id === schlussel._id ? schlussel : k))
+        );
+        setSelectedKey(schlussel);
+      } else {
+        setKeys((prev) => [schlussel, ...prev]);
+        setFilteredKeys((prev) => [schlussel, ...prev]);
+        setSelectedKey(schlussel);
+      }
+
+      toast.success(
+        `Schlüssel erfolgreich ${isEditing ? "aktualisiert" : "hinzugefügt"}`
+      );
+      setIsAdding(false);
+      setIsEditing(false);
     } catch (error) {
       console.error("Fehler beim Speichern:", error);
       toast.error(error.message);

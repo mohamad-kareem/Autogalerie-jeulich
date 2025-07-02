@@ -1,19 +1,25 @@
 // File: models/Schlussel.js
 import mongoose from "mongoose";
 
+// models/Schlussel.js
 const schlusselSchema = new mongoose.Schema({
-  car: { type: String, required: true, index: true },
+  car: { type: String, default: "" },
   schlusselNumber: {
     type: String,
     unique: true,
-    sparse: true,
+    sparse: true, // allow multiple docs without schlusselNumber
+    trim: true,
   },
-  vinNumber: { type: String, default: "" },
+  vinNumber: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true,
+  },
   doorNumber: { type: String, default: "" },
   transmission: {
     type: String,
     enum: ["Automatik", "Manuell"],
-    required: false,
     default: undefined,
   },
   color: { type: String, default: "" },
