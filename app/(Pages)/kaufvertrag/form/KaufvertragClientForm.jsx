@@ -24,6 +24,16 @@ export default function KaufvertragClientForm() {
     }
   }, [searchParams]);
 
+  const formatDateToGermanDash = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    if (isNaN(date)) return "";
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -156,13 +166,22 @@ export default function KaufvertragClientForm() {
               >
                 Datum:
               </label>
+              {/* Screen version (visible only on screen) */}
               <input
                 type="date"
                 id="invoiceDate"
                 name="invoiceDate"
+                value={form.invoiceDate || ""}
                 onChange={handleChange}
-                className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px]"
+                className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] print:hidden"
               />
+
+              {/* Print version (formatted DD-MM-YYYY) */}
+              {form.invoiceDate && (
+                <p className="hidden print:block text-[13px] mt-1">
+                  {formatDateToGermanDash(form.invoiceDate)}
+                </p>
+              )}
             </div>
           </div>
         </div>
