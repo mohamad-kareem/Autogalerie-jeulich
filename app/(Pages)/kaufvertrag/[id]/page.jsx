@@ -167,7 +167,6 @@ export default function KaufvertragDetail() {
                 type="text"
                 id="invoiceNumber"
                 name="invoiceNumber"
-                value={form.invoiceNumber}
                 onChange={handleChange}
                 className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px]"
               />
@@ -187,10 +186,8 @@ export default function KaufvertragDetail() {
                 onChange={handleChange}
                 className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] print:hidden"
               />
-
-              {/* Print version (formatted DD-MM-YYYY) */}
               {form.invoiceDate && (
-                <p className="hidden print:block text-[13px] mt-1">
+                <p className="hidden print:flex items-center border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] ">
                   {formatDateToGermanDash(form.invoiceDate)}
                 </p>
               )}

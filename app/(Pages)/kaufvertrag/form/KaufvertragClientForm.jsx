@@ -166,7 +166,6 @@ export default function KaufvertragClientForm() {
               >
                 Datum:
               </label>
-              {/* Screen version (visible only on screen) */}
               <input
                 type="date"
                 id="invoiceDate"
@@ -175,10 +174,8 @@ export default function KaufvertragClientForm() {
                 onChange={handleChange}
                 className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] print:hidden"
               />
-
-              {/* Print version (formatted DD-MM-YYYY) */}
               {form.invoiceDate && (
-                <p className="hidden print:block text-[13px] mt-1">
+                <p className="hidden print:flex items-center border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] ">
                   {formatDateToGermanDash(form.invoiceDate)}
                 </p>
               )}
