@@ -39,20 +39,40 @@ export default function PunchQRPage() {
           return router.push("/register-device");
         }
 
-        const pos = await new Promise((resolve, reject) =>
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-          })
-        );
+        let lat = null;
+        let lng = null;
+        let locationVerified = false;
 
-        const { latitude: lat, longitude: lng } = pos.coords;
-        const point = turf.point([lng, lat]);
-        const isInside = turf.booleanPointInPolygon(point, dealershipCoords);
+        // Try GPS first
+        try {
+          const pos = await new Promise((resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 8000,
+            })
+          );
+          lat = pos.coords.latitude;
+          lng = pos.coords.longitude;
+          const point = turf.point([lng, lat]);
+          locationVerified = turf.booleanPointInPolygon(
+            point,
+            dealershipCoords
+          );
+        } catch (geoError) {
+          console.warn("GPS failed, trying local network fallback...");
+        }
 
-        if (!isInside) {
-          toast.error("Sie befinden sich außerhalb des erlaubten Bereichs");
-          return router.push("/");
+        // If not verified via GPS, check if inside local WiFi
+        if (!locationVerified) {
+          const wifiCheck = await fetch("/api/punch/wifi-check");
+          const wifiOk = await wifiCheck.json();
+          if (!wifiOk.success) {
+            toast.error(
+              "Standortüberprüfung fehlgeschlagen. Bitte GPS aktivieren oder mit Firmennetzwerk verbinden."
+            );
+            return router.push("/");
+          }
+          locationVerified = true;
         }
 
         let nextType = "in";
@@ -77,19 +97,15 @@ export default function PunchQRPage() {
         const headers = {
           "Content-Type": "application/json",
         };
-
-        if (adminId) {
-          headers["x-admin-id"] = adminId;
-        } else {
-          headers["x-device-id"] = deviceId;
-        }
+        if (adminId) headers["x-admin-id"] = adminId;
+        else headers["x-device-id"] = deviceId;
 
         const punchRes = await fetch("/api/punch", {
           method: "POST",
           headers,
           body: JSON.stringify({
             type: nextType,
-            location: { lat, lng, verified: true },
+            location: { lat, lng, verified: locationVerified },
             method: adminId ? "qr" : "device",
           }),
         });
