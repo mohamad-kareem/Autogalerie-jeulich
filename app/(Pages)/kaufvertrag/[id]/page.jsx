@@ -311,7 +311,7 @@ export default function KaufvertragDetail() {
             className="input w-full p-1 text-[13px] print:hidden"
           />
           {!form.agreements || form.agreements.trim() === "" ? (
-            <p className="text-[13px] hidden print:block mt-2 italic text-gray-700">
+            <p className="text-[11px] hidden print:block mt-2 italic text-gray-700">
               Keine besonderen Vereinbarungen
             </p>
           ) : (

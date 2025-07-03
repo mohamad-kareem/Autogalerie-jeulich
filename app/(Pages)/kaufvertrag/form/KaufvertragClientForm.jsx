@@ -85,12 +85,10 @@ export default function KaufvertragClientForm() {
 
   return (
     <div className="max-w-5xl mx-auto p-4 font-sans text-[13px] print:p-0 print:max-w-none">
-      <form onSubmit={handleSubmit} className="space-y-4 print:space-y-2">
-        <input type="hidden" name="issuer" value={form.issuer || ""} />
-
+      <form onSubmit={handleSubmit} className="space-y-4 print:space-y-1">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-center border p-2 sm:p-7 bg-black text-white print:flex-row print:justify-between print:items-center print:p-2 print:px-6">
-          <div className="text-left w-full md:w-auto mb-2 md:mb-0 print:mb-0 print:text-left print:w-1/2">
+          <div className="text-left w-full md:w-auto mb-2 md:mb-0 print:mb-2 print:text-left print:w-full">
             <p className="font-semibold text-sm md:text-lg print:text-sm">
               E-Mail: autogalerie.juelich@web.de / Tel.: 02461/9163780
             </p>
@@ -108,7 +106,7 @@ export default function KaufvertragClientForm() {
 
         {/* Buyer Info and Invoice */}
         <div className="flex flex-col sm:flex-row justify-between items-start pb-2 print:pb-1 gap-4 md:gap-0">
-          <div className="text-left space-y-1 print:space-y-0 print:leading-none print:gap-0 print:m-0 w-full md:w-1/2">
+          <div className="text-left space-y-1 print:space-y-0 print:leading-none print:gap-0 print:mt-2 w-full md:w-1/2">
             <p className="font-bold">Käuferdaten:</p>
             <input
               type="text"
@@ -295,7 +293,7 @@ export default function KaufvertragClientForm() {
 
           {/* Render as list for print and view */}
           {!form.agreements || form.agreements.trim() === "" ? (
-            <p className="text-[13px] hidden print:block mt-2 italic text-gray-700">
+            <p className="text-[11px] hidden print:block mt-2 italic text-gray-700">
               Keine besonderen Vereinbarungen
             </p>
           ) : (
@@ -444,7 +442,7 @@ export default function KaufvertragClientForm() {
         />
 
         {/* Terms */}
-        <div className="mt-4 print:mt-2">
+        <div className="mb-3 print:mt-2">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end font-bold text-[13px] gap-2">
             <p>Zahlungsbedingungen</p>
             <div className="flex flex-col items-start sm:items-center w-full sm:w-auto">
@@ -476,7 +474,7 @@ export default function KaufvertragClientForm() {
         </div>
 
         {/* Signatures */}
-        <div className="flex flex-col sm:flex-row justify-between mt-8 sm:mt-16 print:mt-3 gap-4 sm:gap-0">
+        <div className="flex flex-col sm:flex-row justify-between mt-8 sm:mt-18 print:mt-3 gap-4 sm:gap-0">
           <div className="flex flex-col items-start sm:items-center">
             <div className="h-12 w-40 border-b border-dashed border-gray-400 mb-1 print:h-16" />
             <p className="text-left sm:text-center text-[13px]">
