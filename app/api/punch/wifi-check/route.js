@@ -1,7 +1,7 @@
 // app/api/punch/wifi-check/route.js
 export async function GET(req) {
   const ip = req.headers.get("x-forwarded-for") || req.ip || "0.0.0.0";
-
+  console.log("Client IP:", ip); // See what you're getting
   // Check if IP is from local network (IPv4 range like 192.168.x.x or 10.x.x.x)
   const isLocal =
     ip.startsWith("192.168.") ||

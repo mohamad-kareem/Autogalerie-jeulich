@@ -43,7 +43,7 @@ export default function PunchQRPage() {
         let lng = null;
         let locationVerified = false;
 
-        // Try GPS first
+        // Step 1: Try to get GPS location
         try {
           const pos = await new Promise((resolve, reject) =>
             navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -51,6 +51,7 @@ export default function PunchQRPage() {
               timeout: 8000,
             })
           );
+
           lat = pos.coords.latitude;
           lng = pos.coords.longitude;
           const point = turf.point([lng, lat]);
@@ -58,24 +59,26 @@ export default function PunchQRPage() {
             point,
             dealershipCoords
           );
-        } catch (geoError) {
-          console.warn("GPS failed, trying local network fallback...");
+        } catch (err) {
+          console.warn("GPS failed:", err.message);
         }
 
-        // If not verified via GPS, check if inside local WiFi
+        // Step 2: If GPS failed or not in polygon, fallback to WiFi check
         if (!locationVerified) {
-          const wifiCheck = await fetch("/api/punch/wifi-check");
-          const wifiOk = await wifiCheck.json();
-          if (!wifiOk.success) {
-            toast.error(
-              "Standortüberprüfung fehlgeschlagen. Bitte GPS aktivieren oder mit Firmennetzwerk verbinden."
-            );
+          const wifiCheckRes = await fetch("/api/punch/wifi-check");
+          const wifiData = await wifiCheckRes.json();
+
+          if (wifiData.success) {
+            locationVerified = true; // WiFi confirms they are on-site
+          } else {
+            toast.error("GPS oder WLAN-Überprüfung fehlgeschlagen.");
             return router.push("/");
           }
-          locationVerified = true;
         }
 
+        // Step 3: Get next punch type
         let nextType = "in";
+
         if (adminId) {
           const res = await fetch("/api/punch/latest", {
             headers: { "x-admin-id": adminId },
@@ -94,6 +97,7 @@ export default function PunchQRPage() {
           adminId = data.adminId;
         }
 
+        // Step 4: Punch in/out
         const headers = {
           "Content-Type": "application/json",
         };
