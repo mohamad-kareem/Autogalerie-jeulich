@@ -8,8 +8,14 @@ import Button from "@/app/(components)/helpers/Button";
 import { useSearchParams } from "next/navigation";
 
 export default function KaufvertragClientForm() {
-  const [form, setForm] = useState({});
+  const [form, setForm] = useState({ downPayment: 0 });
+
   const searchParams = useSearchParams();
+  const [rawTotal, setRawTotal] = useState("");
+  const [rawDownPayment, setRawDownPayment] = useState("");
+  useEffect(() => {
+    setRawDownPayment(`€ ${formatGermanNumber(0)}`);
+  }, []);
 
   useEffect(() => {
     const issuer = searchParams.get("issuer");
@@ -20,30 +26,46 @@ export default function KaufvertragClientForm() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    const numericFields = ["total", "downPayment"];
-    const parsedValue =
-      type === "checkbox"
-        ? checked
-        : numericFields.includes(name)
-        ? parseFloat(value) || 0
-        : value;
+
+    const parsedValue = type === "checkbox" ? checked : value;
 
     setForm((prev) => ({
       ...prev,
       [name]: parsedValue,
     }));
   };
+  const formatGermanNumber = (value) =>
+    new Intl.NumberFormat("de-DE", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+
+  const parseGermanNumber = (value) => {
+    const cleaned = value
+      .replace(/\./g, "")
+      .replace(",", ".")
+      .replace("€", "")
+      .trim();
+    return parseFloat(cleaned) || 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      console.log("Submitting form:", form);
+    // Force downPayment to be 0 if empty
+    const cleanedForm = {
+      ...form,
+      downPayment:
+        form.downPayment === "" || form.downPayment === undefined
+          ? 0
+          : Number(form.downPayment),
+    };
 
+    try {
       const res = await fetch("/api/kaufvertrag", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(cleanedForm),
       });
 
       if (res.status === 409) {
@@ -207,9 +229,11 @@ export default function KaufvertragClientForm() {
               <label htmlFor="firstRegistration">Erstzulassung</label>
               <div className="h-[1px] bg-gray-400 w-full my-1" />
               <input
+                type="date"
                 id="firstRegistration"
                 name="firstRegistration"
                 onChange={handleChange}
+                value={form.firstRegistration ?? ""}
                 className="input w-full"
               />
             </div>
@@ -335,25 +359,55 @@ export default function KaufvertragClientForm() {
               Rechnungsbetrag (€)
             </div>
             <input
-              type="number"
+              type="text"
               name="total"
+              value={rawTotal}
+              onChange={(e) => {
+                const val = e.target.value;
+                setRawTotal(val);
+                setForm((prev) => ({
+                  ...prev,
+                  total: parseGermanNumber(val),
+                }));
+              }}
+              onBlur={() => {
+                setRawTotal(`€ ${formatGermanNumber(form.total || 0)}`);
+              }}
+              onFocus={() => {
+                setRawTotal(form.total?.toString() || "");
+              }}
               className="input w-full p-1"
-              onChange={handleChange}
-              value={form.total || ""}
             />
           </div>
 
-          {/* Anzahlung */}
+          {/* Anzahlung (€) */}
           <div>
             <div className="border-b border-black inline-block text-[13px] font-semibold mb-1">
               Anzahlung (€)
             </div>
             <input
-              type="number"
+              type="text"
               name="downPayment"
+              value={rawDownPayment}
+              onChange={(e) => {
+                const val = e.target.value;
+                setRawDownPayment(val);
+                setForm((prev) => ({
+                  ...prev,
+                  downPayment: parseGermanNumber(val),
+                }));
+              }}
+              onBlur={() => {
+                const value = Number.isFinite(form.downPayment)
+                  ? form.downPayment
+                  : 0;
+                setForm((prev) => ({ ...prev, downPayment: value }));
+                setRawDownPayment(`€ ${formatGermanNumber(value)}`);
+              }}
+              onFocus={() => {
+                setRawDownPayment(form.downPayment?.toString() || "0");
+              }}
               className="input w-full p-1"
-              onChange={handleChange}
-              value={form.downPayment || ""}
             />
           </div>
 
@@ -368,8 +422,8 @@ export default function KaufvertragClientForm() {
               className="input w-full p-1"
               readOnly
               value={
-                form.total && form.downPayment
-                  ? `€ ${(form.total - form.downPayment).toFixed(2)}`
+                Number.isFinite(form.total - form.downPayment)
+                  ? `€ ${formatGermanNumber(form.total - form.downPayment)}`
                   : ""
               }
             />
@@ -464,12 +518,22 @@ export default function KaufvertragClientForm() {
           </div>
         )}
 
-        <Button
-          type="submit"
-          className="mt-4 px-4 py-1 text-[13px] print:hidden w-full sm:w-auto"
-        >
-          Vertrag absenden
-        </Button>
+        {/* Print and Submit Buttons */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 print:hidden mt-4">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Drucken
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Vertrag absenden
+          </button>
+        </div>
 
         <style jsx>{`
           .input {

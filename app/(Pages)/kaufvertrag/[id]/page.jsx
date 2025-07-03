@@ -46,9 +46,7 @@ export default function KaufvertragDetail() {
 
       // Format values with € symbol and German commas
       setRawTotal(data.total ? `€ ${formatGermanNumber(data.total)}` : "");
-      setRawDownPayment(
-        data.downPayment ? `€ ${formatGermanNumber(data.downPayment)}` : ""
-      );
+      setRawDownPayment(`€ ${formatGermanNumber(data.downPayment ?? 0)}`);
     };
     fetchData();
   }, [id]);
@@ -249,10 +247,11 @@ export default function KaufvertragDetail() {
               <label htmlFor="firstRegistration">Erstzulassung</label>
               <div className="h-[1px] bg-gray-400 w-full my-1" />
               <input
+                type="date"
                 id="firstRegistration"
                 name="firstRegistration"
-                value={form.firstRegistration}
                 onChange={handleChange}
+                value={form.firstRegistration ?? ""}
                 className="input w-full"
               />
             </div>
@@ -419,10 +418,20 @@ export default function KaufvertragDetail() {
                 }));
               }}
               onBlur={() => {
-                setRawDownPayment(`€ ${formatGermanNumber(form.downPayment)}`);
+                // If the value is NaN or empty, default to 0
+                const value = Number.isFinite(form.downPayment)
+                  ? form.downPayment
+                  : 0;
+                setForm((prev) => ({ ...prev, downPayment: value }));
+                setRawDownPayment(`€ ${formatGermanNumber(value)}`);
               }}
               onFocus={() => {
-                setRawDownPayment(form.downPayment?.toString() || "");
+                // Show 0 if nothing is set
+                setRawDownPayment(
+                  form.downPayment?.toString() !== undefined
+                    ? form.downPayment.toString()
+                    : "0"
+                );
               }}
               className="input w-full p-1"
             />
