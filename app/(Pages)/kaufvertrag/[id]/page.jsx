@@ -167,6 +167,7 @@ export default function KaufvertragDetail() {
                 type="text"
                 id="invoiceNumber"
                 name="invoiceNumber"
+                value={form.invoiceNumber}
                 onChange={handleChange}
                 className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px]"
               />
@@ -260,11 +261,12 @@ export default function KaufvertragDetail() {
               <label htmlFor="firstRegistration">Erstzulassung</label>
               <div className="h-[1px] bg-gray-400 w-full my-1" />
               <input
-                type="date"
+                type="text"
                 id="firstRegistration"
                 name="firstRegistration"
+                placeholder="TT-MM-JJ"
+                value={form.firstRegistration}
                 onChange={handleChange}
-                value={form.firstRegistration ?? ""}
                 className="input w-full"
               />
             </div>

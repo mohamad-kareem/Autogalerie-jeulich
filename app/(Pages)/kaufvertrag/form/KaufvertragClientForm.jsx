@@ -243,11 +243,12 @@ export default function KaufvertragClientForm() {
               <label htmlFor="firstRegistration">Erstzulassung</label>
               <div className="h-[1px] bg-gray-400 w-full my-1" />
               <input
-                type="date"
+                type="text"
                 id="firstRegistration"
                 name="firstRegistration"
+                placeholder="TT-MM-JJ"
+                value={form.firstRegistration}
                 onChange={handleChange}
-                value={form.firstRegistration ?? ""}
                 className="input w-full"
               />
             </div>
