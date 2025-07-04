@@ -304,7 +304,7 @@ export default function KaufvertragListe() {
 
         {/* Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-hide">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -420,17 +420,6 @@ export default function KaufvertragListe() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                         {formatCurrency(contract.total)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/kaufvertrag/${contract._id}`);
-                          }}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          Anzeigen
-                        </button>
                       </td>
                     </tr>
                   ))
