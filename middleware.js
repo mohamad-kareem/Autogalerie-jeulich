@@ -47,5 +47,9 @@ export const config = {
     "/excel/:path*",
     "/Reg/:path*",
     "/kaufvertrag",
+    "/kaufvertrag/liste/:path*",
+    "/kaufvertrag/auswahl/:path*",
+    "/kaufvertrag/form/:path*",
+    "/kaufvertrag/:id/:path*",
   ],
 };
