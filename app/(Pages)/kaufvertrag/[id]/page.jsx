@@ -29,6 +29,7 @@ export default function KaufvertragDetail() {
     keys: 0,
     total: 0,
     downPayment: 0,
+    paymentNote: "",
   };
   const { id } = useParams();
   const router = useRouter();
@@ -37,16 +38,38 @@ export default function KaufvertragDetail() {
   const [rawDownPayment, setRawDownPayment] = useState("");
   const { data: session, status } = useSession();
   const isAdmin = session?.user?.role === "admin";
+  const sanitizeData = (data) => {
+    const sanitized = { ...defaultForm };
+    for (const key in sanitized) {
+      const defaultType = typeof sanitized[key];
+      const value = data[key];
+
+      if (defaultType === "string") {
+        sanitized[key] = typeof value === "string" ? value : "";
+      } else if (defaultType === "number") {
+        sanitized[key] = typeof value === "number" ? value : 0;
+      } else if (defaultType === "boolean") {
+        sanitized[key] = typeof value === "boolean" ? value : false;
+      } else {
+        sanitized[key] = value ?? sanitized[key];
+      }
+    }
+    return sanitized;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       const res = await fetch(`/api/kaufvertrag/${id}`);
       const data = await res.json();
-      setForm({ ...defaultForm, ...data });
+      const cleanedData = sanitizeData(data);
+      setForm(cleanedData);
 
-      // Format values with € symbol and German commas
-      setRawTotal(data.total ? `€ ${formatGermanNumber(data.total)}` : "");
-      setRawDownPayment(`€ ${formatGermanNumber(data.downPayment ?? 0)}`);
+      setRawTotal(
+        cleanedData.total ? `€ ${formatGermanNumber(cleanedData.total)}` : ""
+      );
+      setRawDownPayment(
+        `€ ${formatGermanNumber(cleanedData.downPayment ?? 0)}`
+      );
     };
     fetchData();
   }, [id]);
@@ -473,21 +496,42 @@ export default function KaufvertragDetail() {
           </div>
         </div>
 
-        {/* Visible in UI only */}
-        <input
-          type="text"
-          name="paymentNote"
-          value={form.paymentNote || ""}
-          onChange={handleChange}
-          className="input italic text-[13px] mt-1 w-full print:hidden"
-          placeholder="Betrag wird Bar per Abholung bezahlt"
-        />
+        {/* Payment Note Selection (radio) */}
+        <div className="mt-4 print:hidden">
+          <p className="font-semibold mb-1">Zahlungsmethode</p>
+          <div className="flex flex-col gap-1 text-[13px]">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="paymentNote"
+                value="Barzahlung bei Abholung"
+                checked={form.paymentNote === "Barzahlung bei Abholung"}
+                onChange={handleChange}
+                className="accent-black"
+              />
+              Barzahlung bei Abholung
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="paymentNote"
+                value="Bezahlung per Überweisung"
+                checked={form.paymentNote === "Bezahlung per Überweisung"}
+                onChange={handleChange}
+                className="accent-black"
+              />
+              Bezahlung per Überweisung
+            </label>
+          </div>
+        </div>
 
-        {/* Visible in print view only */}
+        {/* Print version of payment note */}
         {form.paymentNote && (
-          <p className="italic text-[13px] mt-2 hidden print:block">
-            {form.paymentNote}
-          </p>
+          <div className="mt-2 hidden print:block">
+            <p className="italic text-[13px]">
+              Zahlungsmethode: {form.paymentNote}
+            </p>
+          </div>
         )}
 
         {/* Terms */}

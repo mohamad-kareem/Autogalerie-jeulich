@@ -362,10 +362,15 @@ export default function KaufvertragListe() {
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => requestSort("invoiceNumber")}
                   >
-                    Rechnungsnr.
+                    <div className="flex items-center">
+                      Rechnungsnr.
+                      <ChevronUpDownIcon className="ml-1 h-3 w-3 text-gray-400" />
+                    </div>
                   </th>
+
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"

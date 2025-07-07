@@ -19,8 +19,39 @@ export default function KaufvertragClientForm() {
 
   useEffect(() => {
     const issuer = searchParams.get("issuer");
+
     if (issuer && !form.issuer) {
       setForm((prev) => ({ ...prev, issuer }));
+
+      const fetchLastNumber = async () => {
+        const res = await fetch(`/api/kaufvertrag/last?issuer=${issuer}`);
+        const last = await res.json();
+
+        // 🛡️ Handle missing invoiceNumber
+        if (!last || !last.invoiceNumber) {
+          toast.error("Keine vorherige Rechnungsnummer gefunden.");
+          return;
+        }
+
+        let newInvoiceNumber = "";
+
+        if (issuer === "alawie") {
+          const prefix = "RE-";
+          const lastNumber = last.invoiceNumber.replace(prefix, "");
+          const next = parseInt(lastNumber) + 1;
+          newInvoiceNumber = `${prefix}${next}`;
+        }
+
+        if (issuer === "karim") {
+          const parts = last.invoiceNumber.split("/");
+          const next = parseInt(parts[0]) + 1;
+          newInvoiceNumber = `${next}/${parts[1]}`;
+        }
+
+        setForm((prev) => ({ ...prev, invoiceNumber: newInvoiceNumber }));
+      };
+
+      fetchLastNumber();
     }
   }, [searchParams]);
 
@@ -155,8 +186,10 @@ export default function KaufvertragClientForm() {
                 type="text"
                 id="invoiceNumber"
                 name="invoiceNumber"
+                value={form.invoiceNumber || ""}
                 onChange={handleChange}
                 className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px]"
+                placeholder="z.B. RE-202583 oder 37/25"
               />
             </div>
             <div className="flex justify-end items-center gap-2 text-[13px] mt-1">
@@ -449,14 +482,43 @@ export default function KaufvertragClientForm() {
           </div>
         </div>
 
-        <input
-          type="text"
-          name="paymentNote"
-          value={form.paymentNote || ""}
-          onChange={handleChange}
-          className="input italic text-[13px] mt-1 w-full"
-          placeholder="Betrag wird Bar per Abholung bezahlt"
-        />
+        {/* Payment Note Selection (radio) */}
+        <div className="mt-4 print:hidden">
+          <p className="font-semibold mb-1">Zahlungsmethode</p>
+          <div className="flex flex-col gap-1 text-[13px]">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="paymentNote"
+                value="Barzahlung bei Abholung"
+                checked={form.paymentNote === "Barzahlung bei Abholung"}
+                onChange={handleChange}
+                className="accent-black"
+              />
+              Barzahlung bei Abholung
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="paymentNote"
+                value="Bezahlung per Überweisung"
+                checked={form.paymentNote === "Bezahlung per Überweisung"}
+                onChange={handleChange}
+                className="accent-black"
+              />
+              Bezahlung per Überweisung
+            </label>
+          </div>
+        </div>
+
+        {/* Print version of payment note */}
+        {form.paymentNote && (
+          <div className="mt-2 hidden print:block">
+            <p className="italic text-[13px]">
+              Zahlungsmethode: {form.paymentNote}
+            </p>
+          </div>
+        )}
 
         {/* Terms */}
         <div className="mb-3 print:mt-2">
