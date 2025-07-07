@@ -27,7 +27,7 @@ const timeRecordSchema = new mongoose.Schema(
     },
     method: {
       type: String,
-      enum: ["qr", "manual", "device"],
+      enum: ["qr", "manual", "device", "added", "edited"],
       required: true,
       default: "manual",
     },
@@ -35,6 +35,14 @@ const timeRecordSchema = new mongoose.Schema(
       userAgent: String,
       ipAddress: String,
       deviceId: String,
+    },
+    editedBy: {
+      type: String,
+      default: null,
+    },
+    addedBy: {
+      type: String,
+      default: null,
     },
   },
   {

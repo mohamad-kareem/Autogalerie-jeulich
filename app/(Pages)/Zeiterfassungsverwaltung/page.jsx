@@ -26,10 +26,13 @@ export default function Zeiterfassungsverwaltung() {
   const [isLoading, setIsLoading] = useState(false);
   const hasFetched = useRef(false);
   const [showDeleteSection, setShowDeleteSection] = useState(false);
+  const [showFilterSection, setShowFilterSection] = useState(true);
 
   const [selectedAdmin, setSelectedAdmin] = useState("alle");
   const [dateFilter, setDateFilter] = useState({ start: null, end: null });
   const [deleteRange, setDeleteRange] = useState({ start: null, end: null });
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -151,6 +154,47 @@ export default function Zeiterfassungsverwaltung() {
     }
   };
 
+  const [manualEntry, setManualEntry] = useState({
+    admin: "",
+    type: "in",
+    time: null,
+    method: "manual",
+  });
+  const [showManualModal, setShowManualModal] = useState(false);
+
+  const handleManualSave = async () => {
+    if (!manualEntry.admin || !manualEntry.time || !manualEntry.type) {
+      return toast.error("Bitte alle Felder ausfüllen");
+    }
+
+    try {
+      setIsLoading(true);
+      const res = await fetch("/api/punch/manual", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-id": session.user.id,
+          "x-admin-name": session.user.name,
+        },
+        body: JSON.stringify(manualEntry),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Eintrag gespeichert");
+        setShowManualModal(false);
+        setManualEntry({ admin: "", type: "in", time: null, method: "manual" });
+        fetchRecords(); // Refresh data
+      } else {
+        throw new Error(data.error || "Fehler beim Speichern");
+      }
+    } catch (error) {
+      toast.error("Fehler beim Speichern");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const formatTime = (d) =>
     new Date(d).toLocaleTimeString("de-DE", {
       hour: "2-digit",
@@ -196,58 +240,66 @@ export default function Zeiterfassungsverwaltung() {
         <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
           {/* Filters Section */}
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-                <FiFilter className="mr-2 text-blue-600" />
-                Filter
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Mitarbeiter Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mitarbeiter
-                </label>
-                <select
-                  value={selectedAdmin}
-                  onChange={(e) => setSelectedAdmin(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
-                >
-                  <option value="alle">Alle Mitarbeiter</option>
-                  {allAdmins.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
+            <button
+              onClick={() => setShowFilterSection((prev) => !prev)}
+              className="w-full flex items-center justify-between text-sm font-semibold text-blue-700 focus:outline-none"
+            >
+              <div className="flex items-center">
+                <FiFilter className="mr-2" />
+                {showFilterSection ? "Filter ausblenden" : "Filter anzeigen"}
               </div>
+              <span className="text-lg">{showFilterSection ? "−" : "+"}</span>
+            </button>
 
-              {/* Datumsbereich Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Datumsbereich
-                </label>
-                <div className="flex space-x-2">
-                  <DatePicker
-                    selected={dateFilter.start}
-                    onChange={(d) => setDateFilter((f) => ({ ...f, start: d }))}
-                    placeholderText="Startdatum"
+            {showFilterSection && (
+              <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Mitarbeiter Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Mitarbeiter
+                  </label>
+                  <select
+                    value={selectedAdmin}
+                    onChange={(e) => setSelectedAdmin(e.target.value)}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
-                    dateFormat="dd.MM.yyyy"
-                    locale="de"
-                  />
-                  <DatePicker
-                    selected={dateFilter.end}
-                    onChange={(d) => setDateFilter((f) => ({ ...f, end: d }))}
-                    placeholderText="Enddatum"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
-                    dateFormat="dd.MM.yyyy"
-                    locale="de"
-                  />
+                  >
+                    <option value="alle">Alle Mitarbeiter</option>
+                    {allAdmins.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Datumsbereich Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Datumsbereich
+                  </label>
+                  <div className="flex space-x-2">
+                    <DatePicker
+                      selected={dateFilter.start}
+                      onChange={(d) =>
+                        setDateFilter((f) => ({ ...f, start: d }))
+                      }
+                      placeholderText="Startdatum"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
+                      dateFormat="dd.MM.yyyy"
+                      locale="de"
+                    />
+                    <DatePicker
+                      selected={dateFilter.end}
+                      onChange={(d) => setDateFilter((f) => ({ ...f, end: d }))}
+                      placeholderText="Enddatum"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
+                      dateFormat="dd.MM.yyyy"
+                      locale="de"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Delete Section Toggle Header */}
@@ -316,6 +368,98 @@ export default function Zeiterfassungsverwaltung() {
             )}
           </div>
 
+          <div className="px-6 py-4 border-b border-gray-200 bg-blue-50">
+            <button
+              onClick={() => setShowManualModal((prev) => !prev)}
+              className="w-full flex items-center justify-between text-sm font-semibold  text-blue-700 "
+            >
+              <div className="flex items-center">
+                <FiClock className="mr-2" />
+                {showManualModal
+                  ? "Manuellen Eintrag ausblenden"
+                  : "Manuellen Eintrag hinzufügen"}
+              </div>
+              <span className="text-lg">{showDeleteSection ? "−" : "+"}</span>
+            </button>
+
+            {showManualModal && (
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Mitarbeiter Auswahl */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Mitarbeiter
+                  </label>
+                  <select
+                    value={manualEntry.admin}
+                    onChange={(e) =>
+                      setManualEntry((prev) => ({
+                        ...prev,
+                        admin: e.target.value,
+                      }))
+                    }
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+                  >
+                    <option value="">Bitte wählen</option>
+                    {allAdmins.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Typ */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Typ
+                  </label>
+                  <select
+                    value={manualEntry.type}
+                    onChange={(e) =>
+                      setManualEntry((prev) => ({
+                        ...prev,
+                        type: e.target.value,
+                      }))
+                    }
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+                  >
+                    <option value="in">EIN</option>
+                    <option value="out">AUS</option>
+                  </select>
+                </div>
+
+                {/* Uhrzeit */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Datum & Uhrzeit
+                  </label>
+                  <DatePicker
+                    selected={manualEntry.time}
+                    onChange={(d) =>
+                      setManualEntry((prev) => ({ ...prev, time: d }))
+                    }
+                    showTimeSelect
+                    timeFormat="HH:mm"
+                    timeIntervals={5}
+                    dateFormat="dd.MM.yyyy HH:mm"
+                    placeholderText="Datum und Uhrzeit wählen"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+                  />
+                </div>
+
+                {/* Speichern Button */}
+                <div className="flex items-end">
+                  <button
+                    onClick={handleManualSave}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md text-sm flex items-center justify-center"
+                  >
+                    Speichern
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Arbeitszeitübersicht */}
           <div className="px-6 py-4 bg-gray-50">
             {summary.length > 0 && (
@@ -372,6 +516,12 @@ export default function Zeiterfassungsverwaltung() {
                       Verifizierung
                     </div>
                   </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Edit
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -402,9 +552,37 @@ export default function Zeiterfassungsverwaltung() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {r.method === "qr"
-                          ? "scan-Verifiziert"
-                          : "Manuell verifiziert"}
+                        <div>
+                          {r.method === "qr"
+                            ? "scan-Verifiziert"
+                            : r.method === "added"
+                            ? "Hinzugefügt"
+                            : r.method === "edited"
+                            ? "Bearbeitet"
+                            : "Manuell"}
+                        </div>
+                        {r.method === "edited" && r.editedBy && (
+                          <div className="text-xs text-gray-400">
+                            von {r.editedBy}
+                          </div>
+                        )}
+                        {r.method === "added" && r.addedBy && (
+                          <div className="text-xs text-gray-400">
+                            von {r.addedBy}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button
+                          onClick={() => {
+                            setEditingRecord(r);
+                            setEditModalOpen(true);
+                          }}
+                          className="text-blue-600 hover:underline text-xs"
+                        >
+                          Bearbeiten
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -518,6 +696,113 @@ export default function Zeiterfassungsverwaltung() {
           )}
         </div>
       </div>
+      {editModalOpen && editingRecord && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center px-4">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
+            <button
+              onClick={() => setEditModalOpen(false)}
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+            <h2 className="text-lg font-semibold mb-4">Eintrag bearbeiten</h2>
+
+            {/* Type */}
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1">Typ</label>
+              <select
+                value={editingRecord.type}
+                onChange={(e) =>
+                  setEditingRecord((prev) => ({
+                    ...prev,
+                    type: e.target.value,
+                  }))
+                }
+                className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+              >
+                <option value="in">EIN</option>
+                <option value="out">AUS</option>
+              </select>
+            </div>
+
+            {/* Time */}
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1">
+                Zeitpunkt
+              </label>
+              <DatePicker
+                selected={new Date(editingRecord.time)}
+                onChange={(d) =>
+                  setEditingRecord((prev) => ({ ...prev, time: d }))
+                }
+                showTimeSelect
+                timeFormat="HH:mm"
+                timeIntervals={5}
+                dateFormat="dd.MM.yyyy HH:mm"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+              />
+            </div>
+
+            {/* Method */}
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1">Methode</label>
+              <select
+                value={editingRecord.method}
+                onChange={(e) =>
+                  setEditingRecord((prev) => ({
+                    ...prev,
+                    method: e.target.value,
+                  }))
+                }
+                className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+              >
+                <option value="qr">QR</option>
+                <option value="manual">Manuell</option>
+              </select>
+            </div>
+
+            {/* Save */}
+            <button
+              onClick={async () => {
+                try {
+                  setIsLoading(true);
+                  const res = await fetch(`/api/punch/${editingRecord._id}`, {
+                    method: "PATCH",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "x-admin-id": session.user.id,
+                      "x-admin-name": session.user.name,
+                    },
+                    body: JSON.stringify({
+                      type: editingRecord.type,
+                      time: editingRecord.time,
+                      method: editingRecord.method,
+                    }),
+                  });
+
+                  const data = await res.json();
+                  if (data.success) {
+                    toast.success("Eintrag aktualisiert");
+                    setEditModalOpen(false);
+                    fetchRecords();
+                  } else {
+                    throw new Error(
+                      data.error || "Aktualisierung fehlgeschlagen"
+                    );
+                  }
+                } catch (err) {
+                  toast.error("Aktualisierung fehlgeschlagen");
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              className="w-full mt-2 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"
+            >
+              Speichern
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
