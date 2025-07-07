@@ -14,7 +14,10 @@ import {
   FiArrowLeft,
   FiChevronLeft,
   FiChevronRight,
+  FiPlusCircle,
+  FiEdit,
 } from "react-icons/fi";
+
 import { IoMdLocate } from "react-icons/io";
 
 export default function Zeiterfassungsverwaltung() {
@@ -26,7 +29,8 @@ export default function Zeiterfassungsverwaltung() {
   const [isLoading, setIsLoading] = useState(false);
   const hasFetched = useRef(false);
   const [showDeleteSection, setShowDeleteSection] = useState(false);
-  const [showFilterSection, setShowFilterSection] = useState(true);
+  const [showFilterSection, setShowFilterSection] = useState(false);
+  const [showSummarySection, setShowSummarySection] = useState(false);
 
   const [selectedAdmin, setSelectedAdmin] = useState("alle");
   const [dateFilter, setDateFilter] = useState({ start: null, end: null });
@@ -374,7 +378,7 @@ export default function Zeiterfassungsverwaltung() {
               className="w-full flex items-center justify-between text-sm font-semibold  text-blue-700 "
             >
               <div className="flex items-center">
-                <FiClock className="mr-2" />
+                <FiPlusCircle className="mr-2" />
                 {showManualModal
                   ? "Manuellen Eintrag ausblenden"
                   : "Manuellen Eintrag hinzufügen"}
@@ -461,12 +465,23 @@ export default function Zeiterfassungsverwaltung() {
           </div>
 
           {/* Arbeitszeitübersicht */}
-          <div className="px-6 py-4 bg-gray-50">
-            {summary.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Arbeitszeitübersicht
-                </label>
+
+          <div className="px-6 py-4 border-b border-gray-200 bg-green-100">
+            <button
+              onClick={() => setShowSummarySection((prev) => !prev)}
+              className="w-full flex items-center justify-between text-sm font-semibold text-green-700 focus:outline-none"
+            >
+              <div className="flex items-center">
+                <FiClock className="mr-2" />
+                {showSummarySection
+                  ? "Arbeitszeitübersicht ausblenden"
+                  : "Arbeitszeitübersicht anzeigen"}
+              </div>
+              <span className="text-lg">{showSummarySection ? "−" : "+"}</span>
+            </button>
+
+            {showSummarySection && summary.length > 0 && (
+              <div className="mt-4">
                 <div className="bg-white rounded-md p-3 border border-gray-200 shadow-sm">
                   {summary.map((s, i) => (
                     <div
@@ -520,7 +535,7 @@ export default function Zeiterfassungsverwaltung() {
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    Edit
+                    bearbeiten
                   </th>
                 </tr>
               </thead>
@@ -579,9 +594,11 @@ export default function Zeiterfassungsverwaltung() {
                             setEditingRecord(r);
                             setEditModalOpen(true);
                           }}
-                          className="text-blue-600 hover:underline text-xs"
+                          className="text-blue-600 hover:text-blue-800 p-1 rounded-full"
+                          title="Bearbeiten"
                         >
-                          Bearbeiten
+                          <FiEdit className="h-4 w-4 ml-6 " />
+                          <span className="sr-only">Bearbeiten</span>
                         </button>
                       </td>
                     </tr>
