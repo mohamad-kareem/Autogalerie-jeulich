@@ -528,9 +528,7 @@ export default function KaufvertragDetail() {
         {/* Print version of payment note */}
         {form.paymentNote && (
           <div className="mt-2 hidden print:block">
-            <p className="italic text-[13px]">
-              Zahlungsmethode: {form.paymentNote}
-            </p>
+            <p className="italic text-[13px]">{form.paymentNote}</p>
           </div>
         )}
 
