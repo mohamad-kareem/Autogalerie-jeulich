@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "react-hot-toast";
 import DatePicker from "react-datepicker";
+import { format } from "date-fns";
+
 import "react-datepicker/dist/react-datepicker.css";
 import {
   FiUser,
@@ -17,7 +19,6 @@ import {
   FiPlusCircle,
   FiEdit,
 } from "react-icons/fi";
-
 import { IoMdLocate } from "react-icons/io";
 
 export default function Zeiterfassungsverwaltung() {
@@ -28,9 +29,7 @@ export default function Zeiterfassungsverwaltung() {
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const hasFetched = useRef(false);
-  const [showDeleteSection, setShowDeleteSection] = useState(false);
-  const [showFilterSection, setShowFilterSection] = useState(false);
-  const [showSummarySection, setShowSummarySection] = useState(false);
+  const [activeSection, setActiveSection] = useState(null); // 'filter', 'delete', 'summary', 'manual'
 
   const [selectedAdmin, setSelectedAdmin] = useState("alle");
   const [dateFilter, setDateFilter] = useState({ start: null, end: null });
@@ -164,7 +163,6 @@ export default function Zeiterfassungsverwaltung() {
     time: null,
     method: "manual",
   });
-  const [showManualModal, setShowManualModal] = useState(false);
 
   const handleManualSave = async () => {
     if (!manualEntry.admin || !manualEntry.time || !manualEntry.type) {
@@ -186,9 +184,9 @@ export default function Zeiterfassungsverwaltung() {
       const data = await res.json();
       if (data.success) {
         toast.success("Eintrag gespeichert");
-        setShowManualModal(false);
+        setActiveSection(null);
         setManualEntry({ admin: "", type: "in", time: null, method: "manual" });
-        fetchRecords(); // Refresh data
+        fetchRecords();
       } else {
         throw new Error(data.error || "Fehler beim Speichern");
       }
@@ -199,17 +197,10 @@ export default function Zeiterfassungsverwaltung() {
     }
   };
 
-  const formatTime = (d) =>
-    new Date(d).toLocaleTimeString("de-DE", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  const formatDate = (d) => new Date(d).toLocaleDateString("de-DE");
-
   if (status !== "authenticated") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-pulse text-gray-600 text-sm md:text-base">
+        <div className="text-gray-600 text-sm md:text-base">
           Authentifizierung wird geladen...
         </div>
       </div>
@@ -217,55 +208,109 @@ export default function Zeiterfassungsverwaltung() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => router.push("/")}
-              className="p-1 rounded-md hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <FiArrowLeft className="text-lg text-blue-600" />
+              <FiArrowLeft className="text-gray-600" />
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-lg sm:text-xl font-semibold text-gray-800">
               Zeiterfassungsverwaltung
             </h1>
           </div>
-          <div className="mt-4 md:mt-0 flex items-center space-x-2 bg-white rounded-lg px-4 py-2 shadow-sm">
-            <FiUser className="text-blue-600" />
-            <span className="font-medium text-gray-700">
+          <div className="flex items-center space-x-2 bg-gray-100 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2">
+            <FiUser className="text-gray-500 text-sm sm:text-base" />
+            <span className="text-xs sm:text-sm font-medium text-gray-700">
               {session.user.name}
             </span>
           </div>
         </div>
+      </header>
 
-        {/* Main Content */}
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
-          {/* Filters Section */}
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6">
+        {/* Control Panel */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-4 sm:mb-6">
+          {/* Enhanced Control Panel Header */}
+          <div className="grid grid-cols-2 sm:flex border-b border-gray-200">
+            {/* Filter Button */}
             <button
-              onClick={() => setShowFilterSection((prev) => !prev)}
-              className="w-full flex items-center justify-between text-sm font-semibold text-blue-700 focus:outline-none"
+              onClick={() =>
+                setActiveSection(activeSection === "filter" ? null : "filter")
+              }
+              className={`flex-1 flex items-center justify-center py-2 sm:py-3 px-2 sm:px-4 space-x-1 sm:space-x-2 text-xs sm:text-sm font-medium transition-colors ${
+                activeSection === "filter"
+                  ? "bg-blue-50 text-blue-600 border-b-2 border-blue-500"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
             >
-              <div className="flex items-center">
-                <FiFilter className="mr-2" />
-                {showFilterSection ? "Filter ausblenden" : "Filter anzeigen"}
-              </div>
-              <span className="text-lg">{showFilterSection ? "−" : "+"}</span>
+              <FiFilter className="shrink-0 sm:mr-1 md:mr-2" />
+              <span className="whitespace-nowrap">Filter</span>
             </button>
 
-            {showFilterSection && (
-              <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Mitarbeiter Filter */}
+            {/* Delete Button */}
+            <button
+              onClick={() =>
+                setActiveSection(activeSection === "delete" ? null : "delete")
+              }
+              className={`flex-1 flex items-center justify-center py-2 sm:py-3 px-2 sm:px-4 space-x-1 sm:space-x-2 text-xs sm:text-sm font-medium transition-colors ${
+                activeSection === "delete"
+                  ? "bg-red-50 text-red-600 border-b-2 border-red-500"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <FiTrash2 className="shrink-0 sm:mr-1 md:mr-2" />
+              <span className="whitespace-nowrap">Löschen</span>
+            </button>
+
+            {/* Summary Button */}
+            <button
+              onClick={() =>
+                setActiveSection(activeSection === "summary" ? null : "summary")
+              }
+              className={`flex-1 flex items-center justify-center py-2 sm:py-3 px-2 sm:px-4 space-x-1 sm:space-x-2 text-xs sm:text-sm font-medium transition-colors ${
+                activeSection === "summary"
+                  ? "bg-green-50 text-green-600 border-b-2 border-green-500"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <FiClock className="shrink-0 sm:mr-1 md:mr-2" />
+              <span className="whitespace-nowrap">Übersicht</span>
+            </button>
+
+            {/* Manual Entry Button */}
+            <button
+              onClick={() =>
+                setActiveSection(activeSection === "manual" ? null : "manual")
+              }
+              className={`flex-1 flex items-center justify-center py-2 sm:py-3 px-2 sm:px-4 space-x-1 sm:space-x-2 text-xs sm:text-sm font-medium transition-colors ${
+                activeSection === "manual"
+                  ? "bg-purple-50 text-purple-600 border-b-2 border-purple-500"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <FiPlusCircle className="shrink-0 sm:mr-1 md:mr-2" />
+              <span className="whitespace-nowrap">Manuell</span>
+            </button>
+          </div>
+
+          {/* Filter Section */}
+          {activeSection === "filter" && (
+            <div className="px-4 sm:px-6 py-4 sm:py-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     Mitarbeiter
                   </label>
                   <select
                     value={selectedAdmin}
                     onChange={(e) => setSelectedAdmin(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                   >
                     <option value="alle">Alle Mitarbeiter</option>
                     {allAdmins.map((name) => (
@@ -276,121 +321,177 @@ export default function Zeiterfassungsverwaltung() {
                   </select>
                 </div>
 
-                {/* Datumsbereich Filter */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     Datumsbereich
                   </label>
-                  <div className="flex space-x-2">
-                    <DatePicker
-                      selected={dateFilter.start}
-                      onChange={(d) =>
-                        setDateFilter((f) => ({ ...f, start: d }))
-                      }
-                      placeholderText="Startdatum"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
-                      dateFormat="dd.MM.yyyy"
-                      locale="de"
-                    />
-                    <DatePicker
-                      selected={dateFilter.end}
-                      onChange={(d) => setDateFilter((f) => ({ ...f, end: d }))}
-                      placeholderText="Enddatum"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
-                      dateFormat="dd.MM.yyyy"
-                      locale="de"
-                    />
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    <div>
+                      <DatePicker
+                        selected={dateFilter.start}
+                        onChange={(d) =>
+                          setDateFilter((f) => ({ ...f, start: d }))
+                        }
+                        selectsStart
+                        startDate={dateFilter.start}
+                        endDate={dateFilter.end}
+                        placeholderText="Startdatum"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        dateFormat="dd.MM.yyyy"
+                        locale="de"
+                      />
+                    </div>
+                    <div>
+                      <DatePicker
+                        selected={dateFilter.end}
+                        onChange={(d) =>
+                          setDateFilter((f) => ({ ...f, end: d }))
+                        }
+                        selectsEnd
+                        startDate={dateFilter.start}
+                        endDate={dateFilter.end}
+                        minDate={dateFilter.start}
+                        placeholderText="Enddatum"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        dateFormat="dd.MM.yyyy"
+                        locale="de"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
 
-          {/* Delete Section Toggle Header */}
-          <div className="px-6 py-4 border-b border-gray-200 bg-red-50">
-            <button
-              onClick={() => setShowDeleteSection((prev) => !prev)}
-              className="w-full flex items-center justify-between text-sm font-semibold text-red-700 focus:outline-none"
-            >
-              <div className="flex items-center">
-                <FiTrash2 className="mr-2" />
-                {showDeleteSection
-                  ? "Löschbereich ausblenden"
-                  : "Löschbereich anzeigen"}
+                <div className="flex items-end">
+                  <button
+                    onClick={() => {
+                      setDateFilter({ start: null, end: null });
+                      setSelectedAdmin("alle");
+                    }}
+                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors"
+                  >
+                    Filter zurücksetzen
+                  </button>
+                </div>
               </div>
-              <span className="text-lg">{showDeleteSection ? "−" : "+"}</span>
-            </button>
+            </div>
+          )}
 
-            {/* Collapsible Delete Section */}
-            {showDeleteSection && (
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Startdatum
+          {/* Delete Section */}
+          {activeSection === "delete" && (
+            <div className="px-4 sm:px-6 py-4 sm:py-5">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
+                <div className="md:col-span-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                    Zeitraum
                   </label>
-                  <DatePicker
-                    selected={deleteRange.start}
-                    onChange={(d) =>
-                      setDeleteRange((r) => ({ ...r, start: d }))
-                    }
-                    placeholderText="Startdatum wählen"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 bg-white"
-                    dateFormat="dd.MM.yyyy"
-                    locale="de"
-                  />
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">
+                        Von
+                      </label>
+                      <DatePicker
+                        selected={deleteRange.start}
+                        onChange={(d) =>
+                          setDeleteRange((r) => ({ ...r, start: d }))
+                        }
+                        selectsStart
+                        startDate={deleteRange.start}
+                        endDate={deleteRange.end}
+                        placeholderText="Startdatum"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        dateFormat="dd.MM.yyyy"
+                        locale="de"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">
+                        Bis
+                      </label>
+                      <DatePicker
+                        selected={deleteRange.end}
+                        onChange={(d) =>
+                          setDeleteRange((r) => ({ ...r, end: d }))
+                        }
+                        selectsEnd
+                        startDate={deleteRange.start}
+                        endDate={deleteRange.end}
+                        minDate={deleteRange.start}
+                        placeholderText="Enddatum"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        dateFormat="dd.MM.yyyy"
+                        locale="de"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Enddatum
-                  </label>
-                  <DatePicker
-                    selected={deleteRange.end}
-                    onChange={(d) => setDeleteRange((r) => ({ ...r, end: d }))}
-                    placeholderText="Enddatum wählen"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 bg-white"
-                    dateFormat="dd.MM.yyyy"
-                    locale="de"
-                  />
-                </div>
+
                 <div className="flex items-end">
                   <button
                     onClick={handleDelete}
                     disabled={
                       isLoading || !deleteRange.start || !deleteRange.end
                     }
-                    className={`w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm ${
+                    className={`w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                       isLoading || !deleteRange.start || !deleteRange.end
                         ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                         : "bg-red-600 hover:bg-red-700 text-white"
                     }`}
                   >
-                    <FiTrash2 className="mr-2" />
-                    Bereich löschen
+                    {isLoading ? "Löschen..." : "Löschen"}
                   </button>
                 </div>
-              </div>
-            )}
-          </div>
 
-          <div className="px-6 py-4 border-b border-gray-200 bg-blue-50">
-            <button
-              onClick={() => setShowManualModal((prev) => !prev)}
-              className="w-full flex items-center justify-between text-sm font-semibold  text-blue-700 "
-            >
-              <div className="flex items-center">
-                <FiPlusCircle className="mr-2" />
-                {showManualModal
-                  ? "Manuellen Eintrag ausblenden"
-                  : "Manuellen Eintrag hinzufügen"}
+                <div className="flex items-center">
+                  <p className="text-xs sm:text-sm text-gray-500">
+                    {deleteRange.start && deleteRange.end
+                      ? `Einträge von ${format(
+                          deleteRange.start,
+                          "dd.MM.yyyy"
+                        )} bis ${format(
+                          deleteRange.end,
+                          "dd.MM.yyyy"
+                        )} werden gelöscht`
+                      : "Bitte Zeitraum auswählen"}
+                  </p>
+                </div>
               </div>
-              <span className="text-lg">{showDeleteSection ? "−" : "+"}</span>
-            </button>
+            </div>
+          )}
 
-            {showManualModal && (
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-                {/* Mitarbeiter Auswahl */}
+          {/* Summary Section */}
+          {activeSection === "summary" && (
+            <div className="px-4 sm:px-6 py-4 sm:py-5">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                {summary.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    {summary.map((s, i) => (
+                      <div
+                        key={i}
+                        className="flex justify-between items-center py-2 px-3 sm:py-3 sm:px-4 bg-white rounded-lg shadow-xs border border-gray-200"
+                      >
+                        <span className="text-xs sm:text-sm font-medium text-gray-700 truncate">
+                          {s.name}
+                        </span>
+                        <span className="text-xs sm:text-sm font-semibold text-blue-600 whitespace-nowrap ml-2">
+                          {s.timeFormatted}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs sm:text-sm text-gray-500 text-center py-3 sm:py-4">
+                    Keine Daten verfügbar
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Manual Entry Section */}
+          {activeSection === "manual" && (
+            <div className="px-4 sm:px-6 py-4 sm:py-5">
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     Mitarbeiter
                   </label>
                   <select
@@ -401,7 +502,7 @@ export default function Zeiterfassungsverwaltung() {
                         admin: e.target.value,
                       }))
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                   >
                     <option value="">Bitte wählen</option>
                     {allAdmins.map((name) => (
@@ -412,9 +513,8 @@ export default function Zeiterfassungsverwaltung() {
                   </select>
                 </div>
 
-                {/* Typ */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     Typ
                   </label>
                   <select
@@ -425,16 +525,15 @@ export default function Zeiterfassungsverwaltung() {
                         type: e.target.value,
                       }))
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                   >
                     <option value="in">EIN</option>
                     <option value="out">AUS</option>
                   </select>
                 </div>
 
-                {/* Uhrzeit */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     Datum & Uhrzeit
                   </label>
                   <DatePicker
@@ -447,95 +546,63 @@ export default function Zeiterfassungsverwaltung() {
                     timeIntervals={5}
                     dateFormat="dd.MM.yyyy HH:mm"
                     placeholderText="Datum und Uhrzeit wählen"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                   />
                 </div>
 
-                {/* Speichern Button */}
-                <div className="flex items-end">
+                <div className="flex justify-end space-x-2 sm:space-x-3 pt-2">
+                  <button
+                    onClick={() => setActiveSection(null)}
+                    className="px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Abbrechen
+                  </button>
                   <button
                     onClick={handleManualSave}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md text-sm flex items-center justify-center"
+                    disabled={!manualEntry.admin || !manualEntry.time}
+                    className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium text-white transition-colors ${
+                      !manualEntry.admin || !manualEntry.time
+                        ? "bg-blue-300 cursor-not-allowed"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    }`}
                   >
                     Speichern
                   </button>
                 </div>
               </div>
-            )}
+            </div>
+          )}
+        </div>
+
+        {/* Data Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Zeiterfassungen
+            </h2>
           </div>
 
-          {/* Arbeitszeitübersicht */}
-
-          <div className="px-6 py-4 border-b border-gray-200 bg-green-100">
-            <button
-              onClick={() => setShowSummarySection((prev) => !prev)}
-              className="w-full flex items-center justify-between text-sm font-semibold text-green-700 focus:outline-none"
-            >
-              <div className="flex items-center">
-                <FiClock className="mr-2" />
-                {showSummarySection
-                  ? "Arbeitszeitübersicht ausblenden"
-                  : "Arbeitszeitübersicht anzeigen"}
-              </div>
-              <span className="text-lg">{showSummarySection ? "−" : "+"}</span>
-            </button>
-
-            {showSummarySection && summary.length > 0 && (
-              <div className="mt-4">
-                <div className="bg-white rounded-md p-3 border border-gray-200 shadow-sm">
-                  {summary.map((s, i) => (
-                    <div
-                      key={i}
-                      className="flex justify-between items-center text-sm mb-1 last:mb-0"
-                    >
-                      <span className="text-gray-600">{s.name}</span>
-                      <span className="font-medium text-blue-600">
-                        {s.timeFormatted}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Datensätze Tabelle */}
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Mitarbeiter
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Datum & Uhrzeit
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Aktion
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <div className="flex items-center">
                       <IoMdLocate className="mr-1" />
-                      Verifizierung
+                      <span className="hidden sm:inline">Verifizierung</span>
                     </div>
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    bearbeiten
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Aktionen
                   </th>
                 </tr>
               </thead>
@@ -543,21 +610,25 @@ export default function Zeiterfassungsverwaltung() {
                 {paginated.length > 0 ? (
                   paginated.map((r, i) => (
                     <tr key={i} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {r.admin?.name || "Unbekannt"}
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {r.admin?.name || "Unbekannt"}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(r.time).toLocaleString("de-DE", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {new Date(r.time).toLocaleString("de-DE", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                          className={`px-2 py-1 inline-flex text-xs leading-4 font-semibold rounded-full ${
                             r.type === "in"
                               ? "bg-green-100 text-green-800"
                               : "bg-red-100 text-red-800"
@@ -566,50 +637,54 @@ export default function Zeiterfassungsverwaltung() {
                           {r.type === "in" ? "EIN" : "AUS"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div>
-                          {r.method === "qr"
-                            ? "scan-Verifiziert"
-                            : r.method === "added"
-                            ? "Hinzugefügt"
-                            : r.method === "edited"
-                            ? "Bearbeitet"
-                            : "Manuell"}
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          <span className="sm:hidden">
+                            {r.method === "qr"
+                              ? "QR"
+                              : r.method === "added"
+                              ? "Hinzugefügt"
+                              : r.method === "edited"
+                              ? "Bearbeitet"
+                              : "Manuell"}
+                          </span>
+                          <span className="hidden sm:inline">
+                            {r.method === "qr"
+                              ? "QR-Verifiziert"
+                              : r.method === "added"
+                              ? "Hinzugefügt"
+                              : r.method === "edited"
+                              ? "Bearbeitet"
+                              : "Manuell"}
+                          </span>
+                          {(r.method === "edited" && r.editedBy) ||
+                          (r.method === "added" && r.addedBy) ? (
+                            <div className="text-xs text-gray-400 mt-1">
+                              von {r.editedBy || r.addedBy}
+                            </div>
+                          ) : null}
                         </div>
-                        {r.method === "edited" && r.editedBy && (
-                          <div className="text-xs text-gray-400">
-                            von {r.editedBy}
-                          </div>
-                        )}
-                        {r.method === "added" && r.addedBy && (
-                          <div className="text-xs text-gray-400">
-                            von {r.addedBy}
-                          </div>
-                        )}
                       </td>
-
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => {
                             setEditingRecord(r);
                             setEditModalOpen(true);
                           }}
-                          className="text-blue-600 hover:text-blue-800 p-1 rounded-full"
-                          title="Bearbeiten"
+                          className="text-blue-600 hover:text-blue-900 flex items-center"
                         >
-                          <FiEdit className="h-4 w-4 ml-6 " />
-                          <span className="sr-only">Bearbeiten</span>
+                          <FiEdit className="inline mr-1" />
+                          <span className="hidden sm:inline">Bearbeiten</span>
                         </button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan="4"
-                      className="px-6 py-4 text-center text-sm text-gray-500"
-                    >
-                      Keine Datensätze gefunden
+                    <td colSpan="5" className="px-6 py-4 text-center">
+                      <div className="text-sm text-gray-500 py-8">
+                        Keine Datensätze gefunden
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -619,12 +694,12 @@ export default function Zeiterfassungsverwaltung() {
 
           {/* Pagination */}
           {filtered.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
               <div className="flex-1 flex justify-between sm:hidden">
                 <button
                   onClick={() => setPage((p) => Math.max(p - 1, 1))}
                   disabled={page === 1}
-                  className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                  className={`relative inline-flex items-center px-3 py-2 border border-gray-300 text-xs font-medium rounded-md ${
                     page === 1
                       ? "bg-gray-100 text-gray-400"
                       : "bg-white text-gray-700 hover:bg-gray-50"
@@ -637,7 +712,7 @@ export default function Zeiterfassungsverwaltung() {
                     setPage((p) => (p * 10 < filtered.length ? p + 1 : p))
                   }
                   disabled={page * 10 >= filtered.length}
-                  className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                  className={`ml-3 relative inline-flex items-center px-3 py-2 border border-gray-300 text-xs font-medium rounded-md ${
                     page * 10 >= filtered.length
                       ? "bg-gray-100 text-gray-400"
                       : "bg-white text-gray-700 hover:bg-gray-50"
@@ -712,111 +787,125 @@ export default function Zeiterfassungsverwaltung() {
             </div>
           )}
         </div>
-      </div>
+      </main>
+
+      {/* Edit Modal */}
       {editModalOpen && editingRecord && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center px-4">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
-            <button
-              onClick={() => setEditModalOpen(false)}
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-            >
-              ✕
-            </button>
-            <h2 className="text-lg font-semibold mb-4">Eintrag bearbeiten</h2>
-
-            {/* Type */}
-            <div className="mb-3">
-              <label className="block text-sm font-medium mb-1">Typ</label>
-              <select
-                value={editingRecord.type}
-                onChange={(e) =>
-                  setEditingRecord((prev) => ({
-                    ...prev,
-                    type: e.target.value,
-                  }))
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Eintrag bearbeiten
+              </h3>
+              <button
+                onClick={() => setEditModalOpen(false)}
+                className="text-gray-400 hover:text-gray-500"
               >
-                <option value="in">EIN</option>
-                <option value="out">AUS</option>
-              </select>
+                ✕
+              </button>
             </div>
-
-            {/* Time */}
-            <div className="mb-3">
-              <label className="block text-sm font-medium mb-1">
-                Zeitpunkt
-              </label>
-              <DatePicker
-                selected={new Date(editingRecord.time)}
-                onChange={(d) =>
-                  setEditingRecord((prev) => ({ ...prev, time: d }))
-                }
-                showTimeSelect
-                timeFormat="HH:mm"
-                timeIntervals={5}
-                dateFormat="dd.MM.yyyy HH:mm"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-              />
-            </div>
-
-            {/* Method */}
-            <div className="mb-3">
-              <label className="block text-sm font-medium mb-1">Methode</label>
-              <select
-                value={editingRecord.method}
-                onChange={(e) =>
-                  setEditingRecord((prev) => ({
-                    ...prev,
-                    method: e.target.value,
-                  }))
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-              >
-                <option value="qr">QR</option>
-                <option value="manual">Manuell</option>
-              </select>
-            </div>
-
-            {/* Save */}
-            <button
-              onClick={async () => {
-                try {
-                  setIsLoading(true);
-                  const res = await fetch(`/api/punch/${editingRecord._id}`, {
-                    method: "PATCH",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "x-admin-id": session.user.id,
-                      "x-admin-name": session.user.name,
-                    },
-                    body: JSON.stringify({
-                      type: editingRecord.type,
-                      time: editingRecord.time,
-                      method: editingRecord.method,
-                    }),
-                  });
-
-                  const data = await res.json();
-                  if (data.success) {
-                    toast.success("Eintrag aktualisiert");
-                    setEditModalOpen(false);
-                    fetchRecords();
-                  } else {
-                    throw new Error(
-                      data.error || "Aktualisierung fehlgeschlagen"
-                    );
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Typ
+                </label>
+                <select
+                  value={editingRecord.type}
+                  onChange={(e) =>
+                    setEditingRecord((prev) => ({
+                      ...prev,
+                      type: e.target.value,
+                    }))
                   }
-                } catch (err) {
-                  toast.error("Aktualisierung fehlgeschlagen");
-                } finally {
-                  setIsLoading(false);
-                }
-              }}
-              className="w-full mt-2 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"
-            >
-              Speichern
-            </button>
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                >
+                  <option value="in">EIN</option>
+                  <option value="out">AUS</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Datum & Uhrzeit
+                </label>
+                <DatePicker
+                  selected={new Date(editingRecord.time)}
+                  onChange={(d) =>
+                    setEditingRecord((prev) => ({ ...prev, time: d }))
+                  }
+                  showTimeSelect
+                  timeFormat="HH:mm"
+                  timeIntervals={5}
+                  dateFormat="dd.MM.yyyy HH:mm"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Methode
+                </label>
+                <select
+                  value={editingRecord.method}
+                  onChange={(e) =>
+                    setEditingRecord((prev) => ({
+                      ...prev,
+                      method: e.target.value,
+                    }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                >
+                  <option value="qr">QR</option>
+                  <option value="manual">Manuell</option>
+                </select>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => setEditModalOpen(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    setIsLoading(true);
+                    const res = await fetch(`/api/punch/${editingRecord._id}`, {
+                      method: "PATCH",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "x-admin-id": session.user.id,
+                        "x-admin-name": session.user.name,
+                      },
+                      body: JSON.stringify({
+                        type: editingRecord.type,
+                        time: editingRecord.time,
+                        method: editingRecord.method,
+                      }),
+                    });
+
+                    const data = await res.json();
+                    if (data.success) {
+                      toast.success("Eintrag aktualisiert");
+                      setEditModalOpen(false);
+                      fetchRecords();
+                    } else {
+                      throw new Error(
+                        data.error || "Aktualisierung fehlgeschlagen"
+                      );
+                    }
+                  } catch (err) {
+                    toast.error("Aktualisierung fehlgeschlagen");
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+              >
+                Speichern
+              </button>
+            </div>
           </div>
         </div>
       )}
