@@ -30,6 +30,7 @@ export default function KaufvertragDetail() {
     total: 0,
     downPayment: 0,
     paymentNote: "",
+    title: "Kaufvertrag",
   };
   const { id } = useParams();
   const router = useRouter();
@@ -45,7 +46,8 @@ export default function KaufvertragDetail() {
       const value = data[key];
 
       if (defaultType === "string") {
-        sanitized[key] = typeof value === "string" ? value : "";
+        sanitized[key] =
+          typeof value === "string" ? value : sanitized[key] || "";
       } else if (defaultType === "number") {
         sanitized[key] = typeof value === "number" ? value : 0;
       } else if (defaultType === "boolean") {
@@ -176,9 +178,14 @@ export default function KaufvertragDetail() {
             />
           </div>
           <div className="text-right space-y-1 w-full md:w-auto">
-            <p className="text-red-600 text-xl md:text-2xl print:text-2xl">
-              Kaufvertrag
-            </p>
+            <input
+              type="text"
+              name="title"
+              value={form.title}
+              onChange={handleChange}
+              className="text-red-600 text-xl md:text-2xl print:text-2xl bg-transparent  border-none outline-none w-[160px] text-right"
+            />
+
             <div className="flex justify-end items-center gap-2 text-[13px]">
               <label
                 htmlFor="invoiceNumber"

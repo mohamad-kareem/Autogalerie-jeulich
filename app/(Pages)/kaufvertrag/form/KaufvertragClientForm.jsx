@@ -8,7 +8,7 @@ import Button from "@/app/(components)/helpers/Button";
 import { useSearchParams } from "next/navigation";
 
 export default function KaufvertragClientForm() {
-  const [form, setForm] = useState({ downPayment: 0 });
+  const [form, setForm] = useState({ downPayment: 0, title: "Kaufvertrag" });
 
   const searchParams = useSearchParams();
   const [rawTotal, setRawTotal] = useState("");
@@ -117,7 +117,11 @@ export default function KaufvertragClientForm() {
       if (!res.ok) throw new Error("Fehler beim Speichern");
 
       toast.success("Kaufvertrag wurde erfolgreich gespeichert!");
-      setForm((prev) => ({ issuer: prev.issuer }));
+      setForm((prev) => ({
+        issuer: prev.issuer || "",
+        downPayment: 0,
+        title: "Kaufvertrag",
+      }));
     } catch (err) {
       console.error(err);
       toast.error("Fehler beim Speichern des Formulars.");
@@ -172,9 +176,14 @@ export default function KaufvertragClientForm() {
             />
           </div>
           <div className="text-right space-y-1 w-full md:w-auto">
-            <p className="text-red-600 text-xl md:text-2xl print:text-2xl">
-              Kaufvertrag
-            </p>
+            <input
+              type="text"
+              name="title"
+              value={form.title}
+              onChange={handleChange}
+              className="text-red-600 text-xl md:text-2xl print:text-2xl bg-transparent  border-none outline-none w-[160px] text-right"
+            />
+
             <div className="flex justify-end items-center gap-2 text-[13px]">
               <label
                 htmlFor="invoiceNumber"
