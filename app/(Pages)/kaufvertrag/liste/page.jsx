@@ -318,12 +318,7 @@ export default function KaufvertragListe() {
                       <ChevronUpDownIcon className="ml-1 h-3 w-3 text-gray-400" />
                     </div>
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Verkäufer
-                  </th>
+
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
@@ -399,9 +394,7 @@ export default function KaufvertragListe() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(contract.invoiceDate)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contract.issuer || "-"}
-                      </td>
+
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
                           {contract.buyerName || "-"}
