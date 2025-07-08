@@ -80,9 +80,9 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
           <div className="mb-4 md:mb-6 flex flex-col items-center">
             <div className="relative">
               <img
-                src={previewImage || "/default-avatar.jpg"}
-                alt="Profilbild"
-                className="h-20 w-20 md:h-24 md:w-24 rounded-full object-cover shadow-lg ring-2 md:ring-4 ring-white/80"
+                src={user.image || "/default-avatar.png"}
+                alt={user.name}
+                className="h-12 w-12 md:h-15 md:w-15 rounded-full object-cover ring-1 md:ring-2 ring-white shadow-md"
               />
               <button
                 type="button"

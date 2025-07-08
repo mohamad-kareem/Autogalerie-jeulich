@@ -223,7 +223,7 @@ export default function Zeiterfassungsverwaltung() {
               Zeiterfassungsverwaltung
             </h1>
           </div>
-          <div className="flex items-center space-x-2 bg-gray-100 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2">
+          <div className="hidden sm:flex items-center space-x-2 bg-gray-100 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2">
             <FiUser className="text-gray-500 text-sm sm:text-base" />
             <span className="text-xs sm:text-sm font-medium text-gray-700">
               {session.user.name}
@@ -586,22 +586,22 @@ export default function Zeiterfassungsverwaltung() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Mitarbeiter
                   </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Datum & Uhrzeit
                   </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Aktion
                   </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <div className="flex items-center">
                       <IoMdLocate className="mr-1" />
-                      <span className="hidden sm:inline">Verifizierung</span>
+                      <span>Verifizierung</span>
                     </div>
                   </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Aktionen
                   </th>
                 </tr>
@@ -610,12 +610,12 @@ export default function Zeiterfassungsverwaltung() {
                 {paginated.length > 0 ? (
                   paginated.map((r, i) => (
                     <tr key={i} className="hover:bg-gray-50">
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
                           {r.admin?.name || "Unbekannt"}
                         </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">
                           {new Date(r.time).toLocaleString("de-DE", {
                             day: "2-digit",
@@ -626,7 +626,7 @@ export default function Zeiterfassungsverwaltung() {
                           })}
                         </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <span
                           className={`px-2 py-1 inline-flex text-xs leading-4 font-semibold rounded-full ${
                             r.type === "in"
@@ -637,35 +637,26 @@ export default function Zeiterfassungsverwaltung() {
                           {r.type === "in" ? "EIN" : "AUS"}
                         </span>
                       </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">
-                          <span className="sm:hidden">
+                          <div>
                             {r.method === "qr"
-                              ? "QR"
+                              ? "NFC-Verifiziert"
                               : r.method === "added"
                               ? "Hinzugefügt"
                               : r.method === "edited"
                               ? "Bearbeitet"
                               : "Manuell"}
-                          </span>
-                          <span className="hidden sm:inline">
-                            {r.method === "qr"
-                              ? "QR-Verifiziert"
-                              : r.method === "added"
-                              ? "Hinzugefügt"
-                              : r.method === "edited"
-                              ? "Bearbeitet"
-                              : "Manuell"}
-                          </span>
+                          </div>
                           {(r.method === "edited" && r.editedBy) ||
                           (r.method === "added" && r.addedBy) ? (
-                            <div className="text-xs text-gray-400 mt-1">
+                            <div className="text-xs text-gray-400">
                               von {r.editedBy || r.addedBy}
                             </div>
                           ) : null}
                         </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => {
                             setEditingRecord(r);
@@ -673,8 +664,8 @@ export default function Zeiterfassungsverwaltung() {
                           }}
                           className="text-blue-600 hover:text-blue-900 flex items-center"
                         >
-                          <FiEdit className="inline mr-1" />
-                          <span className="hidden sm:inline">Bearbeiten</span>
+                          <FiEdit className="mr-1" />
+                          <span>Bearbeiten</span>
                         </button>
                       </td>
                     </tr>
@@ -694,7 +685,7 @@ export default function Zeiterfassungsverwaltung() {
 
           {/* Pagination */}
           {filtered.length > 0 && (
-            <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+            <div className="px-4 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
               <div className="flex-1 flex justify-between sm:hidden">
                 <button
                   onClick={() => setPage((p) => Math.max(p - 1, 1))}
