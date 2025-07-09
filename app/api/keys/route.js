@@ -47,11 +47,22 @@ export async function PUT(request) {
   try {
     await connectDB();
     const { id, ...updateData } = await request.json();
+
+    if (!id) {
+      return Response.json({ error: "Missing ID" }, { status: 400 });
+    }
+
     const updatedKey = await Key.findByIdAndUpdate(id, updateData, {
       new: true,
     });
+
+    if (!updatedKey) {
+      return Response.json({ error: "Key not found" }, { status: 404 });
+    }
+
     return Response.json(updatedKey);
   } catch (error) {
+    console.error("PUT error:", error);
     return Response.json({ error: "Failed to update key" }, { status: 500 });
   }
 }

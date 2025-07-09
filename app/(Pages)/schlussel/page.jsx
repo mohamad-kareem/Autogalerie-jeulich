@@ -37,7 +37,9 @@ export default function KeysPage() {
     carName: "",
     keyNumber: "",
     note: "",
+    numberOfKeys: 2,
   });
+
   const tableRef = useRef(null);
   const brandsRef = useRef(null);
 
@@ -74,7 +76,8 @@ export default function KeysPage() {
       });
       const data = await response.json();
       setCars([...cars, data]);
-      setNewCar({ carName: "", keyNumber: "", note: "" });
+      setNewCar({ carName: "", keyNumber: "", note: "", numberOfKeys: 2 });
+
       setShowAddForm(false);
       scrollToTable();
     } catch (error) {
@@ -83,7 +86,10 @@ export default function KeysPage() {
   };
 
   const handleUpdateCar = async () => {
-    if (!editingCar.carName || !editingCar.keyNumber) return;
+    if (!editingCar?.carName || !editingCar?.keyNumber || !editingCar?._id) {
+      alert("Bitte stellen Sie sicher, dass alle Felder ausgefüllt sind.");
+      return;
+    }
 
     try {
       const response = await fetch("/api/keys", {
@@ -91,9 +97,23 @@ export default function KeysPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(editingCar),
+        body: JSON.stringify({
+          id: editingCar._id, // explicitly send the ID
+          carName: editingCar.carName,
+          keyNumber: editingCar.keyNumber,
+          note: editingCar.note,
+          numberOfKeys: editingCar.numberOfKeys,
+        }),
       });
+
       const data = await response.json();
+
+      if (!data || !data._id) {
+        console.error("Serverantwort ungültig:", data);
+        alert("Fehler beim Aktualisieren. Versuchen Sie es erneut.");
+        return;
+      }
+
       setCars(cars.map((car) => (car._id === data._id ? data : car)));
       setEditingCar(null);
     } catch (error) {
@@ -326,25 +346,47 @@ export default function KeysPage() {
                     className="w-full px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 font-mono"
                   />
                 </div>
-                <div className="flex flex-col sm:col-span-2 md:col-span-1">
+                <div className="sm:col-span-2 md:col-span-1">
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Bemerkung
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      name="note"
-                      value={editingCar ? editingCar.note : newCar.note}
-                      onChange={(e) =>
-                        editingCar
-                          ? setEditingCar({
-                              ...editingCar,
-                              note: e.target.value,
-                            })
-                          : setNewCar({ ...newCar, note: e.target.value })
-                      }
-                      placeholder="Optionale Notiz"
-                      className="flex-grow px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    />
+                  <input
+                    name="note"
+                    value={editingCar ? editingCar.note : newCar.note}
+                    onChange={(e) =>
+                      editingCar
+                        ? setEditingCar({ ...editingCar, note: e.target.value })
+                        : setNewCar({ ...newCar, note: e.target.value })
+                    }
+                    placeholder="Optionale Notiz"
+                    className="w-full px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+
+                  <div className="flex items-center justify-between mt-2">
+                    <label className="flex items-center text-xs sm:text-sm text-gray-700 gap-1">
+                      <input
+                        type="checkbox"
+                        checked={
+                          editingCar
+                            ? editingCar.numberOfKeys === 1
+                            : newCar.numberOfKeys === 1
+                        }
+                        onChange={(e) =>
+                          editingCar
+                            ? setEditingCar({
+                                ...editingCar,
+                                numberOfKeys: e.target.checked ? 1 : 2,
+                              })
+                            : setNewCar({
+                                ...newCar,
+                                numberOfKeys: e.target.checked ? 1 : 2,
+                              })
+                        }
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                      />
+                      Nur ein Schlüssel vorhanden
+                    </label>
+
                     <div className="flex gap-1 sm:gap-2">
                       <button
                         onClick={editingCar ? handleUpdateCar : handleAddCar}
@@ -381,6 +423,10 @@ export default function KeysPage() {
                   <th className="px-3 sm:px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden sm:table-cell">
                     Bemerkung
                   </th>
+                  <th className="px-3 sm:px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    Schlüsselanzahl
+                  </th>
+
                   <th className="px-3 sm:px-3 py-2 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider m">
                     Aktionen
                   </th>
@@ -403,16 +449,25 @@ export default function KeysPage() {
                           </div>
                         )}
                       </td>
+
                       <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
                         <div className="text-sm sm:text-base font-mono font-bold text-blue-950 bg-blue-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded-md inline-block">
                           {car.keyNumber}
                         </div>
                       </td>
+
                       <td className="px-3 sm:px-4 py-3 max-w-xs hidden sm:table-cell">
                         <div className="text-xs sm:text-sm text-gray-600">
                           {car.note || <span className="text-gray-400">-</span>}
                         </div>
                       </td>
+
+                      <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm sm:text-base text-gray-800">
+                          {car.numberOfKeys || 1}
+                        </span>
+                      </td>
+
                       <td className="px-3 sm:px-4 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-medium space-x-1 sm:space-x-2">
                         <button
                           onClick={() => {

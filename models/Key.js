@@ -13,6 +13,7 @@ const KeySchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  numberOfKeys: { type: Number, default: 2 },
   createdAt: {
     type: Date,
     default: Date.now,
