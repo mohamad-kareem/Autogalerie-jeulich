@@ -243,7 +243,7 @@ export default function Zeiterfassungsverwaltung() {
               onClick={() =>
                 setActiveSection(activeSection === "filter" ? null : "filter")
               }
-              className={`flex-1 flex items-center justify-center py-2 sm:py-3 px-2 sm:px-4 space-x-1 sm:space-x-2 text-xs sm:text-sm font-medium transition-colors ${
+              className={`flex-1 flex items-center justify-center py-2 sm:py-3 px-2 sm:px-4 space-x-1 sm:space-x-2 text-sm sm:text-sm font-medium transition-colors ${
                 activeSection === "filter"
                   ? "bg-blue-50 text-blue-600 border-b-2 border-blue-500"
                   : "text-gray-700 hover:bg-gray-50"
@@ -258,7 +258,7 @@ export default function Zeiterfassungsverwaltung() {
               onClick={() =>
                 setActiveSection(activeSection === "delete" ? null : "delete")
               }
-              className={`flex-1 flex items-center justify-center py-2 sm:py-3 px-2 sm:px-4 space-x-1 sm:space-x-2 text-xs sm:text-sm font-medium transition-colors ${
+              className={`flex-1 flex items-center justify-center py-2 sm:py-3 px-2 sm:px-4 space-x-1 sm:space-x-2 text-sm sm:text-sm font-medium transition-colors ${
                 activeSection === "delete"
                   ? "bg-red-50 text-red-600 border-b-2 border-red-500"
                   : "text-gray-700 hover:bg-gray-50"
@@ -273,7 +273,7 @@ export default function Zeiterfassungsverwaltung() {
               onClick={() =>
                 setActiveSection(activeSection === "summary" ? null : "summary")
               }
-              className={`flex-1 flex items-center justify-center py-2 sm:py-3 px-2 sm:px-4 space-x-1 sm:space-x-2 text-xs sm:text-sm font-medium transition-colors ${
+              className={`flex-1 flex items-center justify-center py-2 sm:py-3 px-2 sm:px-4 space-x-1 sm:space-x-2 text-sm sm:text-sm font-medium transition-colors ${
                 activeSection === "summary"
                   ? "bg-green-50 text-green-600 border-b-2 border-green-500"
                   : "text-gray-700 hover:bg-gray-50"
@@ -288,7 +288,7 @@ export default function Zeiterfassungsverwaltung() {
               onClick={() =>
                 setActiveSection(activeSection === "manual" ? null : "manual")
               }
-              className={`flex-1 flex items-center justify-center py-2 sm:py-3 px-2 sm:px-4 space-x-1 sm:space-x-2 text-xs sm:text-sm font-medium transition-colors ${
+              className={`flex-1 flex items-center justify-center py-2 sm:py-3 px-2 sm:px-4 space-x-1 sm:space-x-2 text-sm sm:text-sm font-medium transition-colors ${
                 activeSection === "manual"
                   ? "bg-purple-50 text-purple-600 border-b-2 border-purple-500"
                   : "text-gray-700 hover:bg-gray-50"

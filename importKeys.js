@@ -1,7 +1,7 @@
 // scripts/importKeys.js
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import Schlussel from "./models/Schlussel.js";
+import Schlussel from "./models/Key.js";
 import { connectDB } from "./lib/mongodb.js";
 
 dotenv.config();

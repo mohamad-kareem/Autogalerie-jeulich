@@ -97,13 +97,13 @@ const DashboardContent = ({ user, onProfileClick }) => {
               accentColor="teal"
             />
 
-            <NavigationCard
+            {/* <NavigationCard
               href="/Plate"
               icon={<FiCalendar />}
               title="Kennzeichen"
               description="Temporäre Kennzeichen verwalten"
               accentColor="indigo"
-            />
+            /> */}
 
             <NavigationCard
               href="/Posteingang"

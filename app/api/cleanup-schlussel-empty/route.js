@@ -1,5 +1,5 @@
 import { connectDB } from "@/lib/mongodb";
-import Schlussel from "@/models/Schlussel";
+import Schlussel from "@/models/Key";
 
 export async function GET() {
   try {
