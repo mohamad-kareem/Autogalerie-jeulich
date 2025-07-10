@@ -40,6 +40,7 @@ export async function POST(request) {
   try {
     await connectDB();
     const body = await request.json();
+    console.log("Received on backend:", body);
     const newKey = new Key(body);
     await newKey.save();
     return Response.json(newKey, { status: 201 });

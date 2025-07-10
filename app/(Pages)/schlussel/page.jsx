@@ -41,6 +41,7 @@ export default function KeysPage() {
     keyNumber: "",
     note: "",
     numberOfKeys: 2,
+    color: "#000000",
   });
 
   const tableRef = useRef(null);
@@ -77,14 +78,16 @@ export default function KeysPage() {
 
   const handleAddCar = async () => {
     if (!newCar.carName || !newCar.keyNumber) return;
-
+    console.log("Adding car:", newCar);
     try {
       const response = await fetch("/api/keys", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newCar),
+        body: JSON.stringify({
+          ...newCar,
+        }),
       });
 
       const data = await response.json();
@@ -95,7 +98,13 @@ export default function KeysPage() {
       }
 
       setCars([...cars, data]);
-      setNewCar({ carName: "", keyNumber: "", note: "", numberOfKeys: 2 });
+      setNewCar({
+        carName: "",
+        keyNumber: "",
+        note: "",
+        color: "#000000",
+        numberOfKeys: 2,
+      });
       setShowAddForm(false);
       scrollToTable();
     } catch (error) {
@@ -120,6 +129,7 @@ export default function KeysPage() {
           carName: editingCar.carName,
           keyNumber: editingCar.keyNumber,
           note: editingCar.note,
+          color: editingCar.color,
           numberOfKeys: editingCar.numberOfKeys,
         }),
       });
@@ -363,6 +373,29 @@ export default function KeysPage() {
                     className="w-full px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 font-mono"
                   />
                 </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                    Wagenfarbe
+                  </label>
+                  <input
+                    type="color"
+                    value={
+                      editingCar
+                        ? editingCar.color || "#000000"
+                        : newCar.color || "#000000"
+                    }
+                    onChange={(e) =>
+                      editingCar
+                        ? setEditingCar({
+                            ...editingCar,
+                            color: e.target.value,
+                          })
+                        : setNewCar({ ...newCar, color: e.target.value })
+                    }
+                    className="w-12 h-8 p-0 border border-gray-300 rounded cursor-pointer"
+                  />
+                </div>
+
                 <div className="sm:col-span-2 md:col-span-1">
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Bemerkung
@@ -455,8 +488,15 @@ export default function KeysPage() {
                       className="hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
-                        <div className="text-sm sm:text-base font-semibold text-gray-900">
+                        <div className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2">
                           {car.carName}
+                          {car.color && (
+                            <span
+                              className="inline-block w-5 h-5 rounded-full border border-gray-300"
+                              style={{ backgroundColor: car.color }}
+                              title={`Farbe: ${car.color}`}
+                            />
+                          )}
                         </div>
                         {car.note && (
                           <div className="text-xs text-gray-500 mt-1">

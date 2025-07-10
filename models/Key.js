@@ -2,8 +2,9 @@ import mongoose from "mongoose";
 
 const KeySchema = new mongoose.Schema({
   carName: { type: String, required: true },
-  keyNumber: { type: String, required: true, unique: true }, // 🔑
+  keyNumber: { type: String, required: true, unique: true },
   note: { type: String, default: "" },
+  color: { type: String, default: "" }, // 🎨 Add this line
   numberOfKeys: { type: Number, default: 2 },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
