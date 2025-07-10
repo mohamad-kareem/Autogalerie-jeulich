@@ -8,12 +8,10 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 export default async function TrackVisitorsPage() {
   const session = await getServerSession(authOptions);
 
-  // Allow only if the logged-in user has the exact name "admin76546633"
+  // 1️⃣ Only the “super-admin” may view the page
   if (session?.user?.name !== "admin76546633") {
     return (
-      <div className="p-6 text-center text-red-600 font-semibold">
-        Unauthorized access. You do not have permission to view this page.
-      </div>
+      <div className="p-6 text-center text-red-600 font-semibold">Error.</div>
     );
   }
 
@@ -24,9 +22,15 @@ export default async function TrackVisitorsPage() {
     .populate({ path: "userId", select: "name role" })
     .lean();
 
+  // 2️⃣ Hide this admin’s own visits
+  const filteredVisits = visits.filter(
+    (v) => v.userId?.name !== "admin76546633"
+  );
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-xl font-bold mb-4">Page Visit Tracker</h1>
+
       <table className="w-full border text-sm">
         <thead>
           <tr>
@@ -37,7 +41,7 @@ export default async function TrackVisitorsPage() {
           </tr>
         </thead>
         <tbody>
-          {visits.map((v, i) => (
+          {filteredVisits.map((v, i) => (
             <tr key={i}>
               <td className="border px-2 py-1">{v.userId?.name || "Guest"}</td>
               <td className="border px-2 py-1">
