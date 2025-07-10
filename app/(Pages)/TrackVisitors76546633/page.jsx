@@ -49,7 +49,9 @@ export default async function TrackVisitorsPage() {
               </td>
               <td className="border px-2 py-1">{v.path}</td>
               <td className="border px-2 py-1">
-                {new Date(v.createdAt).toLocaleString("de-DE")}
+                {new Date(v.createdAt).toLocaleString("de-DE", {
+                  timeZone: "Europe/Berlin", // ⬅️ force CEST/CET
+                })}
               </td>
             </tr>
           ))}
