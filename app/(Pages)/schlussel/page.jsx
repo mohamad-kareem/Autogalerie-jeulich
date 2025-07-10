@@ -13,17 +13,20 @@ const carBrands = [
   { name: "Opel", logo: "/logos/opel4.png" },
   { name: "Dacia", logo: "/logos/Dacia1.png" },
   { name: "Honda", logo: "/logos/honda1.png" },
-  { name: "Skoda", logo: "/logos/scoda1.jpg" },
+
   { name: "Renault", logo: "/logos/Renault.png" },
+  { name: "Skoda", logo: "/logos/scoda1.jpg" },
   { name: "Hyundai", logo: "/logos/hyundia.jpg" },
   { name: "Peugeot", logo: "/logos/peugeot1.png" },
   { name: "Suzuki", logo: "/logos/suzuki.jpg" },
   { name: "Mazda", logo: "/logos/mazda.png" },
   { name: "Nissan", logo: "/logos/nissan.png" },
+  { name: "Mercedes", logo: "/logos/Mercedes2.png" },
   { name: "Toyota", logo: "/logos/Toyota1.png" },
-  { name: "Audi", logo: "/logos/audi1.png" },
+
   { name: "Kia", logo: "/logos/kia1.png" },
   { name: "MiniCooper", logo: "/logos/minicooper.png" },
+  { name: "Audi", logo: "/logos/audi1.png" },
 ];
 
 export default function KeysPage() {
@@ -62,6 +65,15 @@ export default function KeysPage() {
       console.error("Fehler beim Laden der Autos:", error);
     }
   };
+  useEffect(() => {
+    if (!filterBrand) return;
+
+    const timeout = setTimeout(() => {
+      setFilterBrand("");
+    }, 30000); // 10 seconds
+
+    return () => clearTimeout(timeout); // Clear if filter changes before 10s
+  }, [filterBrand]);
 
   const handleAddCar = async () => {
     if (!newCar.carName || !newCar.keyNumber) return;
@@ -74,10 +86,16 @@ export default function KeysPage() {
         },
         body: JSON.stringify(newCar),
       });
+
       const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || "Fehler beim Hinzufügen des Autos");
+        return;
+      }
+
       setCars([...cars, data]);
       setNewCar({ carName: "", keyNumber: "", note: "", numberOfKeys: 2 });
-
       setShowAddForm(false);
       scrollToTable();
     } catch (error) {
@@ -98,7 +116,7 @@ export default function KeysPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: editingCar._id, // explicitly send the ID
+          id: editingCar._id,
           carName: editingCar.carName,
           keyNumber: editingCar.keyNumber,
           note: editingCar.note,
@@ -108,9 +126,8 @@ export default function KeysPage() {
 
       const data = await response.json();
 
-      if (!data || !data._id) {
-        console.error("Serverantwort ungültig:", data);
-        alert("Fehler beim Aktualisieren. Versuchen Sie es erneut.");
+      if (!response.ok) {
+        alert(data.error || "Fehler beim Aktualisieren des Autos");
         return;
       }
 
@@ -417,14 +434,12 @@ export default function KeysPage() {
                   <th className="px-3 sm:px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Fahrzeug
                   </th>
-                  <th className="px-3 sm:px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Schlüsselnummer
+                  <th className="px-3 sm:px-4 py-2 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    Schl.Nr.
                   </th>
-                  <th className="px-3 sm:px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden sm:table-cell">
-                    Bemerkung
-                  </th>
-                  <th className="px-3 sm:px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Schlüsselanzahl
+
+                  <th className="px-3 sm:px-4 py-2 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    Schl.anz
                   </th>
 
                   <th className="px-3 sm:px-3 py-2 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider m">
@@ -444,25 +459,19 @@ export default function KeysPage() {
                           {car.carName}
                         </div>
                         {car.note && (
-                          <div className="text-xs text-gray-500 sm:hidden mt-1">
+                          <div className="text-xs text-gray-500 mt-1">
                             {car.note}
                           </div>
                         )}
                       </td>
 
-                      <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
-                        <div className="text-sm sm:text-base font-mono font-bold text-blue-950 bg-blue-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded-md inline-block">
+                      <td className="px-3 sm:px-4 py-3 text-center whitespace-nowrap">
+                        <span className="text-sm sm:text-base font-mono font-bold text-blue-950 bg-blue-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded-md inline-block">
                           {car.keyNumber}
-                        </div>
+                        </span>
                       </td>
 
-                      <td className="px-3 sm:px-4 py-3 max-w-xs hidden sm:table-cell">
-                        <div className="text-xs sm:text-sm text-gray-600">
-                          {car.note || <span className="text-gray-400">-</span>}
-                        </div>
-                      </td>
-
-                      <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
+                      <td className="px-3 sm:px-4 py-3 text-center whitespace-nowrap">
                         <span className="text-sm sm:text-base text-gray-800">
                           {car.numberOfKeys || 1}
                         </span>

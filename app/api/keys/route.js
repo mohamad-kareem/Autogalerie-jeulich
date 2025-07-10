@@ -30,6 +30,12 @@ export async function GET(request) {
 }
 
 // POST a new key
+// helper so we don’t repeat ourselves
+function isDuplicateKey(err) {
+  return err?.code === 11000;
+}
+
+// POST a new key
 export async function POST(request) {
   try {
     await connectDB();
@@ -37,7 +43,13 @@ export async function POST(request) {
     const newKey = new Key(body);
     await newKey.save();
     return Response.json(newKey, { status: 201 });
-  } catch (error) {
+  } catch (err) {
+    if (isDuplicateKey(err)) {
+      return Response.json(
+        { error: "Schlüsselnummer existiert bereits" },
+        { status: 400 }
+      );
+    }
     return Response.json({ error: "Failed to create key" }, { status: 500 });
   }
 }
@@ -47,22 +59,27 @@ export async function PUT(request) {
   try {
     await connectDB();
     const { id, ...updateData } = await request.json();
-
     if (!id) {
       return Response.json({ error: "Missing ID" }, { status: 400 });
     }
 
     const updatedKey = await Key.findByIdAndUpdate(id, updateData, {
       new: true,
+      runValidators: true, // ⬅️ ensures the unique check runs on update
+      context: "query",
     });
 
     if (!updatedKey) {
       return Response.json({ error: "Key not found" }, { status: 404 });
     }
-
     return Response.json(updatedKey);
-  } catch (error) {
-    console.error("PUT error:", error);
+  } catch (err) {
+    if (isDuplicateKey(err)) {
+      return Response.json(
+        { error: "Schlüsselnummer existiert bereits" },
+        { status: 400 }
+      );
+    }
     return Response.json({ error: "Failed to update key" }, { status: 500 });
   }
 }
