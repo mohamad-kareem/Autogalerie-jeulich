@@ -1,20 +1,28 @@
 export const dynamic = "force-dynamic";
+
 import { connectDB } from "@/lib/mongodb";
 import PageVisit from "@/models/PageVisit";
-import Admin from "@/models/Admin";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export default async function TrackVisitorsPage() {
+  const session = await getServerSession(authOptions);
+
+  // Allow only if the logged-in user has the exact name "admin76546633"
+  if (session?.user?.name !== "admin76546633") {
+    return (
+      <div className="p-6 text-center text-red-600 font-semibold">
+        Unauthorized access. You do not have permission to view this page.
+      </div>
+    );
+  }
+
   await connectDB();
 
   const visits = await PageVisit.find()
     .sort({ createdAt: -1 })
     .populate({ path: "userId", select: "name role" })
     .lean();
-
-  // Filter out visits from user with name "admin76546633"
-  const filteredVisits = visits.filter(
-    (v) => v.userId?.name !== "admin76546633"
-  );
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -29,7 +37,7 @@ export default async function TrackVisitorsPage() {
           </tr>
         </thead>
         <tbody>
-          {filteredVisits.map((v, i) => (
+          {visits.map((v, i) => (
             <tr key={i}>
               <td className="border px-2 py-1">{v.userId?.name || "Guest"}</td>
               <td className="border px-2 py-1">
