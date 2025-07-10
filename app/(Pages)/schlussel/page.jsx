@@ -71,7 +71,7 @@ export default function KeysPage() {
 
     const timeout = setTimeout(() => {
       setFilterBrand("");
-    }, 30000); // 10 seconds
+    }, 60000); // 10 seconds
 
     return () => clearTimeout(timeout); // Clear if filter changes before 10s
   }, [filterBrand]);
