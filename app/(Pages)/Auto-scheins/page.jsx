@@ -313,7 +313,7 @@ export default function CarScheinPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       {/* Header Section */}
-      <div className="max-w-6xl mx-auto mb-8">
+      <div className="w-full max-w-[95vw] xl:max-w-[1200px] 2xl:max-w-[1850px] mx-auto mb-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
@@ -334,7 +334,7 @@ export default function CarScheinPage() {
       </div>
 
       {/* Filter Section */}
-      <div className="max-w-6xl mx-auto mb-6 bg-white p-4 rounded-xl shadow-sm">
+      <div className="w-full max-w-[95vw] xl:max-w-[1200px] 2xl:max-w-[1850px] mx-auto mb-6 bg-white p-4 rounded-xl shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -363,7 +363,7 @@ export default function CarScheinPage() {
       </div>
 
       {/* Documents List */}
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full max-w-[95vw] xl:max-w-[1200px] 2xl:max-w-[1850px] mx-auto">
         {filteredScheins.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
             <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -623,7 +623,7 @@ export default function CarScheinPage() {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="- Schein kopieren&#10;- Ölwechsel prüfen"
+                    placeholder="- Tüv Neu&#10;- Ölwechsel Neu"
                   />
                 </div>
               </div>
@@ -801,7 +801,7 @@ export default function CarScheinPage() {
                     onChange={(e) =>
                       setInfoDoc((prev) => ({
                         ...prev,
-                        notes: e.target.value.split("\n").filter(Boolean),
+                        notes: e.target.value.split("\n"),
                       }))
                     }
                     className="w-full mt-1 border border-gray-300 rounded px-2 py-1"
