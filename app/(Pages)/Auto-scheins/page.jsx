@@ -171,12 +171,26 @@ export default function CarScheinPage() {
   // File handling
   const handleFileChange = (e) => {
     const selected = e.target.files[0];
-    if (selected && selected.size <= 10 * 1024 * 1024) {
-      setFile(selected);
-      setPreviewUrl(URL.createObjectURL(selected));
-    } else {
-      toast.error("Datei muss kleiner als 10MB sein");
+
+    if (!selected) return;
+
+    if (selected.size > 20 * 1024 * 1024) {
+      toast.error("Datei muss kleiner als 20MB sein");
+      return;
     }
+
+    if (
+      selected.type === "image/heic" ||
+      selected.name.toLowerCase().endsWith(".heic")
+    ) {
+      toast.error(
+        "HEIC-Bilder werden nicht unterstützt. Bitte JPG oder PNG verwenden."
+      );
+      return;
+    }
+
+    setFile(selected);
+    setPreviewUrl(URL.createObjectURL(selected));
   };
 
   const handleUpdateInfo = async () => {
