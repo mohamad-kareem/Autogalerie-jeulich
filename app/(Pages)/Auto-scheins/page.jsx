@@ -443,6 +443,7 @@ export default function CarScheinPage() {
                           alt="Anzeigen"
                           width={40}
                           height={40}
+                          unoptimized
                           className="hover:opacity-100 transition-opacity"
                         />
                       </button>

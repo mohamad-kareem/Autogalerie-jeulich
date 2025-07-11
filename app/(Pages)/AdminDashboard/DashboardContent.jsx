@@ -13,7 +13,7 @@ import {
   FiMapPin,
 } from "react-icons/fi";
 import NavigationCard from "@/app/(components)/admin/NavigationCard";
-
+import Image from "next/image";
 const DashboardContent = ({ user, onProfileClick }) => {
   console.log("🧑‍💻 Client User Role:", user?.role);
 
@@ -45,9 +45,12 @@ const DashboardContent = ({ user, onProfileClick }) => {
                   onClick={onProfileClick}
                   className="flex items-center focus:outline-none transition-transform hover:scale-105"
                 >
-                  <img
+                  <Image
                     src={user.image || "/default-avatar.png"}
                     alt={user.name}
+                    width={40}
+                    height={40}
+                    unoptimized
                     className="h-8 w-8 md:h-10 md:w-10 rounded-full object-cover ring-1 md:ring-2 ring-white shadow-md"
                   />
                   <div className="absolute -bottom-0.5 -right-0.5 h-2 w-2 md:h-3 md:w-3 rounded-full bg-green-500 ring-1 md:ring-2 ring-white"></div>
