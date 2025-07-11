@@ -569,7 +569,7 @@ export default function CarScheinPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Verkäufer*
+                    Autohändler*
                   </label>
                   <div className="flex items-center gap-6 mt-1">
                     <label className="inline-flex items-center gap-2 cursor-pointer">
@@ -741,7 +741,7 @@ export default function CarScheinPage() {
               </div>
 
               <div>
-                <span className="font-medium">Verkäufer:</span>{" "}
+                <span className="font-medium">Autohändler :</span>{" "}
                 {isEditing ? (
                   <select
                     value={infoDoc.owner || ""}
