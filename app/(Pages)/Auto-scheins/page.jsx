@@ -313,7 +313,7 @@ export default function CarScheinPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       {/* Header Section */}
-      <div className="w-full max-w-[95vw] xl:max-w-[1200px] 2xl:max-w-[1550px] mx-auto mb-8">
+      <div className="w-full max-w-[95vw] xl:max-w-[1200px] 2xl:max-w-[1450px] mx-auto mb-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
@@ -334,7 +334,7 @@ export default function CarScheinPage() {
       </div>
 
       {/* Filter Section */}
-      <div className="w-full max-w-[95vw] xl:max-w-[1200px] 2xl:max-w-[1550px] mx-auto mb-6 bg-white p-4 rounded-xl shadow-sm">
+      <div className="w-full max-w-[95vw] xl:max-w-[1200px] 2xl:max-w-[1450px] mx-auto mb-6 bg-white p-4 rounded-xl shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -363,7 +363,7 @@ export default function CarScheinPage() {
       </div>
 
       {/* Documents List */}
-      <div className="w-full max-w-[95vw] xl:max-w-[1200px] 2xl:max-w-[1550px] mx-auto">
+      <div className="w-full max-w-[95vw] xl:max-w-[1200px] 2xl:max-w-[1450px] mx-auto">
         {filteredScheins.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
             <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
