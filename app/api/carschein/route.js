@@ -42,7 +42,13 @@ export async function POST(req) {
     const uploadRes = await new Promise((resolve, reject) => {
       cloudinary.uploader
         .upload_stream(
-          { folder: "car_scheins", resource_type: "auto" },
+          {
+            folder: "car_scheins",
+            resource_type: "image",
+            format: "jpg",
+            transformation: [{ quality: "auto" }], // optional compression
+            chunk_size: 6000000, // optional for larger files
+          },
           (err, res) => (err ? reject(err) : resolve(res))
         )
         .end(buffer);
