@@ -228,8 +228,9 @@ export default function KeysPage() {
                   <Image
                     src={brand.logo}
                     alt={brand.name}
-                    width={220}
-                    height={220}
+                    width={60}
+                    height={60}
+                    unoptimized
                     className="object-contain w-full h-full"
                   />
                 </div>
