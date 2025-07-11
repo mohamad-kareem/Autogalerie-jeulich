@@ -112,6 +112,13 @@ const DashboardContent = ({ user, onProfileClick }) => {
               description="Eingegangene Fahrzeugangebote und Nachrichten von Kunden"
               accentColor="orange"
             />
+            <NavigationCard
+              href="/Auto-scheins"
+              icon={<FiFileText />} // or another fitting icon
+              title="Fahrzeugscheine"
+              description="Verwalte hochgeladene oder gespeicherte Fahrzeugscheine und Dokumente"
+              accentColor="blue"
+            />
 
             <NavigationCard
               href="/PersonalData"

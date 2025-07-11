@@ -29,7 +29,7 @@ export default function NavBar() {
     "/forms",
     "/excel",
     "/schlussel",
-
+    "/Auto-scheins",
     "/AdminDashboard",
     "/PersonalData",
     "/Plate",
@@ -38,6 +38,11 @@ export default function NavBar() {
     "/Posteingang",
     "/Zeiterfassungsverwaltung",
     "/kaufvertrag",
+    "/kaufvertrag/liste",
+    "/kaufvertrag/auswahl",
+    "/kaufvertrag/form",
+    "/kaufvertrag/[id]",
+    "/TrackVisitors76546633",
   ];
 
   const isAdminRoute = adminRoutes.some((route) => pathname?.startsWith(route));
