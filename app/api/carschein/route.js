@@ -13,55 +13,38 @@ export async function POST(req) {
         status: 401,
       });
 
-    const formData = await req.formData();
-    console.log(
-      "[carschein POST] received",
-      Object.fromEntries(formData.entries())
-    );
+    // ⬇️ 1) read JSON body (no formData anymore)
+    const {
+      carName,
+      assignedTo,
+      owner,
+      notes, // may be string or array
+      imageUrl,
+      publicId,
+    } = await req.json();
 
-    const carName = formData.get("carName");
-    const assignedTo = formData.get("assignedTo");
-    const owner = formData.get("owner");
-    const rawNotes = formData.get("notes");
-    const notes = rawNotes
-      ? rawNotes
-          .split("\n")
-          .map((n) => n.trim())
-          .filter(Boolean)
-      : [];
-    const file = formData.get("file");
-    if (!carName || !file)
+    if (!carName || !imageUrl || !publicId) {
       return new Response(JSON.stringify({ error: "Missing fields" }), {
         status: 400,
       });
+    }
 
-    // buffer
-    const buffer = Buffer.from(await file.arrayBuffer());
+    // ⬇️ 2) normalise notes to array
+    const notesArr = Array.isArray(notes)
+      ? notes
+      : (notes || "")
+          .split("\n")
+          .map((n) => n.trim())
+          .filter(Boolean);
 
-    // upload
-    const uploadRes = await new Promise((resolve, reject) => {
-      cloudinary.uploader
-        .upload_stream(
-          {
-            folder: "car_scheins",
-            resource_type: "image",
-            format: "jpg",
-            transformation: [{ quality: "auto" }], // optional compression
-            chunk_size: 6000000, // optional for larger files
-          },
-          (err, res) => (err ? reject(err) : resolve(res))
-        )
-        .end(buffer);
-    });
-
-    // save
+    // ⬇️ 3) just save — the image is already on Cloudinary
     const doc = await CarSchein.create({
       carName,
-      imageUrl: uploadRes.secure_url,
-      publicId: uploadRes.public_id,
       assignedTo,
       owner,
-      notes,
+      notes: notesArr,
+      imageUrl,
+      publicId,
     });
 
     return new Response(JSON.stringify(doc), { status: 201 });
