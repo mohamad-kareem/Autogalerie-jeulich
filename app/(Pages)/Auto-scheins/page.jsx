@@ -225,13 +225,12 @@ export default function CarScheinPage() {
     try {
       setIsLoading(true);
 
-      // STEP 1 — Upload to Cloudinary directly from browser
       const formData = new FormData();
       formData.append("file", file);
       formData.append("upload_preset", "car_scheins_unsigned");
 
       const cloudRes = await fetch(
-        "https://api.cloudinary.com/v1_1/<your_cloud_name>/image/upload",
+        "https://api.cloudinary.com/v1_1/dclgxdwrc/image/upload",
         {
           method: "POST",
           body: formData,
@@ -239,12 +238,16 @@ export default function CarScheinPage() {
       );
 
       const cloudData = await cloudRes.json();
+      console.log("[Cloudinary Upload Result]", cloudData);
+
+      if (cloudData.error) {
+        throw new Error(`Cloudinary-Fehler: ${cloudData.error.message}`);
+      }
 
       if (!cloudData.secure_url || !cloudData.public_id) {
         throw new Error("Fehler beim Cloudinary-Upload");
       }
 
-      // STEP 2 — Send metadata to your backend
       const res = await fetch("/api/carschein", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -260,12 +263,11 @@ export default function CarScheinPage() {
 
       if (!res.ok) {
         const { error } = await res.json().catch(() => ({}));
-        throw new Error(error || `Fehlerstatus: ${res.status}`);
+        throw new Error(error || `Status ${res.status}`);
       }
 
       const newDoc = await res.json();
 
-      // Reset form state
       setScheins((prev) => [newDoc, ...prev]);
       setCarName("");
       setAssignedTo("");
