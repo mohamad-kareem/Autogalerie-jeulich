@@ -236,7 +236,15 @@ export default function CarScheinPage() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({}));
+        console.error("Upload failed:", {
+          status: res.status,
+          statusText: res.statusText,
+          error,
+        });
+        throw new Error(error || `Status ${res.status}`);
+      }
       const newDoc = await res.json();
 
       setScheins((prev) => [newDoc, ...prev]);
@@ -248,8 +256,9 @@ export default function CarScheinPage() {
       resetFileInput();
       setShowUploadModal(false);
       toast.success("Schein erfolgreich hochgeladen");
-    } catch {
-      toast.error("Upload fehlgeschlagen");
+    } catch (err) {
+      console.error("Upload error details:", err);
+      toast.error(`Upload fehlgeschlagen: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
