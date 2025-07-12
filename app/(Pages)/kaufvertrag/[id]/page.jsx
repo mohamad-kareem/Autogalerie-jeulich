@@ -529,6 +529,17 @@ export default function KaufvertragDetail() {
               />
               Bezahlung per Überweisung
             </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="paymentNote"
+                value="Betrag wird finanziert"
+                checked={form.paymentNote === "Betrag wird finanziert"}
+                onChange={handleChange}
+                className="accent-black"
+              />
+              Bezahlung per Finanzierung
+            </label>
           </div>
         </div>
 

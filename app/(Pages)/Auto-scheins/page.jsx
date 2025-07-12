@@ -578,12 +578,11 @@ export default function CarScheinPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Zugewiesen an*
+                    Zugewiesen an
                   </label>
                   <select
                     value={assignedTo}
                     onChange={(e) => setAssignedTo(e.target.value)}
-                    required
                     className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">— bitte wählen —</option>
@@ -598,7 +597,7 @@ export default function CarScheinPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Autohändler*
+                    Autohändler
                   </label>
                   <div className="flex items-center gap-6 mt-1">
                     <label className="inline-flex items-center gap-2 cursor-pointer">
@@ -609,7 +608,6 @@ export default function CarScheinPage() {
                         checked={owner === "Karim"}
                         onChange={(e) => setOwner(e.target.value)}
                         className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                        required
                       />
                       <span className="text-sm text-gray-700">Karim</span>
                     </label>

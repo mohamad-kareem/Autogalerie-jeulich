@@ -197,7 +197,7 @@ export default function KaufvertragClientForm() {
                 name="invoiceNumber"
                 value={form.invoiceNumber || ""}
                 onChange={handleChange}
-                className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px]"
+                className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] print:border-none"
                 placeholder="z.B. RE-202583 oder 37/25"
               />
             </div>
@@ -214,10 +214,10 @@ export default function KaufvertragClientForm() {
                 name="invoiceDate"
                 value={form.invoiceDate || ""}
                 onChange={handleChange}
-                className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] print:hidden"
+                className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] print:hidden "
               />
               {form.invoiceDate && (
-                <p className="hidden print:flex items-center border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] ">
+                <p className="hidden print:flex items-center border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] print:border-none ">
                   {formatDateToGermanDash(form.invoiceDate)}
                 </p>
               )}
@@ -506,6 +506,7 @@ export default function KaufvertragClientForm() {
               />
               Barzahlung bei Abholung
             </label>
+
             <label className="flex items-center gap-2">
               <input
                 type="radio"
@@ -516,6 +517,19 @@ export default function KaufvertragClientForm() {
                 className="accent-black"
               />
               Bezahlung per Überweisung
+            </label>
+
+            {/* NEW FINANCING OPTION */}
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="paymentNote"
+                value="Betrag wird finanziert"
+                checked={form.paymentNote === "Betrag wird finanziert"}
+                onChange={handleChange}
+                className="accent-black"
+              />
+              Bezahlung per Finanzierung
             </label>
           </div>
         </div>

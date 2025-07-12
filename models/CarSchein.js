@@ -5,9 +5,9 @@ const CarScheinSchema = new mongoose.Schema(
     carName: { type: String, required: true },
     imageUrl: { type: String, required: true },
     publicId: { type: String, required: true },
-    assignedTo: { type: String }, // e.g., Ali the mechanic
-    notes: { type: [String] }, // bullet points
-    owner: { type: String }, // e.g., Mr. Karim
+    assignedTo: { type: String, default: "" },
+    notes: { type: [String], default: [] },
+    owner: { type: String, default: "" },
   },
   { timestamps: true }
 );
