@@ -224,40 +224,58 @@ export default function CarScheinPage() {
 
     try {
       setIsLoading(true);
-      const formData = new FormData();
-      formData.append("carName", carName);
-      formData.append("file", file);
-      formData.append("assignedTo", assignedTo);
-      formData.append("owner", owner);
-      formData.append("notes", notes);
 
+      // STEP 1 — Upload to Cloudinary directly from browser
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", "car_scheins_unsigned");
+
+      const cloudRes = await fetch(
+        "https://api.cloudinary.com/v1_1/<your_cloud_name>/image/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const cloudData = await cloudRes.json();
+
+      if (!cloudData.secure_url || !cloudData.public_id) {
+        throw new Error("Fehler beim Cloudinary-Upload");
+      }
+
+      // STEP 2 — Send metadata to your backend
       const res = await fetch("/api/carschein", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          carName,
+          assignedTo,
+          owner,
+          notes,
+          imageUrl: cloudData.secure_url,
+          publicId: cloudData.public_id,
+        }),
       });
 
       if (!res.ok) {
         const { error } = await res.json().catch(() => ({}));
-        console.error("Upload failed:", {
-          status: res.status,
-          statusText: res.statusText,
-          error,
-        });
-        throw new Error(error || `Status ${res.status}`);
+        throw new Error(error || `Fehlerstatus: ${res.status}`);
       }
+
       const newDoc = await res.json();
 
+      // Reset form state
       setScheins((prev) => [newDoc, ...prev]);
       setCarName("");
       setAssignedTo("");
       setOwner("");
       setNotes("");
-
       resetFileInput();
       setShowUploadModal(false);
       toast.success("Schein erfolgreich hochgeladen");
     } catch (err) {
-      console.error("Upload error details:", err);
+      console.error("Upload error:", err);
       toast.error(`Upload fehlgeschlagen: ${err.message}`);
     } finally {
       setIsLoading(false);
