@@ -536,7 +536,7 @@ export default function KaufvertragClientForm() {
 
         {/* Print version of payment note */}
         {form.paymentNote && (
-          <div className="mt-2 hidden print:block">
+          <div className="mt-0 hidden print:block leading-tight">
             <p className="italic text-[13px]">{form.paymentNote}</p>
           </div>
         )}

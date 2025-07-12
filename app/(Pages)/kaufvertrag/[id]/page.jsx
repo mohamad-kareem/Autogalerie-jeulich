@@ -199,7 +199,7 @@ export default function KaufvertragDetail() {
                 name="invoiceNumber"
                 value={form.invoiceNumber}
                 onChange={handleChange}
-                className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px]"
+                className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] print:border-none"
               />
             </div>
             <div className="flex justify-end items-center gap-2 text-[13px] mt-1">
@@ -218,7 +218,7 @@ export default function KaufvertragDetail() {
                 className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] print:hidden"
               />
               {form.invoiceDate && (
-                <p className="hidden print:flex items-center border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] ">
+                <p className="hidden print:flex items-center border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] print:border-none">
                   {formatDateToGermanDash(form.invoiceDate)}
                 </p>
               )}
@@ -545,7 +545,7 @@ export default function KaufvertragDetail() {
 
         {/* Print version of payment note */}
         {form.paymentNote && (
-          <div className="mt-2 hidden print:block">
+          <div className="mt-0 hidden print:block leading-tight">
             <p className="italic text-[13px]">{form.paymentNote}</p>
           </div>
         )}
