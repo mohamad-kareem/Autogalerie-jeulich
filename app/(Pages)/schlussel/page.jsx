@@ -6,26 +6,28 @@ import { FiEdit, FiTrash2 } from "react-icons/fi";
 
 const carBrands = [
   { name: "BMW", logo: "/logos/bmw.png" },
-  { name: "Citroen", logo: "/logos/citroen.png" },
+  { name: "Citroen", logo: "/logos/citroen1.png" },
   { name: "Volkswagen", logo: "/logos/Volkswagen2.jpg" },
   { name: "Fiat", logo: "/logos/fiat.jpg" },
   { name: "Ford", logo: "/logos/ford.png" },
-  { name: "Opel", logo: "/logos/opel4.png" },
+  { name: "Opel", logo: "/logos/opel44.png" },
   { name: "Dacia", logo: "/logos/Dacia1.png" },
   { name: "Honda", logo: "/logos/honda1.png" },
-
+  { name: "Mercedes", logo: "/logos/Mercedes2.png" },
+  { name: "Suzuki", logo: "/logos/suzuki.jpg" },
   { name: "Renault", logo: "/logos/Renault.png" },
+
   { name: "Skoda", logo: "/logos/scoda1.jpg" },
   { name: "Hyundai", logo: "/logos/hyundia.jpg" },
   { name: "Peugeot", logo: "/logos/peugeot1.png" },
-  { name: "Suzuki", logo: "/logos/suzuki.jpg" },
+
   { name: "Mazda", logo: "/logos/mazda.png" },
   { name: "Nissan", logo: "/logos/nissan.png" },
-  { name: "Mercedes", logo: "/logos/Mercedes2.png" },
+  { name: "Seat", logo: "/logos/seat1.png" },
+  { name: "Kia", logo: "/logos/kia1.png" },
   { name: "Toyota", logo: "/logos/Toyota1.png" },
 
-  { name: "Kia", logo: "/logos/kia1.png" },
-  { name: "MiniCooper", logo: "/logos/minicooper.png" },
+  { name: "MiniCooper", logo: "/logos/minicooper1.png" },
   { name: "Audi", logo: "/logos/audi1.png" },
 ];
 
