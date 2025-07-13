@@ -12,6 +12,7 @@ import {
   FiCalendar,
   FiX,
   FiMessageSquare,
+  FiPrinter,
 } from "react-icons/fi";
 
 import { FaCar, FaSearch } from "react-icons/fa";
@@ -419,10 +420,10 @@ export default function CarScheinPage() {
                     </div>
                     <button
                       onClick={() => handlePrintImage(schein)}
-                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
+                      className="p-2  hover:bg-green-300 rounded-lg transition-colors duration-200"
                       title="Drucken"
                     >
-                      <FiUpload size={20} />
+                      <FiPrinter size={20} />
                     </button>
 
                     <div className="flex items-center gap-3">
@@ -431,7 +432,7 @@ export default function CarScheinPage() {
                           setInfoDoc(schein);
                           setShowInfoModal(true);
                         }}
-                        className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"
+                        className="p-2  hover:bg-blue-200 rounded-lg transition-colors duration-200"
                         title="Details anzeigen"
                       >
                         <FiMessageSquare size={20} />
@@ -441,7 +442,7 @@ export default function CarScheinPage() {
                         onClick={() =>
                           handleDelete(schein._id, schein.publicId)
                         }
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                        className="p-2  hover:bg-red-200 rounded-lg transition-colors duration-200"
                         title="Schein löschen"
                       >
                         <FiTrash2 size={20} />
@@ -513,12 +514,6 @@ export default function CarScheinPage() {
       {showPreviewModal && (
         <div className="fixed inset-0 bg-gray-700 bg-opacity-70 flex items-center justify-center z-50 p-4">
           <div className="relative max-w-4xl w-full">
-            <button
-              onClick={() => setShowPreviewModal(false)}
-              className="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors duration-200"
-            >
-              <FiX className="text-2xl" />
-            </button>
             <div className="bg-white rounded-lg overflow-hidden shadow-xl">
               <img
                 src={modalImageUrl}
