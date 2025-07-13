@@ -22,15 +22,14 @@ export async function GET(request) {
       query.carName = { $regex: brand, $options: "i" };
     }
 
-    const keys = await Key.find(query).sort({ createdAt: -1 });
+    const keys = await Key.find(query).sort({ createdAt: -1 }).lean();
+
     return Response.json(keys);
   } catch (error) {
     return Response.json({ error: "Failed to fetch keys" }, { status: 500 });
   }
 }
 
-// POST a new key
-// helper so we don’t repeat ourselves
 function isDuplicateKey(err) {
   return err?.code === 11000;
 }
