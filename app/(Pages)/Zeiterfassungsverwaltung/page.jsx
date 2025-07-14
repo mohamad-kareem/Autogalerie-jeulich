@@ -18,6 +18,7 @@ import {
   FiChevronRight,
   FiPlusCircle,
   FiEdit,
+  FiCalendar,
 } from "react-icons/fi";
 import { IoMdLocate } from "react-icons/io";
 
@@ -78,31 +79,54 @@ export default function Zeiterfassungsverwaltung() {
 
   const summary = useMemo(() => {
     const byAdmin = {};
+
+    // sort chronologically first
     const sorted = [...filtered].sort(
       (a, b) => new Date(a.time) - new Date(b.time)
     );
 
     for (const r of sorted) {
       const name = r.admin?.name || "Unbekannt";
-      if (!byAdmin[name]) byAdmin[name] = { lastIn: null, totalMs: 0 };
+      if (!byAdmin[name]) {
+        byAdmin[name] = {
+          lastIn: null,
+          totalMs: 0,
+          workedDates: new Set(), // <-- keep unique YYYY-MM-DD strings
+        };
+      }
 
       if (r.type === "in" && !byAdmin[name].lastIn) {
         byAdmin[name].lastIn = new Date(r.time);
       } else if (r.type === "out" && byAdmin[name].lastIn) {
-        const diff = new Date(r.time) - byAdmin[name].lastIn;
-        if (diff > 0) byAdmin[name].totalMs += diff;
-        byAdmin[name].lastIn = null;
+        const inTime = byAdmin[name].lastIn;
+        const outTime = new Date(r.time);
+
+        // accumulate time
+        const diff = outTime - inTime;
+        if (diff > 0) {
+          byAdmin[name].totalMs += diff;
+
+          // mark this calendar date as worked
+          const dateKey = inTime.toISOString().slice(0, 10); // "YYYY-MM-DD"
+          byAdmin[name].workedDates.add(dateKey);
+        }
+        byAdmin[name].lastIn = null; // reset for next pair
       }
     }
 
-    return Object.entries(byAdmin).map(([name, { totalMs }]) => {
-      const hours = Math.floor(totalMs / (1000 * 60 * 60));
-      const minutes = Math.floor((totalMs % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((totalMs % (1000 * 60)) / 1000);
+    // build summary objects
+    return Object.entries(byAdmin).map(([name, data]) => {
+      const { totalMs, workedDates } = data;
+
+      // total time → h m s
+      const hours = Math.floor(totalMs / 3_600_000);
+      const minutes = Math.floor((totalMs % 3_600_000) / 60_000);
+      const seconds = Math.floor((totalMs % 60_000) / 1_000);
 
       return {
         name,
         timeFormatted: `${hours}h ${minutes}m ${seconds}s`,
+        daysWorked: workedDates.size, // <-- true unique days
       };
     });
   }, [filtered]);
@@ -466,14 +490,33 @@ export default function Zeiterfassungsverwaltung() {
                     {summary.map((s, i) => (
                       <div
                         key={i}
-                        className="flex justify-between items-center py-2 px-3 sm:py-3 sm:px-4 bg-white rounded-lg shadow-xs border border-gray-200"
+                        className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-4 flex flex-col justify-between h-full min-h-[120px]"
                       >
-                        <span className="text-xs sm:text-sm font-medium text-gray-700 truncate">
+                        {/* Name */}
+                        <div className="text-sm sm:text-base font-semibold text-gray-800 leading-tight mb-2 break-words">
                           {s.name}
-                        </span>
-                        <span className="text-xs sm:text-sm font-semibold text-blue-600 whitespace-nowrap ml-2">
-                          {s.timeFormatted}
-                        </span>
+                        </div>
+
+                        {/* Info Section */}
+                        <div className="flex flex-col gap-1 text-sm sm:text-[15px] text-gray-600">
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <FiClock className="text-blue-500" />
+                            <span className="text-gray-500">Gesamtzeit:</span>
+                            <span className="font-semibold text-blue-600">
+                              {s.timeFormatted}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <FiCalendar className="text-green-500" />
+
+                            <span className="text-gray-500">Tage:</span>
+                            <span className="font-semibold text-green-600">
+                              {s.daysWorked}{" "}
+                              {s.daysWorked === 1 ? "Tag" : "Tage"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>

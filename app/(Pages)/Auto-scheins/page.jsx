@@ -363,8 +363,9 @@ export default function CarScheinPage() {
 
       {/* Filter Section */}
       <div className="w-full max-w-[95vw] xl:max-w-[1200px] 2xl:max-w-[1450px] mx-auto mb-6 bg-white p-4 rounded-xl shadow-sm">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {/* 🔍 Search Input */}
+          <div className="relative w-full">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <FaSearch className="text-gray-400" />
             </div>
@@ -373,10 +374,12 @@ export default function CarScheinPage() {
               placeholder="Nach Fahrzeug suchen..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-all"
             />
           </div>
-          <div className="relative">
+
+          {/* 📅 Date Picker */}
+          <div className="relative w-full">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <FiCalendar className="text-gray-400" />
             </div>
@@ -384,14 +387,15 @@ export default function CarScheinPage() {
               type="date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-all"
             />
           </div>
-          {/* Owner Filter */}
-          <div className="relative">
+
+          {/* 🧑‍💼 Owner Filter Dropdown */}
+          <div className="relative w-full">
             <button
               onClick={() => setShowOwnerFilter(!showOwnerFilter)}
-              className="w-full flex items-center justify-between pl-4 pr-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all"
+              className="w-full flex items-center justify-between pl-4 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all"
             >
               <div className="flex items-center">
                 <FiFilter className="text-gray-400 mr-2" />
@@ -403,17 +407,18 @@ export default function CarScheinPage() {
               </div>
               <FiChevronDown
                 className={`text-gray-400 transition-transform ${
-                  showOwnerFilter ? "transform rotate-180" : ""
+                  showOwnerFilter ? "rotate-180" : ""
                 }`}
               />
             </button>
 
+            {/* Dropdown */}
             {showOwnerFilter && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+              <div className="absolute z-20 mt-1 w-full max-h-60 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg py-1">
                 {owners.map((owner) => (
                   <div
                     key={owner}
-                    className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                    className="px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer flex items-center"
                     onClick={() => toggleOwner(owner)}
                   >
                     {selectedOwners.includes(owner) ? (
@@ -487,12 +492,12 @@ export default function CarScheinPage() {
                   key={schein._id}
                   className="hover:bg-gray-50 transition-colors duration-150"
                 >
-                  <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-lg font-semibold text-gray-800 truncate">
+                  <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    {/* Car Name and Date */}
+                    <div className="flex-1 w-full min-w-0">
+                      <p className="text-base sm:text-lg font-semibold text-gray-800 truncate">
                         {schein.carName}
                       </p>
-
                       <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
                         <FiCalendar className="text-gray-400" />
                         <span>
@@ -502,15 +507,16 @@ export default function CarScheinPage() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handlePrintImage(schein)}
-                      className="p-2 hover:bg-green-300 rounded-lg transition-colors duration-200"
-                      title="Drucken"
-                    >
-                      <FiPrinter size={20} />
-                    </button>
+                    {/* Action Buttons */}
+                    <div className="w-full sm:w-auto flex flex-wrap sm:flex-nowrap items-center justify-start sm:justify-end gap-2">
+                      <button
+                        onClick={() => handlePrintImage(schein)}
+                        className="p-2 hover:bg-green-300 rounded-lg transition-colors duration-200"
+                        title="Drucken"
+                      >
+                        <FiPrinter size={20} />
+                      </button>
 
-                    <div className="flex items-center gap-3">
                       <button
                         onClick={() => {
                           setInfoDoc(schein);
@@ -540,8 +546,8 @@ export default function CarScheinPage() {
                         <Image
                           src={viewschein}
                           alt="Anzeigen"
-                          width={40}
-                          height={40}
+                          width={32}
+                          height={32}
                           unoptimized
                           className="hover:opacity-100 transition-opacity"
                         />
@@ -554,7 +560,7 @@ export default function CarScheinPage() {
 
             {/* Pagination – Mehr laden */}
             {page < totalPages && (
-              <div className="px-6 py-4 border-t border-gray-100 flex justify-center">
+              <div className="px-4 sm:px-6 py-4 border-t border-gray-100 flex justify-center">
                 <button
                   onClick={() => fetchScheins(page + 1)}
                   disabled={isLoading}
