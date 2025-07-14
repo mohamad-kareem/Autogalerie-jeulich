@@ -7,7 +7,7 @@ import {
   ChevronUpDownIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-
+import { FiArrowLeft } from "react-icons/fi";
 export default function KaufvertragListe() {
   const [contracts, setContracts] = useState([]);
   const [filteredContracts, setFilteredContracts] = useState([]);
@@ -168,8 +168,14 @@ export default function KaufvertragListe() {
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 ">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-800">
+        <div className="mb-4 flex items-center space-x-2">
+          <button
+            onClick={() => router.push("/AdminDashboard")} // adjust target if needed
+            className=" rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <FiArrowLeft className="h-5 w-5 text-gray-600" />
+          </button>
+          <h1 className="text-lg sm:text-2xl font-semibold text-gray-800">
             Kaufvertragsübersicht
           </h1>
         </div>

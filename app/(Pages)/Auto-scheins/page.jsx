@@ -13,6 +13,9 @@ import {
   FiX,
   FiMessageSquare,
   FiPrinter,
+  FiFilter,
+  FiChevronDown,
+  FiCheck,
 } from "react-icons/fi";
 
 import { FaCar, FaSearch } from "react-icons/fa";
@@ -45,7 +48,9 @@ export default function CarScheinPage() {
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [infoDoc, setInfoDoc] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-
+  const [showOwnerFilter, setShowOwnerFilter] = useState(false);
+  const [selectedOwners, setSelectedOwners] = useState([]);
+  const owners = ["Karim", "Alawie"];
   // Authentication check
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -55,6 +60,11 @@ export default function CarScheinPage() {
   useEffect(() => {
     fetchScheins(1, true);
   }, []);
+  const toggleOwner = (owner) => {
+    setSelectedOwners((prev) =>
+      prev.includes(owner) ? prev.filter((o) => o !== owner) : [...prev, owner]
+    );
+  };
 
   const handlePrintImage = (doc) => {
     const { imageUrl, carName, assignedTo, owner, notes = [], createdAt } = doc;
@@ -308,14 +318,20 @@ export default function CarScheinPage() {
   };
 
   // Filter scheins
+  // Filter scheins
   const filteredScheins = scheins.filter((schein) => {
     const nameMatch = schein.carName
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
+
     const dateMatch = dateFilter
       ? new Date(schein.createdAt).toISOString().slice(0, 10) === dateFilter
       : true;
-    return nameMatch && dateMatch;
+
+    const ownerMatch =
+      selectedOwners.length === 0 || selectedOwners.includes(schein.owner);
+
+    return nameMatch && dateMatch && ownerMatch;
   });
 
   // Image preview
@@ -330,13 +346,11 @@ export default function CarScheinPage() {
       <div className="w-full max-w-[95vw] xl:max-w-[1200px] 2xl:max-w-[1450px] mx-auto mb-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            <h1 className="text-lg sm:text-3xl font-bold text-gray-800">
               Fahrzeugschein-Verwaltung
             </h1>
-            <p className="text-gray-500 mt-1">
-              Verwalten Sie Ihre Fahrzeugscheine
-            </p>
           </div>
+
           <button
             onClick={() => setShowUploadModal(true)}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg transition-colors duration-200 shadow-sm"
@@ -349,7 +363,7 @@ export default function CarScheinPage() {
 
       {/* Filter Section */}
       <div className="w-full max-w-[95vw] xl:max-w-[1200px] 2xl:max-w-[1450px] mx-auto mb-6 bg-white p-4 rounded-xl shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <FaSearch className="text-gray-400" />
@@ -372,6 +386,46 @@ export default function CarScheinPage() {
               onChange={(e) => setDateFilter(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-all"
             />
+          </div>
+          {/* Owner Filter */}
+          <div className="relative">
+            <button
+              onClick={() => setShowOwnerFilter(!showOwnerFilter)}
+              className="w-full flex items-center justify-between pl-4 pr-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all"
+            >
+              <div className="flex items-center">
+                <FiFilter className="text-gray-400 mr-2" />
+                <span className="text-gray-700">
+                  {selectedOwners.length > 0
+                    ? `${selectedOwners.length} Autohändler`
+                    : "Alle Autohändler"}
+                </span>
+              </div>
+              <FiChevronDown
+                className={`text-gray-400 transition-transform ${
+                  showOwnerFilter ? "transform rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {showOwnerFilter && (
+              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+                {owners.map((owner) => (
+                  <div
+                    key={owner}
+                    className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                    onClick={() => toggleOwner(owner)}
+                  >
+                    {selectedOwners.includes(owner) ? (
+                      <FiCheck className="text-blue-500 mr-2" />
+                    ) : (
+                      <div className="w-4 h-4 mr-2 border border-gray-300 rounded" />
+                    )}
+                    <span>{owner}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

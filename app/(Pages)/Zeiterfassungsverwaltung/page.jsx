@@ -214,7 +214,7 @@ export default function Zeiterfassungsverwaltung() {
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/AdminDashboard")}
               className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <FiArrowLeft className="text-gray-600" />
