@@ -132,7 +132,11 @@ export default function KaufvertragDetail() {
 
   return (
     <div className="max-w-5xl mx-auto p-4 font-sans text-[13px] print:p-0 print:max-w-none">
-      <form onSubmit={handleSubmit} className="space-y-4 print:space-y-1">
+      <form
+        autoComplete="off"
+        onSubmit={handleSubmit}
+        className="space-y-4 print:space-y-1"
+      >
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-center border p-2 sm:p-7 bg-black text-white print:flex-row print:justify-between print:items-center print:p-2 print:px-6">
           <div className="text-left w-full md:w-auto mb-2 md:mb-0 print:mb-2 print:text-left print:w-full">
@@ -157,6 +161,7 @@ export default function KaufvertragDetail() {
             <p className="font-bold">Käuferdaten:</p>
             <input
               type="text"
+              autoComplete="off"
               name="buyerName"
               value={form.buyerName}
               onChange={handleChange}
@@ -165,6 +170,7 @@ export default function KaufvertragDetail() {
             <input
               type="text"
               name="buyerStreet"
+              autoComplete="off"
               value={form.buyerStreet}
               onChange={handleChange}
               className="input w-full p-1"
@@ -172,6 +178,7 @@ export default function KaufvertragDetail() {
             <input
               type="text"
               name="buyerCity"
+              autoComplete="off"
               value={form.buyerCity}
               onChange={handleChange}
               className="input w-full p-1"
@@ -181,6 +188,7 @@ export default function KaufvertragDetail() {
             <input
               type="text"
               name="title"
+              autoComplete="off"
               value={form.title}
               onChange={handleChange}
               className="text-red-600 text-xl md:text-2xl print:text-2xl bg-transparent  border-none outline-none w-[160px] text-right"
@@ -197,6 +205,7 @@ export default function KaufvertragDetail() {
                 type="text"
                 id="invoiceNumber"
                 name="invoiceNumber"
+                autoComplete="off"
                 value={form.invoiceNumber}
                 onChange={handleChange}
                 className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] print:border-none"
@@ -234,6 +243,7 @@ export default function KaufvertragDetail() {
           <input
             type="text"
             name="idNumber"
+            autoComplete="off"
             value={form.idNumber}
             onChange={handleChange}
             className="input p-1 text-[13px] print:text-[11px] w-full"
@@ -245,6 +255,7 @@ export default function KaufvertragDetail() {
           <input
             type="text"
             name="phone"
+            autoComplete="off"
             value={form.phone}
             onChange={handleChange}
             className="input p-1 text-[13px] print:text-[11px] w-full"
@@ -256,6 +267,7 @@ export default function KaufvertragDetail() {
           <input
             type="email"
             name="email"
+            autoComplete="off"
             value={form.email}
             onChange={handleChange}
             className="input p-1 text-[13px] print:text-[11px] w-full"
@@ -271,6 +283,7 @@ export default function KaufvertragDetail() {
               <input
                 id="carType"
                 name="carType"
+                autoComplete="off"
                 value={form.carType}
                 onChange={handleChange}
                 className="input w-full"
@@ -282,6 +295,7 @@ export default function KaufvertragDetail() {
               <input
                 id="vin"
                 name="vin"
+                autoComplete="off"
                 value={form.vin}
                 onChange={handleChange}
                 className="input w-full"
@@ -294,6 +308,7 @@ export default function KaufvertragDetail() {
                 type="text"
                 id="firstRegistration"
                 name="firstRegistration"
+                autoComplete="off"
                 placeholder="TT-MM-JJ"
                 value={form.firstRegistration}
                 onChange={handleChange}
@@ -306,6 +321,7 @@ export default function KaufvertragDetail() {
               <input
                 id="mileage"
                 name="mileage"
+                autoComplete="off"
                 value={form.mileage}
                 onChange={handleChange}
                 className="input w-full"
@@ -402,6 +418,7 @@ export default function KaufvertragDetail() {
               <input
                 type="text"
                 name="tuev"
+                autoComplete="off"
                 value={form.tuev}
                 className="input print-bordered w-16 ml-1"
                 onChange={handleChange}
@@ -412,6 +429,7 @@ export default function KaufvertragDetail() {
               <input
                 type="number"
                 name="keys"
+                autoComplete="off"
                 value={form.keys}
                 className="input print-bordered w-12 ml-1"
                 onChange={handleChange}
@@ -429,6 +447,7 @@ export default function KaufvertragDetail() {
             <input
               type="text"
               name="total"
+              autoComplete="off"
               value={rawTotal}
               onChange={(e) => {
                 const val = e.target.value;
@@ -457,6 +476,7 @@ export default function KaufvertragDetail() {
             <input
               type="text"
               name="downPayment"
+              autoComplete="off"
               value={rawDownPayment}
               onChange={(e) => {
                 const val = e.target.value;
@@ -492,6 +512,7 @@ export default function KaufvertragDetail() {
             <input
               type="text"
               name="restAmount"
+              autoComplete="off"
               className="input w-full p-1"
               readOnly
               value={
