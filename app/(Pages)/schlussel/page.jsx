@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { FiEdit, FiTrash2 } from "react-icons/fi";
-
+import toast from "react-hot-toast";
 const carBrands = [
   { name: "BMW", logo: "/logos/bmw.png" },
   { name: "Citroen", logo: "/logos/citroen1.png" },
@@ -38,27 +38,31 @@ export default function KeysPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [editingCar, setEditingCar] = useState(null);
+
   const [newCar, setNewCar] = useState({
     carName: "",
     keyNumber: "",
     note: "",
     numberOfKeys: 2,
     color: "#000000",
+    sold: false, // ✅
   });
+  const [showSoldOnly, setShowSoldOnly] = useState(false);
 
   const tableRef = useRef(null);
   const brandsRef = useRef(null);
-
+  const currentCar = editingCar ?? newCar;
   useEffect(() => {
     fetchCars();
-  }, [filterBrand, searchTerm]);
+  }, [filterBrand, searchTerm, showSoldOnly]);
 
   const fetchCars = async () => {
     try {
       let url = "/api/keys";
       const params = new URLSearchParams();
       if (searchTerm) params.append("search", searchTerm);
-      if (filterBrand) params.append("brand", filterBrand);
+
+      if (showSoldOnly) params.append("sold", "true");
       if (params.toString()) url += `?${params.toString()}`;
 
       const response = await fetch(url);
@@ -106,8 +110,11 @@ export default function KeysPage() {
         note: "",
         color: "#000000",
         numberOfKeys: 2,
+        sold: false,
       });
       setShowAddForm(false);
+      toast.success("Fahrzeug erfolgreich gelöscht!");
+
       scrollToTable();
     } catch (error) {
       console.error("Fehler beim Hinzufügen des Autos:", error);
@@ -133,6 +140,7 @@ export default function KeysPage() {
           note: editingCar.note,
           color: editingCar.color,
           numberOfKeys: editingCar.numberOfKeys,
+          sold: editingCar.sold,
         }),
       });
 
@@ -145,6 +153,7 @@ export default function KeysPage() {
 
       setCars(cars.map((car) => (car._id === data._id ? data : car)));
       setEditingCar(null);
+      toast.success("Fahrzeug erfolgreich aktualisiert!");
     } catch (error) {
       console.error("Fehler beim Aktualisieren des Autos:", error);
     }
@@ -162,6 +171,7 @@ export default function KeysPage() {
         body: JSON.stringify({ id }),
       });
       setCars(cars.filter((car) => car._id !== id));
+      toast.success("Fahrzeug erfolgreich gelöscht!");
     } catch (error) {
       console.error("Fehler beim Löschen des Autos:", error);
     }
@@ -195,7 +205,57 @@ export default function KeysPage() {
     }
   };
 
-  const filteredCars = cars;
+  const brandSynonyms = {
+    Volkswagen: ["Volkswagen", "VW"],
+    Mercedes: ["Mercedes", "Mercedes-Benz"],
+    MiniCooper: ["Mini", "MiniCooper"],
+    BMW: ["BMW"],
+    Citroen: ["Citroen"],
+    Fiat: ["Fiat"],
+    Ford: ["Ford"],
+    Opel: ["Opel"],
+    Dacia: ["Dacia"],
+    Honda: ["Honda"],
+    Suzuki: ["Suzuki"],
+    Renault: ["Renault"],
+    Skoda: ["Skoda"],
+    Hyundai: ["Hyundai"],
+    Peugeot: ["Peugeot"],
+    Mazda: ["Mazda"],
+    Nissan: ["Nissan"],
+    Seat: ["Seat"],
+    Kia: ["Kia"],
+    Toyota: ["Toyota"],
+    Audi: ["Audi"],
+  };
+
+  const filteredCars = cars.filter((car) => {
+    const name = (car.carName ?? "").toLowerCase();
+    const key = (car.keyNumber ?? "").toLowerCase();
+    const note = (car.note ?? "").toLowerCase();
+
+    // Brand filtering
+    if (filterBrand) {
+      const aliases = brandSynonyms[filterBrand] || [filterBrand];
+      const matchesBrand = aliases.some((alias) =>
+        name.includes(alias.toLowerCase())
+      );
+      if (!matchesBrand) return false;
+    }
+
+    // Search term filtering
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const matchesSearch =
+        name.includes(term) || key.includes(term) || note.includes(term);
+      if (!matchesSearch) return false;
+    }
+
+    // Sold filter
+    if (showSoldOnly && !car.sold) return false;
+
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 p-2 md:p-4">
@@ -303,6 +363,16 @@ export default function KeysPage() {
                   />
                 </svg>
               </button>
+              <button
+                onClick={() => setShowSoldOnly((prev) => !prev)}
+                className={`px-2 py-1 text-xs rounded-full border ${
+                  showSoldOnly
+                    ? "bg-green-200 text-green-900 border-green-300"
+                    : "bg-white text-gray-700 hover:bg-gray-100 border-gray-300"
+                }`}
+              >
+                {showSoldOnly ? "Nur verkauft" : "Alle anzeigen"}
+              </button>
 
               <button
                 onClick={() => {
@@ -332,135 +402,6 @@ export default function KeysPage() {
           </div>
 
           {/* Add/Edit Car Form */}
-          {(showAddForm || editingCar) && (
-            <div className="bg-white p-3 sm:p-4 border-b border-gray-200">
-              <h2 className="text-md sm:text-lg font-semibold mb-3 text-gray-800">
-                {editingCar ? "Auto bearbeiten" : "Neues Auto"}
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                    Fahrzeug*
-                  </label>
-                  <input
-                    name="carName"
-                    value={editingCar ? editingCar.carName : newCar.carName}
-                    onChange={(e) =>
-                      editingCar
-                        ? setEditingCar({
-                            ...editingCar,
-                            carName: e.target.value,
-                          })
-                        : setNewCar({ ...newCar, carName: e.target.value })
-                    }
-                    placeholder="z.B. VW Golf VII"
-                    className="w-full px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                    Schlüsselnummer*
-                  </label>
-                  <input
-                    name="keyNumber"
-                    value={editingCar ? editingCar.keyNumber : newCar.keyNumber}
-                    onChange={(e) =>
-                      editingCar
-                        ? setEditingCar({
-                            ...editingCar,
-                            keyNumber: e.target.value,
-                          })
-                        : setNewCar({ ...newCar, keyNumber: e.target.value })
-                    }
-                    placeholder="z.B. 12345678"
-                    className="w-full px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                    Wagenfarbe
-                  </label>
-                  <input
-                    type="color"
-                    value={
-                      editingCar
-                        ? editingCar.color || "#000000"
-                        : newCar.color || "#000000"
-                    }
-                    onChange={(e) =>
-                      editingCar
-                        ? setEditingCar({
-                            ...editingCar,
-                            color: e.target.value,
-                          })
-                        : setNewCar({ ...newCar, color: e.target.value })
-                    }
-                    className="w-12 h-8 p-0 border border-gray-300 rounded cursor-pointer"
-                  />
-                </div>
-
-                <div className="sm:col-span-2 md:col-span-1">
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                    Bemerkung
-                  </label>
-                  <input
-                    name="note"
-                    value={editingCar ? editingCar.note : newCar.note}
-                    onChange={(e) =>
-                      editingCar
-                        ? setEditingCar({ ...editingCar, note: e.target.value })
-                        : setNewCar({ ...newCar, note: e.target.value })
-                    }
-                    placeholder="Optionale Notiz"
-                    className="w-full px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
-
-                  <div className="flex items-center justify-between mt-2">
-                    <label className="flex items-center text-xs sm:text-sm text-gray-700 gap-1">
-                      <input
-                        type="checkbox"
-                        checked={
-                          editingCar
-                            ? editingCar.numberOfKeys === 1
-                            : newCar.numberOfKeys === 1
-                        }
-                        onChange={(e) =>
-                          editingCar
-                            ? setEditingCar({
-                                ...editingCar,
-                                numberOfKeys: e.target.checked ? 1 : 2,
-                              })
-                            : setNewCar({
-                                ...newCar,
-                                numberOfKeys: e.target.checked ? 1 : 2,
-                              })
-                        }
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded"
-                      />
-                      Nur ein Schlüssel vorhanden
-                    </label>
-
-                    <div className="flex gap-1 sm:gap-2">
-                      <button
-                        onClick={editingCar ? handleUpdateCar : handleAddCar}
-                        className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-green-600 hover:bg-green-700 text-white rounded-md shadow-sm"
-                      >
-                        {editingCar ? "Speichern" : "Hinzufügen"}
-                      </button>
-                      {editingCar && (
-                        <button
-                          onClick={() => setEditingCar(null)}
-                          className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-md shadow-sm"
-                        >
-                          Abbrechen
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Car Table */}
           <div className="overflow-x-auto">
@@ -492,13 +433,19 @@ export default function KeysPage() {
                     >
                       <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
                         <div className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2">
-                          {car.carName}
                           {car.color && (
                             <span
                               className="inline-block w-5 h-5 rounded-full border border-gray-300"
                               style={{ backgroundColor: car.color }}
                               title={`Farbe: ${car.color}`}
                             />
+                          )}
+                          {car.carName}
+
+                          {car.sold && (
+                            <span className="ml-2 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-black bg-green-200 rounded-full">
+                              VERKAUFT
+                            </span>
                           )}
                         </div>
                         {car.note && (
@@ -509,7 +456,7 @@ export default function KeysPage() {
                       </td>
 
                       <td className="px-3 sm:px-4 py-3 text-center whitespace-nowrap">
-                        <span className="text-sm sm:text-base font-mono font-bold text-blue-950 bg-blue-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded-md inline-block">
+                        <span className="text-sm sm:text-base  font-semibold text-black/80 bg-blue-200 px-1 sm:px-2 py-0.5 sm:py-1 rounded-md inline-block">
                           {car.keyNumber}
                         </span>
                       </td>
@@ -581,6 +528,170 @@ export default function KeysPage() {
           </div>
         </div>
       </div>
+      {/* Modal for Add/Edit */}
+      {(showAddForm || editingCar) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50 px-2">
+          <div className="bg-white w-full max-w-2xl p-6 rounded-xl shadow-2xl relative">
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                setShowAddForm(false);
+                setEditingCar(null);
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl"
+              aria-label="Schließen"
+            >
+              &times;
+            </button>
+            {/* Title */}
+            <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
+              {editingCar ? "Fahrzeug bearbeiten" : "Neues Fahrzeug hinzufügen"}
+            </h2>
+
+            {/* Form */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Car Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Fahrzeugname*
+                </label>
+                <input
+                  name="carName"
+                  value={currentCar.carName ?? ""}
+                  onChange={(e) =>
+                    editingCar
+                      ? setEditingCar({
+                          ...editingCar,
+                          carName: e.target.value,
+                        })
+                      : setNewCar({ ...newCar, carName: e.target.value })
+                  }
+                  placeholder="z.B. VW Golf VII"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Key Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Schlüsselnummer*
+                </label>
+                <input
+                  name="keyNumber"
+                  value={currentCar.keyNumber ?? ""}
+                  onChange={(e) =>
+                    editingCar
+                      ? setEditingCar({
+                          ...editingCar,
+                          keyNumber: e.target.value,
+                        })
+                      : setNewCar({ ...newCar, keyNumber: e.target.value })
+                  }
+                  placeholder="z.B. 12345678"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Color Picker */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Wagenfarbe
+                </label>
+                <input
+                  type="color"
+                  value={currentCar.color ?? "#000000"}
+                  onChange={(e) =>
+                    editingCar
+                      ? setEditingCar({ ...editingCar, color: e.target.value })
+                      : setNewCar({ ...newCar, color: e.target.value })
+                  }
+                  className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                />
+              </div>
+
+              {/* Note */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Bemerkung
+                </label>
+                <input
+                  name="note"
+                  value={currentCar.note ?? ""}
+                  onChange={(e) =>
+                    editingCar
+                      ? setEditingCar({ ...editingCar, note: e.target.value })
+                      : setNewCar({ ...newCar, note: e.target.value })
+                  }
+                  placeholder="Optionale Notiz"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Checkbox Section */}
+              <div className="sm:col-span-2 mt-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  {/* One Key Checkbox */}
+                  <label className="flex items-center text-sm gap-2">
+                    <input
+                      type="checkbox"
+                      checked={currentCar.numberOfKeys === 1}
+                      onChange={(e) =>
+                        editingCar
+                          ? setEditingCar({
+                              ...editingCar,
+                              numberOfKeys: e.target.checked ? 1 : 2,
+                            })
+                          : setNewCar({
+                              ...newCar,
+                              numberOfKeys: e.target.checked ? 1 : 2,
+                            })
+                      }
+                      className="w-5 h-5 text-blue-600 border-gray-300 rounded"
+                    />
+                    Nur ein Schlüssel vorhanden
+                  </label>
+
+                  {/* Sold Checkbox */}
+                  <label className="flex items-center text-sm gap-2">
+                    <input
+                      type="checkbox"
+                      checked={!!currentCar.sold}
+                      onChange={(e) =>
+                        editingCar
+                          ? setEditingCar({
+                              ...editingCar,
+                              sold: e.target.checked,
+                            })
+                          : setNewCar({ ...newCar, sold: e.target.checked })
+                      }
+                      className="w-5 h-5 text-blue-600 border-gray-300 rounded"
+                    />
+                    Fahrzeug verkauft
+                  </label>
+                </div>
+              </div>
+            </div>
+            {/* Buttons */}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowAddForm(false);
+                  setEditingCar(null);
+                }}
+                className="px-4 py-2 text-sm bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={editingCar ? handleUpdateCar : handleAddCar}
+                className="px-5 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm"
+              >
+                {editingCar ? "Speichern" : "Hinzufügen"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -8,22 +8,22 @@ export async function GET(request) {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search") || "";
     const brand = searchParams.get("brand") || "";
+    const soldParam = searchParams.get("sold");
 
     let query = {};
+
     if (search) {
-      query = {
-        $or: [
-          { carName: { $regex: search, $options: "i" } },
-          { keyNumber: { $regex: search, $options: "i" } },
-        ],
-      };
+      query.$or = [
+        { carName: { $regex: search, $options: "i" } },
+        { keyNumber: { $regex: search, $options: "i" } },
+      ];
     }
-    if (brand) {
-      query.carName = { $regex: brand, $options: "i" };
+
+    if (soldParam === "true") {
+      query.sold = true;
     }
 
     const keys = await Key.find(query).sort({ createdAt: -1 }).lean();
-
     return Response.json(keys);
   } catch (error) {
     return Response.json({ error: "Failed to fetch keys" }, { status: 500 });
