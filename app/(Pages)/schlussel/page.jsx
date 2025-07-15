@@ -550,7 +550,15 @@ export default function KeysPage() {
             </h2>
 
             {/* Form */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Form */}
+            <form
+              autoComplete="off"
+              onSubmit={(e) => {
+                e.preventDefault();
+                editingCar ? handleUpdateCar() : handleAddCar();
+              }}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+            >
               {/* Car Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -558,6 +566,7 @@ export default function KeysPage() {
                 </label>
                 <input
                   name="carName"
+                  autoComplete="off"
                   value={currentCar.carName ?? ""}
                   onChange={(e) =>
                     editingCar
@@ -579,6 +588,7 @@ export default function KeysPage() {
                 </label>
                 <input
                   name="keyNumber"
+                  autoComplete="off"
                   value={currentCar.keyNumber ?? ""}
                   onChange={(e) =>
                     editingCar
@@ -600,6 +610,7 @@ export default function KeysPage() {
                 </label>
                 <input
                   type="color"
+                  autoComplete="off"
                   value={currentCar.color ?? "#000000"}
                   onChange={(e) =>
                     editingCar
@@ -617,6 +628,7 @@ export default function KeysPage() {
                 </label>
                 <input
                   name="note"
+                  autoComplete="off"
                   value={currentCar.note ?? ""}
                   onChange={(e) =>
                     editingCar
@@ -671,25 +683,24 @@ export default function KeysPage() {
                   </label>
                 </div>
               </div>
-            </div>
-            {/* Buttons */}
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowAddForm(false);
-                  setEditingCar(null);
-                }}
-                className="px-4 py-2 text-sm bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md"
-              >
-                Abbrechen
-              </button>
-              <button
-                onClick={editingCar ? handleUpdateCar : handleAddCar}
-                className="px-5 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm"
-              >
-                {editingCar ? "Speichern" : "Hinzufügen"}
-              </button>
-            </div>
+              <div className="sm:col-span-2 mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setEditingCar(null);
+                  }}
+                  className="px-4 py-2 text-sm bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm"
+                >
+                  {editingCar ? "Speichern" : "Hinzufügen"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
