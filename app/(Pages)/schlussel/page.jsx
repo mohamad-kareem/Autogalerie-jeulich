@@ -266,14 +266,6 @@ export default function KeysPage() {
             <h3 className="text-md sm:text-lg font-semibold text-gray-800">
               Markenfilter
             </h3>
-            {filterBrand && (
-              <button
-                onClick={resetFilters}
-                className="text-xs text-black hover:text-blue-800 bg-blue-100 rounded-2xl p-2"
-              >
-                Filter zurücksetzen
-              </button>
-            )}
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-2 sm:gap-3">
             {carBrands.map((brand) => (
@@ -363,11 +355,20 @@ export default function KeysPage() {
                   />
                 </svg>
               </button>
+              {filterBrand && (
+                <button
+                  onClick={resetFilters}
+                  className="px-2 py-1 text-xs rounded-full border border-blue-300 text-blue-800 bg-blue-100 hover:bg-blue-200"
+                >
+                  Filter zurücksetzen
+                </button>
+              )}
+
               <button
                 onClick={() => setShowSoldOnly((prev) => !prev)}
                 className={`px-2 py-1 text-xs rounded-full border ${
                   showSoldOnly
-                    ? "bg-green-200 text-green-900 border-green-300"
+                    ? "bg-blue-200 text-blue-900 border-blue-300"
                     : "bg-white text-gray-700 hover:bg-gray-100 border-gray-300"
                 }`}
               >
@@ -443,7 +444,7 @@ export default function KeysPage() {
                           {car.carName}
 
                           {car.sold && (
-                            <span className="ml-2 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-black bg-green-200 rounded-full">
+                            <span className="ml-2 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-black bg-blue-200 rounded-full">
                               VERKAUFT
                             </span>
                           )}
