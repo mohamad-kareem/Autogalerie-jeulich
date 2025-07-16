@@ -2,7 +2,14 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { FiEdit, FiTrash2 } from "react-icons/fi";
+import {
+  FiEdit,
+  FiTrash2,
+  FiSearch,
+  FiPlus,
+  FiX,
+  FiFilter,
+} from "react-icons/fi";
 import toast from "react-hot-toast";
 const carBrands = [
   { name: "BMW", logo: "/logos/bmw.png" },
@@ -299,106 +306,165 @@ export default function KeysPage() {
         {/* Table with integrated controls */}
         <div
           ref={tableRef}
-          className="bg-white rounded-lg sm:rounded-xl shadow-md overflow-hidden"
+          className="bg-white rounded-lg sm:rounded-xl shadow-md overflow-hidden border-1 border-gray-200"
         >
-          {/* Table Controls */}
-          <div className="bg-gray-50 px-3 sm:px-4 py-2 flex flex-col sm:flex-row justify-between items-center gap-2 border-b border-gray-200">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              {showSearch && (
-                <div className="relative flex-grow sm:flex-grow-0 sm:w-48">
-                  <input
-                    type="text"
-                    placeholder="Suche..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-8 pr-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  />
-                  <svg
-                    className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+          {/* Enhanced Table Controls */}
+          {/* Enhanced Table Controls - Mobile Optimized */}
+          <div className="bg-gray-50 px-3 py-3 flex flex-col sm:flex-row justify-between items-stretch gap-3 border-b border-gray-200">
+            {/* Mobile Layout */}
+            <div className="sm:hidden w-full flex flex-col gap-3">
+              {/* Row 1: Actions & Search Toggle */}
+              <div className="flex justify-between items-center w-full">
+                {/* Mobile Search Toggle */}
+                <button
+                  onClick={() => {
+                    setShowSearch(!showSearch);
+                    if (showSearch) setSearchTerm("");
+                  }}
+                  className={`p-2 rounded-lg flex items-center justify-center ${
+                    showSearch
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                  aria-label={showSearch ? "Suche schließen" : "Suche öffnen"}
+                >
+                  <FiSearch className="h-5 w-5" />
+                </button>
+
+                {/* Mobile Actions */}
+                <div className="flex items-center gap-2">
+                  {filterBrand && (
+                    <button
+                      onClick={resetFilters}
+                      className="px-2 py-1.5 text-xs font-medium flex items-center gap-1 bg-blue-50 text-blue-700 rounded"
+                    >
+                      <FiX className="h-3 w-3" />
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setShowAddForm(!showAddForm);
+                      setEditingCar(null);
+                    }}
+                    className="p-2 bg-blue-600 text-white rounded-lg shadow"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    <FiPlus className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Row 2: Search Input when visible */}
+              {showSearch && (
+                <div className="w-full">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Suche Fahrzeuge..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
                     />
-                  </svg>
+                    <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    {searchTerm && (
+                      <button
+                        onClick={() => setSearchTerm("")}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <FiX className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-              <button
-                onClick={() => setShowSearch((s) => !s)}
-                className={`p-1 sm:p-2 rounded-lg ${
-                  showSearch
-                    ? "bg-blue-100 text-blue-600"
-                    : "text-gray-500 hover:bg-gray-100"
-                }`}
-                aria-label="Suche"
-                title="Suche"
-              >
-                <svg
-                  className="h-4 w-4 sm:h-5 sm:w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </button>
-              {filterBrand && (
-                <button
-                  onClick={resetFilters}
-                  className="px-2 py-1 text-xs rounded-full border border-blue-300 text-blue-800 bg-blue-100 hover:bg-blue-200"
-                >
-                  Filter zurücksetzen
-                </button>
-              )}
-
-              <button
-                onClick={() => setShowSoldOnly((prev) => !prev)}
-                className={`px-2 py-1 text-xs rounded-full border ${
-                  showSoldOnly
-                    ? "bg-blue-200 text-blue-900 border-blue-300"
-                    : "bg-white text-gray-700 hover:bg-gray-100 border-gray-300"
-                }`}
-              >
-                {showSoldOnly ? "Nur verkauft" : "Alle anzeigen"}
-              </button>
-
+            {/* Desktop Layout */}
+            <div className="hidden sm:flex items-center gap-3 w-full">
+              {/* Search Toggle Button */}
               <button
                 onClick={() => {
-                  setShowAddForm((f) => !f);
-                  setEditingCar(null);
-                  if (!showAddForm) scrollToTable();
+                  setShowSearch(!showSearch);
+                  if (showSearch) setSearchTerm("");
                 }}
-                className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm text-xs sm:text-sm"
+                className={`p-2 rounded-lg flex items-center justify-center ${
+                  showSearch
+                    ? "bg-blue-100 text-blue-600"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+                aria-label={showSearch ? "Suche schließen" : "Suche öffnen"}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-                <span>Auto hinzufügen</span>
+                <FiSearch className="h-5 w-5" />
               </button>
+
+              {/* Search Input - Only visible if toggled */}
+              <div
+                className={`transition-all duration-200 ${
+                  showSearch
+                    ? "w-64 opacity-100"
+                    : "w-0 opacity-0 overflow-hidden"
+                }`}
+              >
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Suche Fahrzeuge..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
+                  />
+                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <FiX className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Spacer */}
+              <div className="flex-1"></div>
+
+              {/* Desktop Actions */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                  {filterBrand && (
+                    <button
+                      onClick={resetFilters}
+                      className="px-3 py-1.5 text-xs font-medium flex items-center gap-1 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                    >
+                      <FiFilter className="h-3 w-3" />
+                      {filterBrand}
+                      <FiX className="h-3 w-3 ml-1" />
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setShowSoldOnly(!showSoldOnly)}
+                    className={`px-3 py-1.5 text-xs font-medium flex items-center gap-1 transition-colors ${
+                      showSoldOnly
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-white text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    {showSoldOnly ? "Verkaufte" : "Alle"}
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setShowAddForm(!showAddForm);
+                    setEditingCar(null);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow text-sm font-medium transition-colors"
+                >
+                  <FiPlus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Neues Fahrzeug</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -537,22 +603,12 @@ export default function KeysPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50 px-2">
           <div className="bg-white w-full max-w-2xl p-6 rounded-xl shadow-2xl relative">
             {/* Close Button */}
-            <button
-              onClick={() => {
-                setShowAddForm(false);
-                setEditingCar(null);
-              }}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl"
-              aria-label="Schließen"
-            >
-              &times;
-            </button>
+
             {/* Title */}
             <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
               {editingCar ? "Fahrzeug bearbeiten" : "Neues Fahrzeug hinzufügen"}
             </h2>
 
-            {/* Form */}
             {/* Form */}
             <form
               autoComplete="off"
@@ -601,7 +657,7 @@ export default function KeysPage() {
                         })
                       : setNewCar({ ...newCar, keyNumber: e.target.value })
                   }
-                  placeholder="z.B. 12345678"
+                  placeholder="z.B. 99"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
