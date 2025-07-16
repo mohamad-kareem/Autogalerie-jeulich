@@ -441,13 +441,16 @@ export default function KeysPage() {
                               title={`Farbe: ${car.color}`}
                             />
                           )}
-                          {car.carName}
-
-                          {car.sold && (
-                            <span className="ml-2 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-black bg-blue-200 rounded-full">
-                              VERKAUFT
-                            </span>
-                          )}
+                          <span
+                            title={car.sold ? "Fahrzeug verkauft" : ""}
+                            className={`whitespace-nowrap ${
+                              car.sold
+                                ? "line-through text-gray-400"
+                                : "text-black"
+                            }`}
+                          >
+                            {car.carName}
+                          </span>
                         </div>
                         {car.note && (
                           <div className="text-xs text-gray-500 mt-1">
