@@ -32,7 +32,6 @@ export default function RandomCarSlider() {
       try {
         const res = await fetch("/api/cars");
         const data = await res.json();
-        // Shuffle
         const shuffled = data.sort(() => 0.5 - Math.random());
         setCars(shuffled.slice(0, 6));
       } catch (e) {
@@ -47,7 +46,7 @@ export default function RandomCarSlider() {
     if (!container) return;
     const offset =
       window.innerWidth < 768
-        ? container.clientWidth / 1.5
+        ? container.clientWidth / 1.2
         : container.clientWidth / 3;
     container.scrollBy({
       left: dir === "left" ? -offset : offset,
@@ -56,102 +55,121 @@ export default function RandomCarSlider() {
   };
 
   return (
-    <section className="relative w-full px-4 sm:px-6 lg:px-16 py-14 bg-black pb-30 pt-30">
+    <section className="w-full bg-gray-50 px-4 sm:px-6 lg:px-16 py-10 sm:py-16">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-white mb-6">
-          Premium-Auswahl
-        </h2>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-10 gap-2">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900">
+            Unsere Premium-Auswahl
+          </h2>
+          <Link
+            href="/gebrauchtwagen"
+            className="text-base sm:text-lg font-medium text-black hover:text-red-700 flex items-center"
+          >
+            Alle Fahrzeuge anzeigen
+            <ChevronRight className="w-5 h-5 ml-1" />
+          </Link>
+        </div>
 
+        {/* Slider Container */}
         <div className="relative group">
           {/* Left Arrow */}
           <button
             onClick={() => scrollByOffset("left")}
-            className="absolute top-1/2 left-2 sm:left-4 transform -translate-y-1/2 bg-black/50 hover:bg-red-700 text-white p-2 rounded-full shadow-lg z-20 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="hidden md:flex absolute top-1/2 -left-5 transform -translate-y-1/2 z-20 bg-white border border-gray-200 text-red-600 p-2 rounded-full shadow-md hover:bg-red-100 transition-all duration-300 group-hover:opacity-100 opacity-0"
             aria-label="Scroll left"
           >
-            <ChevronLeft className="w-6 h-6 sm:w-7 sm:h-7" />
+            <ChevronLeft className="w-6 h-6" />
           </button>
 
-          {/* Slider Container */}
+          {/* Scrollable Row */}
           <div
             ref={sliderRef}
-            className="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide scroll-snap-x scroll-smooth px-2 sm:px-6"
+            className="flex gap-4 overflow-x-auto scroll-smooth scrollbar-hide px-1 py-2"
             style={{ scrollSnapType: "x mandatory" }}
           >
             {cars.map((car) => (
               <div
                 key={car._id}
-                className="snap-center flex-shrink-0 w-60 sm:w-64 md:w-72 lg:w-80 bg-gradient-to-br from-black/80 to-gray-900 rounded-xl border border-gray-800 p-4 shadow-lg hover:shadow-red-800/30 transition-transform transform hover:scale-105"
+                className="snap-center flex-shrink-0 w-72 sm:w-80 lg:w-[22rem] bg-white border border-gray-200 rounded-xl shadow-md hover:shadow-red-400/30 transition-transform transform hover:scale-[1.03]"
               >
                 {/* Image */}
-                <div className="w-full h-36 rounded-lg overflow-hidden bg-gray-900 flex items-center justify-center mb-4">
+                <div className="w-full h-44 sm:h-48 lg:h-52 bg-gray-100 flex items-center justify-center overflow-hidden rounded-t-xl">
                   {car.images?.[0]?.ref ? (
                     <img
                       src={car.images[0].ref}
                       alt={`${car.make} ${car.model}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                       loading="lazy"
                     />
                   ) : (
-                    <CarFront className="w-10 h-10 text-gray-500" />
+                    <CarFront className="w-10 h-10 text-gray-400" />
                   )}
                 </div>
 
-                {/* Title */}
-                <h3 className="text-white font-medium text-lg truncate">
-                  {car.make} {car.model}
-                </h3>
-
-                {/* Short Description */}
-                {car.modelDescription && (
-                  <p className="text-gray-400 text-sm mt-1">
-                    {car.modelDescription.split(" ").slice(0, 4).join(" ")}
-                    {car.modelDescription.split(" ").length > 4 && "…"}
-                  </p>
-                )}
-
-                {/* Price */}
-                {car.price?.consumerPriceGross && (
-                  <p className="text-red-500 font-semibold text-base mt-3">
-                    {parseFloat(car.price.consumerPriceGross).toLocaleString(
-                      "de-DE",
-                      {
-                        style: "currency",
-                        currency: car.price.currency || "EUR",
-                        maximumFractionDigits: 0,
-                      }
+                {/* Content */}
+                <div className="p-4 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+                      {car.make} {car.model}
+                    </h3>
+                    {car.price?.consumerPriceGross && (
+                      <span className="text-red-600 font-bold text-sm sm:text-base ml-2 whitespace-nowrap">
+                        {parseFloat(
+                          car.price.consumerPriceGross
+                        ).toLocaleString("de-DE", {
+                          style: "currency",
+                          currency: car.price.currency || "EUR",
+                          maximumFractionDigits: 0,
+                        })}
+                      </span>
                     )}
-                  </p>
-                )}
+                  </div>
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 gap-2 text-xs text-gray-400 mt-4">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    {car.firstRegistration?.slice(0, 4) || "-"}
+                  {car.modelDescription && (
+                    <p className="text-gray-500 text-sm line-clamp-1">
+                      {car.modelDescription}
+                    </p>
+                  )}
+
+                  {/* Stats */}
+                  <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm mt-2 border-t border-gray-100 pt-2">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-700">
+                        {car.firstRegistration?.slice(0, 4) || "-"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Gauge className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-700">
+                        {car.mileage
+                          ? `${car.mileage.toLocaleString()} km`
+                          : "-"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Fuel className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-700">
+                        {fuelMap[car.fuel] || car.fuel || "-"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Zap className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-700">
+                        {car.power ? `${car.power} PS` : "-"}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Gauge className="w-4 h-4" />
-                    {car.mileage ? `${car.mileage.toLocaleString()} km` : "-"}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Fuel className="w-4 h-4" />
-                    {fuelMap[car.fuel] || car.fuel || "-"}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Zap className="w-4 h-4" />
-                    {car.power ? `${car.power} PS` : "-"}
-                  </div>
+
+                  <Link
+                    href={`/gebrauchtwagen/${car._id}`}
+                    className="mt-3 inline-flex items-center justify-center gap-2 w-full bg-red-50 hover:bg-red-200 text-red-700 py-2 px-4 text-sm sm:text-base rounded-md transition-all duration-200"
+                  >
+                    Details ansehen
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
                 </div>
-
-                {/* Details Link */}
-                <Link
-                  href={`/gebrauchtwagen/${car._id}`}
-                  className="inline-flex items-center text-sm text-red-400 hover:text-white mt-4"
-                >
-                  Einzelheiten anzeigen
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Link>
               </div>
             ))}
           </div>
@@ -159,15 +177,12 @@ export default function RandomCarSlider() {
           {/* Right Arrow */}
           <button
             onClick={() => scrollByOffset("right")}
-            className="absolute top-1/2 right-2 sm:right-4 transform -translate-y-1/2 bg-black/50 hover:bg-red-700 text-white p-2 rounded-full shadow-lg z-20 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="hidden md:flex absolute top-1/2 -right-5 transform -translate-y-1/2 z-20 bg-white border border-gray-200 text-red-600 p-2 rounded-full shadow-md hover:bg-red-100 transition-all duration-300 group-hover:opacity-100 opacity-0"
             aria-label="Scroll right"
           >
-            <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7" />
+            <ChevronRight className="w-6 h-6" />
           </button>
         </div>
-
-        {/* Decorative Glow */}
-        <div className="hidden lg:block absolute -bottom-32 -left-32 w-96 h-96 bg-red-600/10 rounded-full blur-2xl pointer-events-none" />
       </div>
     </section>
   );

@@ -1,148 +1,134 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Button from "../helpers/Button";
 import Link from "next/link";
-import { Search, GitCompare, Check } from "lucide-react";
+import { Search, GitCompare, Check, ArrowRight } from "lucide-react";
 import Image from "next/image";
-import ch from "@/app/(assets)/ch.png";
-import ch1 from "@/app/(assets)/ch1.png";
+import Bild2 from "../../(assets)/Hero2.jpeg";
 
 export default function LandingChoices() {
-  const features = [
+  const services = [
     {
-      icon: <Search className="text-red-600" size={20} />,
+      icon: Search,
       title: "Bereit für eine neue Fahrt?",
-      items: [
-        "Sieh dir die neuesten Modelle an",
-        "Vergleiche Fahrzeuge nebeneinander",
+      highlights: [
+        "500+ geprüfte Autos",
+        "Neueste Modelle entdecken",
+        "Top Preise sichern",
       ],
-      buttonText: "🔍 Gebrauchtwagen suchen",
+      cta: "Fahrzeuge ansehen",
       link: "/gebrauchtwagen",
-      image: ch1,
-      alt: "Person searching for cars online",
-      accentColor: "red",
     },
     {
-      icon: <GitCompare className="text-blue-600" size={20} />,
+      icon: GitCompare,
       title: "Vergleiche Fahrzeuge ganz einfach",
-      items: [
-        "Modelle nebeneinander darstellen",
-        "Unterschiede schnell erkennen",
+      highlights: [
+        "Technik auf einen Blick",
+        "Unterschiede sofort sehen",
+        "Modelle direkt vergleichen",
       ],
-      buttonText: "Vergleiche Autos ↔",
+      cta: "Fahrzeuge vergleichen",
       link: "/vergleich",
-      image: ch,
-      alt: "Two cars being compared",
-      accentColor: "blue",
     },
   ];
 
   return (
-    <section className="relative w-full py-12 md:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 xl:px-0 overflow-hidden bg-gray-50">
+    <section className="w-full bg-gray-50 py-12 sm:py-16 px-4 sm:px-6 lg:px-16">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-15 lg:mb-20">
+        {/* Heading */}
+        <div className="text-center mb-12">
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.4 }}
             viewport={{ once: true }}
-            className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900"
           >
-            Entdecken Sie unsere{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-black">
-              Premium-Services
-            </span>
+            Der einfache Weg zum{" "}
+            <span className="text-red-600">richtigen Auto</span>
           </motion.h2>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
             viewport={{ once: true }}
-            className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto"
+            className="mt-3 text-gray-600 text-base sm:text-lg max-w-xl mx-auto"
           >
-            Finden Sie Ihr perfektes Fahrzeug mit unseren exklusiven Tools
+            Entdecke smarte Werkzeuge für einen stressfreien Autokauf.
           </motion.p>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          viewport={{ once: true }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-y-8 gap-x-16"
-        >
-          {features.map((feature, index) => (
-            <motion.div
-              key={index}
-              whileHover={{ y: -5 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              className="relative group rounded-xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-300 bg-white border border-gray-100 hover:border-gray-200"
-            >
-              {/* Decorative top stripe */}
-              <div
-                className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-${feature.accentColor}-500 to-${feature.accentColor}-300 rounded-t-xl`}
+        {/* Content Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+          {/* Left Image Area */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            viewport={{ once: true }}
+            className="rounded-xl overflow-hidden shadow-md"
+          >
+            <div className="relative w-full h-64 sm:h-80 md:h-full">
+              <Image
+                src={Bild2}
+                alt="Autoausstellung"
+                fill
+                className="object-cover"
+                priority
               />
-
-              <div className="flex flex-col md:flex-row md:items-center gap-6 lg:gap-8 relative z-10">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div
-                      className={`p-2 rounded-lg shadow-sm bg-${feature.accentColor}-50`}
-                    >
-                      {feature.icon}
-                    </div>
-                    <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
-                      {feature.title}
-                    </h3>
-                  </div>
-
-                  <ul className="text-gray-600 space-y-2.5 mb-6 text-base sm:text-lg">
-                    {feature.items.map((item, i) => (
-                      <motion.li
-                        key={i}
-                        className="flex items-start gap-3"
-                        whileHover={{ x: 5 }}
-                        transition={{ type: "spring", stiffness: 300 }}
-                      >
-                        <Check
-                          className={`mt-1 flex-shrink-0 text-${feature.accentColor}-600 group-hover:scale-110 transition-all duration-300`}
-                          size={16}
-                        />
-                        <span className="group-hover:text-gray-900 transition-colors duration-300">
-                          {item}
-                        </span>
-                      </motion.li>
-                    ))}
-                  </ul>
-
-                  <Link href={feature.link} passHref>
-                    <Button>{feature.buttonText}</Button>
-                  </Link>
-                </div>
-
-                <motion.div
-                  className="hidden md:block relative w-44 h-44 lg:w-52 lg:h-52 rounded-lg overflow-hidden border border-gray-100 shadow-sm group-hover:shadow-md transition-all duration-500"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <Image
-                    src={feature.image}
-                    alt={feature.alt}
-                    fill
-                    className="object-contain group-hover:scale-105 transition-transform duration-700 ease-out"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-white/10 via-white/5 to-transparent" />
-                </motion.div>
+              <div className="absolute inset-0 bg-black/30" />
+              <div className="absolute bottom-4 left-4 text-white z-10">
+                <h3 className="text-lg sm:text-3xl font-semibold">
+                  Besuche unseren Showroom
+                </h3>
               </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
+            </div>
+          </motion.div>
 
-      {/* Subtle decorative backgrounds */}
-      <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-gray-50 to-transparent -z-10" />
-      <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-gray-50 to-transparent -z-10" />
+          {/* Service Cards */}
+          <div className="flex flex-col gap-6">
+            {services.map((service, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: idx * 0.2 }}
+                viewport={{ once: true }}
+                className="p-5 sm:p-6 border border-gray-200 rounded-xl hover:shadow-md transition-shadow bg-white"
+              >
+                <div className="flex gap-4 items-start">
+                  <div className="p-2 bg-red-100 text-red-600 rounded-md">
+                    <service.icon className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
+                      {service.title}
+                    </h3>
+                    <ul className="space-y-1 mb-3">
+                      {service.highlights.map((point, i) => (
+                        <li
+                          key={i}
+                          className="flex items-start text-sm text-gray-700"
+                        >
+                          <Check className="w-4 h-4 text-green-500 mr-2 mt-[2px]" />
+                          {point}
+                        </li>
+                      ))}
+                    </ul>
+                    <Link
+                      href={service.link}
+                      className="inline-flex items-center text-red-600 hover:text-red-700 font-medium transition"
+                    >
+                      {service.cta}
+                      <ArrowRight className="w-4 h-4 ml-1" />
+                    </Link>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

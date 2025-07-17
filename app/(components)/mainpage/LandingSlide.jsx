@@ -9,71 +9,69 @@ export default function LandingSlide() {
     const container = document.getElementById("scroll-container");
     if (!container) return;
 
-    const amount = window.innerWidth <= 640 ? 200 : 300;
+    const scrollAmount = window.innerWidth < 640 ? 240 : 320;
     container.scrollBy({
-      left: direction === "left" ? -amount : amount,
+      left: direction === "left" ? -scrollAmount : scrollAmount,
       behavior: "smooth",
     });
   };
 
   return (
-    <section className="relative w-full py-12 px-4 sm:px-6 lg:px-8 overflow-hidden bg-gray-50">
+    <section className="relative w-full py-16 px-4 sm:px-6 lg:px-8 overflow-hidden bg-gray-50">
       <div className="w-full max-w-7xl mx-auto relative">
         {/* Title */}
-        <div className="px-4 sm:px-6">
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
-            Unsere Kategorien
+        <div className="text-center mb-12">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
+            Unsere <span className="text-red-600">Kategorien</span>
           </h2>
-          <div className="border-b border-gray-300 mb-6"></div>
+          <div className="mt-2 w-24 h-1 bg-red-600 rounded-full mx-auto" />
         </div>
 
-        {/* Scroll Buttons */}
-        <div className="absolute inset-y-0 left-0 flex items-center z-10 pl-2">
-          <button
-            onClick={() => scroll("left")}
-            className="bg-white hover:bg-red-600 text-gray-800 p-2 sm:p-2.5 rounded-full shadow-md border border-gray-300 transition-all transform hover:scale-110"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="absolute inset-y-0 right-0 flex items-center z-10 pr-2">
-          <button
-            onClick={() => scroll("right")}
-            className="bg-white hover:bg-red-600 text-gray-800 p-2 sm:p-2.5 rounded-full shadow-md border border-gray-300 transition-all transform hover:scale-110"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
+        {/* Scroll Arrows */}
+        <button
+          onClick={() => scroll("left")}
+          className="hidden md:flex absolute left-2 top-2/3 -translate-y-1/2 z-20 bg-white text-red-600 border border-gray-300 shadow-md hover:bg-red-50 transition-all p-2 rounded-full"
+          aria-label="Scroll left"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
 
-        {/* Scrollable Cards */}
+        <button
+          onClick={() => scroll("right")}
+          className="hidden md:flex absolute right-2 top-2/3 -translate-y-1/2 z-20 bg-white text-red-600 border border-gray-300 shadow-md hover:bg-red-50 transition-all p-2 rounded-full"
+          aria-label="Scroll right"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
+        {/* Scrollable Category Cards */}
         <div
           id="scroll-container"
-          className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 scroll-smooth scrollbar-hide px-10 sm:px-12"
+          className="flex gap-6 overflow-x-auto scroll-smooth scrollbar-hide px-1 py-2"
         >
           {popularCategories.map((category, index) => (
             <div
               key={index}
-              className="min-w-[180px] sm:min-w-[200px] md:min-w-[220px] bg-white hover:bg-gray-100 transition duration-300 rounded-xl p-4 flex-shrink-0 shadow text-center border border-gray-200"
+              className="min-w-[180px] sm:min-w-[220px] md:min-w-[250px] bg-white border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl p-5 flex-shrink-0 text-center"
             >
-              <Image
-                src={category.image}
-                alt={category.alt}
-                width={100}
-                height={100}
-                className="object-contain mx-auto mb-4"
-              />
-              <h3 className="text-gray-900 text-base sm:text-lg font-semibold">
+              <div className="w-24 h-24 mx-auto mb-4 rounded-lg overflow-hidden">
+                <Image
+                  src={category.image}
+                  alt={category.alt}
+                  width={100}
+                  height={100}
+                  className="object-contain w-full h-full transition-transform duration-300 hover:scale-105"
+                />
+              </div>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                 {category.title}
               </h3>
-              <p className="text-red-600 text-xs sm:text-sm mt-1">
+              <p className="text-sm text-red-600 mt-1">
                 {category.description}
               </p>
             </div>
           ))}
         </div>
-
-        {/* Background Glow */}
-        <div className="absolute -bottom-20 -left-20 w-72 h-72   rounded-full pointer-events-none" />
       </div>
     </section>
   );

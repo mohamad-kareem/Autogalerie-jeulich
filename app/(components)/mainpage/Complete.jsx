@@ -14,7 +14,7 @@ import DiscountPopup from "./popup.jsx"; // Import the popup component
 const Complete = () => {
   return (
     <main className="relative bg-black text-white">
-      <GridBackground /> {/*  Grid SVG in the background */}
+      {/*  Grid SVG in the background */}
       <HeroSection />
       <DiscountPopup />
       <LandingChoices />
