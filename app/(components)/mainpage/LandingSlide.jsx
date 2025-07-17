@@ -54,7 +54,7 @@ export default function LandingSlide() {
               key={index}
               className="min-w-[180px] sm:min-w-[220px] md:min-w-[250px] bg-white border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl p-5 flex-shrink-0 text-center"
             >
-              <div className="w-24 h-24 mx-auto mb-4 rounded-lg overflow-hidden">
+              <div className="w-28 h-28 mx-auto mb-4 rounded-lg overflow-hidden">
                 <Image
                   src={category.image}
                   alt={category.alt}

@@ -55,7 +55,7 @@ export default function RandomCarSlider() {
   };
 
   return (
-    <section className="w-full bg-gray-50 px-4 sm:px-6 lg:px-16 py-10 sm:py-16">
+    <section className="w-full bg-gray-50 px-4 sm:px-6 lg:px-16 py-10 sm:py-16 shadow-[0_-4px_8px_-4px_rgba(0,0,0,0.08)]">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-10 gap-2">
@@ -64,7 +64,7 @@ export default function RandomCarSlider() {
           </h2>
           <Link
             href="/gebrauchtwagen"
-            className="text-base sm:text-lg font-medium text-black hover:text-red-700 flex items-center"
+            className="text-sm sm:text-lg font-medium text-black hover:text-red-700 flex items-center"
           >
             Alle Fahrzeuge anzeigen
             <ChevronRight className="w-5 h-5 ml-1" />
