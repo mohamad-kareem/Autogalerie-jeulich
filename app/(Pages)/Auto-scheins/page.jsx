@@ -1003,14 +1003,15 @@ export default function CarScheinPage() {
                 </div>
 
                 {/* Bild ändern */}
+                {/* Bild ändern – styled like the add form */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Neues Bild
+                    Schein-Dokument
                   </label>
 
-                  <div className="flex items-start gap-4">
-                    {/* Preview Box or "Kein Bild vorhanden" */}
-                    <div className="h-24 w-24 bg-gray-100 border border-gray-300 rounded-md overflow-hidden flex items-center justify-center text-center text-xs text-gray-500">
+                  <div className="flex items-center space-x-4">
+                    {/* Preview image or placeholder */}
+                    <div className="flex-shrink-0 h-24 w-24 rounded-md bg-gray-100 overflow-hidden border border-gray-300">
                       {previewUrl ? (
                         <img
                           src={previewUrl}
@@ -1024,30 +1025,44 @@ export default function CarScheinPage() {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span className="p-1">Kein Bild vorhanden</span>
+                        <div className="h-full w-full flex items-center justify-center text-sm text-gray-500 px-2 text-center">
+                          Kein Bild ausgewählt
+                        </div>
                       )}
                     </div>
 
-                    {/* Right side: Button + Info vertically stacked */}
-                    <div className="flex flex-col gap-1">
-                      <label className="cursor-pointer inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                        Bild wählen
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const selected = e.target.files[0];
-                            if (!selected) return;
-                            setFile(selected);
-                            setPreviewUrl(URL.createObjectURL(selected));
-                          }}
-                          className="sr-only"
-                        />
-                      </label>
+                    {/* Right side: Upload & Delete buttons + hint text */}
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label className="cursor-pointer inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                          {previewUrl ? "ändern" : "hochladen"}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const selected = e.target.files[0];
+                              if (!selected) return;
+                              setFile(selected);
+                              setPreviewUrl(URL.createObjectURL(selected));
+                            }}
+                            className="sr-only"
+                          />
+                        </label>
 
-                      <span className="text-xs text-gray-500">
+                        {previewUrl && (
+                          <button
+                            type="button"
+                            onClick={resetFileInput}
+                            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          >
+                            löschen
+                          </button>
+                        )}
+                      </div>
+
+                      <p className="mt-1 text-xs text-gray-500">
                         PNG, JPG bis 10 MB
-                      </span>
+                      </p>
                     </div>
                   </div>
                 </div>
