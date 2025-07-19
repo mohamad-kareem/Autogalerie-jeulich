@@ -103,16 +103,24 @@ const DashboardContent = ({ user, onProfileClick }) => {
 
             {/* ✅ Admin-only: Archiv now comes right after the above three */}
             {user.role === "admin" && (
-              <NavigationCard
-                href="/kaufvertrag/archiv"
-                icon={<FiArchive />}
-                title="Archiv"
-                description="Archivierte Kaufverträge anzeigen"
-                accentColor="red"
-              />
-            )}
+              <>
+                <NavigationCard
+                  href="/kaufvertrag/archiv"
+                  icon={<FiArchive />}
+                  title="Archiv"
+                  description="Archivierte Kaufverträge anzeigen"
+                  accentColor="red"
+                />
 
-            {/* ✅ Admin-only: rest */}
+                <NavigationCard
+                  href="/Zeiterfassungsverwaltung"
+                  icon={<FiClock />}
+                  title="Zeiterfassung verwalten"
+                  description="Verwalte und analysiere Arbeitszeiten effizient"
+                  accentColor="yellow"
+                />
+              </>
+            )}
 
             {/* ✅ Other cards (order doesn't matter) */}
             <NavigationCard
