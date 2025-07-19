@@ -50,6 +50,7 @@ export default function CarScheinPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [showOwnerFilter, setShowOwnerFilter] = useState(false);
   const [selectedOwners, setSelectedOwners] = useState([]);
+  const [finNumber, setFinNumber] = useState("");
   const owners = ["Karim", "Alawie"];
   // Authentication check
   useEffect(() => {
@@ -67,7 +68,15 @@ export default function CarScheinPage() {
   };
 
   const handlePrintImage = (doc) => {
-    const { imageUrl, carName, assignedTo, owner, notes = [], createdAt } = doc;
+    const {
+      imageUrl,
+      carName,
+      assignedTo,
+      owner,
+      notes = [],
+      createdAt,
+      finNumber,
+    } = doc;
 
     const printWindow = window.open("", "_blank", "width=800,height=1000");
 
@@ -138,6 +147,10 @@ export default function CarScheinPage() {
 
           <div class="section">
             <div><span class="label">Fahrzeug:</span> ${esc(carName)}</div>
+            <div><span class="label">FIN-Nummer:</span> ${esc(
+              finNumber || "—"
+            )}</div>
+
             <div><span class="label">Zugewiesen an:</span> ${esc(
               assignedTo || "—"
             )}</div>
@@ -191,6 +204,31 @@ export default function CarScheinPage() {
   const handleUpdateInfo = async () => {
     try {
       setIsLoading(true);
+      let newImageData = {};
+
+      if (file) {
+        // Upload to Cloudinary
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", "car_scheins_unsigned");
+
+        const cloudRes = await fetch(
+          "https://api.cloudinary.com/v1_1/dclgxdwrc/image/upload",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        const cloudData = await cloudRes.json();
+        if (cloudData.error) throw new Error(cloudData.error.message);
+
+        newImageData = {
+          imageUrl: cloudData.secure_url,
+          publicId: cloudData.public_id,
+          oldPublicId: infoDoc.publicId, // include old one for deletion
+        };
+      }
 
       const res = await fetch("/api/carschein", {
         method: "PUT",
@@ -201,6 +239,7 @@ export default function CarScheinPage() {
           assignedTo: infoDoc.assignedTo,
           owner: infoDoc.owner,
           notes: infoDoc.notes,
+          ...newImageData,
         }),
       });
 
@@ -215,6 +254,8 @@ export default function CarScheinPage() {
       toast.success("Schein erfolgreich aktualisiert");
       setIsEditing(false);
       setShowInfoModal(false);
+      setFile(null);
+      setPreviewUrl(null);
     } catch (err) {
       toast.error("Aktualisierung des Scheins fehlgeschlagen");
     } finally {
@@ -231,44 +272,54 @@ export default function CarScheinPage() {
   // Form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!carName || !file) return toast.error("Alle Felder sind erforderlich");
 
     try {
       setIsLoading(true);
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", "car_scheins_unsigned");
+      let uploadedImage = null;
 
-      const cloudRes = await fetch(
-        "https://api.cloudinary.com/v1_1/dclgxdwrc/image/upload",
-        {
-          method: "POST",
-          body: formData,
+      // 🔁 Only upload to Cloudinary if a file is selected
+      if (file) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", "car_scheins_unsigned");
+
+        const cloudRes = await fetch(
+          "https://api.cloudinary.com/v1_1/dclgxdwrc/image/upload",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        const cloudData = await cloudRes.json();
+        console.log("[Cloudinary Upload Result]", cloudData);
+
+        if (cloudData.error) {
+          throw new Error(`Cloudinary-Fehler: ${cloudData.error.message}`);
         }
-      );
 
-      const cloudData = await cloudRes.json();
-      console.log("[Cloudinary Upload Result]", cloudData);
+        if (!cloudData.secure_url || !cloudData.public_id) {
+          throw new Error("Fehler beim Cloudinary-Upload");
+        }
 
-      if (cloudData.error) {
-        throw new Error(`Cloudinary-Fehler: ${cloudData.error.message}`);
+        uploadedImage = {
+          imageUrl: cloudData.secure_url,
+          publicId: cloudData.public_id,
+        };
       }
 
-      if (!cloudData.secure_url || !cloudData.public_id) {
-        throw new Error("Fehler beim Cloudinary-Upload");
-      }
-
+      // 🔁 Prepare the request body with optional fields
       const res = await fetch("/api/carschein", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           carName,
+          finNumber,
           assignedTo,
           owner,
           notes,
-          imageUrl: cloudData.secure_url,
-          publicId: cloudData.public_id,
+          ...uploadedImage, // Add imageUrl and publicId only if image was uploaded
         }),
       });
 
@@ -283,6 +334,7 @@ export default function CarScheinPage() {
       setCarName("");
       setAssignedTo("");
       setOwner("");
+      setFinNumber("");
       setNotes("");
       resetFileInput();
       setShowUploadModal(false);
@@ -336,6 +388,11 @@ export default function CarScheinPage() {
 
   // Image preview
   const openImagePreview = (url) => {
+    if (!url) {
+      toast.error("Kein Bild verfügbar für diesen Schein.");
+      return;
+    }
+
     setModalImageUrl(url);
     setShowPreviewModal(true);
   };
@@ -657,9 +714,20 @@ export default function CarScheinPage() {
                     type="text"
                     value={carName}
                     onChange={(e) => setCarName(e.target.value)}
-                    required
                     className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="z.B. BMW X5 2020"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    FIN-Nummer* (z.B. WBA3A9G58FNR12345)
+                  </label>
+                  <input
+                    type="text"
+                    value={finNumber}
+                    onChange={(e) => setFinNumber(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Fahrgestellnummer"
                   />
                 </div>
 
@@ -740,8 +808,8 @@ export default function CarScheinPage() {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="h-full w-full flex items-center justify-center text-gray-400">
-                        <FiImage className="h-8 w-8" />
+                      <div className="h-full w-full flex items-center justify-center text-sm text-gray-500 px-2 text-center">
+                        Kein Bild ausgewählt
                       </div>
                     )}
                   </div>
@@ -754,7 +822,6 @@ export default function CarScheinPage() {
                         type="file"
                         accept="image/*"
                         onChange={handleFileChange}
-                        required={!previewUrl}
                         ref={fileInputRef}
                         className="sr-only"
                       />
@@ -835,11 +902,21 @@ export default function CarScheinPage() {
               </button>
             </div>
 
-            <div className="p-6 space-y-4 text-gray-700 text-2xl">
-              <div>
-                <span className="font-medium">Fahrzeug:</span>{" "}
-                {isEditing ? (
+            {isEditing ? (
+              <form
+                className="px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-6"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleUpdateInfo();
+                }}
+              >
+                {/* Fahrzeugname */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Fahrzeugname*
+                  </label>
                   <input
+                    type="text"
                     value={infoDoc.carName}
                     onChange={(e) =>
                       setInfoDoc((prev) => ({
@@ -847,36 +924,37 @@ export default function CarScheinPage() {
                         carName: e.target.value,
                       }))
                     }
-                    className="ml-2 border border-gray-300 rounded px-2 py-1"
+                    required
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    placeholder="z.B. BMW 320i Touring"
                   />
-                ) : (
-                  infoDoc.carName
-                )}
-              </div>
-
-              <div>
-                <span className="font-medium">Autohändler :</span>{" "}
-                {isEditing ? (
-                  <select
-                    value={infoDoc.owner || ""}
-                    onChange={(e) =>
-                      setInfoDoc((prev) => ({ ...prev, owner: e.target.value }))
-                    }
-                    className="ml-2 border border-gray-300 rounded px-2 py-1"
-                  >
-                    <option value="">—</option>
-                    <option value="Karim">Karim</option>
-                    <option value="Alawie">Alawie</option>
-                  </select>
-                ) : (
-                  infoDoc.owner || "—"
-                )}
-              </div>
-
-              <div>
-                <span className="font-medium">Zugewiesen an:</span>{" "}
-                {isEditing ? (
+                </div>
+                {/* FIN Nummer */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    FIN-Nummer
+                  </label>
                   <input
+                    type="text"
+                    value={infoDoc.finNumber || ""}
+                    onChange={(e) =>
+                      setInfoDoc((prev) => ({
+                        ...prev,
+                        finNumber: e.target.value,
+                      }))
+                    }
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    placeholder="WBA3A9G58FNR12345"
+                  />
+                </div>
+
+                {/* Zugewiesen an */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Zugewiesen an
+                  </label>
+                  <input
+                    type="text"
                     value={infoDoc.assignedTo || ""}
                     onChange={(e) =>
                       setInfoDoc((prev) => ({
@@ -884,78 +962,229 @@ export default function CarScheinPage() {
                         assignedTo: e.target.value,
                       }))
                     }
-                    className="ml-2 border border-gray-300 rounded px-2 py-1"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    placeholder="z.B. Toni"
                   />
-                ) : (
-                  infoDoc.assignedTo || "—"
-                )}
-              </div>
+                </div>
 
-              {isEditing ? (
-                <div>
-                  <label className="font-medium">Aufgaben:</label>
+                {/* Autohändler Auswahl */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Autohändler
+                  </label>
+                  <div className="flex items-center gap-6 mt-1">
+                    {["Karim", "Alawie"].map((ownerOption) => (
+                      <label
+                        key={ownerOption}
+                        className="inline-flex items-center gap-2 cursor-pointer"
+                      >
+                        <input
+                          type="radio"
+                          name="owner"
+                          value={ownerOption}
+                          checked={infoDoc.owner === ownerOption}
+                          onChange={(e) =>
+                            setInfoDoc((prev) => ({
+                              ...prev,
+                              owner: e.target.value,
+                            }))
+                          }
+                          className="h-4 w-4 text-indigo-600 border-gray-300"
+                        />
+                        <span>{ownerOption}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Notizen */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notizen / Aufgaben (jede Zeile = 1 Aufgabe)
+                  </label>
                   <textarea
                     rows={4}
                     value={infoDoc.notes?.join("\n") || ""}
                     onChange={(e) =>
                       setInfoDoc((prev) => ({
                         ...prev,
-                        notes: e.target.value.split("\n"),
+                        notes: e.target.value
+                          .split("\n")
+                          .filter((n) => n.trim()),
                       }))
                     }
-                    className="w-full mt-1 border border-gray-300 rounded px-2 py-1"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    placeholder="- Reifen prüfen\n- TÜV buchen"
                   />
                 </div>
-              ) : (
-                infoDoc.notes?.length > 0 && (
-                  <>
-                    <p className="font-medium mt-2">Aufgaben:</p>
-                    <ul className="list-disc list-inside text-gray-600 space-y-1">
-                      {infoDoc.notes.map((note, i) => (
-                        <li key={i}>{note}</li>
-                      ))}
-                    </ul>
-                  </>
-                )
-              )}
-            </div>
 
-            <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
-              {!isEditing ? (
-                <>
+                {/* Bild ändern */}
+                <div className="space-y-4 md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Neues Bild (optional)
+                  </label>
+                  <div className="flex items-center space-x-4">
+                    <div className="h-24 w-24 rounded-md bg-gray-100 overflow-hidden border border-gray-300 flex items-center justify-center">
+                      {previewUrl ? (
+                        <img
+                          src={previewUrl}
+                          alt="Vorschau"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : infoDoc.imageUrl ? (
+                        <img
+                          src={infoDoc.imageUrl}
+                          alt="Aktuelles Bild"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs text-gray-500 px-2 text-center">
+                          Kein Bild vorhanden
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex-1">
+                      <label className="cursor-pointer inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Bild wählen
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const selected = e.target.files[0];
+                            if (!selected) return;
+                            setFile(selected);
+                            setPreviewUrl(URL.createObjectURL(selected));
+                          }}
+                          className="sr-only"
+                        />
+                      </label>
+
+                      {previewUrl && (
+                        <button
+                          type="button"
+                          onClick={resetFileInput}
+                          className="ml-3 inline-flex items-center px-3 py-2 border border-gray-300 text-sm rounded-md bg-white hover:bg-gray-100"
+                        >
+                          Entfernen
+                        </button>
+                      )}
+
+                      <p className="mt-1 text-xs text-gray-500">
+                        PNG, JPG bis 10 MB
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="md:col-span-2 flex justify-end gap-3 pt-4 border-t">
                   <button
-                    onClick={() => setIsEditing(true)}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition"
-                  >
-                    Bearbeiten
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowInfoModal(false);
-                      setIsEditing(false);
-                    }}
-                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded transition"
-                  >
-                    Schließen
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={handleUpdateInfo}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition"
+                    type="submit"
+                    className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
                   >
                     Speichern
                   </button>
                   <button
+                    type="button"
                     onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded transition"
+                    className="px-6 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition"
                   >
                     Abbrechen
                   </button>
-                </>
-              )}
-            </div>
+                </div>
+              </form>
+            ) : (
+              <div className="px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Fahrzeugname
+                  </label>
+                  <div className="text-base font-semibold text-gray-800">
+                    {infoDoc.carName}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Zugewiesen an
+                  </label>
+                  <div className="text-base text-gray-800">
+                    {infoDoc.assignedTo || "—"}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Autohändler
+                  </label>
+                  <div className="text-base text-gray-800">
+                    {infoDoc.owner || "—"}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Hochgeladen am
+                  </label>
+                  <div className="text-base text-gray-800">
+                    {new Date(infoDoc.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    FIN-Nummer
+                  </label>
+                  <div className="text-base text-gray-800">
+                    {infoDoc.finNumber || "—"}
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notizen / Aufgaben
+                  </label>
+                  <ul className="list-disc pl-5 text-gray-800">
+                    {infoDoc.notes && infoDoc.notes.length > 0 ? (
+                      infoDoc.notes.map((note, idx) => (
+                        <li key={idx}>{note}</li>
+                      ))
+                    ) : (
+                      <li>Keine Aufgaben</li>
+                    )}
+                  </ul>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Dokument
+                  </label>
+                  {infoDoc.imageUrl ? (
+                    <img
+                      src={infoDoc.imageUrl}
+                      alt="Schein"
+                      className="h-40 w-auto rounded-md border border-gray-300 object-contain"
+                    />
+                  ) : (
+                    <div className="h-40 w-full flex items-center justify-center text-sm text-gray-500 border border-gray-300 rounded-md">
+                      Kein Bild verfügbar
+                    </div>
+                  )}
+                </div>
+                <div className="md:col-span-2 flex justify-end gap-3 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(true)}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                  >
+                    Bearbeiten
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowInfoModal(false)}
+                    className="px-6 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition"
+                  >
+                    Schließen
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

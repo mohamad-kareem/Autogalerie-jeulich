@@ -13,23 +13,28 @@ export async function POST(req) {
         status: 401,
       });
 
-    // ⬇️ 1) read JSON body (no formData anymore)
+    // 1. Get the request body
     const {
       carName,
+      finNumber, // ✅ new
       assignedTo,
       owner,
-      notes, // may be string or array
+      notes,
       imageUrl,
       publicId,
     } = await req.json();
 
-    if (!carName || !imageUrl || !publicId) {
-      return new Response(JSON.stringify({ error: "Missing fields" }), {
-        status: 400,
-      });
+    if (finNumber) {
+      const existing = await CarSchein.findOne({ finNumber });
+      if (existing) {
+        return new Response(
+          JSON.stringify({ error: "Diese FIN-Nummer existiert bereits" }),
+          { status: 409 }
+        );
+      }
     }
 
-    // ⬇️ 2) normalise notes to array
+    // 4. Normalize notes
     const notesArr = Array.isArray(notes)
       ? notes
       : (notes || "")
@@ -37,9 +42,10 @@ export async function POST(req) {
           .map((n) => n.trim())
           .filter(Boolean);
 
-    // ⬇️ 3) just save — the image is already on Cloudinary
+    // 5. Save the document
     const doc = await CarSchein.create({
       carName,
+      finNumber,
       assignedTo,
       owner,
       notes: notesArr,
@@ -132,18 +138,46 @@ export async function PUT(req) {
       });
 
     const body = await req.json();
-    const { id, carName, assignedTo, owner, notes } = body;
+    const {
+      id,
+      carName,
+      assignedTo,
+      owner,
+      notes,
+      imageUrl,
+      publicId,
+      oldPublicId, // ⬅️ optional: to delete old image
+    } = body;
 
-    if (!id || !carName)
+    if (!id)
       return new Response(JSON.stringify({ error: "Missing data" }), {
         status: 400,
       });
 
-    const updated = await CarSchein.findByIdAndUpdate(
-      id,
-      { carName, assignedTo, owner, notes },
-      { new: true }
-    ).lean();
+    // Optionally delete old image
+    if (publicId && oldPublicId && publicId !== oldPublicId) {
+      try {
+        await cloudinary.uploader.destroy(oldPublicId);
+      } catch (err) {
+        console.warn("Cloudinary delete failed:", err.message);
+      }
+    }
+
+    const updateFields = {
+      carName,
+      assignedTo,
+      owner,
+      notes,
+    };
+
+    if (imageUrl && publicId) {
+      updateFields.imageUrl = imageUrl;
+      updateFields.publicId = publicId;
+    }
+
+    const updated = await CarSchein.findByIdAndUpdate(id, updateFields, {
+      new: true,
+    }).lean();
 
     return new Response(JSON.stringify(updated), { status: 200 });
   } catch (err) {
