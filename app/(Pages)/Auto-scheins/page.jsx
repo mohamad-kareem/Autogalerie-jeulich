@@ -893,21 +893,9 @@ export default function CarScheinPage() {
       {showInfoModal && infoDoc && (
         <div className="fixed inset-0 bg-gray-700 bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl overflow-hidden">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-3xl font-semibold text-gray-800">
-                Schein-Details
-              </h2>
-              <button
-                onClick={() => setShowInfoModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <FiX className="text-xl" />
-              </button>
-            </div>
-
             {isEditing ? (
               <form
-                className="px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-6"
+                className="px-6 py-6 grid grid-cols-2 md:grid-cols-2 gap-6"
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleUpdateInfo();
@@ -1157,7 +1145,7 @@ export default function CarScheinPage() {
                       className="h-40 w-auto rounded-md border border-gray-300 object-contain"
                     />
                   ) : (
-                    <div className="h-40 w-full flex items-center justify-center text-sm text-gray-500 border border-gray-300 rounded-md">
+                    <div className="h-20 w-fit p-2 flex items-center justify-center text-sm text-gray-500 border border-gray-300 rounded-md">
                       Kein Bild verfügbar
                     </div>
                   )}
