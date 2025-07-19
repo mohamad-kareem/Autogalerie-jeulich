@@ -7,6 +7,7 @@ import {
   ChevronUpDownIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
 import { HiArchiveBoxArrowDown } from "react-icons/hi2";
 import { FiArrowLeft } from "react-icons/fi";
 export default function KaufvertragListe() {
@@ -14,6 +15,7 @@ export default function KaufvertragListe() {
   const [filteredContracts, setFilteredContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: session } = useSession();
   const [filters, setFilters] = useState({
     month: "",
     seller: "",
@@ -427,31 +429,40 @@ export default function KaufvertragListe() {
                         {formatCurrency(contract.total)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center align-middle">
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            const confirmArchive = confirm(
-                              "Diesen Vertrag archivieren?"
-                            );
-                            if (!confirmArchive) return;
-                            try {
-                              await fetch(`/api/kaufvertrag/${contract._id}`, {
-                                method: "PUT",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ archived: true }),
-                              });
-                              setContracts((prev) =>
-                                prev.filter((item) => item._id !== contract._id)
+                        {session?.user?.role === "admin" && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const confirmArchive = confirm(
+                                "Diesen Vertrag archivieren?"
                               );
-                            } catch (err) {
-                              console.error("Fehler beim Archivieren:", err);
-                            }
-                          }}
-                          className="text-gray-500 hover:text-blue-600 transition-colors"
-                          title="Vertrag archivieren"
-                        >
-                          <HiArchiveBoxArrowDown className="w-4 h-4 mx-auto" />
-                        </button>
+                              if (!confirmArchive) return;
+                              try {
+                                await fetch(
+                                  `/api/kaufvertrag/${contract._id}`,
+                                  {
+                                    method: "PUT",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({ archived: true }),
+                                  }
+                                );
+                                setContracts((prev) =>
+                                  prev.filter(
+                                    (item) => item._id !== contract._id
+                                  )
+                                );
+                              } catch (err) {
+                                console.error("Fehler beim Archivieren:", err);
+                              }
+                            }}
+                            className="text-gray-500 hover:text-blue-600 transition-colors"
+                            title="Vertrag archivieren"
+                          >
+                            <HiArchiveBoxArrowDown className="w-4 h-4 mx-auto" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
