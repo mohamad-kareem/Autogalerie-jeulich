@@ -146,7 +146,7 @@ export default function SubmissionsTable() {
                     <FaCar className="text-red-900" />
                     <div>
                       <p className="text-gray-700 truncate">
-                        {truncateText(submission.carName)}
+                        {truncateText(submission.carName, 3)}
                       </p>
                     </div>
                   </div>
@@ -168,13 +168,13 @@ export default function SubmissionsTable() {
                 >
                   <FiEye />
                 </button>
-                <button
+                {/* <button
                   onClick={() => handleDeleteSubmission(submission._id)}
                   className="p-2 text-gray-500 hover:text-white hover:bg-red-600 rounded-md transition-colors duration-200"
                   title="Anfrage löschen"
                 >
                   <FiTrash2 />
-                </button>
+                </button> */}
               </div>
             </div>
           ))}
