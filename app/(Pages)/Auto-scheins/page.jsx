@@ -51,6 +51,7 @@ export default function CarScheinPage() {
   const [showOwnerFilter, setShowOwnerFilter] = useState(false);
   const [selectedOwners, setSelectedOwners] = useState([]);
   const [finNumber, setFinNumber] = useState("");
+  const [notesText, setNotesText] = useState("");
   const owners = ["Karim", "Alawie"];
   // Authentication check
   useEffect(() => {
@@ -238,7 +239,8 @@ export default function CarScheinPage() {
           carName: infoDoc.carName,
           assignedTo: infoDoc.assignedTo,
           owner: infoDoc.owner,
-          notes: infoDoc.notes,
+          notes: notesText.split("\n").filter((n) => n.trim()),
+
           ...newImageData,
         }),
       });
@@ -577,6 +579,7 @@ export default function CarScheinPage() {
                       <button
                         onClick={() => {
                           setInfoDoc(schein);
+                          setNotesText(schein.notes?.join("\n") || "");
                           setShowInfoModal(true);
                         }}
                         className="p-2 hover:bg-blue-200 rounded-lg transition-colors duration-200"
@@ -924,7 +927,6 @@ export default function CarScheinPage() {
                         carName: e.target.value,
                       }))
                     }
-                    required
                     className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
                     placeholder="z.B. BMW 320i Touring"
                   />
@@ -1004,15 +1006,8 @@ export default function CarScheinPage() {
                   </label>
                   <textarea
                     rows={4}
-                    value={infoDoc.notes?.join("\n") || ""}
-                    onChange={(e) =>
-                      setInfoDoc((prev) => ({
-                        ...prev,
-                        notes: e.target.value
-                          .split("\n")
-                          .filter((n) => n.trim()),
-                      }))
-                    }
+                    value={notesText}
+                    onChange={(e) => setNotesText(e.target.value)}
                     className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
                     placeholder="- Reifen prüfen\n- TÜV buchen"
                   />

@@ -22,20 +22,20 @@ export async function POST(req) {
     // 🧾 2. Create Kaufvertrag entry
     const newContract = await Kaufvertrag.create(data);
 
-    // 🚗 3. Create or update CarSchein based on VIN and agreements
+    // 🚗 3. Create or update CarSchein based on VIN
     const { carType, vin, agreements, issuer } = data;
 
-    if (carType && vin && agreements?.trim()) {
-      const parsedNotes = agreements
+    if (carType && vin) {
+      const parsedNotes = (agreements || "")
         .split("\n")
         .map((line) => line.replace(/^\* /, "").trim())
         .filter((line) => line !== "");
 
-      if (parsedNotes.length > 0) {
-        const existingSchein = await CarSchein.findOne({ finNumber: vin });
+      const existingSchein = await CarSchein.findOne({ finNumber: vin });
 
-        if (existingSchein) {
-          // ✅ Update existing: merge and deduplicate notes
+      if (existingSchein) {
+        // ✅ Update existing: merge and deduplicate notes if new ones exist
+        if (parsedNotes.length > 0) {
           const combinedNotes = [
             ...(existingSchein.notes || []),
             ...parsedNotes,
@@ -45,16 +45,16 @@ export async function POST(req) {
           await CarSchein.findByIdAndUpdate(existingSchein._id, {
             $set: { notes: uniqueNotes },
           });
-        } else {
-          // ✅ Create new CarSchein entry
-          await CarSchein.create({
-            carName: carType,
-            finNumber: vin,
-            notes: parsedNotes,
-            assignedTo: "",
-            owner: issuer === "karim" ? "Karim" : "Alawie",
-          });
         }
+      } else {
+        // ✅ Create new CarSchein even if notes are empty
+        await CarSchein.create({
+          carName: carType,
+          finNumber: vin,
+          notes: parsedNotes,
+          assignedTo: "",
+          owner: issuer === "karim" ? "Karim" : "Alawie",
+        });
       }
     }
 
