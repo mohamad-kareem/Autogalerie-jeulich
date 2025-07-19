@@ -786,7 +786,7 @@ export default function CarScheinPage() {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Notizen / Aufgaben (jede Zeile = 1 Aufgabe)
+                    Aufgaben (jede Zeile = 1 Aufgabe)
                   </label>
                   <textarea
                     rows={4}
@@ -895,11 +895,11 @@ export default function CarScheinPage() {
           <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl overflow-hidden">
             {isEditing ? (
               <form
-                className="px-6 py-6 grid grid-cols-2 md:grid-cols-2 gap-6"
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleUpdateInfo();
                 }}
+                className="px-6 py-6 grid grid-cols-1 sm:grid-cols-2 gap-6"
               >
                 {/* Fahrzeugname */}
                 <div>
@@ -915,10 +915,11 @@ export default function CarScheinPage() {
                         carName: e.target.value,
                       }))
                     }
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                     placeholder="z.B. BMW 320i Touring"
                   />
                 </div>
+
                 {/* FIN Nummer */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -933,7 +934,7 @@ export default function CarScheinPage() {
                         finNumber: e.target.value,
                       }))
                     }
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                     placeholder="WBA3A9G58FNR12345"
                   />
                 </div>
@@ -952,21 +953,21 @@ export default function CarScheinPage() {
                         assignedTo: e.target.value,
                       }))
                     }
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                     placeholder="z.B. Toni"
                   />
                 </div>
 
                 {/* Autohändler Auswahl */}
-                <div className="md:col-span-2">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Autohändler
                   </label>
-                  <div className="flex items-center gap-6 mt-1">
+                  <div className="flex flex-wrap gap-4 mt-2">
                     {["Karim", "Alawie"].map((ownerOption) => (
                       <label
                         key={ownerOption}
-                        className="inline-flex items-center gap-2 cursor-pointer"
+                        className="inline-flex items-center gap-2 text-sm text-gray-800"
                       >
                         <input
                           type="radio"
@@ -979,35 +980,37 @@ export default function CarScheinPage() {
                               owner: e.target.value,
                             }))
                           }
-                          className="h-4 w-4 text-indigo-600 border-gray-300"
+                          className="text-indigo-600 focus:ring-indigo-500"
                         />
-                        <span>{ownerOption}</span>
+                        {ownerOption}
                       </label>
                     ))}
                   </div>
                 </div>
 
-                {/* Notizen */}
-                <div className="md:col-span-2">
+                {/* Notizen / Aufgaben */}
+                <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Notizen / Aufgaben (jede Zeile = 1 Aufgabe)
+                    Aufgaben (jede Zeile = 1 Aufgabe)
                   </label>
                   <textarea
                     rows={4}
                     value={notesText}
                     onChange={(e) => setNotesText(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                    placeholder="- Reifen prüfen\n- TÜV buchen"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="- Reifen prüfen&#10;- TÜV buchen"
                   />
                 </div>
 
                 {/* Bild ändern */}
-                <div className="space-y-4 md:col-span-2">
+                <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Neues Bild (optional)
+                    Neues Bild
                   </label>
-                  <div className="flex items-center space-x-4">
-                    <div className="h-24 w-24 rounded-md bg-gray-100 overflow-hidden border border-gray-300 flex items-center justify-center">
+
+                  <div className="flex items-start gap-4">
+                    {/* Preview Box or "Kein Bild vorhanden" */}
+                    <div className="h-24 w-24 bg-gray-100 border border-gray-300 rounded-md overflow-hidden flex items-center justify-center text-center text-xs text-gray-500">
                       {previewUrl ? (
                         <img
                           src={previewUrl}
@@ -1021,13 +1024,12 @@ export default function CarScheinPage() {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span className="text-xs text-gray-500 px-2 text-center">
-                          Kein Bild vorhanden
-                        </span>
+                        <span className="p-1">Kein Bild vorhanden</span>
                       )}
                     </div>
 
-                    <div className="flex-1">
+                    {/* Right side: Button + Info vertically stacked */}
+                    <div className="flex flex-col gap-1">
                       <label className="cursor-pointer inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                         Bild wählen
                         <input
@@ -1043,25 +1045,15 @@ export default function CarScheinPage() {
                         />
                       </label>
 
-                      {previewUrl && (
-                        <button
-                          type="button"
-                          onClick={resetFileInput}
-                          className="ml-3 inline-flex items-center px-3 py-2 border border-gray-300 text-sm rounded-md bg-white hover:bg-gray-100"
-                        >
-                          Entfernen
-                        </button>
-                      )}
-
-                      <p className="mt-1 text-xs text-gray-500">
+                      <span className="text-xs text-gray-500">
                         PNG, JPG bis 10 MB
-                      </p>
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Buttons */}
-                <div className="md:col-span-2 flex justify-end gap-3 pt-4 border-t">
+                {/* Action Buttons */}
+                <div className="sm:col-span-2 flex justify-end gap-3 pt-4 border-t border-gray-200">
                   <button
                     type="submit"
                     className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
@@ -1122,7 +1114,7 @@ export default function CarScheinPage() {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Notizen / Aufgaben
+                    Aufgaben
                   </label>
                   <ul className="list-disc pl-5 text-gray-800">
                     {infoDoc.notes && infoDoc.notes.length > 0 ? (
