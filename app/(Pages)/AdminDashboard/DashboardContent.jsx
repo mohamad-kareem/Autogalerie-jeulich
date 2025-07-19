@@ -78,23 +78,74 @@ const DashboardContent = ({ user, onProfileClick }) => {
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {/* ✅ Admin-only modules */}
+            {/* ✅ Show these first for all users */}
+            <NavigationCard
+              href="/schlussel"
+              icon={<FiKey />}
+              title="Schlüssel"
+              description="Schlüsselverwaltung"
+              accentColor="cyan"
+            />
+            <NavigationCard
+              href="/kaufvertrag/auswahl"
+              icon={<FiFileText />}
+              title="Neuen Vertrag erstellen"
+              description="Erstelle einen neuen Kaufvertrag"
+              accentColor="purple"
+            />
+            <NavigationCard
+              href="/kaufvertrag/liste"
+              icon={<FiFileText />}
+              title="Vorherige Verträge"
+              description="Alle gespeicherten Kaufverträge anzeigen"
+              accentColor="gray"
+            />
+
+            {/* ✅ Admin-only: Archiv now comes right after the above three */}
+            {user.role === "admin" && (
+              <NavigationCard
+                href="/kaufvertrag/archiv"
+                icon={<FiArchive />}
+                title="Archiv"
+                description="Archivierte Kaufverträge anzeigen"
+                accentColor="red"
+              />
+            )}
+
+            {/* ✅ Admin-only: rest */}
+
+            {/* ✅ Other cards (order doesn't matter) */}
+            <NavigationCard
+              href="/punsh"
+              icon={<FiClock />}
+              title="Stempeluhr"
+              description="Ein- und Ausstempeln für Admins"
+              accentColor="teal"
+            />
+            <NavigationCard
+              href="/Auto-scheins"
+              icon={<FiFileText />}
+              title="Fahrzeugscheine"
+              description="Verwalte hochgeladene oder gespeicherte Fahrzeugscheine und Dokumente"
+              accentColor="blue"
+            />
+            <NavigationCard
+              href="/Posteingang"
+              icon={<FiCheckSquare />}
+              title="Posteingang"
+              description="Eingegangene Fahrzeugangebote und Nachrichten von Kunden"
+              accentColor="orange"
+            />
+            <NavigationCard
+              href="/PersonalData"
+              icon={<FiMapPin />}
+              title="Kontakte"
+              description="Telefonnummern und Adressen"
+              accentColor="indigo"
+            />
+
             {user.role === "admin" && (
               <>
-                <NavigationCard
-                  href="/kaufvertrag/archiv"
-                  icon={<FiArchive />}
-                  title="Archiv"
-                  description="Archivierte Kaufverträge anzeigen"
-                  accentColor="red"
-                />
-                <NavigationCard
-                  href="/Zeiterfassungsverwaltung"
-                  icon={<FiClock />}
-                  title="Zeiterfassung verwalten"
-                  description="Verwalte und analysiere Arbeitszeiten effizient"
-                  accentColor="amber"
-                />
                 <NavigationCard
                   href="/excel"
                   icon={<FiBook />}
@@ -111,60 +162,6 @@ const DashboardContent = ({ user, onProfileClick }) => {
                 />
               </>
             )}
-
-            {/* ✅ Authenticated user modules (admin + others) */}
-            <>
-              <NavigationCard
-                href="/schlussel"
-                icon={<FiKey />}
-                title="Schlüssel"
-                description="Schlüsselverwaltung"
-                accentColor="cyan"
-              />
-              <NavigationCard
-                href="/kaufvertrag/auswahl"
-                icon={<FiFileText />}
-                title="Neuen Vertrag erstellen"
-                description="Erstelle einen neuen Kaufvertrag"
-                accentColor="purple"
-              />
-              <NavigationCard
-                href="/kaufvertrag/liste"
-                icon={<FiFileText />}
-                title="Vorherige Verträge"
-                description="Alle gespeicherten Kaufverträge anzeigen"
-                accentColor="gray"
-              />
-              <NavigationCard
-                href="/punsh"
-                icon={<FiClock />}
-                title="Stempeluhr"
-                description="Ein- und Ausstempeln für Admins"
-                accentColor="teal"
-              />
-              <NavigationCard
-                href="/Auto-scheins"
-                icon={<FiFileText />}
-                title="Fahrzeugscheine"
-                description="Verwalte hochgeladene oder gespeicherte Fahrzeugscheine und Dokumente"
-                accentColor="blue"
-              />
-
-              <NavigationCard
-                href="/Posteingang"
-                icon={<FiCheckSquare />}
-                title="Posteingang"
-                description="Eingegangene Fahrzeugangebote und Nachrichten von Kunden"
-                accentColor="orange"
-              />
-              <NavigationCard
-                href="/PersonalData"
-                icon={<FiMapPin />}
-                title="Kontakte"
-                description="Telefonnummern und Adressen"
-                accentColor="indigo"
-              />
-            </>
           </div>
         </div>
       </div>
