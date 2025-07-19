@@ -7,6 +7,7 @@ import {
   ChevronUpDownIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { HiArchiveBoxArrowDown } from "react-icons/hi2";
 import { FiArrowLeft } from "react-icons/fi";
 export default function KaufvertragListe() {
   const [contracts, setContracts] = useState([]);
@@ -166,7 +167,7 @@ export default function KaufvertragListe() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-      <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 ">
+      <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-2 sm:px-2 lg:px-2 ">
         {/* Header */}
         <div className="mb-4 flex items-center space-x-2">
           <button
@@ -424,6 +425,33 @@ export default function KaufvertragListe() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                         {formatCurrency(contract.total)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center align-middle">
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const confirmArchive = confirm(
+                              "Diesen Vertrag archivieren?"
+                            );
+                            if (!confirmArchive) return;
+                            try {
+                              await fetch(`/api/kaufvertrag/${contract._id}`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ archived: true }),
+                              });
+                              setContracts((prev) =>
+                                prev.filter((item) => item._id !== contract._id)
+                              );
+                            } catch (err) {
+                              console.error("Fehler beim Archivieren:", err);
+                            }
+                          }}
+                          className="text-gray-500 hover:text-blue-600 transition-colors"
+                          title="Vertrag archivieren"
+                        >
+                          <HiArchiveBoxArrowDown className="w-4 h-4 mx-auto" />
+                        </button>
                       </td>
                     </tr>
                   ))

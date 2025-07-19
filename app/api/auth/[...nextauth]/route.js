@@ -70,6 +70,7 @@ export const authOptions = {
       session.user = {
         id: token.id,
         name: token.name,
+        email: token.email,
         role: token.role,
         isAdmin: token.isAdmin,
       };

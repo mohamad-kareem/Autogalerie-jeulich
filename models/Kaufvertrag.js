@@ -24,6 +24,10 @@ const KaufvertragSchema = new mongoose.Schema(
     total: Number,
     downPayment: Number,
     paymentNote: String, // ← ✅ ADD THIS LINE
+    archived: {
+      type: Boolean,
+      default: false,
+    },
     title: {
       type: String,
       default: "Kaufvertrag",
