@@ -9,13 +9,12 @@ import {
   FiCheckSquare,
   FiUserPlus,
   FiClock,
-  FiCalendar,
   FiMapPin,
   FiArchive,
 } from "react-icons/fi";
-
 import NavigationCard from "@/app/(components)/admin/NavigationCard";
 import Image from "next/image";
+
 const DashboardContent = ({ user, onProfileClick }) => {
   console.log("🧑‍💻 Client User Role:", user?.role);
 
@@ -79,34 +78,12 @@ const DashboardContent = ({ user, onProfileClick }) => {
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {/* ✅ Admin-only cards */}
+            {/* ✅ Admin-only modules */}
             {user.role === "admin" && (
               <>
                 <NavigationCard
-                  href="/schlussel"
-                  icon={<FiKey />}
-                  title="Schlüssel"
-                  description="Schlüsselverwaltung"
-                  accentColor="cyan"
-                />
-
-                <NavigationCard
-                  href="/kaufvertrag/auswahl" // Page to choose issuer before creating contract
-                  icon={<FiFileText />}
-                  title="Neuen Vertrag erstellen"
-                  description="Erstelle einen neuen Kaufvertrag"
-                  accentColor="purple"
-                />
-                <NavigationCard
-                  href="/kaufvertrag/liste" // Page showing submitted contracts
-                  icon={<FiFileText />}
-                  title="Vorherige Verträge"
-                  description="Alle gespeicherten Kaufverträge anzeigen"
-                  accentColor="gray"
-                />
-                <NavigationCard
-                  href="/kaufvertrag/archiv" // Page showing archived contracts
-                  icon={<FiArchive />} // You may need to import this icon from react-icons/fi
+                  href="/kaufvertrag/archiv"
+                  icon={<FiArchive />}
                   title="Archiv"
                   description="Archivierte Kaufverträge anzeigen"
                   accentColor="red"
@@ -118,53 +95,12 @@ const DashboardContent = ({ user, onProfileClick }) => {
                   description="Verwalte und analysiere Arbeitszeiten effizient"
                   accentColor="amber"
                 />
-
-                {/* ✅ Accessible to all authenticated users */}
-
-                <NavigationCard
-                  href="/punsh"
-                  icon={<FiClock />}
-                  title="Stempeluhr"
-                  description="Ein- und Ausstempeln für Admins"
-                  accentColor="teal"
-                />
-
-                {/* <NavigationCard
-              href="/Plate"
-              icon={<FiCalendar />}
-              title="Kennzeichen"
-              description="Temporäre Kennzeichen verwalten"
-              accentColor="indigo"
-            /> */}
-
-                <NavigationCard
-                  href="/Auto-scheins"
-                  icon={<FiFileText />} // or another fitting icon
-                  title="Fahrzeugscheine"
-                  description="Verwalte hochgeladene oder gespeicherte Fahrzeugscheine und Dokumente"
-                  accentColor="blue"
-                />
                 <NavigationCard
                   href="/excel"
                   icon={<FiBook />}
                   title="Buchhaltung"
                   description="Finanzdaten und Aufzeichnungen"
                   accentColor="green"
-                />
-                <NavigationCard
-                  href="/PersonalData"
-                  icon={<FiMapPin />}
-                  title="Kontakte"
-                  description="Telefonnummern und Adressen"
-                  accentColor="indigo"
-                />
-
-                <NavigationCard
-                  href="/Posteingang"
-                  icon={<FiCheckSquare />}
-                  title="Posteingang"
-                  description="Eingegangene Fahrzeugangebote und Nachrichten von Kunden"
-                  accentColor="orange"
                 />
                 <NavigationCard
                   href="/Reg"
@@ -175,6 +111,60 @@ const DashboardContent = ({ user, onProfileClick }) => {
                 />
               </>
             )}
+
+            {/* ✅ Authenticated user modules (admin + others) */}
+            <>
+              <NavigationCard
+                href="/schlussel"
+                icon={<FiKey />}
+                title="Schlüssel"
+                description="Schlüsselverwaltung"
+                accentColor="cyan"
+              />
+              <NavigationCard
+                href="/kaufvertrag/auswahl"
+                icon={<FiFileText />}
+                title="Neuen Vertrag erstellen"
+                description="Erstelle einen neuen Kaufvertrag"
+                accentColor="purple"
+              />
+              <NavigationCard
+                href="/kaufvertrag/liste"
+                icon={<FiFileText />}
+                title="Vorherige Verträge"
+                description="Alle gespeicherten Kaufverträge anzeigen"
+                accentColor="gray"
+              />
+              <NavigationCard
+                href="/punsh"
+                icon={<FiClock />}
+                title="Stempeluhr"
+                description="Ein- und Ausstempeln für Admins"
+                accentColor="teal"
+              />
+              <NavigationCard
+                href="/Auto-scheins"
+                icon={<FiFileText />}
+                title="Fahrzeugscheine"
+                description="Verwalte hochgeladene oder gespeicherte Fahrzeugscheine und Dokumente"
+                accentColor="blue"
+              />
+
+              <NavigationCard
+                href="/Posteingang"
+                icon={<FiCheckSquare />}
+                title="Posteingang"
+                description="Eingegangene Fahrzeugangebote und Nachrichten von Kunden"
+                accentColor="orange"
+              />
+              <NavigationCard
+                href="/PersonalData"
+                icon={<FiMapPin />}
+                title="Kontakte"
+                description="Telefonnummern und Adressen"
+                accentColor="indigo"
+              />
+            </>
           </div>
         </div>
       </div>
