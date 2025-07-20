@@ -23,17 +23,23 @@ export default function SubmissionsTable() {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const { data: session, status } = useSession();
+
   useEffect(() => {
-    fetchSubmissions();
-  }, []);
+    if (status === "authenticated" && session?.user?.id) {
+      fetchSubmissions();
+    }
+  }, [status, session?.user?.id]);
 
   const fetchSubmissions = async () => {
+    if (!session?.user?.id) return;
+
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/submissions?userId=${session?.user?.id}`);
+      const res = await fetch(`/api/submissions?userId=${session.user.id}`);
       const data = await res.json();
       setSubmissions(data.submissions);
-    } catch {
+    } catch (error) {
+      console.error("❌ Error loading submissions:", error);
       toast.error("Failed to load submissions");
     } finally {
       setIsLoading(false);
