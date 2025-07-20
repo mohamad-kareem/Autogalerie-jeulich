@@ -86,6 +86,14 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
               description="Schlüsselverwaltung"
               accentColor="cyan"
             />
+
+            <NavigationCard
+              href="/kaufvertrag/auswahl"
+              icon={<FiFileText />}
+              title="Neuen Vertrag erstellen"
+              description="Erstelle einen neuen Kaufvertrag"
+              accentColor="purple"
+            />
             <NavigationCard
               href="/Posteingang"
               icon={
@@ -112,15 +120,8 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
                   "Eingegangene Fahrzeugangebote"
                 )
               }
-              accentColor={unreadCount > 0 ? "indigo" : "gray"}
-              className={unreadCount > 0 ? "border-l-4 border-indigo-500" : ""}
-            />
-            <NavigationCard
-              href="/kaufvertrag/auswahl"
-              icon={<FiFileText />}
-              title="Neuen Vertrag erstellen"
-              description="Erstelle einen neuen Kaufvertrag"
-              accentColor="purple"
+              accentColor="indigo"
+              className="border-l-4 border-indigo-800"
             />
             <NavigationCard
               href="/kaufvertrag/liste"
@@ -165,7 +166,7 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
               icon={<FiFileText />}
               title="Fahrzeugscheine"
               description="Verwalte hochgeladene oder gespeicherte Fahrzeugscheine und Dokumente"
-              accentColor="blue"
+              accentColor="rose"
             />
             <NavigationCard
               href="/PersonalData"
