@@ -9,32 +9,40 @@ import ProfileEditModal from "@/app/(components)/admin/ProfileEditModal";
 export default function Dashboard() {
   const { data: session, status } = useSession(); // add status
   const [user, setUser] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
   const [loading, setLoading] = useState(true);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
-    const fetchAdminData = async () => {
+    const fetchData = async () => {
+      if (!session?.user?.id) return;
+
       try {
-        if (!session?.user?.id) return;
+        const [adminRes, submissionsRes] = await Promise.all([
+          fetch(`/api/admins?id=${session.user.id}`),
+          fetch("/api/submissions"),
+        ]);
 
-        const response = await fetch(`/api/admins?id=${session.user.id}`);
-        if (!response.ok) {
+        if (!adminRes.ok)
           throw new Error("Admin-Daten konnten nicht geladen werden");
-        }
 
-        const adminData = await response.json();
+        const adminData = await adminRes.json();
+        const { unreadCount } = await submissionsRes.json();
+
         setUser(adminData);
+        setUnreadCount(unreadCount || 0);
       } catch (error) {
-        toast.error(error.message);
+        toast.error(error.message || "Ein Fehler ist aufgetreten");
       } finally {
         setLoading(false);
       }
     };
 
     if (status === "authenticated") {
-      fetchAdminData();
+      fetchData();
     }
-  }, [session, status]);
+  }, [session?.user?.id, status]);
 
   const handleSaveProfile = (updatedData) => {
     setUser((prev) => ({ ...prev, ...updatedData }));
@@ -69,6 +77,7 @@ export default function Dashboard() {
     <>
       <DashboardContent
         user={user}
+        unreadCount={unreadCount}
         onProfileClick={() => setShowProfileModal(true)}
       />
 

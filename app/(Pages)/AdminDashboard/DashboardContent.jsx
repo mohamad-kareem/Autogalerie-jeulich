@@ -15,7 +15,7 @@ import {
 import NavigationCard from "@/app/(components)/admin/NavigationCard";
 import Image from "next/image";
 
-const DashboardContent = ({ user, onProfileClick }) => {
+const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
   console.log("🧑‍💻 Client User Role:", user?.role);
 
   return (
@@ -124,6 +124,36 @@ const DashboardContent = ({ user, onProfileClick }) => {
 
             {/* ✅ Other cards (order doesn't matter) */}
             <NavigationCard
+              href="/Posteingang"
+              icon={
+                <div className="relative">
+                  <FiCheckSquare />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-ping"></span>
+                  )}
+                </div>
+              }
+              title={
+                unreadCount > 0 ? (
+                  <span className="font-semibold">Posteingang</span>
+                ) : (
+                  "Posteingang"
+                )
+              }
+              description={
+                typeof unreadCount === "number" && unreadCount > 0 ? (
+                  <span className="text-red-600 font-bold text-xl">{`${unreadCount} neue Anfrage${
+                    unreadCount === 1 ? "" : "n"
+                  }`}</span>
+                ) : (
+                  "Eingegangene Fahrzeugangebote"
+                )
+              }
+              accentColor={unreadCount > 0 ? "indigo" : "gray"}
+              className={unreadCount > 0 ? "border-l-4 border-indigo-500" : ""}
+            />
+
+            <NavigationCard
               href="/punsh"
               icon={<FiClock />}
               title="Stempeluhr"
@@ -138,18 +168,11 @@ const DashboardContent = ({ user, onProfileClick }) => {
               accentColor="blue"
             />
             <NavigationCard
-              href="/Posteingang"
-              icon={<FiCheckSquare />}
-              title="Posteingang"
-              description="Eingegangene Fahrzeugangebote und Nachrichten von Kunden"
-              accentColor="orange"
-            />
-            <NavigationCard
               href="/PersonalData"
               icon={<FiMapPin />}
               title="Kontakte"
               description="Telefonnummern und Adressen"
-              accentColor="indigo"
+              accentColor="orange"
             />
 
             {user.role === "admin" && (

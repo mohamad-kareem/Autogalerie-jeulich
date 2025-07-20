@@ -37,7 +37,7 @@ export async function POST(request) {
       subject: subject || "",
       message: message || "",
       date: date ? new Date(date) : null,
-
+      isRead: false,
       carName: carName || "",
       carLink: carLink || "",
     });

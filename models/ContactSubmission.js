@@ -11,6 +11,10 @@ const ContactSubmissionSchema = new mongoose.Schema(
 
     carName: { type: String },
     carLink: { type: String },
+    isRead: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

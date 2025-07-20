@@ -32,11 +32,25 @@ export default function SubmissionsTable() {
     try {
       const res = await fetch("/api/submissions");
       const data = await res.json();
-      setSubmissions(data);
+      setSubmissions(data.submissions); // ✅ Fix is here
     } catch {
       toast.error("Failed to load submissions");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const markAsRead = async (id) => {
+    try {
+      await fetch(`/api/submissions?id=${id}`, {
+        method: "PATCH",
+      });
+      // Optional: update local state to reflect the read status
+      setSubmissions((prev) =>
+        prev.map((s) => (s._id === id ? { ...s, isRead: true } : s))
+      );
+    } catch (err) {
+      console.warn("Failed to mark as read");
     }
   };
 
@@ -125,11 +139,25 @@ export default function SubmissionsTable() {
             >
               <div className="col-span-3">
                 <p className="font-medium text-gray-900 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-black-100 text-black-800">
+                  <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-200 text-white text-sm font-semibold shadow-sm">
                     {submission.name?.charAt(0).toUpperCase() || "A"}
                   </span>
+
                   <span className="truncate">{submission.name || "—"}</span>
+
+                  {/* 🔴 UNREAD DOT */}
+                  {!submission.isRead && (
+                    <span
+                      className="ml-2 relative flex h-3 w-3"
+                      title="Ungelesen"
+                      aria-label="Ungelesen"
+                    >
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600 shadow"></span>
+                    </span>
+                  )}
                 </p>
+
                 <div className="text-sm text-gray-500 mt-1 flex items-center gap-1">
                   <FiMail className="text-black-400" size={14} />
                   <span className="truncate">{submission.email || "—"}</span>
@@ -162,7 +190,10 @@ export default function SubmissionsTable() {
               </div>
               <div className="col-span-1 flex justify-end items-center gap-1">
                 <button
-                  onClick={() => setSelectedSubmission(submission)}
+                  onClick={() => {
+                    setSelectedSubmission(submission);
+                    if (!submission.isRead) markAsRead(submission._id);
+                  }}
                   className="p-2 text-gray-500 hover:text-white hover:bg-red-600 rounded-md transition-colors duration-200"
                   title="Details anzeigen"
                 >
@@ -189,13 +220,22 @@ export default function SubmissionsTable() {
             >
               <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-black-100 text-black-800">
+                  <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-300 text-white text-sm font-semibold shadow-sm">
                     {submission.name?.charAt(0).toUpperCase() || "A"}
-                  </div>
+                  </span>
+
                   <div>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-gray-900 flex items-center gap-1">
                       {submission.name || "—"}
+                      {!submission.isRead && (
+                        <span
+                          className="ml-2 inline-flex h-2 w-2 rounded-full bg-red-600 ring-2 ring-white shadow-sm"
+                          title="Ungelesen"
+                          aria-label="Ungelesen"
+                        ></span>
+                      )}
                     </p>
+
                     <p className="text-sm text-gray-500">
                       {submission.subject || "Kein Betreff"}
                     </p>
@@ -206,7 +246,10 @@ export default function SubmissionsTable() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setSelectedSubmission(submission)}
+                  onClick={() => {
+                    setSelectedSubmission(submission);
+                    if (!submission.isRead) markAsRead(submission._id);
+                  }}
                   className="p-2 text-gray-500 hover:text-black-600 rounded-md hover:bg-black-50 transition-colors"
                   title="Details anzeigen"
                 >

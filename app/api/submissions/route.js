@@ -10,7 +10,11 @@ export async function GET() {
       .sort({ createdAt: -1 })
       .lean();
 
-    return NextResponse.json(submissions, { status: 200 });
+    const unreadCount = await ContactSubmission.countDocuments({
+      isRead: false,
+    });
+
+    return NextResponse.json({ submissions, unreadCount }, { status: 200 }); // ✅ return both
   } catch (error) {
     console.error("Error fetching contact submissions:", error);
     return NextResponse.json(
@@ -53,5 +57,38 @@ export async function DELETE(request) {
       { success: false, message: "Failed to delete contact submission" },
       { status: 500 }
     );
+  }
+}
+export async function PATCH(request) {
+  await connectDB();
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: "ID missing" },
+        { status: 400 }
+      );
+    }
+
+    const updated = await ContactSubmission.findByIdAndUpdate(
+      id,
+      { isRead: true },
+      { new: true }
+    );
+
+    if (!updated) {
+      return NextResponse.json(
+        { success: false, message: "Not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("PATCH error:", error);
+    return NextResponse.json({ success: false }, { status: 500 });
   }
 }
