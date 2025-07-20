@@ -87,6 +87,35 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
               accentColor="cyan"
             />
             <NavigationCard
+              href="/Posteingang"
+              icon={
+                <div className="relative">
+                  <FiCheckSquare />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-ping"></span>
+                  )}
+                </div>
+              }
+              title={
+                unreadCount > 0 ? (
+                  <span className="font-semibold">Posteingang</span>
+                ) : (
+                  "Posteingang"
+                )
+              }
+              description={
+                typeof unreadCount === "number" && unreadCount > 0 ? (
+                  <span className="text-red-600 font-bold text-xl">{`${unreadCount} neue Anfrage${
+                    unreadCount === 1 ? "" : "n"
+                  }`}</span>
+                ) : (
+                  "Eingegangene Fahrzeugangebote"
+                )
+              }
+              accentColor={unreadCount > 0 ? "indigo" : "gray"}
+              className={unreadCount > 0 ? "border-l-4 border-indigo-500" : ""}
+            />
+            <NavigationCard
               href="/kaufvertrag/auswahl"
               icon={<FiFileText />}
               title="Neuen Vertrag erstellen"
@@ -123,35 +152,6 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
             )}
 
             {/* ✅ Other cards (order doesn't matter) */}
-            <NavigationCard
-              href="/Posteingang"
-              icon={
-                <div className="relative">
-                  <FiCheckSquare />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-ping"></span>
-                  )}
-                </div>
-              }
-              title={
-                unreadCount > 0 ? (
-                  <span className="font-semibold">Posteingang</span>
-                ) : (
-                  "Posteingang"
-                )
-              }
-              description={
-                typeof unreadCount === "number" && unreadCount > 0 ? (
-                  <span className="text-red-600 font-bold text-xl">{`${unreadCount} neue Anfrage${
-                    unreadCount === 1 ? "" : "n"
-                  }`}</span>
-                ) : (
-                  "Eingegangene Fahrzeugangebote"
-                )
-              }
-              accentColor={unreadCount > 0 ? "indigo" : "gray"}
-              className={unreadCount > 0 ? "border-l-4 border-indigo-500" : ""}
-            />
 
             <NavigationCard
               href="/punsh"
