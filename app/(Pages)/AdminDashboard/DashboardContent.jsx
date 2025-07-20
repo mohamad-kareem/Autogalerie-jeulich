@@ -29,9 +29,10 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
                 Willkommen zurück,{" "}
                 <span className="text-red-900">{user.name.split(" ")[0]}</span>!
               </h1>
-              <p className="mt-1 text-xs md:text-sm text-gray-600">
+              <p className="hidden md:block mt-1 text-sm text-gray-600">
                 Sie haben vollen administrativen Zugriff auf das System
               </p>
+
               <div className="mt-2 h-0.5 md:h-1 w-12 md:w-16 rounded-full bg-gradient-to-br from-red-600 to-black/80"></div>
             </div>
             <div className="mt-3 md:mt-4 flex items-center space-x-3 md:space-x-4">
