@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { X, ChevronRight, Clock, CheckCircle } from "lucide-react";
-import bclasse from "@/app/(assets)/bclasse.png";
-import beetle from "@/app/(assets)/beetle.png";
+import corsa1 from "@/app/(assets)/corsa1.png";
+import test from "@/app/(assets)/test.png";
+
 import micra from "@/app/(assets)/micra.png";
 
 const PreisPopup = () => {
@@ -19,7 +20,7 @@ const PreisPopup = () => {
       description: "Exklusive Ersparnisse bei ausgewählten Modellen",
       image: micra,
       preis: "9.999€",
-      gültigBis: "10.07.2025",
+      gültigBis: "29.07.2025",
       ctaText: "Fahrzeugdetails ansehen",
       ctaLink:
         "https://xn--autogaleriejlich-uzb.de/gebrauchtwagen/685ff99a3f637c5db42b11f4",
@@ -29,24 +30,24 @@ const PreisPopup = () => {
       id: 2,
       title: "Sommerangebot 2025",
       description: "Exklusive Ersparnisse bei ausgewählten Modellen",
-      image: beetle,
-      preis: "11.999€",
-      gültigBis: "10.07.2025",
+      image: test,
+      preis: "10.999€",
+      gültigBis: "29.07.2025",
       ctaText: "Fahrzeugdetails ansehen",
       ctaLink:
-        "https://xn--autogaleriejlich-uzb.de/gebrauchtwagen/685d0e7c3f637c5db429fbbe",
+        "https://xn--autogaleriejlich-uzb.de/gebrauchtwagen/68793479e4a8d63b6d1f8d57",
       highlight: "Limitiertes Angebot",
     },
     {
       id: 3,
       title: "Sommerangebot 2025",
       description: "Exklusive Ersparnisse bei ausgewählten Modellen",
-      image: bclasse,
-      preis: "5.799€",
-      gültigBis: "10.07.2025",
+      image: corsa1,
+      preis: "6.999 €",
+      gültigBis: "29.07.2025",
       ctaText: "Fahrzeugdetails ansehen",
       ctaLink:
-        "https://xn--autogaleriejlich-uzb.de/gebrauchtwagen/685bbd8d3f637c5db4298a3f",
+        "https://xn--autogaleriejlich-uzb.de/gebrauchtwagen/686415c73f637c5db42c8d8d",
       highlight: "Limitiertes Angebot",
     },
   ];
