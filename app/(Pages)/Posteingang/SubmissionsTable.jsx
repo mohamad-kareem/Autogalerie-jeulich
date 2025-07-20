@@ -17,12 +17,12 @@ import {
   FiNavigation,
 } from "react-icons/fi";
 import { FaCar } from "react-icons/fa";
-
+import { useSession } from "next-auth/react";
 export default function SubmissionsTable() {
   const [submissions, setSubmissions] = useState([]);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
+  const { data: session, status } = useSession();
   useEffect(() => {
     fetchSubmissions();
   }, []);
@@ -30,9 +30,9 @@ export default function SubmissionsTable() {
   const fetchSubmissions = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/submissions");
+      const res = await fetch(`/api/submissions?userId=${session?.user?.id}`);
       const data = await res.json();
-      setSubmissions(data.submissions); // ✅ Fix is here
+      setSubmissions(data.submissions);
     } catch {
       toast.error("Failed to load submissions");
     } finally {
@@ -42,10 +42,9 @@ export default function SubmissionsTable() {
 
   const markAsRead = async (id) => {
     try {
-      await fetch(`/api/submissions?id=${id}`, {
+      await fetch(`/api/submissions?id=${id}&userId=${session?.user?.id}`, {
         method: "PATCH",
       });
-      // Optional: update local state to reflect the read status
       setSubmissions((prev) =>
         prev.map((s) => (s._id === id ? { ...s, isRead: true } : s))
       );

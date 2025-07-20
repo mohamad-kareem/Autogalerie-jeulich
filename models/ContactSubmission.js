@@ -11,10 +11,8 @@ const ContactSubmissionSchema = new mongoose.Schema(
 
     carName: { type: String },
     carLink: { type: String },
-    isRead: {
-      type: Boolean,
-      default: false,
-    },
+
+    readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "Admin" }],
   },
   { timestamps: true }
 );

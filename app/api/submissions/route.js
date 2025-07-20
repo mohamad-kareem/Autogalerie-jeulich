@@ -2,19 +2,28 @@ import { connectDB } from "@/lib/mongodb";
 import ContactSubmission from "@/models/ContactSubmission";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request) {
   await connectDB();
 
   try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+
     const submissions = await ContactSubmission.find()
       .sort({ createdAt: -1 })
       .lean();
 
-    const unreadCount = await ContactSubmission.countDocuments({
-      isRead: false,
-    });
+    const enrichedSubmissions = submissions.map((s) => ({
+      ...s,
+      isRead: s.readBy?.some((id) => id.toString() === userId) ?? false,
+    }));
 
-    return NextResponse.json({ submissions, unreadCount }, { status: 200 }); // ✅ return both
+    const unreadCount = enrichedSubmissions.filter((s) => !s.isRead).length;
+
+    return NextResponse.json(
+      { submissions: enrichedSubmissions, unreadCount },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error fetching contact submissions:", error);
     return NextResponse.json(
@@ -65,17 +74,18 @@ export async function PATCH(request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
+    const userId = searchParams.get("userId");
 
-    if (!id) {
+    if (!id || !userId) {
       return NextResponse.json(
-        { success: false, message: "ID missing" },
+        { success: false, message: "ID or userId missing" },
         { status: 400 }
       );
     }
 
     const updated = await ContactSubmission.findByIdAndUpdate(
       id,
-      { isRead: true },
+      { $addToSet: { readBy: userId } }, // prevents duplicate entries
       { new: true }
     );
 
