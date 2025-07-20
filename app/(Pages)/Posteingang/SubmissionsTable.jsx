@@ -18,7 +18,7 @@ import {
 } from "react-icons/fi";
 import { FaCar } from "react-icons/fa";
 import { useSession } from "next-auth/react";
-export default function SubmissionsTable() {
+export default function SubmissionsTable({ setUnreadCount }) {
   const [submissions, setSubmissions] = useState([]);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,6 +38,12 @@ export default function SubmissionsTable() {
       const res = await fetch(`/api/submissions?userId=${session.user.id}`);
       const data = await res.json();
       setSubmissions(data.submissions);
+
+      // 👇 Update unread count in parent
+      if (setUnreadCount) {
+        const unread = data.submissions.filter((s) => !s.isRead).length;
+        setUnreadCount(unread);
+      }
     } catch (error) {
       console.error("❌ Error loading submissions:", error);
       toast.error("Failed to load submissions");
@@ -51,9 +57,15 @@ export default function SubmissionsTable() {
       await fetch(`/api/submissions?id=${id}&userId=${session?.user?.id}`, {
         method: "PATCH",
       });
+
       setSubmissions((prev) =>
         prev.map((s) => (s._id === id ? { ...s, isRead: true } : s))
       );
+
+      // ⬇️ Decrease unread count in AdminDashboard immediately
+      if (setUnreadCount) {
+        setUnreadCount((prev) => Math.max(prev - 1, 0));
+      }
     } catch (err) {
       console.warn("Failed to mark as read");
     }

@@ -21,7 +21,7 @@ export default function Dashboard() {
       try {
         const [adminRes, submissionsRes] = await Promise.all([
           fetch(`/api/admins?id=${session.user.id}`),
-          fetch("/api/submissions"),
+          fetch(`/api/submissions?userId=${session.user.id}`),
         ]);
 
         if (!adminRes.ok)
@@ -78,6 +78,7 @@ export default function Dashboard() {
       <DashboardContent
         user={user}
         unreadCount={unreadCount}
+        setUnreadCount={setUnreadCount}
         onProfileClick={() => setShowProfileModal(true)}
       />
 

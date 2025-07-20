@@ -11,7 +11,7 @@ import SubmissionsTable from "./SubmissionsTable";
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const [viewMode, setViewMode] = useState("submissions"); // 'cars' or 'submissions'
-
+  const [unreadCount, setUnreadCount] = useState(0);
   if (status === "loading") {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -81,7 +81,11 @@ export default function AdminDashboard() {
         </div>
 
         {/* Main Content */}
-        {viewMode === "cars" ? <CarsTable /> : <SubmissionsTable />}
+        {viewMode === "cars" ? (
+          <CarsTable />
+        ) : (
+          <SubmissionsTable setUnreadCount={setUnreadCount} />
+        )}
       </div>
     </div>
   );
