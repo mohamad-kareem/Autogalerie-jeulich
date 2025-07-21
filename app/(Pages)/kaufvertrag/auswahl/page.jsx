@@ -16,7 +16,7 @@ export default function KaufvertragAuswahlPage() {
     <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow rounded">
       <h1 className="text-xl font-bold mb-4">Wähle den Vertragstyp</h1>
       <div className="space-y-2">
-        <label className="block">
+        {/* <label className="block">
           <input
             type="radio"
             name="issuer"
@@ -25,7 +25,7 @@ export default function KaufvertragAuswahlPage() {
             className="mr-2"
           />
           Hussein Karim
-        </label>
+        </label> */}
         <label className="block">
           <input
             type="radio"
