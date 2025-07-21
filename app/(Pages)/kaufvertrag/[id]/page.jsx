@@ -645,8 +645,8 @@ export default function KaufvertragDetail() {
               </div>
               <div className="bg-gray-600 p-2 md:text-right print:text-right print:p-1">
                 <p className="font-semibold text-[13px]">Commerzbank</p>
-                <p className="text-[13px]">IBAN: DE42 3904 0013 0446 9508 00</p>
-                <p className="text-[13px]">Ust-IdNr.:DE317574583</p>
+                <p className="text-[13px]">IBAN: DE91 3904 0013 0444 4964 00</p>
+                <p className="text-[13px]">USt-IdNr.: DE305423608</p>
               </div>
             </>
           )}
