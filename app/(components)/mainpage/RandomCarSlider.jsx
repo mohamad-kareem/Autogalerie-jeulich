@@ -56,7 +56,7 @@ export default function RandomCarSlider() {
 
   return (
     <section className="w-full bg-gray-50 px-4 sm:px-6 lg:px-16 py-10 sm:py-16 shadow-[0_-4px_8px_-4px_rgba(0,0,0,0.08)]">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-10 gap-2">
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900">
