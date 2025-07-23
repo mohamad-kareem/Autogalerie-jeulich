@@ -37,7 +37,7 @@ export default function WhyUs() {
         </h2>
 
         {/* Static Gray Line */}
-        <div className="hidden md:block absolute top-[220px] bottom-[250px] left-1/2 transform -translate-x-1/2 w-[2px] bg-gray-300 z-0" />
+        <div className="hidden md:block absolute top-[220px] bottom-[285px] left-1/2 transform -translate-x-1/2 w-[2px] bg-gray-300 z-0" />
 
         {/* Dynamic Red Line */}
         <div

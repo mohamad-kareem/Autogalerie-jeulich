@@ -27,51 +27,54 @@ export default function LandingSlide() {
           <div className="mt-2 w-24 h-1 bg-red-600 rounded-full mx-auto" />
         </div>
 
-        {/* Scroll Arrows */}
-        <button
-          onClick={() => scroll("left")}
-          className="hidden md:flex absolute left-2 top-2/3 -translate-y-1/2 z-20 bg-white text-red-600 border border-gray-300 shadow-md hover:bg-red-50 transition-all p-2 rounded-full"
-          aria-label="Scroll left"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
+        {/* Slider Container with Arrows */}
+        <div className="relative">
+          {/* Scroll Arrows */}
+          <button
+            onClick={() => scroll("left")}
+            className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white text-red-600 border border-gray-300 shadow-md hover:bg-red-50 transition-all p-2 rounded-full"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
 
-        <button
-          onClick={() => scroll("right")}
-          className="hidden md:flex absolute right-2 top-2/3 -translate-y-1/2 z-20 bg-white text-red-600 border border-gray-300 shadow-md hover:bg-red-50 transition-all p-2 rounded-full"
-          aria-label="Scroll right"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
+          <button
+            onClick={() => scroll("right")}
+            className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white text-red-600 border border-gray-300 shadow-md hover:bg-red-50 transition-all p-2 rounded-full"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
 
-        {/* Scrollable Category Cards */}
-        <div
-          id="scroll-container"
-          className="flex gap-6 overflow-x-auto scroll-smooth scrollbar-hide px-1 py-2"
-        >
-          {popularCategories.map((category, index) => (
-            <div
-              key={index}
-              className="min-w-[180px] sm:min-w-[220px] md:min-w-[250px] bg-white border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl p-5 flex-shrink-0 text-center"
-            >
-              <div className="w-28 h-28 mx-auto mb-4 rounded-lg overflow-hidden">
-                <Image
-                  src={category.image}
-                  alt={category.alt}
-                  width={100}
-                  height={100}
-                  unoptimized
-                  className="object-contain w-full h-full transition-transform duration-300 hover:scale-105"
-                />
+          {/* Scrollable Category Cards */}
+          <div
+            id="scroll-container"
+            className="flex gap-6 overflow-x-auto scroll-smooth scrollbar-hide px-1 py-2"
+          >
+            {popularCategories.map((category, index) => (
+              <div
+                key={index}
+                className="min-w-[180px] sm:min-w-[220px] md:min-w-[250px] bg-white border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl p-5 flex-shrink-0 text-center"
+              >
+                <div className="w-28 h-28 mx-auto mb-4 rounded-lg overflow-hidden">
+                  <Image
+                    src={category.image}
+                    alt={category.alt}
+                    width={100}
+                    height={100}
+                    unoptimized
+                    className="object-contain w-full h-full transition-transform duration-300 hover:scale-105"
+                  />
+                </div>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+                  {category.title}
+                </h3>
+                <p className="text-sm text-red-600 mt-1">
+                  {category.description}
+                </p>
               </div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                {category.title}
-              </h3>
-              <p className="text-sm text-red-600 mt-1">
-                {category.description}
-              </p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>
