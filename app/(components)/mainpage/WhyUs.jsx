@@ -37,13 +37,13 @@ export default function WhyUs() {
         </h2>
 
         {/* Static Gray Line */}
-        <div className="hidden md:block absolute top-[220px] bottom-[285px] left-1/2 transform -translate-x-1/2 w-[2px] bg-gray-300 z-0" />
+        <div className="hidden md:block absolute top-[260px] bottom-[285px] left-1/2 transform -translate-x-1/2 w-[2px] bg-gray-300 z-0" />
 
         {/* Dynamic Red Line */}
         <div
-          className="hidden md:block absolute top-[220px] left-1/2 transform -translate-x-1/2 w-[2px] bg-red-600 z-10 transition-all duration-300"
+          className="hidden md:block absolute top-[260px] left-1/2 transform -translate-x-1/2 w-[2px] bg-red-600 z-10 transition-all duration-300"
           style={{
-            height: `calc(${scrollProgress} * (90% - 350px))`,
+            height: `calc(${scrollProgress} * (90% - 420px))`,
           }}
         />
 
