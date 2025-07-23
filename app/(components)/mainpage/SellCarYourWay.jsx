@@ -32,7 +32,7 @@ export default function SellCarYourWay() {
         initial={{ opacity: 0, y: 40 }}
         animate={hasAnimated ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center relative z-10"
+        className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center relative z-10"
       >
         {/* Text content */}
         <div className="space-y-6 md:space-y-8 order-2 md:order-1">

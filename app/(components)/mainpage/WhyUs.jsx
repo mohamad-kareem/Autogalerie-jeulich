@@ -27,8 +27,11 @@ export default function WhyUs() {
   }, []);
 
   return (
-    <section className="relative w-full py-12 px-4 sm:px-6 lg:px-16 pb-30 pt-30 overflow-hidden bg-black">
-      <div className="max-w-7xl mx-auto relative z-10" ref={containerRef}>
+    <section className="relative w-full py-12  lg:px-16 pb-30 pt-30 overflow-hidden bg-black">
+      <div
+        className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10"
+        ref={containerRef}
+      >
         <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-center mb-12 text-white">
           So funktioniert der Autoankauf bei Autogalerie Jülich
         </h2>

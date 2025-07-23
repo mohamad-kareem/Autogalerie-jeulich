@@ -108,7 +108,7 @@ const MobMenu = ({ Menus }) => {
                       ) : (
                         <Link
                           href={href || "#"}
-                          className="text-lg flex justify-between items-center p-4 hover:bg-red-500 hover:text-white rounded-md cursor-pointer transition-colors block"
+                          className="text-lg  justify-between items-center p-4 hover:bg-red-500 hover:text-white rounded-md cursor-pointer transition-colors block"
                           onClick={toggleDrawer}
                         >
                           {name}
