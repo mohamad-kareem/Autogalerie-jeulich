@@ -34,7 +34,7 @@ export default function LandingChoices() {
 
   return (
     <section className="w-full bg-gray-50 py-12 sm:py-16 px-4 sm:px-6 lg:px-16">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Heading */}
         <div className="text-center mb-12">
           <motion.h2

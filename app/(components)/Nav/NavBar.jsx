@@ -145,7 +145,7 @@ export default function NavBar() {
           : "h-16 bg-gradient-to-br from-black/60 to-red-800"
       }`}
     >
-      <nav className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto h-full flex items-center justify-between px-2 sm:px-6">
+      <nav className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto h-full flex items-center justify-between px-2 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 ">
         {/* Logo */}
         <Link href="/" className="flex items-center flex-shrink-0 print:hidden">
           <Image
