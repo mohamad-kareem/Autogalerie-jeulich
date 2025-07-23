@@ -34,7 +34,7 @@ export default function LandingChoices() {
   ];
 
   return (
-    <section className="relative w-full bg-gray-50 py-14 sm:py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <section className="relative w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-16 bg-gray-50  overflow-hidden">
       <div className="absolute inset-0 bg-[url('/bg-pattern.svg')] opacity-5 pointer-events-none" />
 
       <div className="relative max-w-screen-xl mx-auto">
