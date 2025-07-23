@@ -54,6 +54,7 @@ const ImageSlider = ({
             priority
             quality={90}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px"
+            unoptimized
           />
         </div>
 

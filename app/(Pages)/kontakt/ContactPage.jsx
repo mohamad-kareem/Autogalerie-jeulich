@@ -114,6 +114,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                 fill
                 className="object-cover"
                 priority
+                unoptimized
               />
             </div>
 

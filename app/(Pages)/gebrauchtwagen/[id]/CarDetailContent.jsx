@@ -1092,6 +1092,7 @@ function CarDetailContent({ car }) {
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 48px, 64px"
+                        unoptimized
                       />
                     </div>
                     <div>

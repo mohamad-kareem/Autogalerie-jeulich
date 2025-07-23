@@ -135,6 +135,7 @@ export default function SellCarYourWay() {
               className="object-contain"
               loading="lazy"
               sizes="(max-width: 768px) 100vw, 50vw"
+              unoptimized
             />
             <div className="absolute  " />
 

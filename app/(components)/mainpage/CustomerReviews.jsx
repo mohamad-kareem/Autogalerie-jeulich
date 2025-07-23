@@ -54,6 +54,7 @@ export default function Reviews() {
                     width={40}
                     height={40}
                     className="w-full h-full object-cover"
+                    unoptimized
                   />
                 </div>
                 <div>

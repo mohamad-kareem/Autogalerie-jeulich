@@ -17,7 +17,7 @@ export default function LandingSlide() {
   };
 
   return (
-    <section className="relative w-full py-16 px-4 sm:px-6 lg:px-8 overflow-hidden bg-gray-50">
+    <section className="relative  overflow-hidden bg-gray-50">
       <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-16 relative">
         {/* Title */}
         <div className="text-center mb-12">
@@ -60,6 +60,7 @@ export default function LandingSlide() {
                   alt={category.alt}
                   width={100}
                   height={100}
+                  unoptimized
                   className="object-contain w-full h-full transition-transform duration-300 hover:scale-105"
                 />
               </div>

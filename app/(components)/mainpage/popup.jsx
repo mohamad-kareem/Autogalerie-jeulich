@@ -108,6 +108,7 @@ const PreisPopup = () => {
               priority
               quality={100}
               sizes="(max-width: 1024px) 100vw, 50vw"
+              unoptimized
             />
 
             <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 text-white">

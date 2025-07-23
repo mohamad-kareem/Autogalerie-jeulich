@@ -75,6 +75,7 @@ export default function LandingChoices() {
                 fill
                 className="object-cover"
                 priority
+                unoptimized
               />
               <div className="absolute inset-0 bg-black/30" />
               <div className="absolute bottom-4 left-4 text-white z-10">

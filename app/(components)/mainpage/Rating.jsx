@@ -85,6 +85,7 @@ export default function Rating() {
                 height={360}
                 className="w-full h-auto rounded-xl"
                 loading="lazy"
+                unoptimized
               />
             </div>
 

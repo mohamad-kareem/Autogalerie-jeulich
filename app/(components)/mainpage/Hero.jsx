@@ -107,7 +107,7 @@ export default function Hero() {
       {/* Mobile-optimized background */}
       <div className="absolute inset-0 bg-[url('/bg-pattern.svg')] opacity-10" />
 
-      <div className="relative w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto  px-4 sm:px-6 lg:px-8 py-8 md:py-16 lg:py-24 flex flex-col lg:flex-row items-center gap-6 md:gap-12">
+      <div className="relative w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto  px-4 sm:px-6 lg:px-8 py-8 md:py-16 lg:py-24 flex flex-col lg:flex-row items-center gap-6 md:gap-12 mt-8">
         {/* Content section - optimized stacking on mobile */}
         <div className="w-full lg:w-1/2 text-center lg:text-left space-y-4 md:space-y-6 lg:space-y-8 order-2 lg:order-1">
           <motion.div
@@ -230,6 +230,7 @@ export default function Hero() {
                   className="object-cover"
                   priority
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  unoptimized
                 />
                 <div
                   className="absolute inset-0"
