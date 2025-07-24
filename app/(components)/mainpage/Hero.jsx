@@ -16,7 +16,7 @@ import {
 import SimpleContactFormModal from "../helpers/SimpleContactFormModal";
 import Bild2 from "../../(assets)/Peugeot.png";
 import Bild3 from "../../(assets)/corsa1.png";
-import Bild4 from "../../(assets)/dacia4.png";
+import Bild4 from "../../(assets)/promo3.png";
 import Bild5 from "../../(assets)/Rate.png";
 export default function Hero() {
   const slides = [

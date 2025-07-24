@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { X, ChevronRight, Clock, CheckCircle } from "lucide-react";
 import corsa1 from "@/app/(assets)/corsa1.png";
-import test from "@/app/(assets)/test.png";
+import promo3 from "@/app/(assets)/promo3.png";
 
 import micra from "@/app/(assets)/micra.png";
 
@@ -30,7 +30,7 @@ const PreisPopup = () => {
       id: 2,
       title: "Sommerangebot 2025",
       description: "Exklusive Ersparnisse bei ausgewählten Modellen",
-      image: test,
+      image: promo3,
       preis: "10.999€",
       gültigBis: "29.07.2025",
       ctaText: "Fahrzeugdetails ansehen",
