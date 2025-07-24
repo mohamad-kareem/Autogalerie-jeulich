@@ -8,7 +8,33 @@ import Button from "@/app/(components)/helpers/Button";
 import { useSearchParams } from "next/navigation";
 
 export default function KaufvertragClientForm() {
-  const [form, setForm] = useState({ downPayment: 0, title: "Kaufvertrag" });
+  const initialFormState = {
+    downPayment: 0,
+    title: "Kaufvertrag",
+    issuer: "",
+    invoiceNumber: "",
+    invoiceDate: "",
+    buyerName: "",
+    buyerStreet: "",
+    buyerCity: "",
+    idNumber: "",
+    phone: "",
+    email: "",
+    carType: "",
+    vin: "",
+    firstRegistration: "",
+    mileage: "",
+    warranty: "",
+    agreements: "",
+    kfzBrief: false,
+    kfzSchein: false,
+    tuev: "",
+    keys: "",
+    total: 0,
+    paymentNote: "",
+  };
+
+  const [form, setForm] = useState(initialFormState);
 
   const searchParams = useSearchParams();
   const [rawTotal, setRawTotal] = useState("");
@@ -93,7 +119,6 @@ export default function KaufvertragClientForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Force downPayment to be 0 if empty
     const cleanedForm = {
       ...form,
       downPayment:
@@ -117,11 +142,14 @@ export default function KaufvertragClientForm() {
       if (!res.ok) throw new Error("Fehler beim Speichern");
 
       toast.success("Kaufvertrag wurde erfolgreich gespeichert!");
+
+      // ✅ Reset everything
       setForm((prev) => ({
-        issuer: prev.issuer || "",
-        downPayment: 0,
-        title: "Kaufvertrag",
+        ...initialFormState,
+        issuer: prev.issuer, // keep issuer
       }));
+      setRawTotal("");
+      setRawDownPayment("€ 0,00");
     } catch (err) {
       console.error(err);
       toast.error("Fehler beim Speichern des Formulars.");
@@ -164,6 +192,7 @@ export default function KaufvertragClientForm() {
               placeholder="Name"
               onChange={handleChange}
               className="input w-full p-1"
+              value={form.buyerName || ""}
             />
             <input
               type="text"
@@ -172,10 +201,12 @@ export default function KaufvertragClientForm() {
               placeholder="Straße"
               onChange={handleChange}
               className="input w-full p-1"
+              value={form.buyerStreet || ""}
             />
             <input
               type="text"
               name="buyerCity"
+              value={form.buyerCity || ""}
               autoComplete="off"
               placeholder="PLZ Ort"
               onChange={handleChange}
@@ -187,7 +218,7 @@ export default function KaufvertragClientForm() {
               type="text"
               name="title"
               autoComplete="off"
-              value={form.title}
+              value={form.title || ""}
               onChange={handleChange}
               className="text-red-600 text-xl md:text-2xl print:text-2xl bg-transparent  border-none outline-none w-[160px] text-right"
             />
@@ -243,6 +274,7 @@ export default function KaufvertragClientForm() {
           <input
             type="text"
             name="idNumber"
+            value={form.idNumber || ""}
             autoComplete="off"
             onChange={handleChange}
             className="input p-1 text-[13px] print:text-[11px] w-full"
@@ -254,6 +286,7 @@ export default function KaufvertragClientForm() {
           <input
             type="text"
             name="phone"
+            value={form.phone || ""}
             autoComplete="off"
             onChange={handleChange}
             className="input p-1 text-[13px] print:text-[11px] w-full"
@@ -265,6 +298,7 @@ export default function KaufvertragClientForm() {
           <input
             type="email"
             name="email"
+            value={form.email || ""}
             autoComplete="off"
             onChange={handleChange}
             className="input p-1 text-[13px] print:text-[11px] w-full"
@@ -280,6 +314,7 @@ export default function KaufvertragClientForm() {
               <input
                 id="carType"
                 name="carType"
+                value={form.carType || ""}
                 autoComplete="off"
                 onChange={handleChange}
                 className="input w-full"
@@ -291,6 +326,7 @@ export default function KaufvertragClientForm() {
               <input
                 id="vin"
                 name="vin"
+                value={form.vin || ""}
                 autoComplete="off"
                 onChange={handleChange}
                 className="input w-full"
@@ -304,7 +340,7 @@ export default function KaufvertragClientForm() {
                 id="firstRegistration"
                 name="firstRegistration"
                 placeholder="TT-MM-JJ"
-                value={form.firstRegistration}
+                value={form.firstRegistration || ""}
                 onChange={handleChange}
                 className="input w-full"
                 autoComplete="off"
@@ -316,6 +352,7 @@ export default function KaufvertragClientForm() {
               <input
                 id="mileage"
                 name="mileage"
+                value={form.mileage || ""}
                 onChange={handleChange}
                 className="input w-full"
                 autoComplete="off"
@@ -333,6 +370,7 @@ export default function KaufvertragClientForm() {
                 type="radio"
                 name="warranty"
                 value="12months"
+                checked={form.warranty === "12months"}
                 autoComplete="off"
                 onChange={handleChange}
                 className="accent-black"
@@ -346,6 +384,7 @@ export default function KaufvertragClientForm() {
                 type="radio"
                 name="warranty"
                 value="excluded"
+                checked={form.warranty === "excluded"}
                 autoComplete="off"
                 onChange={handleChange}
                 className="accent-black"
@@ -396,6 +435,7 @@ export default function KaufvertragClientForm() {
               <input
                 type="checkbox"
                 name="kfzBrief"
+                checked={form.kfzBrief}
                 onChange={handleChange}
                 className="mr-1"
               />
@@ -405,6 +445,7 @@ export default function KaufvertragClientForm() {
               <input
                 type="checkbox"
                 name="kfzSchein"
+                checked={form.kfzSchein}
                 onChange={handleChange}
                 className="mr-1"
               />
@@ -416,6 +457,7 @@ export default function KaufvertragClientForm() {
                 type="text"
                 name="tuev"
                 autoComplete="off"
+                value={form.tuev || ""}
                 className="input print-bordered w-16 ml-1"
                 onChange={handleChange}
               />
@@ -425,6 +467,7 @@ export default function KaufvertragClientForm() {
               <input
                 type="number"
                 name="keys"
+                value={form.keys || ""}
                 autoComplete="off"
                 className="input print-bordered w-12 ml-1"
                 onChange={handleChange}

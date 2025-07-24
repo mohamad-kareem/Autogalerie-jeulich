@@ -119,6 +119,7 @@ export default function LandingChoices() {
               sizes="(max-width: 1024px) 100vw, 50vw"
               priority
               quality={85}
+              unoptimized
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-6 text-white z-10">
