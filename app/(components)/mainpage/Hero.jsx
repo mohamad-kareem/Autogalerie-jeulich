@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Check,
 } from "lucide-react";
+import SimpleContactFormModal from "../helpers/SimpleContactFormModal";
 import Bild2 from "../../(assets)/Peugeot.png";
 import Bild3 from "../../(assets)/corsa1.png";
 import Bild4 from "../../(assets)/dacia4.png";
@@ -59,6 +60,7 @@ export default function Hero() {
   const [isHovering, setIsHovering] = useState(false);
   const timeoutRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -317,16 +319,20 @@ export default function Hero() {
         transition={{ delay: 1.4 }}
         className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50"
       >
-        <Link
-          href="/kontakt"
+        <button
+          onClick={() => setShowContactModal(true)}
           className="flex items-center gap-2 bg-red-900 text-white px-4 py-2 md:px-5 md:py-3 rounded-full shadow-lg hover:shadow-xl hover:bg-red-800 transition-all active:scale-95"
         >
           <MessageSquare size={isMobile ? 16 : 20} />
           {!isMobile && (
             <span className="text-sm md:text-base font-medium">Beratung</span>
           )}
-        </Link>
+        </button>
       </motion.div>
+      <SimpleContactFormModal
+        isOpen={showContactModal}
+        onClose={() => setShowContactModal(false)}
+      />
     </section>
   );
 }
