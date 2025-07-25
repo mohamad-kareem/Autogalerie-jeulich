@@ -345,7 +345,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                     Sie können uns auch direkt über WhatsApp kontaktieren:
                   </p>
                   <a
-                    href="https://wa.me/4924619163780"
+                    href="https://wa.me/4915234205041"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-green-500 hover:bg-green-600 transition-colors"
