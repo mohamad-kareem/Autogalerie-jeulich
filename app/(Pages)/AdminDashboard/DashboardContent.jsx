@@ -11,6 +11,7 @@ import {
   FiClock,
   FiMapPin,
   FiArchive,
+  FiTruck,
 } from "react-icons/fi";
 import NavigationCard from "@/app/(components)/admin/NavigationCard";
 import Image from "next/image";
@@ -179,6 +180,13 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
 
             {user.role === "admin" && (
               <>
+                <NavigationCard
+                  href="/Vehicles"
+                  icon={<FiTruck />} // or use another suitable icon
+                  title="Fahrzeuge"
+                  description="Fahrzeuge verwalten und anzeigen"
+                  accentColor="pink"
+                />
                 <NavigationCard
                   href="/excel"
                   icon={<FiBook />}
