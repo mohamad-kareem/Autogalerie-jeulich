@@ -183,7 +183,7 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
                 <NavigationCard
                   href="/Vehicles"
                   icon={<FiTruck />} // or use another suitable icon
-                  title="Fahrzeuge"
+                  title="Fahrzeuginventar"
                   description="Fahrzeuge verwalten und anzeigen"
                   accentColor="pink"
                 />

@@ -33,7 +33,22 @@ export default function VehiclesPage() {
         throw new Error("Fehler beim Laden der Fahrzeuge");
       }
 
-      const data = await response.json();
+      let data = await response.json();
+      const email = session?.user?.email;
+
+      if (email === "admin@gmail.com") {
+        // Admin sees all vehicles
+      } else if (
+        email === "autogalerie-juelich@hotmail.com" ||
+        email === "autogalerie-juelich@web.de"
+      ) {
+        data = data.filter((v) => v.issuer === "alawie");
+      } else if (email === "autogalerie.juelich@web.de") {
+        data = data.filter((v) => v.issuer === "karim");
+      } else {
+        data = []; // All others see nothing
+      }
+
       setVehicles(data);
     } catch (error) {
       toast.error(error.message);
