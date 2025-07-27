@@ -4,18 +4,32 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { NextResponse } from "next/server";
 
+function getCreatedByFromEmail(email) {
+  if (email === "autogalerie.juelich@web.de") return "karim";
+  if (
+    email === "autogalerie-juelich@web.de" ||
+    email === "autogalerie-juelich@hotmail.com"
+  )
+    return "autogalerie-juelich";
+  if (email === "admin@gmail.com") return "admin";
+  return null;
+}
+
 export async function GET() {
   try {
     await connectDB();
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    const email = session?.user?.email;
+    const createdBy = getCreatedByFromEmail(email);
+
+    if (!createdBy) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
     }
 
-    const vehicles = await Vehicle.find({ createdBy: session.user.id })
-      .sort({ createdAt: -1 })
-      .lean();
+    const filter = createdBy === "admin" ? {} : { createdBy };
+
+    const vehicles = await Vehicle.find(filter).sort({ createdAt: -1 }).lean();
 
     return NextResponse.json(vehicles);
   } catch (error) {
@@ -32,14 +46,18 @@ export async function POST(req) {
     await connectDB();
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    const email = session?.user?.email;
+    const createdBy = getCreatedByFromEmail(email);
+
+    if (!createdBy) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
     }
 
     const body = await req.json();
+
     const existingVehicle = await Vehicle.findOne({
       vin: body.vin.toUpperCase(),
-      createdBy: session.user.id,
+      createdBy,
     });
 
     if (existingVehicle) {
@@ -52,7 +70,7 @@ export async function POST(req) {
     const vehicle = await Vehicle.create({
       ...body,
       vin: body.vin.toUpperCase(),
-      createdBy: session.user.id,
+      createdBy,
     });
 
     return NextResponse.json(vehicle, { status: 201 });

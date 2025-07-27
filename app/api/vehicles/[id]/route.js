@@ -4,23 +4,36 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { NextResponse } from "next/server";
 
+function getCreatedByFromEmail(email) {
+  if (email === "autogalerie.juelich@web.de") return "karim";
+  if (
+    email === "autogalerie-juelich@web.de" ||
+    email === "autogalerie-juelich@hotmail.com"
+  )
+    return "autogalerie-juelich";
+  if (email === "admin@gmail.com") return "admin";
+  return null;
+}
+
 export async function PUT(req, { params }) {
   try {
     await connectDB();
     const session = await getServerSession(authOptions);
+    const email = session?.user?.email;
+    const createdBy = getCreatedByFromEmail(email);
 
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!createdBy) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
     }
 
     const { id } = params;
     const body = await req.json();
 
-    // Check if VIN is being updated to a value that already exists
+    // Check for duplicate VIN
     if (body.vin) {
       const existingVehicle = await Vehicle.findOne({
         vin: body.vin.toUpperCase(),
-        createdBy: session.user.id,
+        createdBy,
         _id: { $ne: id },
       });
 
@@ -32,8 +45,10 @@ export async function PUT(req, { params }) {
       }
     }
 
+    const filter = createdBy === "admin" ? { _id: id } : { _id: id, createdBy };
+
     const vehicle = await Vehicle.findOneAndUpdate(
-      { _id: id, createdBy: session.user.id },
+      filter,
       { ...body, ...(body.vin && { vin: body.vin.toUpperCase() }) },
       { new: true, runValidators: true }
     );
@@ -59,16 +74,17 @@ export async function DELETE(req, { params }) {
   try {
     await connectDB();
     const session = await getServerSession(authOptions);
+    const email = session?.user?.email;
+    const createdBy = getCreatedByFromEmail(email);
 
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!createdBy) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
     }
 
     const { id } = params;
-    const vehicle = await Vehicle.findOneAndDelete({
-      _id: id,
-      createdBy: session.user.id,
-    });
+    const filter = createdBy === "admin" ? { _id: id } : { _id: id, createdBy };
+
+    const vehicle = await Vehicle.findOneAndDelete(filter);
 
     if (!vehicle) {
       return NextResponse.json(
@@ -77,10 +93,7 @@ export async function DELETE(req, { params }) {
       );
     }
 
-    return NextResponse.json(
-      { message: "Vehicle deleted successfully" },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: "Vehicle deleted successfully" });
   } catch (error) {
     console.error("[VEHICLES_DELETE]", error);
     return NextResponse.json(
