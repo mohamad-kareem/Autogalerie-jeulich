@@ -211,7 +211,7 @@ export default function VehiclesPage() {
                   : "bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200"
               }`}
             >
-              Dienstfahrzeuge
+              Firmenwagen
             </button>
             <button
               onClick={() => setActiveFilter("unofficial")}
@@ -221,7 +221,7 @@ export default function VehiclesPage() {
                   : "bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200"
               }`}
             >
-              Privatfahrzeuge
+              Testwagen
             </button>
           </div>
         </div>
