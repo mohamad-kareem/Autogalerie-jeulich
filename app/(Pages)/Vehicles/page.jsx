@@ -37,17 +37,20 @@ export default function VehiclesPage() {
       let data = await response.json();
       const email = session?.user?.email;
 
+      // Show all vehicles for main admin
       if (email === "admin@gmail.com") {
-        // Admin sees all vehicles
-      } else if (
+        // show all
+      }
+      // Show subset of vehicles based on email
+      else if (
         email === "autogalerie-juelich@hotmail.com" ||
         email === "autogalerie-juelich@web.de"
       ) {
-        data = data.filter((v) => v.issuer === "alawie");
+        data = data.filter((v) => v.createdBy === "autogalerie-juelich");
       } else if (email === "autogalerie.juelich@web.de") {
-        data = data.filter((v) => v.issuer === "karim");
+        data = data.filter((v) => v.createdBy === "karim");
       } else {
-        data = []; // All others see nothing
+        data = []; // no access for other emails
       }
 
       setVehicles(data);
@@ -74,7 +77,13 @@ export default function VehiclesPage() {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          createdBy:
+            session?.user?.email === "autogalerie.juelich@web.de"
+              ? "karim"
+              : "autogalerie-juelich",
+        }),
       });
 
       if (!response.ok) {
