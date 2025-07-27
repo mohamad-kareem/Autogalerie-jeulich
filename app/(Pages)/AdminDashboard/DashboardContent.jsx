@@ -219,7 +219,7 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
         {/* Header */}
         <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-lg md:text-3xl font-bold tracking-tight">
+            <h1 className="text-xl md:text-3xl font-bold tracking-tight">
               Willkommen ,{" "}
               <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 {firstName}
@@ -231,7 +231,7 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
         </header>
 
         {/* Dashboard Widgets */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {widgetItems.map((item) => (
             <NavigationCard
               key={item.href}
