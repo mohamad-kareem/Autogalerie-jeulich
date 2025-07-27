@@ -25,6 +25,7 @@ const NavigationCard = ({ href, icon, title, description, accentColor }) => {
     zinc: "bg-zinc-100 text-zinc-700",
     neutral: "bg-neutral-100 text-neutral-700",
     stone: "bg-stone-100 text-stone-700",
+    emerald: "bg-purple-400 text-purple-700",
   };
 
   const gradientMap = {
@@ -64,7 +65,7 @@ const NavigationCard = ({ href, icon, title, description, accentColor }) => {
             <h3 className="text-sm md:text-lg font-semibold text-gray-800">
               {title}
             </h3>
-            <p className="mt-1 text-xs md:text-sm text-gray-600 line-clamp-2">
+            <p className="mt-1 text-[10px] md:text-xs  text-gray-600 line-clamp-2">
               {description}
             </p>
             <div className="mt-2 md:mt-3 flex items-center text-xs md:text-sm font-medium text-gray-500 transition-colors group-hover:text-gray-700">

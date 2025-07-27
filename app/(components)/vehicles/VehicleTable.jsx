@@ -1,6 +1,12 @@
 "use client";
 import React, { useState } from "react";
-import { FiEdit2, FiTrash2, FiChevronDown, FiChevronUp } from "react-icons/fi";
+import {
+  FiEdit2,
+  FiTrash2,
+  FiChevronDown,
+  FiChevronUp,
+  FiInfo,
+} from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
@@ -29,159 +35,143 @@ export default function VehicleTable({
   };
 
   const toggleRow = (id) => {
-    setExpandedRows((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
+    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const typeColors = {
-    official: "bg-blue-50 border-blue-100 text-blue-800",
-    unofficial: "bg-purple-50 border-purple-100 text-purple-800",
+    official: "bg-blue-100/30 border-blue-200 text-blue-800",
+    unofficial: "bg-purple-100/30 border-purple-200 text-purple-800",
   };
 
   const typeLabels = {
-    official: "Dienstfahrzeuge",
-    unofficial: "Privatfahrzeuge",
+    official: "Firmenwagen",
+    unofficial: "Testwagen",
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200 mb-6">
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 mb-6 text-sm sm:text-base">
       <div
         className={`p-4 border-b ${
-          typeColors[type] || "bg-gray-50 border-gray-100 text-gray-800"
+          typeColors[type] || "bg-gray-100/30 border-gray-200 text-gray-800"
         }`}
       >
-        <h2 className="font-semibold text-base sm:text-lg">
-          {typeLabels[type] || type} ({vehicles.length})
-        </h2>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="font-semibold text-base sm:text-lg">
+            {typeLabels[type] || type}
+          </h2>
+          <span className="bg-white/80 px-3 py-1 rounded-full text-xs sm:text-sm font-medium shadow-sm">
+            {vehicles.length} {vehicles.length === 1 ? "Fahrzeug" : "Fahrzeuge"}
+          </span>
+        </div>
       </div>
 
-      <div className="overflow-x-auto scrollbar-hide">
+      <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                FIN
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-2 text-left text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider">
                 Bezeichnung
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-2 text-left text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider">
                 Modell
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Aktionen
+              <th className="px-4 py-2 text-left text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider">
+                Verkaufsdatum
               </th>
             </tr>
           </thead>
+
           <tbody className="bg-white divide-y divide-gray-200">
             {isLoading ? (
               <tr>
                 <td colSpan="4" className="px-4 py-4 text-center">
-                  <div className="flex justify-center">
-                    <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
-                  </div>
+                  <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mx-auto"></div>
                 </td>
               </tr>
             ) : vehicles.length > 0 ? (
               vehicles.map((vehicle) => (
                 <React.Fragment key={vehicle._id}>
                   <tr
-                    className="hover:bg-gray-50 cursor-pointer"
+                    className="hover:bg-gray-50/50 transition-colors cursor-pointer"
                     onClick={() => toggleRow(vehicle._id)}
                   >
-                    <td className="px-4 py-4 text-sm font-mono text-gray-900">
-                      {vehicle.vin}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
+                    <td className="px-4 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
                       {vehicle.name}
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
+                    <td className="px-4 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                       {vehicle.model} {vehicle.year && `(${vehicle.year})`}
                     </td>
-                    <td className="px-4 py-4 text-sm text-right">
-                      <div className="flex justify-end space-x-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(vehicle);
-                          }}
-                          className="text-indigo-600 hover:text-indigo-900 transition-colors p-1 rounded hover:bg-indigo-50"
-                          title="Bearbeiten"
-                        >
-                          <FiEdit2 size={16} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(vehicle._id);
-                          }}
-                          className="text-red-600 hover:text-red-900 disabled:text-red-300 transition-colors p-1 rounded hover:bg-red-50"
-                          title="Löschen"
-                          disabled={deletingId === vehicle._id}
-                        >
-                          <FiTrash2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => toggleRow(vehicle._id)}
-                          className="text-gray-600 hover:text-gray-800 transition-colors p-1 rounded hover:bg-gray-100"
-                          title="Details"
-                        >
-                          {expandedRows[vehicle._id] ? (
-                            <FiChevronUp size={16} />
-                          ) : (
-                            <FiChevronDown size={16} />
-                          )}
-                        </button>
-                      </div>
+                    <td className="px-4 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                      {vehicle.dateSoldIn?.slice(0, 10) || "-"}
                     </td>
                   </tr>
 
                   {expandedRows[vehicle._id] && (
                     <tr className="bg-gray-50">
                       <td colSpan="4" className="px-4 py-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          <div className="space-y-2">
-                            <div className="grid grid-cols-3 gap-2">
-                              <div className="col-span-1 text-gray-500 font-medium">
-                                Verkaufsdatum:
-                              </div>
-                              <div className="col-span-2 text-gray-700">
-                                {vehicle.dateSoldIn?.slice(0, 10) || "-"}
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                              <div className="col-span-1 text-gray-500 font-medium">
-                                Reklamation:
-                              </div>
-                              <div className="col-span-2 text-gray-700">
-                                {vehicle.reclamation || "-"}
-                              </div>
-                            </div>
+                        <div className="space-y-3 text-sm">
+                          {/* FIN at the top - minimal style */}
+                          <div className="text-xs text-gray-600">
+                            <span className="font-medium text-gray-700 mr-1">
+                              FIN:
+                            </span>
+                            <span className="font-mono text-gray-900 text-sm break-all">
+                              {vehicle.vin || "-"}
+                            </span>
                           </div>
-                          <div className="space-y-2">
-                            <div className="grid grid-cols-3 gap-2">
-                              <div className="col-span-1 text-gray-500 font-medium">
-                                Vor Verkauf benötigt:
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Reklamation */}
+                            {vehicle.reclamation && (
+                              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm sm:col-span-2">
+                                <h3 className="font-semibold text-gray-800 mb-2 text-sm">
+                                  Reklamation
+                                </h3>
+                                <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm">
+                                  {vehicle.reclamation
+                                    .split("\n")
+                                    .map((line, index) => (
+                                      <li key={index}>{line}</li>
+                                    ))}
+                                </ul>
                               </div>
-                              <div className="col-span-2 text-gray-700">
-                                {vehicle.needsBeforeSelling || "-"}
+                            )}
+
+                            {/* Notizen */}
+                            {vehicle.notes && (
+                              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm sm:col-span-2">
+                                <h3 className="font-semibold text-gray-800 mb-2 text-sm">
+                                  Notizen
+                                </h3>
+                                <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm">
+                                  {vehicle.notes
+                                    .split("\n")
+                                    .map((line, index) => (
+                                      <li key={index}>{line}</li>
+                                    ))}
+                                </ul>
                               </div>
-                            </div>
+                            )}
                           </div>
-                          {vehicle.notes && (
-                            <div className="col-span-full pt-2 border-t border-gray-200">
-                              <div className="grid grid-cols-3 gap-2">
-                                <div className="col-span-1 text-gray-500 font-medium">
-                                  Notizen:
-                                </div>
-                                <div className="col-span-2 text-gray-700">
-                                  {vehicle.notes}
-                                </div>
-                              </div>
-                            </div>
-                          )}
+
+                          {/* Actions */}
+                          <div className="flex justify-end gap-2 pt-2">
+                            <button
+                              onClick={() => onEdit(vehicle)}
+                              className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-900 text-sm transition-colors px-3 py-1.5 border border-indigo-100 rounded-md bg-indigo-50"
+                              title="Bearbeiten"
+                            >
+                              <FiEdit2 size={14} /> Bearbeiten
+                            </button>
+                            <button
+                              onClick={() => handleDelete(vehicle._id)}
+                              disabled={deletingId === vehicle._id}
+                              className="inline-flex items-center gap-1 text-red-600 hover:text-red-900 text-sm transition-colors px-3 py-1.5 border border-red-100 rounded-md bg-red-50 disabled:opacity-50"
+                              title="Löschen"
+                            >
+                              <FiTrash2 size={14} /> Löschen
+                            </button>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -192,7 +182,7 @@ export default function VehicleTable({
               <tr>
                 <td
                   colSpan="4"
-                  className="px-4 py-4 text-center text-sm text-gray-500"
+                  className="px-4 py-4 text-center text-xs text-gray-500"
                 >
                   Keine {typeLabels[type] || type} gefunden
                 </td>

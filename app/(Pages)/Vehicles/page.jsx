@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { FiPlus, FiSearch, FiFilter } from "react-icons/fi";
+import { FiPlus, FiSearch, FiFilter, FiRefreshCw } from "react-icons/fi";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import VehicleModal from "@/app/(components)/vehicles/VehicleModal";
@@ -15,6 +15,7 @@ export default function VehiclesPage() {
   const [currentVehicle, setCurrentVehicle] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -54,7 +55,13 @@ export default function VehiclesPage() {
       toast.error(error.message);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchVehicles();
   };
 
   const handleSubmit = async (data) => {
@@ -81,12 +88,21 @@ export default function VehiclesPage() {
       toast.success(
         currentVehicle
           ? "Fahrzeug erfolgreich aktualisiert"
-          : "Fahrzeug erfolgreich hinzugefügt"
+          : "Fahrzeug erfolgreich hinzugefügt",
+        {
+          position: "top-center",
+          style: {
+            background: "#4f46e5",
+            color: "#fff",
+          },
+        }
       );
       fetchVehicles();
       return result;
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message, {
+        position: "top-center",
+      });
       throw error;
     }
   };
@@ -132,29 +148,29 @@ export default function VehiclesPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div className="container mx-auto px-4 sm:px-6 py-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-900">
             Fahrzeugverwaltung
           </h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">
-            Verwalten Sie Dienst- und Privatfahrzeuge
-          </p>
         </div>
-        <button
-          onClick={() => {
-            setCurrentVehicle(null);
-            setIsModalOpen(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors shadow-sm text-sm sm:text-base"
-        >
-          <FiPlus className="text-sm sm:text-base" /> Fahrzeug hinzufügen
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => {
+              setCurrentVehicle(null);
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-2 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm text-sm sm:text-base"
+          >
+            <FiPlus className="text-xs sm:text-base" />
+            hinzufügen
+          </button>
+        </div>
       </div>
 
-      <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-        <div className="flex flex-col sm:flex-row gap-3">
+      <div className="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-grow">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <FiSearch className="text-gray-400" />
@@ -162,38 +178,38 @@ export default function VehiclesPage() {
             <input
               type="text"
               placeholder="Suche nach FIN, Bezeichnung oder Modell..."
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm sm:text-base"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm sm:text-base"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
             <button
               onClick={() => setActiveFilter("all")}
-              className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                 activeFilter === "all"
-                  ? "bg-indigo-100 text-indigo-800"
-                  : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                  ? "bg-indigo-100 text-indigo-800 border border-indigo-200"
+                  : "bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200"
               }`}
             >
-              Alle
+              Alle Fahrzeuge
             </button>
             <button
               onClick={() => setActiveFilter("official")}
-              className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                 activeFilter === "official"
-                  ? "bg-indigo-100 text-indigo-800"
-                  : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                  ? "bg-blue-100 text-blue-800 border border-blue-200"
+                  : "bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200"
               }`}
             >
               Dienstfahrzeuge
             </button>
             <button
               onClick={() => setActiveFilter("unofficial")}
-              className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                 activeFilter === "unofficial"
-                  ? "bg-indigo-100 text-indigo-800"
-                  : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                  ? "bg-purple-100 text-purple-800 border border-purple-200"
+                  : "bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200"
               }`}
             >
               Privatfahrzeuge
@@ -201,28 +217,31 @@ export default function VehiclesPage() {
           </div>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <VehicleTable
-          vehicles={officialVehicles}
-          type="official"
-          onEdit={(vehicle) => {
-            setCurrentVehicle(vehicle);
-            setIsModalOpen(true);
-          }}
-          onDelete={handleDelete}
-          isLoading={isLoading}
-        />
-        <VehicleTable
-          vehicles={unofficialVehicles}
-          type="unofficial"
-          onEdit={(vehicle) => {
-            setCurrentVehicle(vehicle);
-            setIsModalOpen(true);
-          }}
-          onDelete={handleDelete}
-          isLoading={isLoading}
-        />
+      <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex-1 overflow-hidden">
+          <VehicleTable
+            vehicles={officialVehicles}
+            type="official"
+            onEdit={(vehicle) => {
+              setCurrentVehicle(vehicle);
+              setIsModalOpen(true);
+            }}
+            onDelete={handleDelete}
+            isLoading={isLoading}
+          />
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <VehicleTable
+            vehicles={unofficialVehicles}
+            type="unofficial"
+            onEdit={(vehicle) => {
+              setCurrentVehicle(vehicle);
+              setIsModalOpen(true);
+            }}
+            onDelete={handleDelete}
+            isLoading={isLoading}
+          />
+        </div>
       </div>
 
       <VehicleModal
