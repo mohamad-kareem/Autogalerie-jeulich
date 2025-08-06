@@ -17,7 +17,7 @@ import SimpleContactFormModal from "../helpers/SimpleContactFormModal";
 import Bild2 from "../../(assets)/Peugeot.png";
 import Bild3 from "../../(assets)/corsa1.png";
 import Bild4 from "../../(assets)/promo3.png";
-import Bild5 from "../../(assets)/Rate.png";
+import Bild5 from "../../(assets)/opel2ad.png";
 export default function Hero() {
   const slides = [
     {
@@ -43,6 +43,18 @@ export default function Hero() {
         secondary: { text: "Beratungstermin", href: "/kontakt" },
       },
     },
+    {
+      image: Bild5,
+      title: "Premium Serviceerlebnis",
+      subtitle: "Über 100 exklusive Fahrzeuge mit VIP-Service.",
+      features: ["100+ Fahrzeuge", "VIP-Service"],
+
+      cta: {
+        primary: { text: "Fahrzeuge entdecken", href: "/gebrauchtwagen" },
+        secondary: { text: "Beratungstermin", href: "/kontakt" },
+      },
+    },
+
     {
       image: Bild4,
       title: "Premium Serviceerlebnis",

@@ -56,7 +56,6 @@ export default function OpelPremiumAd() {
               />
 
               {/* Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent"></div>
 
               {/* Badge */}
             </motion.div>
