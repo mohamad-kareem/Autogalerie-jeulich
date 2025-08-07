@@ -4,7 +4,14 @@ import React from "react";
 import Link from "next/link";
 import { FiChevronRight } from "react-icons/fi";
 
-const NavigationCard = ({ href, icon, title, description, accentColor }) => {
+const NavigationCard = ({
+  href,
+  icon,
+  title,
+  description,
+  accentColor,
+  badge,
+}) => {
   const colorMap = {
     red: "bg-red-100 text-red-700",
     green: "bg-green-100 text-green-700",
@@ -74,6 +81,37 @@ const NavigationCard = ({ href, icon, title, description, accentColor }) => {
             </div>
           </div>
         </div>
+        {badge && (
+          <div className="absolute top-3 right-3 z-30">
+            <div className="relative group">
+              {/* Premium badge container */}
+              <div className="relative flex items-center justify-center px-3.5 py-1.5 rounded-sm backdrop-blur-lg bg-white/90 border border-gray-200/80 shadow-sm transition-all duration-300 hover:shadow-md hover:bg-white">
+                {/* Subtle inner shadow */}
+                <div className="absolute inset-0 rounded-sm shadow-inner opacity-30"></div>
+
+                {/* Content */}
+                <span className="text-xs font-medium text-gray-900 tracking-tight">
+                  {badge}
+                </span>
+
+                {/* Sophisticated notification indicator */}
+                <div className="absolute -top-0.5 -right-0.5">
+                  {/* Outer ring */}
+                  <div className="absolute h-3.5 w-3.5 rounded-full border border-gray-400/20"></div>
+
+                  {/* Inner core */}
+                  <div className="relative h-2.5 w-2.5 rounded-full bg-gradient-to-br from-red-500 to-red-700 shadow-[0_0_0_1px_rgba(255,255,255,0.8)]">
+                    {/* Micro highlight */}
+                    <div className="absolute top-0.5 left-0.5 h-0.5 w-0.5 rounded-full bg-white/60"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Precision shadow */}
+              <div className="absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 w-5/6 h-0.5 bg-gray-400/10 rounded-full blur-[0.5px]"></div>
+            </div>
+          </div>
+        )}
       </div>
     </Link>
   );

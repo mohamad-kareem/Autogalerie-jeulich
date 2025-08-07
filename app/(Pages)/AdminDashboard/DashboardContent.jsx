@@ -242,6 +242,7 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
                 item.description || getDefaultDescription(item.label)
               }
               accentColor={item.color}
+              badge={item.badge} // ✅ Add this line
             />
           ))}
         </div>
