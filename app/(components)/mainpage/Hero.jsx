@@ -128,10 +128,10 @@ export default function Hero() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
-            className="inline-flex items-center gap-2 bg-red-900 text-white px-3 py-1 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium tracking-wide shadow"
+            className="inline-flex items-center gap-2 bg-black text-white px-3 py-1 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium tracking-wide shadow"
           >
             <span className="relative flex h-1.5 w-1.5 md:h-2 md:w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span className=" absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
               <span className="relative inline-flex rounded-full h-full w-full bg-white"></span>
             </span>
             Premium Qualität seit 2012
@@ -178,7 +178,7 @@ export default function Hero() {
           >
             <Link
               href={slide.cta.primary.href}
-              className="group flex items-center justify-center gap-1.5 px-5 py-2.5 md:px-6 md:py-3 lg:px-8 lg:py-4 bg-red-900 text-white font-semibold rounded-lg shadow hover:shadow-md hover:bg-red-800 transition-all text-sm md:text-lg"
+              className="group flex items-center justify-center gap-1.5 px-5 py-2.5 md:px-6 md:py-3 lg:px-8 lg:py-4 bg-black text-white font-semibold rounded-lg shadow hover:shadow-md hover:bg-red-800 transition-all text-sm md:text-lg"
             >
               {slide.cta.primary.text}
               <ArrowRight
@@ -209,8 +209,8 @@ export default function Hero() {
                 key={item}
                 className="flex items-center gap-1.5 text-xs md:text-sm text-gray-600"
               >
-                <div className="flex items-center justify-center w-4 h-4 md:w-5 md:h-5 bg-red-900/10 rounded-full">
-                  <Check size={isMobile ? 12 : 14} className="text-red-900" />
+                <div className="flex items-center justify-center w-4 h-4 md:w-5 md:h-5 bg-green-900/5 rounded-full">
+                  <Check size={isMobile ? 12 : 14} className="text-green-700" />
                 </div>
                 <span>{item}</span>
               </div>
@@ -255,17 +255,17 @@ export default function Hero() {
             {/* Slide navigation arrows - larger touch targets on mobile */}
             <button
               onClick={prevSlide}
-              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-red-900 p-1.5 md:p-2 rounded-full shadow z-10 transition-all active:scale-95"
+              className="absolute left-2 md:left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-red-900 p-1.5 md:p-2 rounded-full shadow z-10 transition-all active:scale-95"
               aria-label="Previous slide"
             >
-              <ChevronRight size={isMobile ? 20 : 24} className="rotate-180" />
+              <ChevronRight size={isMobile ? 16 : 18} className="rotate-180" />
             </button>
             <button
               onClick={nextSlide}
-              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-red-900 p-1.5 md:p-2 rounded-full shadow z-10 transition-all active:scale-95"
+              className="absolute right-2 md:right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-red-900 p-1.5 md:p-2 rounded-full shadow z-10 transition-all active:scale-95"
               aria-label="Next slide"
             >
-              <ChevronRight size={isMobile ? 20 : 24} />
+              <ChevronRight size={isMobile ? 16 : 18} />
             </button>
 
             {/* Slide indicators - bottom centered */}
@@ -293,7 +293,7 @@ export default function Hero() {
               transition={{ delay: 1.2 }}
               className="hidden lg:block absolute -bottom-6 -right-6 w-64 h-auto bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100"
             >
-              <div className="p-4 bg-gradient-to-br from-red-900 to-red-700 text-white">
+              <div className="p-4 bg-gradient-to-br from-black to-red-900 text-white">
                 <h3 className="font-bold text-sm md:text-base mb-1">
                   Kundenbewertungen
                 </h3>
@@ -333,7 +333,7 @@ export default function Hero() {
       >
         <button
           onClick={() => setShowContactModal(true)}
-          className="flex items-center gap-2 bg-red-900 text-white px-4 py-2 md:px-5 md:py-3 rounded-full shadow-lg hover:shadow-xl hover:bg-red-800 transition-all active:scale-95"
+          className="flex items-center gap-2 bg-black text-white px-4 py-2 md:px-5 md:py-3 rounded-full shadow-lg hover:shadow-xl hover:bg-red-800 transition-all active:scale-95"
         >
           <MessageSquare size={isMobile ? 16 : 20} />
           {!isMobile && (
