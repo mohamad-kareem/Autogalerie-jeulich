@@ -498,7 +498,8 @@ export default function Zeiterfassungsverwaltung() {
         {/* Control Panel */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6 sm:mb-8 transition-all duration-300 hover:shadow-xl">
           {/* Control Panel Header */}
-          <div className="grid grid-cols-2 sm:flex border-b border-gray-100">
+          {/* Control Panel Header */}
+          <div className="grid grid-cols-3 gap-1 sm:flex sm:gap-0 border-b border-gray-100">
             <ControlButton
               active={activeSection === "filter"}
               onClick={() =>
@@ -550,7 +551,7 @@ export default function Zeiterfassungsverwaltung() {
                 setActiveSection(activeSection === "alerts" ? null : "alerts")
               }
               icon={<FiAlertTriangle className="text-lg" />}
-              label="Fehlende Stempel"
+              label="Fehlstempel"
               color="red"
             />
           </div>
@@ -1040,7 +1041,7 @@ export default function Zeiterfassungsverwaltung() {
           )}
         </div>
         {missingPunches.length > 0 && (
-          <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg px-4 py-3">
+          <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg px-4 py-3 text-xs sm:text-base">
             ⚠️ {missingPunches.length} Stempel-Hinweise (Sonntag ignoriert).
           </div>
         )}
@@ -1417,10 +1418,12 @@ function ControlButton({ active, onClick, icon, label, color }) {
   return (
     <button
       onClick={onClick}
-      className={`flex-1 flex flex-col sm:flex-row items-center justify-center py-4 px-2 sm:px-4 space-y-1 sm:space-y-0 sm:space-x-2 font-medium transition-all duration-300 ${colorClasses[color]}`}
+      className={`h-12 sm:h-auto flex-1 flex flex-col sm:flex-row items-center justify-center
+                py-2 px-2 sm:py-4 sm:px-4 gap-0.9 sm:gap-2 text-xs sm:text-sm font-medium
+                transition-all duration-300 ${colorClasses[color]}`}
     >
-      <span className="text-xl">{icon}</span>
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-base sm:text-lg">{icon}</span>
+      <span className="leading-tight">{label}</span>
     </button>
   );
 }
