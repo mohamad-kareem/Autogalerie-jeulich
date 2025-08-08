@@ -478,25 +478,17 @@ export default function Zeiterfassungsverwaltung() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
       <header className="bg-white shadow-md sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-3">
+          <div className="flex items-center space-x-3">
             <button
               onClick={() => router.push("/AdminDashboard")}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-100"
             >
-              <FiArrowLeft className="text-gray-600" />
+              <FiArrowLeft className="text-gray-500" />
             </button>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+            <h1 className="text-lg sm:text-xl font-semibold text-gray-800">
               Zeiterfassungsverwaltung
             </h1>
-          </div>
-          <div className="hidden sm:flex items-center space-x-3 bg-blue-50 rounded-full px-4 py-2">
-            <div className="bg-blue-100 p-2 rounded-full">
-              <FiUser className="text-blue-600" />
-            </div>
-            <span className="text-sm font-medium text-blue-800">
-              {session.user.name}
-            </span>
           </div>
         </div>
       </header>
@@ -1049,22 +1041,19 @@ export default function Zeiterfassungsverwaltung() {
         </div>
         {missingPunches.length > 0 && (
           <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg px-4 py-3">
-            ⚠️ {missingPunches.length} offene Stempel-Hinweise im gewählten
-            Zeitraum (Sonntag ignoriert).
+            ⚠️ {missingPunches.length} Stempel-Hinweise (Sonntag ignoriert).
           </div>
         )}
 
         {/* Data Table */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">
-                Zeiterfassungen
-              </h2>
-              <div className="text-sm text-gray-500">
-                {filtered.length} Einträge
-              </div>
-            </div>
+          <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <FiClock className="text-indigo-500" /> Zeiterfassungen
+            </h2>
+            <span className="text-sm text-gray-500">
+              {filtered.length} Einträge
+            </span>
           </div>
 
           <div className="overflow-x-auto">
