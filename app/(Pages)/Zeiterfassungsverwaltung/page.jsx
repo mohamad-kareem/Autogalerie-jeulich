@@ -4,7 +4,14 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "react-hot-toast";
 import DatePicker from "react-datepicker";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSunday,
+  isSaturday,
+} from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
 import {
   FiUser,
@@ -25,6 +32,8 @@ import {
   FiLogOut,
   FiSave,
   FiX,
+  FiAlertTriangle,
+  FiInbox,
 } from "react-icons/fi";
 import { IoMdLocate } from "react-icons/io";
 
@@ -145,6 +154,81 @@ export default function Zeiterfassungsverwaltung() {
     const names = new Set(records.map((r) => r.admin?.name).filter(Boolean));
     return Array.from(names).sort();
   }, [records]);
+  // Put this below `allAdmins` useMemo and above `handleDelete`
+  const missingPunches = useMemo(() => {
+    // Current month range
+    const monthStart = startOfMonth(new Date());
+
+    // Clamp end to *today* to avoid flagging future dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const monthEnd = today;
+
+    // Quick lookup: admin -> yyyy-MM-dd -> { ins, outs }
+    const byAdminDate = new Map();
+    for (const r of records) {
+      const name = r.admin?.name || "Unbekannt";
+      const dayKey = format(new Date(r.time), "yyyy-MM-dd");
+      if (!byAdminDate.has(name)) byAdminDate.set(name, new Map());
+      const dayMap = byAdminDate.get(name);
+      if (!dayMap.has(dayKey)) dayMap.set(dayKey, { ins: 0, outs: 0 });
+      const entry = dayMap.get(dayKey);
+      if (r.type === "in") entry.ins += 1;
+      if (r.type === "out") entry.outs += 1;
+    }
+
+    // All days in current month (skip Sundays globally)
+    const days = eachDayOfInterval({ start: monthStart, end: monthEnd }).filter(
+      (d) => !isSunday(d)
+    );
+
+    // Optional: define exceptions (names that don't work Saturdays)
+    const saturdayOff = new Set(["abed"]); // lowercase compare
+
+    const results = [];
+    for (const name of allAdmins) {
+      const nameLc = (name || "").toLowerCase();
+      const dayMap = byAdminDate.get(name) || new Map();
+
+      for (const d of days) {
+        // Skip Saturdays for Abed only
+        if (saturdayOff.has(nameLc) && isSaturday(d)) continue;
+
+        const key = format(d, "yyyy-MM-dd");
+        const entry = dayMap.get(key);
+
+        if (!entry) {
+          results.push({
+            name,
+            date: key,
+            issue: "Keine Stempelung (weder EIN noch AUS)",
+          });
+          continue;
+        }
+        if (entry.ins === 0 && entry.outs === 0) {
+          results.push({
+            name,
+            date: key,
+            issue: "Keine Stempelung (weder EIN noch AUS)",
+          });
+        } else if (entry.ins === 0) {
+          results.push({ name, date: key, issue: "EIN fehlt" });
+        } else if (entry.outs === 0) {
+          results.push({ name, date: key, issue: "AUS fehlt" });
+        } else if (entry.ins !== entry.outs) {
+          results.push({
+            name,
+            date: key,
+            issue: "Unpaarige Stempelungen (Anzahl EIN ≠ AUS)",
+          });
+        }
+      }
+    }
+
+    return results.sort(
+      (a, b) => a.name.localeCompare(b.name) || a.date.localeCompare(b.date)
+    );
+  }, [records, allAdmins]);
 
   const handleDelete = async () => {
     if (!deleteRange.start || !deleteRange.end) {
@@ -468,6 +552,15 @@ export default function Zeiterfassungsverwaltung() {
               label="Drucken"
               color="indigo"
             />
+            <ControlButton
+              active={activeSection === "alerts"}
+              onClick={() =>
+                setActiveSection(activeSection === "alerts" ? null : "alerts")
+              }
+              icon={<FiAlertTriangle className="text-lg" />}
+              label="Fehlende Stempel"
+              color="red"
+            />
           </div>
 
           {/* Filter Section */}
@@ -475,7 +568,7 @@ export default function Zeiterfassungsverwaltung() {
             <div className="px-6 py-5 bg-gradient-to-r from-blue-50 to-indigo-50 transition-all duration-300">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center">
+                  <label className=" text-sm font-semibold text-gray-700 mb-1 flex items-center">
                     <FiUser className="mr-2 text-blue-500" /> Mitarbeiter
                   </label>
                   <select
@@ -493,7 +586,7 @@ export default function Zeiterfassungsverwaltung() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center">
+                  <label className=" text-sm font-semibold text-gray-700 mb-1 flex items-center">
                     <FiCalendar className="mr-2 text-blue-500" /> Datumsbereich
                   </label>
                   <div className="grid grid-cols-2 gap-3">
@@ -788,7 +881,7 @@ export default function Zeiterfassungsverwaltung() {
             <div className="px-6 py-5 bg-gradient-to-r from-indigo-50 to-blue-50 transition-all duration-300">
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center">
+                  <label className=" text-sm font-semibold text-gray-700 mb-1 flex items-center">
                     <FiUser className="mr-2 text-indigo-500" /> Mitarbeiter
                   </label>
                   <select
@@ -923,7 +1016,43 @@ export default function Zeiterfassungsverwaltung() {
               </div>
             </div>
           )}
+          {activeSection === "alerts" && (
+            <div className="px-6 py-5 bg-gradient-to-r from-red-50 to-orange-50">
+              {missingPunches.length === 0 ? (
+                <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4">
+                  ✅ Alles gut! Keine fehlenden Stempelungen im gewählten
+                  Zeitraum (Sonntag ignoriert).
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="text-sm text-red-800 bg-white border border-red-200 rounded-lg p-4">
+                    <strong>Hinweis:</strong> Es fehlen Stempelungen (Sonntag
+                    ist ausgenommen; Und <strong>Abed</strong> ist auch{" "}
+                    <strong>Samstag</strong> ausgenommen).
+                  </div>
+
+                  <ul className="space-y-2">
+                    {missingPunches.map((m, i) => (
+                      <li
+                        key={i}
+                        className="text-sm bg-white border border-red-100 rounded-md px-3 py-2"
+                      >
+                        <span className="font-semibold">{m.name}</span> –{" "}
+                        {format(new Date(m.date), "dd.MM.yyyy")}: {m.issue}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+        {missingPunches.length > 0 && (
+          <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg px-4 py-3">
+            ⚠️ {missingPunches.length} offene Stempel-Hinweise im gewählten
+            Zeitraum (Sonntag ignoriert).
+          </div>
+        )}
 
         {/* Data Table */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
