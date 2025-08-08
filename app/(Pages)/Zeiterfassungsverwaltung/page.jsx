@@ -1018,10 +1018,10 @@ export default function Zeiterfassungsverwaltung() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="text-sm text-red-800 bg-white border border-red-200 rounded-lg p-4">
-                    <strong>Hinweis:</strong> Es fehlen Stempelungen (Sonntag
-                    ist ausgenommen; Und <strong>Abed</strong> ist auch{" "}
-                    <strong>Samstag</strong> ausgenommen).
+                  <div className="text-xs sm:text-sm text-red-800 bg-white border border-red-200 rounded-lg p-4">
+                    <strong>Hinweis:</strong> Sonntag ist ausgenommen; Und{" "}
+                    <strong>Abed</strong> ist auch <strong>Samstag</strong>{" "}
+                    ausgenommen.
                   </div>
 
                   <ul className="space-y-2">
