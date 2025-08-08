@@ -142,8 +142,8 @@ export default function NavBar() {
     <header
       className={`print:hidden fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "h-14 shadow-md bg-gradient-to-br from-black/20 to-red-800 backdrop-blur-sm"
-          : "h-16 bg-gradient-to-br from-black/60 to-red-800"
+          ? "h-14 shadow-md bg-gradient-to-br from-black to-red-950 backdrop-blur-sm"
+          : "h-16 bg-gradient-to-br from-black/60 to-red-950"
       }`}
     >
       <nav className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto h-full flex items-center justify-between px-2 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 ">
@@ -191,10 +191,10 @@ export default function NavBar() {
                     className="rounded-full object-cover w-8 h-8"
                   />
                 ) : (
-                  <User className="text-gray-600 w-6 h-6" />
+                  <User className="text-white w-6 h-6" />
                 )}
                 <ChevronDown
-                  className={`ml-1 w-4 h-4 transition-transform ${
+                  className={`text-white ml-1 w-4 h-4 transition-transform ${
                     open ? "rotate-180" : ""
                   }`}
                 />

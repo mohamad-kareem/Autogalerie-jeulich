@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "react-hot-toast";
 import DatePicker from "react-datepicker";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
 import {
   FiUser,
@@ -37,7 +37,11 @@ export default function Zeiterfassungsverwaltung() {
   const hasFetched = useRef(false);
   const [activeSection, setActiveSection] = useState(null);
   const [selectedAdmin, setSelectedAdmin] = useState("alle");
-  const [dateFilter, setDateFilter] = useState({ start: null, end: null });
+  const [dateFilter, setDateFilter] = useState(() => ({
+    start: startOfMonth(new Date()),
+    end: endOfMonth(new Date()),
+  }));
+
   const [deleteRange, setDeleteRange] = useState({ start: null, end: null });
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
@@ -52,6 +56,9 @@ export default function Zeiterfassungsverwaltung() {
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
+  useEffect(() => {
+    setPage(1);
+  }, [selectedAdmin, dateFilter.start, dateFilter.end]);
 
   const fetchRecords = useCallback(async () => {
     setIsLoading(true);
@@ -521,7 +528,10 @@ export default function Zeiterfassungsverwaltung() {
                 <div className="flex items-end">
                   <button
                     onClick={() => {
-                      setDateFilter({ start: null, end: null });
+                      setDateFilter({
+                        start: startOfMonth(new Date()),
+                        end: endOfMonth(new Date()),
+                      });
                       setSelectedAdmin("alle");
                     }}
                     className="w-full bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium transition-all duration-300 shadow-sm flex items-center justify-center"
@@ -801,7 +811,7 @@ export default function Zeiterfassungsverwaltung() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center">
+                  <label className=" text-sm font-semibold text-gray-700 mb-1 flex items-center">
                     <FiCalendar className="mr-2 text-indigo-500" />{" "}
                     Datumsbereich
                   </label>
