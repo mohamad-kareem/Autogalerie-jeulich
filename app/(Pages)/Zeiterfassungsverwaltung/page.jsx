@@ -479,7 +479,7 @@ export default function Zeiterfassungsverwaltung() {
       {/* Header */}
       <header className="bg-white shadow-md sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-3">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-1">
             <button
               onClick={() => router.push("/AdminDashboard")}
               className="p-2 rounded-lg hover:bg-gray-100"
@@ -487,7 +487,7 @@ export default function Zeiterfassungsverwaltung() {
               <FiArrowLeft className="text-gray-500" />
             </button>
             <h1 className="text-lg sm:text-xl font-semibold text-gray-800">
-              Zeiterfassungsverwaltung
+              Zeiterfassung
             </h1>
           </div>
         </div>
