@@ -11,6 +11,8 @@ import {
   eachDayOfInterval,
   isSunday,
   isSaturday,
+  startOfDay,
+  endOfDay,
 } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
 import {
@@ -95,8 +97,9 @@ export default function Zeiterfassungsverwaltung() {
         selectedAdmin === "alle" || r.admin?.name === selectedAdmin;
       const recordDate = new Date(r.time);
       const matchDate =
-        (!dateFilter.start || recordDate >= dateFilter.start) &&
-        (!dateFilter.end || recordDate <= dateFilter.end);
+        (!dateFilter.start || recordDate >= startOfDay(dateFilter.start)) &&
+        (!dateFilter.end || recordDate <= endOfDay(dateFilter.end));
+
       return matchAdmin && matchDate;
     });
   }, [records, selectedAdmin, dateFilter]);
@@ -251,8 +254,8 @@ export default function Zeiterfassungsverwaltung() {
           "x-admin-id": session.user.id,
         },
         body: JSON.stringify({
-          start: deleteRange.start,
-          end: deleteRange.end,
+          start: startOfDay(deleteRange.start),
+          end: endOfDay(deleteRange.end),
           adminId: selectedAdmin !== "alle" ? session.user.id : null,
         }),
       });
@@ -330,8 +333,8 @@ export default function Zeiterfassungsverwaltung() {
         r.admin?.name === printConfig.employee;
       const recordDate = new Date(r.time);
       const matchDate =
-        recordDate >= printConfig.startDate &&
-        recordDate <= printConfig.endDate;
+        recordDate >= startOfDay(printConfig.startDate) &&
+        recordDate <= endOfDay(printConfig.endDate);
       return matchEmployee && matchDate;
     });
 
