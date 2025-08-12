@@ -93,6 +93,20 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
             badge: null,
             color: "orange",
           },
+          {
+            href: "/excel",
+            icon: <FiPieChart />,
+            label: "Buchhaltung",
+            badge: null,
+            color: "green",
+          },
+          {
+            href: "/Reg",
+            icon: <FiUserPlus />,
+            label: "Admin hinzufügen",
+            badge: null,
+            color: "pink",
+          },
         ]
       : []),
   ];
@@ -111,20 +125,6 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
       icon: <FiFileText />,
       label: "Fahrzeugscheine",
       description: "Dokumente verwalten",
-      color: "pink",
-    },
-    {
-      href: "/excel",
-      icon: <FiPieChart />,
-      label: "Buchhaltung",
-      badge: null,
-      color: "green",
-    },
-    {
-      href: "/Reg",
-      icon: <FiUserPlus />,
-      label: "Admin hinzufügen",
-      badge: null,
       color: "pink",
     },
 

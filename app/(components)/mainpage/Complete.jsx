@@ -18,7 +18,7 @@ const Complete = () => {
     <main className="relative bg-black text-white">
       {/*  Grid SVG in the background */}
       <HeroSection />
-      <DiscountPopup />
+
       <OpelPremiumAd />
       <AdPromotion />
       <LandingChoices />
