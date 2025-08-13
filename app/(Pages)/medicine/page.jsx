@@ -101,22 +101,20 @@ function FallbackImg({ src, alt, className }) {
 function StatCard({ icon: Icon, value, label, color }) {
   return (
     <motion.div
-      whileHover={{ y: -2 }}
-      className={`bg-white rounded-lg p-3 sm:p-4 border-l-4 ${color} shadow-sm min-w-0`}
+      whileHover={{ y: -1 }}
+      className={`bg-white rounded-md px-3 py-2 border-l-2 ${color} shadow-sm`}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider truncate">
+          <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide truncate">
             {label}
           </p>
-          <h3 className="text-lg sm:text-xl font-bold text-gray-800 mt-1 truncate">
+          <h3 className="text-base font-bold text-gray-800 leading-tight truncate">
             {value}
           </h3>
         </div>
-        <div
-          className={`p-1.5 sm:p-2 rounded-lg ${color.replace("border", "bg")}`}
-        >
-          <Icon className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+        <div className={`p-1.5 rounded-md ${color.replace("border", "bg")}`}>
+          <Icon className="h-4 w-4 shrink-0" />
         </div>
       </div>
     </motion.div>
@@ -230,9 +228,12 @@ function MedicineModal({ medicine, onClose }) {
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="relative mx-auto my-6 w-[92%] sm:w-[85%] md:w-[760px] lg:w-[800px] max-w-[95vw] bg-white rounded-xl shadow-xl overflow-hidden"
+        className="relative mx-auto my-4 sm:my-6 
+w-[92%] sm:w-[85%] md:w-[760px] lg:w-[800px] max-w-[95vw] 
+bg-white rounded-xl shadow-xl 
+max-h-[90vh] flex flex-col overflow-hidden"
       >
-        <div className="px-5 py-4 border-b flex items-center justify-between">
+        <div className="px-5 py-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">
               {medicine.name}
@@ -250,108 +251,111 @@ function MedicineModal({ medicine, onClose }) {
           </button>
         </div>
 
-        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <div className="h-48 bg-gray-50 rounded-lg overflow-hidden mb-4">
-              <FallbackImg
-                src={medicine.image}
-                alt={medicine.name}
-                className="w-full h-full object-contain"
-              />
-            </div>
-
-            <div className="mb-4">
-              <h4 className="font-medium text-gray-900 text-sm mb-1.5">
-                Description
-              </h4>
-              <p className="text-gray-600 text-sm">{medicine.description}</p>
-            </div>
-
-            <div className="mb-2">
-              <h4 className="font-medium text-gray-900 text-sm mb-1.5">
-                Quality Control
-              </h4>
-              <div className="flex items-center text-sm">
-                <FiShield className="text-green-500 mr-2" />
-                <span className="text-gray-700">{medicine.qualityControl}</span>
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <div className="h-48 bg-gray-50 rounded-lg overflow-hidden mb-4">
+                <FallbackImg
+                  src={medicine.image}
+                  alt={medicine.name}
+                  className="w-full h-full object-contain"
+                />
               </div>
-            </div>
-          </div>
 
-          <div>
-            <div className="bg-indigo-50 rounded-lg p-4 mb-4">
-              <h4 className="font-medium text-indigo-900 text-sm mb-2">
-                Production Details
-              </h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Status:</span>
-                  <span className="font-medium">{medicine.status}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Batch Size:</span>
-                  <span className="font-medium">
-                    {Number(medicine.batchSize).toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Last Produced:</span>
-                  <span className="font-medium">
-                    {medicine.lastProduced
-                      ? new Date(medicine.lastProduced).toLocaleDateString()
-                      : "—"}
-                  </span>
-                </div>
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-900 text-sm mb-1.5">
+                  Description
+                </h4>
+                <p className="text-gray-600 text-sm">{medicine.description}</p>
               </div>
-            </div>
 
-            <div className="mb-4">
-              <h4 className="font-medium text-gray-900 text-sm mb-2">
-                Employee Requirements
-              </h4>
-              <div className="border border-gray-200 rounded-lg p-3 bg-white">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <FiUsers className="text-indigo-500 mr-2" />
-                    <span className="font-medium">Total Employees:</span>
-                  </div>
-                  <span className="text-lg font-bold text-indigo-600">
-                    {medicine.employeesRequired}
+              <div className="mb-2">
+                <h4 className="font-medium text-gray-900 text-sm mb-1.5">
+                  Quality Control
+                </h4>
+                <div className="flex items-center text-sm">
+                  <FiShield className="text-green-500 mr-2" />
+                  <span className="text-gray-700">
+                    {medicine.qualityControl}
                   </span>
-                </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-indigo-500"
-                    style={{
-                      width: `${Math.min(
-                        Number(medicine.employeesRequired || 0) * 5,
-                        100
-                      )}%`,
-                    }}
-                  />
                 </div>
               </div>
             </div>
 
             <div>
-              <h4 className="font-medium text-gray-900 text-sm mb-2">
-                Key Ingredients
-              </h4>
-              <div className="flex flex-wrap gap-1.5">
-                {(medicine.ingredients || []).map((ing, i) => (
-                  <span
-                    key={`${ing}-${i}`}
-                    className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded"
-                  >
-                    {ing}
-                  </span>
-                ))}
+              <div className="bg-indigo-50 rounded-lg p-4 mb-4">
+                <h4 className="font-medium text-indigo-900 text-sm mb-2">
+                  Production Details
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Status:</span>
+                    <span className="font-medium">{medicine.status}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Batch Size:</span>
+                    <span className="font-medium">
+                      {Number(medicine.batchSize).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Last Produced:</span>
+                    <span className="font-medium">
+                      {medicine.lastProduced
+                        ? new Date(medicine.lastProduced).toLocaleDateString()
+                        : "—"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-900 text-sm mb-2">
+                  Employee Requirements
+                </h4>
+                <div className="border border-gray-200 rounded-lg p-3 bg-white">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      <FiUsers className="text-indigo-500 mr-2" />
+                      <span className="font-medium">Total Employees:</span>
+                    </div>
+                    <span className="text-lg font-bold text-indigo-600">
+                      {medicine.employeesRequired}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-indigo-500"
+                      style={{
+                        width: `${Math.min(
+                          Number(medicine.employeesRequired || 0) * 5,
+                          100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-medium text-gray-900 text-sm mb-2">
+                  Key Ingredients
+                </h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {(medicine.ingredients || []).map((ing, i) => (
+                    <span
+                      key={`${ing}-${i}`}
+                      className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded"
+                    >
+                      {ing}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        <div className="px-5 py-3 border-t flex justify-end">
+        <div className="px-5 py-3 border-t flex justify-end sticky bottom-0 bg-white z-10">
           <button
             onClick={onClose}
             className="inline-flex items-center px-3 py-1.5 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
@@ -793,16 +797,13 @@ export default function MedicineProduction() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <header className="mb-5">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-            Pharma Production Dashboard
+          <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
+            Pharma Production
           </h1>
-          <p className="text-gray-600 text-sm mt-1">
-            Track medicine production and employee allocation
-          </p>
         </header>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
+        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
           <StatCard
             icon={FiPackage}
             value={data.length}
@@ -824,89 +825,49 @@ export default function MedicineProduction() {
         </div>
 
         {/* Controls */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative flex-1 max-w-xl">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        {/* Controls — COMPACT TOOLBAR */}
+        <div className="bg-white rounded-md border border-gray-200 p-2 mb-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[220px] max-w-xl">
+              <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
                 <FiSearch className="h-4 w-4 text-gray-400" />
               </div>
               <input
                 type="text"
-                placeholder="Search medicines..."
-                className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Search medicines…"
+                className="block w-full pl-7 pr-2 py-1.5 border border-gray-300 rounded-md text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            <div className="hidden sm:flex items-center gap-3">
-              <div className="flex items-center">
-                <select
-                  className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  {categories.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {/* Right side: Category + Add */}
+            <div className="flex items-center gap-2">
+              <select
+                className="border border-gray-300 rounded-md px-2 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+
               <button
                 onClick={() => {
                   setEditTarget(null);
                   setShowUpsert(true);
                 }}
-                className="inline-flex items-center gap-1 px-3 py-2 rounded-md bg-indigo-600 text-white text-sm hover:bg-indigo-700"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-indigo-600 text-white text-xs hover:bg-indigo-700"
               >
-                <FiPlus className="h-4 w-4" /> Add
+                <FiPlus className="h-4 w-4" />
+                <span className="hidden xs:inline">Add</span>
               </button>
             </div>
-
-            <button
-              onClick={() => setShowFilters((v) => !v)}
-              className="sm:hidden inline-flex items-center gap-1 px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700"
-            >
-              {showFilters ? <FiChevronUp /> : <FiChevronDown />} Filters
-            </button>
           </div>
-
-          <AnimatePresence initial={false}>
-            {showFilters && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="sm:hidden overflow-hidden"
-              >
-                <div className="pt-3 flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <select
-                      className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
-                      value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                    >
-                      {categories.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => {
-                        setEditTarget(null);
-                        setShowUpsert(true);
-                      }}
-                      className="inline-flex items-center gap-1 px-3 py-2 rounded-md bg-indigo-600 text-white text-sm hover:bg-indigo-700"
-                    >
-                      <FiPlus className="h-4 w-4" /> Add
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
 
         {/* Grid */}
