@@ -14,6 +14,7 @@ import {
   FiTrash2,
   FiChevronDown,
   FiChevronUp,
+  FiMoreVertical,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -122,6 +123,8 @@ function StatCard({ icon: Icon, value, label, color }) {
 }
 
 function MedicineCard({ medicine, selected, onClick, onEdit, onDelete }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <motion.div layout className="relative group">
       <motion.button
@@ -182,8 +185,8 @@ function MedicineCard({ medicine, selected, onClick, onEdit, onDelete }) {
         </div>
       </motion.button>
 
-      {/* edit / delete actions */}
-      <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Desktop hover actions */}
+      <div className="absolute top-2 left-2 hidden sm:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -204,6 +207,47 @@ function MedicineCard({ medicine, selected, onClick, onEdit, onDelete }) {
         >
           <FiTrash2 className="h-3 w-3" />
         </button>
+      </div>
+
+      {/* Mobile three-dots menu */}
+      {/* Mobile three-dots menu */}
+      <div className="absolute top-2 left-2 sm:hidden">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setMobileMenuOpen((v) => !v);
+          }}
+          className="bg-white text-gray-700 p-1 rounded shadow border border-gray-200"
+          aria-label="More options"
+        >
+          <FiMoreVertical className="h-3.5 w-3.5" />
+        </button>
+
+        {mobileMenuOpen && (
+          <div
+            className="absolute mt-1 bg-white rounded shadow border border-gray-200 z-10 min-w-[100px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onEdit?.();
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-100 w-full text-left"
+            >
+              <FiEdit2 className="h-3 w-3" /> Edit
+            </button>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onDelete?.();
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 w-full text-left"
+            >
+              <FiTrash2 className="h-3 w-3" /> Delete
+            </button>
+          </div>
+        )}
       </div>
     </motion.div>
   );
