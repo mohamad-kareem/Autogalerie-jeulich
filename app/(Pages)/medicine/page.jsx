@@ -827,9 +827,9 @@ export default function MedicineProduction() {
         {/* Controls */}
         {/* Controls — COMPACT TOOLBAR */}
         <div className="bg-white rounded-md border border-gray-200 p-2 mb-3">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
             {/* Search */}
-            <div className="relative flex-1 min-w-[220px] max-w-xl">
+            <div className="relative flex-1 min-w-[140px]">
               <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
                 <FiSearch className="h-4 w-4 text-gray-400" />
               </div>
@@ -842,31 +842,30 @@ export default function MedicineProduction() {
               />
             </div>
 
-            {/* Right side: Category + Add */}
-            <div className="flex items-center gap-2">
-              <select
-                className="border border-gray-300 rounded-md px-2 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                {categories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+            {/* Filter */}
+            <select
+              className="border border-gray-300 rounded-md px-2 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
 
-              <button
-                onClick={() => {
-                  setEditTarget(null);
-                  setShowUpsert(true);
-                }}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-indigo-600 text-white text-xs hover:bg-indigo-700"
-              >
-                <FiPlus className="h-4 w-4" />
-                <span className="hidden xs:inline">Add</span>
-              </button>
-            </div>
+            {/* Add button - hidden on mobile */}
+            <button
+              onClick={() => {
+                setEditTarget(null);
+                setShowUpsert(true);
+              }}
+              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-indigo-600 text-white text-xs hover:bg-indigo-700"
+            >
+              <FiPlus className="h-4 w-4" />
+              <span>Add</span>
+            </button>
           </div>
         </div>
 
