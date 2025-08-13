@@ -98,6 +98,13 @@ function FallbackImg({ src, alt, className }) {
     />
   );
 }
+function Spinner() {
+  return (
+    <div className="flex justify-center items-center py-16">
+      <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent" />
+    </div>
+  );
+}
 
 function StatCard({ icon: Icon, value, label, color }) {
   return (
@@ -415,28 +422,37 @@ max-h-[90vh] flex flex-col overflow-hidden"
 function UpsertMedicineModal({ open, onClose, initial, onSave }) {
   const isEdit = Boolean(initial?._id);
 
-  const [form, setForm] = useState({
-    name: initial?.name || "",
-    category: initial?.category || "Vitamins",
-    productionTime: initial?.productionTime || "3 days",
-    employeesRequired: initial?.employeesRequired ?? 8,
-    difficulty: initial?.difficulty || "Low",
-    ingredients: (initial?.ingredients || []).join(", "),
-    description: initial?.description || "",
-    status: initial?.status || "Active Production",
-    batchSize: initial?.batchSize ?? 1000,
-    qualityControl: initial?.qualityControl || "",
-    lastProduced: initial?.lastProduced
-      ? new Date(initial.lastProduced).toISOString().slice(0, 10)
+  // Build form state from the "initial" item
+  const buildForm = (i) => ({
+    name: i?.name || "",
+    category: i?.category || "Vitamins",
+    productionTime: i?.productionTime || "3 days",
+    employeesRequired: i?.employeesRequired ?? 8,
+    difficulty: i?.difficulty || "Low",
+    ingredients: Array.isArray(i?.ingredients)
+      ? i.ingredients.join(", ")
+      : i?.ingredients || "",
+    description: i?.description || "",
+    status: i?.status || "Active Production",
+    batchSize: i?.batchSize ?? 1000,
+    qualityControl: i?.qualityControl || "",
+    lastProduced: i?.lastProduced
+      ? new Date(i.lastProduced).toISOString().slice(0, 10)
       : new Date().toISOString().slice(0, 10),
-    imageUrl: initial?.image || "/B12.png",
-    imagePublicId: initial?.imagePublicId || "",
+    imageUrl: i?.image || "/B12.png",
+    imagePublicId: i?.imagePublicId || "",
     imageFile: null,
   });
 
+  const [form, setForm] = useState(buildForm(initial));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const firstFieldRef = useRef(null);
+
+  // ✅ Re-seed the form every time the modal opens or the target item changes
+  useEffect(() => {
+    if (open) setForm(buildForm(initial));
+  }, [initial, open]);
 
   useEffect(() => {
     if (open) setTimeout(() => firstFieldRef.current?.focus(), 50);
@@ -449,6 +465,7 @@ function UpsertMedicineModal({ open, onClose, initial, onSave }) {
   async function submit(e) {
     e.preventDefault();
     setError("");
+
     if (!form.name.trim()) return setError("Name is required.");
     if (!form.description.trim()) return setError("Description is required.");
     if (!form.category.trim()) return setError("Category is required.");
@@ -470,7 +487,7 @@ function UpsertMedicineModal({ open, onClose, initial, onSave }) {
         productionTime: form.productionTime,
         employeesRequired: Number(form.employeesRequired) || 0,
         difficulty: form.difficulty,
-        ingredients: form.ingredients
+        ingredients: String(form.ingredients)
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
@@ -503,12 +520,14 @@ function UpsertMedicineModal({ open, onClose, initial, onSave }) {
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50"
         >
-          {/* Backdrop centered container */}
+          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-gray-900/60"
             onClick={onClose}
             aria-hidden="true"
           />
+
+          {/* Dialog */}
           <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-6">
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: 8 }}
@@ -518,7 +537,7 @@ function UpsertMedicineModal({ open, onClose, initial, onSave }) {
               role="dialog"
               aria-modal="true"
             >
-              {/* Sticky header */}
+              {/* Header */}
               <div className="px-5 py-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
                 <h3 className="text-base font-semibold">
                   {isEdit ? "Edit Medicine" : "Add New Medicine"}
@@ -532,7 +551,7 @@ function UpsertMedicineModal({ open, onClose, initial, onSave }) {
                 </button>
               </div>
 
-              {/* Scrollable body */}
+              {/* Body */}
               <form onSubmit={submit} className="flex-1 overflow-y-auto">
                 <div className="p-5 space-y-4">
                   {error && (
@@ -723,7 +742,7 @@ function UpsertMedicineModal({ open, onClose, initial, onSave }) {
                   </div>
                 </div>
 
-                {/* Sticky footer */}
+                {/* Footer */}
                 <div className="px-5 py-3 border-t bg-white sticky bottom-0">
                   <div className="flex items-center justify-end gap-2">
                     <button
@@ -840,14 +859,14 @@ export default function MedicineProduction() {
     <div className="min-h-screen bg-gray-50 p-4 sm:p-5">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <header className="mb-5">
+        <header className="mb-3">
           <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
             Pharma Production
           </h1>
         </header>
 
         {/* Stats */}
-        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
+        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
           <StatCard
             icon={FiPackage}
             value={data.length}
@@ -870,7 +889,7 @@ export default function MedicineProduction() {
 
         {/* Controls */}
         {/* Controls — COMPACT TOOLBAR */}
-        <div className="bg-white rounded-md border border-gray-200 p-2 mb-3">
+        <div className="bg-white rounded-md  p-2 mb-3">
           <div className="flex items-center gap-2">
             {/* Search */}
             <div className="relative flex-1 min-w-[140px]">
@@ -880,7 +899,7 @@ export default function MedicineProduction() {
               <input
                 type="text"
                 placeholder="Search medicines…"
-                className="block w-full pl-7 pr-2 py-1.5 border border-gray-300 rounded-md text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                className="block w-full pl-7 pr-2 py-1.5 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -915,9 +934,7 @@ export default function MedicineProduction() {
 
         {/* Grid */}
         {loading ? (
-          <div className="text-center text-gray-600 py-16 text-sm">
-            Loading...
-          </div>
+          <Spinner />
         ) : data.length ? (
           <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             <AnimatePresence>
@@ -969,6 +986,7 @@ export default function MedicineProduction() {
 
       {/* Modals */}
       <UpsertMedicineModal
+        key={editTarget?._id ?? "new"}
         open={showUpsert}
         onClose={() => setShowUpsert(false)}
         initial={editTarget}
