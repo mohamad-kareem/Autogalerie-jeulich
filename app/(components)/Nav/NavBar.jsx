@@ -44,6 +44,7 @@ export default function NavBar() {
     "/kaufvertrag/[id]",
     "/TrackVisitors76546633",
     "/Vehicles",
+    "/medicine",
   ];
 
   const isAdminRoute = adminRoutes.some((route) => pathname?.startsWith(route));
