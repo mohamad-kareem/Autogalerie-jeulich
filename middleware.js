@@ -52,5 +52,6 @@ export const config = {
     "/kaufvertrag/form/:path*",
     "/kaufvertrag/:id/:path*",
     "/Auto-scheins/:path*",
+    "/Autoteil/:path*",
   ],
 };
