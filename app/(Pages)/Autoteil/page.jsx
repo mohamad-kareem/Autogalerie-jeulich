@@ -34,8 +34,16 @@ const currencyFmt = (v, currency = "EUR") => {
     return `${currency} ${Number(v ?? 0).toFixed(2)}`;
   }
 };
+const parseNum = (v) => {
+  if (v == null || v === "") return 0;
+  if (typeof v === "number") return v;
+  const s = String(v)
+    .replace(/[^\d,.-]/g, "")
+    .replace(",", ".");
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
+};
 
-// compact pagination items with ellipses
 const getPageItems = (page, pages) => {
   if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
   const items = [1];
@@ -54,7 +62,6 @@ export default function ReclamationDashboard() {
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // filters & paging
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
@@ -65,7 +72,6 @@ export default function ReclamationDashboard() {
     pages: 1,
   });
 
-  // add / edit
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
 
@@ -97,7 +103,7 @@ export default function ReclamationDashboard() {
       const res = await fetch(`/api/parts/reclamation?${params}`);
       const data = await res.json();
       if (!data.success) {
-        toast.error(data.error || "Failed to fetch parts");
+        toast.error(data.error || "Fehler beim Laden der Teile");
         return;
       }
       setParts(data.data || []);
@@ -160,14 +166,18 @@ export default function ReclamationDashboard() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          price: parseNum(form.price),
+          quantity: Math.max(1, parseInt(form.quantity, 10) || 1),
+        }),
       });
       const data = await res.json();
       if (!data.success) {
-        toast.error(data.error || "Failed to save");
+        toast.error(data.error || "Speichern fehlgeschlagen");
         return;
       }
-      toast.success(editing ? "Part updated" : "Part added");
+      toast.success(editing ? "Teil aktualisiert" : "Teil hinzugefügt");
       closeForm();
       setPagination((p) => ({ ...p, page: 1 }));
       fetchParts();
@@ -184,8 +194,9 @@ export default function ReclamationDashboard() {
         body: JSON.stringify({ status: newStatus }),
       });
       const data = await res.json();
-      if (!data.success) return toast.error(data.error || "Failed to update");
-      toast.success("Status updated");
+      if (!data.success)
+        return toast.error(data.error || "Aktualisierung fehlgeschlagen");
+      toast.success("Status aktualisiert");
       fetchParts();
     } catch (e) {
       toast.error(e.message);
@@ -193,7 +204,7 @@ export default function ReclamationDashboard() {
   };
 
   const markReturned = async (id) => {
-    const returnReason = prompt("Enter return reason:");
+    const returnReason = prompt("Rückgabegrund eingeben:");
     if (!returnReason) return;
     try {
       const res = await fetch(`/api/parts/reclamation/${id}`, {
@@ -207,8 +218,9 @@ export default function ReclamationDashboard() {
         }),
       });
       const data = await res.json();
-      if (!data.success) return toast.error(data.error || "Failed to update");
-      toast.success("Marked as returned");
+      if (!data.success)
+        return toast.error(data.error || "Aktualisierung fehlgeschlagen");
+      toast.success("Als zurückgegeben markiert");
       fetchParts();
     } catch (e) {
       toast.error(e.message);
@@ -216,19 +228,21 @@ export default function ReclamationDashboard() {
   };
 
   const deletePart = async (id) => {
-    if (!confirm("Delete this part?")) return;
+    if (!confirm("Dieses Teil wirklich löschen?")) return;
     try {
       const res = await fetch(`/api/parts/reclamation/${id}`, {
         method: "DELETE",
       });
       const data = await res.json();
-      if (!data.success) return toast.error(data.error || "Failed to delete");
-      toast.success("Deleted");
+      if (!data.success)
+        return toast.error(data.error || "Löschen fehlgeschlagen");
+      toast.success("Gelöscht");
       fetchParts();
     } catch (e) {
       toast.error(e.message);
     }
   };
+
   const buildPrintTable = (items) => {
     const rows = items
       .map(
@@ -257,14 +271,14 @@ export default function ReclamationDashboard() {
       <thead>
         <tr>
           <th>#</th>
-          <th>Part</th>
-          <th>Vehicle</th>
+          <th>Teil</th>
+          <th>Fahrzeug</th>
           <th>FIN</th>
-          <th style="text-align:right;">Qty</th>
-          <th style="text-align:right;">Total</th>
+          <th style="text-align:right;">Menge</th>
+          <th style="text-align:right;">Gesamt</th>
           <th style="text-align:right;">Status</th>
-          <th style="text-align:right;">Owner</th>
-          <th style="text-align:right;">Date</th>
+          <th style="text-align:right;">Besitzer</th>
+          <th style="text-align:right;">Datum</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -272,16 +286,18 @@ export default function ReclamationDashboard() {
   `;
   };
 
-  const printParts = (items, title = "Parts Reclamation — List") => {
+  const printParts = (items, title = "Reklamationsteile - Liste") => {
     const w = window.open("", "_blank");
     if (!w)
-      return toast.error("Pop-up blocked. Please allow pop-ups to print.");
+      return toast.error(
+        "Pop-up blockiert. Bitte Pop-ups erlauben zum Drucken."
+      );
 
     const now = new Date();
     const info = `
     <div class="meta">
-      <div><strong>Printed:</strong> ${now.toLocaleString()}</div>
-      <div><strong>Total rows:</strong> ${items.length}</div>
+      <div><strong>Gedruckt:</strong> ${now.toLocaleString()}</div>
+      <div><strong>Gesamtanzahl:</strong> ${items.length}</div>
     </div>
   `;
 
@@ -328,16 +344,15 @@ export default function ReclamationDashboard() {
   };
 
   const printSingle = (part) => {
-    printParts([part], `Parts Reclamation — ${part.partName || "Item"}`);
+    printParts([part], `Reklamationsteil - ${part.partName || "Artikel"}`);
   };
 
   const stats = useMemo(() => {
-    const totalValue = parts.reduce(
-      (sum, p) =>
-        sum +
-        (Number(p.totalCost) || Number(p.price || 0) * Number(p.quantity || 1)),
-      0
-    );
+    const totalValue = parts.reduce((sum, p) => {
+      const price = parseNum(p.price);
+      const qty = parseNum(p.quantity) || 1;
+      return sum + price * qty;
+    }, 0);
     const pending = parts.filter((p) => p.status === "pending").length;
     return { totalValue, pending };
   }, [parts]);
@@ -350,32 +365,32 @@ export default function ReclamationDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
       <div className="mx-auto w-full max-w-7xl">
-        {/* Header */}
         <header className="mb-3 sm:mb-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h1 className="text-lg sm:text-xl font-bold text-gray-900">
-              Parts Reclamation
+              Reklamationsverwaltung
             </h1>
           </div>
         </header>
 
-        {/* Compact Stats */}
         <div className="mb-3 grid grid-cols-3 gap-2 sm:gap-3">
           <div className="rounded-md border border-gray-200 bg-white p-2 shadow-xs">
             <h3 className="text-[10px] font-medium text-gray-500">
-              Total Parts
+              Gesamtteile
             </h3>
             <p className="text-sm font-bold text-gray-900">
               {pagination.total}
             </p>
           </div>
           <div className="rounded-md border border-gray-200 bg-white p-2 shadow-xs">
-            <h3 className="text-[10px] font-medium text-gray-500">Pending</h3>
+            <h3 className="text-[10px] font-medium text-gray-500">
+              Ausstehend
+            </h3>
             <p className="text-sm font-bold text-yellow-600">{stats.pending}</p>
           </div>
           <div className="rounded-md border border-gray-200 bg-white p-2 shadow-xs">
             <h3 className="text-[10px] font-medium text-gray-500">
-              Total Value
+              Gesamtwert
             </h3>
             <p className="text-sm font-bold text-blue-700">
               {currencyFmt(stats.totalValue, "EUR")}
@@ -383,14 +398,13 @@ export default function ReclamationDashboard() {
           </div>
         </div>
 
-        {/* Compact Search & Filters */}
         <div className="mb-3 rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative flex-1">
               <FiSearch className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
               <input
                 type="text"
-                placeholder="Search parts..."
+                placeholder="Teile suchen..."
                 className="w-full rounded-md border border-gray-300 pl-8 pr-2 py-1.5 h-8 text-xs sm:text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-200"
                 value={searchTerm}
                 onChange={(e) => {
@@ -401,7 +415,7 @@ export default function ReclamationDashboard() {
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2">
-              <div className="flex items-center gap-1 rounded-md border border-gray-300 bg-gray-50 px-2 py-1 text-xs">
+              <div className="flex items-center gap-1 rounded-md border border-gray-300 bg-gray-50 px-1 py-1 text-xs">
                 <FiFilter className="text-gray-500 text-xs" />
                 <select
                   className="bg-transparent text-xs focus:outline-none"
@@ -411,12 +425,12 @@ export default function ReclamationDashboard() {
                     setPagination((p) => ({ ...p, page: 1 }));
                   }}
                 >
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="ordered">Ordered</option>
-                  <option value="received">Received</option>
-                  <option value="installed">Installed</option>
-                  <option value="returned">Returned</option>
+                  <option value="all">Alle Status</option>
+                  <option value="pending">Ausstehend</option>
+                  <option value="ordered">Bestellt</option>
+                  <option value="received">Erhalten</option>
+                  <option value="installed">Eingebaut</option>
+                  <option value="returned">Zurückgegeben</option>
                 </select>
               </div>
 
@@ -430,7 +444,7 @@ export default function ReclamationDashboard() {
                     setPagination((p) => ({ ...p, page: 1 }));
                   }}
                 >
-                  <option value="all">All Owners</option>
+                  <option value="all">Besitzer</option>
                   {OWNERS.map((o) => (
                     <option key={o} value={o}>
                       {o}
@@ -444,9 +458,9 @@ export default function ReclamationDashboard() {
                 onClick={() => printParts(parts)}
                 disabled={loading || parts.length === 0}
                 className="inline-flex items-center gap-1 rounded-md bg-gray-700 px-2.5 py-1.5 text-xs sm:text-sm font-medium text-white shadow-sm transition hover:bg-gray-800 disabled:opacity-60"
-                title="Print current list"
+                title="Aktuelle Liste drucken"
               >
-                <FiPrinter className="text-sm" /> Print
+                <FiPrinter className="text-sm" /> Drucken
               </button>
 
               <button
@@ -454,12 +468,11 @@ export default function ReclamationDashboard() {
                 disabled={loading}
                 className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-2.5 py-1.5 text-xs sm:text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60"
               >
-                <FiPlus className="text-sm" /> Add Part
+                <FiPlus className="text-sm" /> Teil hinzufügen
               </button>
             </div>
           </div>
 
-          {/* Add/Edit Form */}
           {showForm && (
             <form
               onSubmit={handleSubmit}
@@ -467,21 +480,21 @@ export default function ReclamationDashboard() {
             >
               <div className="mb-2 flex items-center justify-between">
                 <h3 className="text-sm font-semibold">
-                  {editing ? "Edit Part" : "New Part"}
+                  {editing ? "Teil bearbeiten" : "Neues Teil"}
                 </h3>
                 <button
                   type="button"
                   className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 text-xs"
                   onClick={closeForm}
                 >
-                  <FiX /> Close
+                  <FiX /> Schließen
                 </button>
               </div>
 
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
                   <label className="mb-0.5 block text-xs font-medium text-gray-700">
-                    Part Name *
+                    Teilename *
                   </label>
                   <input
                     type="text"
@@ -495,7 +508,7 @@ export default function ReclamationDashboard() {
 
                 <div>
                   <label className="mb-0.5 block text-xs font-medium text-gray-700">
-                    Vehicle Name/VIN *
+                    Fahrzeugname/VIN *
                   </label>
                   <input
                     type="text"
@@ -509,7 +522,7 @@ export default function ReclamationDashboard() {
 
                 <div>
                   <label className="mb-0.5 block text-xs font-medium text-gray-700">
-                    FIN Number
+                    FIN-Nummer
                   </label>
                   <input
                     type="text"
@@ -522,7 +535,7 @@ export default function ReclamationDashboard() {
 
                 <div>
                   <label className="mb-0.5 block text-xs font-medium text-gray-700">
-                    Quantity
+                    Menge
                   </label>
                   <input
                     type="number"
@@ -536,7 +549,7 @@ export default function ReclamationDashboard() {
 
                 <div>
                   <label className="mb-0.5 block text-xs font-medium text-gray-700">
-                    Price
+                    Preis
                   </label>
                   <div className="relative">
                     <FiDollarSign className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
@@ -554,7 +567,7 @@ export default function ReclamationDashboard() {
 
                 <div>
                   <label className="mb-0.5 block text-xs font-medium text-gray-700">
-                    Currency
+                    Währung
                   </label>
                   <select
                     name="currency"
@@ -578,17 +591,17 @@ export default function ReclamationDashboard() {
                     onChange={onFormChange}
                     className="w-full rounded-md border border-gray-300 px-2 py-1.5 h-8 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-200"
                   >
-                    <option value="pending">Pending</option>
-                    <option value="ordered">Ordered</option>
-                    <option value="received">Received</option>
-                    <option value="installed">Installed</option>
-                    <option value="returned">Returned</option>
+                    <option value="pending">Ausstehend</option>
+                    <option value="ordered">Bestellt</option>
+                    <option value="received">Erhalten</option>
+                    <option value="installed">Eingebaut</option>
+                    <option value="returned">Zurückgegeben</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="mb-0.5 block text-xs font-medium text-gray-700">
-                    Supplier
+                    Lieferant
                   </label>
                   <input
                     type="text"
@@ -601,7 +614,7 @@ export default function ReclamationDashboard() {
 
                 <div>
                   <label className="mb-0.5 block text-xs font-medium text-gray-700">
-                    Owner *
+                    Besitzer *
                   </label>
                   <select
                     name="owner"
@@ -627,14 +640,14 @@ export default function ReclamationDashboard() {
                     className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-xs text-gray-700">
-                    Return to Supplier?
+                    Rückgabe an Lieferant?
                   </span>
                 </div>
               </div>
 
               <div className="mt-2">
                 <label className="mb-0.5 block text-xs font-medium text-gray-700">
-                  Notes
+                  Notizen
                 </label>
                 <textarea
                   name="notes"
@@ -651,34 +664,34 @@ export default function ReclamationDashboard() {
                   onClick={closeForm}
                   className="rounded-md border border-gray-300 px-2.5 py-1.5 text-xs text-gray-700 transition hover:bg-gray-100"
                 >
-                  Cancel
+                  Abbrechen
                 </button>
                 <button
                   type="submit"
                   className="inline-flex items-center gap-1 rounded-md bg-green-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-green-700"
                 >
-                  <FiSave size={12} /> {editing ? "Save" : "Add Part"}
+                  <FiSave size={12} />{" "}
+                  {editing ? "Speichern" : "Teil hinzufügen"}
                 </button>
               </div>
             </form>
           )}
         </div>
 
-        {/* Professional Table */}
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <div className="max-h-[calc(100vh-280px)] overflow-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="sticky top-0 z-10 bg-gray-50">
                 <tr className="text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  <th className="px-5 py-2">Part</th>
-                  <th className="px-3 py-2">Vehicle</th>
-                  <th className="px-3 py-2">Supplier</th>
-                  <th className="px-1 py-2 text-right">Qty</th>
-                  <th className="px-5 py-2 text-right">Total</th>
+                  <th className="px-3 py-2">Teil</th>
+                  <th className="px-3 py-2">Fahrzeug</th>
+                  <th className="px-3 py-2">Lieferant</th>
+                  <th className="px-1 py-2 text-right">Menge</th>
+                  <th className="px-5 py-2 text-right">Gesamt</th>
                   <th className="px-6 py-2 text-right">Status</th>
-                  <th className="px-3 py-2 text-right">Owner</th>
-                  <th className="px-5 py-2 text-right">Date</th>
-                  <th className="px-5 py-2 text-right">Actions</th>
+                  <th className="px-3 py-2 text-right">Besitzer</th>
+                  <th className="px-5 py-2 text-right">Datum</th>
+                  <th className="px-5 py-2 text-right">Aktionen</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
@@ -697,10 +710,10 @@ export default function ReclamationDashboard() {
                     <td colSpan={9} className="px-3 py-8 text-center">
                       <div className="mx-auto max-w-md">
                         <div className="mb-1 text-sm font-medium text-gray-700">
-                          No parts found
+                          Keine Teile gefunden
                         </div>
                         <p className="text-gray-500 text-xs">
-                          Try adjusting your search or filters
+                          Suchbegriff oder Filter anpassen
                         </p>
                       </div>
                     </td>
@@ -721,7 +734,7 @@ export default function ReclamationDashboard() {
                             )}
                             {part.returnToSupplier && part.returnReason && (
                               <div className="mt-0.5 text-xs text-red-600 truncate">
-                                Returned: {part.returnReason}
+                                Zurückgegeben: {part.returnReason}
                               </div>
                             )}
                           </div>
@@ -739,18 +752,18 @@ export default function ReclamationDashboard() {
                         )}
                       </td>
 
-                      <td className="px-3 py-2">
+                      <td className="px-8 py-2">
                         <div className="text-sm text-gray-900 truncate max-w-[100px]">
                           {part.supplier || "-"}
                         </div>
                       </td>
-                      <td className="px-3 py-2 text-right text-sm text-gray-900">
+                      <td className="px-6 py-2 text-right text-sm text-gray-900">
                         {part.quantity}
                       </td>
 
                       <td className="px-3 py-2 text-right text-sm text-gray-900">
                         {currencyFmt(
-                          Number(part.price || 0) * Number(part.quantity || 1),
+                          parseNum(part.price) * (parseNum(part.quantity) || 1),
                           part.currency || "EUR"
                         )}
                       </td>
@@ -803,7 +816,7 @@ export default function ReclamationDashboard() {
                             <button
                               onClick={() => markReturned(part._id)}
                               className="rounded p-1 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                              title="Mark returned"
+                              title="Als zurückgegeben markieren"
                             >
                               <FiCornerUpLeft size={14} />
                             </button>
@@ -811,14 +824,14 @@ export default function ReclamationDashboard() {
                           <button
                             onClick={() => openEdit(part)}
                             className="rounded p-1 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                            title="Edit"
+                            title="Bearbeiten"
                           >
                             <FiEdit3 size={14} />
                           </button>
                           <button
                             onClick={() => deletePart(part._id)}
                             className="rounded p-1 text-red-600 hover:bg-red-50"
-                            title="Delete"
+                            title="Löschen"
                           >
                             <FiTrash2 size={14} />
                           </button>
@@ -831,7 +844,6 @@ export default function ReclamationDashboard() {
             </table>
           </div>
 
-          {/* Compact Pagination */}
           {parts.length > 0 && !loading && (
             <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs text-gray-600 border-t border-gray-200">
               <div className="flex items-center gap-1">
@@ -844,7 +856,7 @@ export default function ReclamationDashboard() {
                   }
                   disabled={pagination.page === 1}
                   className="rounded border border-gray-300 p-1 disabled:opacity-50"
-                  aria-label="Previous page"
+                  aria-label="Vorherige Seite"
                 >
                   <FiChevronLeft size={14} />
                 </button>
@@ -880,7 +892,7 @@ export default function ReclamationDashboard() {
                   }
                   disabled={pagination.page === pagination.pages}
                   className="rounded border border-gray-300 p-1 disabled:opacity-50"
-                  aria-label="Next page"
+                  aria-label="Nächste Seite"
                 >
                   <FiChevronRight size={14} />
                 </button>
