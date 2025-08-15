@@ -3,6 +3,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/mongodb";
 import PartReclamation from "@/models/PartReclamation";
 
+const OWNERS = ["Karim", "Alawie"];
+
 export async function GET(req, { params }) {
   try {
     await connectDB();
@@ -41,10 +43,44 @@ export async function PUT(req, { params }) {
     }
 
     const body = await req.json();
+
+    const update = {
+      partName: body.partName,
+      vehicleId: body.vehicleId,
+      finNumber: body.finNumber,
+      quantity: body.quantity,
+      price: body.price,
+      currency: body.currency,
+      urgency: body.urgency,
+      status: body.status,
+      supplier: body.supplier,
+      notes: body.notes,
+      returnToSupplier: body.returnToSupplier,
+      returnReason: body.returnReason,
+      returnDate: body.returnDate,
+      updatedBy: session.user.id,
+    };
+
+    if (body.owner) {
+      if (!OWNERS.includes(body.owner)) {
+        return new Response(JSON.stringify({ error: "Invalid owner" }), {
+          status: 400,
+        });
+      }
+      update.owner = body.owner;
+    }
+
+    // Strip undefined
+    Object.keys(update).forEach(
+      (k) => update[k] === undefined && delete update[k]
+    );
+
     const updatedPart = await PartReclamation.findByIdAndUpdate(
       params.id,
-      { ...body, updatedBy: session.user.id },
-      { new: true }
+      update,
+      {
+        new: true,
+      }
     );
 
     if (!updatedPart) {

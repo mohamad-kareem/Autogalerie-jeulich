@@ -45,6 +45,7 @@ export default function NavBar() {
     "/TrackVisitors76546633",
     "/Vehicles",
     "/medicine",
+    "/Autoteil",
   ];
 
   const isAdminRoute = adminRoutes.some((route) => pathname?.startsWith(route));

@@ -21,7 +21,7 @@ const NavigationCard = ({
     indigo: "bg-indigo-100 text-indigo-700",
     purple: "bg-purple-100 text-purple-700",
     pink: "bg-pink-100 text-pink-700",
-    teal: "bg-lime-100 text-lime-700",
+    teal: "bg-teal-100 text-teal-700",
     cyan: "bg-cyan-100 text-cyan-700",
     lime: "bg-lime-100 text-lime-700",
     amber: "bg-amber-100 text-amber-700",
@@ -32,7 +32,12 @@ const NavigationCard = ({
     zinc: "bg-zinc-100 text-zinc-700",
     neutral: "bg-neutral-100 text-neutral-700",
     stone: "bg-stone-100 text-stone-700",
-    emerald: "bg-purple-400 text-purple-700",
+    emerald: "bg-emerald-100 text-emerald-700",
+    fuchsia: "bg-fuchsia-100 text-fuchsia-700",
+    violet: "bg-violet-100 text-violet-700",
+    lightBlue: "bg-sky-200 text-sky-800",
+    warmGray: "bg-stone-200 text-stone-700",
+    coolGray: "bg-gray-200 text-gray-700",
   };
 
   const gradientMap = {
@@ -44,7 +49,7 @@ const NavigationCard = ({
     indigo: "from-indigo-400 to-indigo-300",
     purple: "from-purple-400 to-purple-300",
     pink: "from-pink-400 to-pink-300",
-    teal: "from-lime-500 to-lime-700",
+    teal: "from-teal-400 to-teal-300",
     cyan: "from-cyan-400 to-cyan-300",
     lime: "from-lime-400 to-lime-300",
     amber: "from-amber-400 to-amber-300",
@@ -55,6 +60,12 @@ const NavigationCard = ({
     zinc: "from-zinc-400 to-zinc-300",
     neutral: "from-neutral-400 to-neutral-300",
     stone: "from-stone-400 to-stone-300",
+    emerald: "from-emerald-400 to-emerald-300",
+    fuchsia: "from-fuchsia-400 to-fuchsia-300",
+    violet: "from-violet-400 to-violet-300",
+    lightBlue: "from-sky-300 to-sky-200",
+    warmGray: "from-stone-300 to-stone-200",
+    coolGray: "from-gray-300 to-gray-200",
   };
 
   return (

@@ -24,6 +24,7 @@ import {
   FiPieChart,
   FiCalendar,
   FiDollarSign,
+  FiPackage,
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import NavigationCard from "../../(components)/admin/NavigationCard";
@@ -53,6 +54,13 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
       label: "Neuer Vertrag",
       badge: null,
       color: "purple",
+    },
+    {
+      href: "/Autoteil", // <- change if your route is different
+      icon: <FiPackage />,
+      label: "Teile-Reklamation",
+      description: "Teile reklamieren & verfolgen",
+      color: "orange",
     },
     {
       href: "/kaufvertrag/liste",

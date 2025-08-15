@@ -3,6 +3,9 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/mongodb";
 import PartReclamation from "@/models/PartReclamation";
 
+// Allowed owners (central place)
+const OWNERS = ["Karim", "Alawie"];
+
 export async function GET(req) {
   try {
     await connectDB();
@@ -16,35 +19,24 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const search = (searchParams.get("search") || "").trim();
     const status = searchParams.get("status") || "all";
-    const owner = (searchParams.get("owner") || "all").trim(); // 'all' | 'me' | ownerId
+    const owner = (searchParams.get("owner") || "all").trim(); // 'all' | 'Karim' | 'Alawie'
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const page = parseInt(searchParams.get("page") || "1", 10);
 
     const query = {};
 
-    // Text search: partName, vehicleId, finNumber, supplier
     if (search) {
       query.$or = [
         { partName: { $regex: search, $options: "i" } },
         { vehicleId: { $regex: search, $options: "i" } },
         { finNumber: { $regex: search, $options: "i" } },
         { supplier: { $regex: search, $options: "i" } },
-        { ownerName: { $regex: search, $options: "i" } },
+        { owner: { $regex: search, $options: "i" } },
       ];
     }
 
-    if (status !== "all" && status) {
-      query.status = status;
-    }
-
-    if (owner && owner !== "all") {
-      if (owner === "me") {
-        query.owner = session.user.id;
-      } else {
-        // either exact ObjectId match or ownerName matches
-        query.$or = [...(query.$or || []), { owner: owner }];
-      }
-    }
+    if (status !== "all" && status) query.status = status;
+    if (owner !== "all" && OWNERS.includes(owner)) query.owner = owner;
 
     const total = await PartReclamation.countDocuments(query);
     const parts = await PartReclamation.find(query)
@@ -53,22 +45,6 @@ export async function GET(req) {
       .limit(limit)
       .lean();
 
-    // Distinct owners for filter dropdown
-    const ownersAgg = await PartReclamation.aggregate([
-      { $match: {} },
-      {
-        $group: {
-          _id: "$owner",
-          name: { $first: "$ownerName" },
-        },
-      },
-      { $limit: 200 },
-    ]);
-
-    const owners = ownersAgg
-      .filter((o) => o._id)
-      .map((o) => ({ id: String(o._id), name: o.name || "" }));
-
     return new Response(
       JSON.stringify({
         success: true,
@@ -76,7 +52,7 @@ export async function GET(req) {
         total,
         page,
         pages: Math.ceil(total / limit),
-        owners,
+        owners: OWNERS, // for the UI dropdown
       }),
       { status: 200 }
     );
@@ -99,13 +75,28 @@ export async function POST(req) {
 
     const body = await req.json();
 
+    if (!OWNERS.includes(body.owner)) {
+      return new Response(JSON.stringify({ error: "Invalid owner" }), {
+        status: 400,
+      });
+    }
+
     const partData = {
-      ...body,
+      partName: body.partName,
+      vehicleId: body.vehicleId,
+      finNumber: body.finNumber,
+      quantity: body.quantity ?? 1,
+      price: body.price ?? 0,
+      currency: body.currency || "EUR",
+      urgency: body.urgency || "medium",
+      status: body.status || "pending",
+      supplier: body.supplier || "",
+      notes: body.notes || "",
+      returnToSupplier: !!body.returnToSupplier,
+      owner: body.owner, // "Karim" | "Alawie"
       createdBy: session.user.id,
       updatedBy: session.user.id,
       assignedTo: session.user.id,
-      owner: session.user.id,
-      ownerName: session.user.name || "",
     };
 
     const newPart = await PartReclamation.create(partData);
