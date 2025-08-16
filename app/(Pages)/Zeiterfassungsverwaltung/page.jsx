@@ -27,25 +27,28 @@ import {
   FiEdit,
   FiCalendar,
   FiPrinter,
-  FiDownload,
   FiRefreshCw,
   FiTag,
-  FiLogIn,
-  FiLogOut,
   FiSave,
   FiX,
   FiAlertTriangle,
   FiInbox,
+  FiCheckCircle,
 } from "react-icons/fi";
 import { IoMdLocate } from "react-icons/io";
+
+const PER_PAGE = 10;
 
 export default function Zeiterfassungsverwaltung() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  // ------------ State ------------
   const [records, setRecords] = useState([]);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const hasFetched = useRef(false);
+
   const [activeSection, setActiveSection] = useState(null);
   const [selectedAdmin, setSelectedAdmin] = useState("alle");
   const [dateFilter, setDateFilter] = useState(() => ({
@@ -54,42 +57,88 @@ export default function Zeiterfassungsverwaltung() {
   }));
 
   const [deleteRange, setDeleteRange] = useState({ start: null, end: null });
+
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
+
+  const [isPrinting, setIsPrinting] = useState(false);
   const [printConfig, setPrintConfig] = useState({
     employee: "alle",
     startDate: null,
     endDate: null,
     showSummary: true,
   });
-  const [isPrinting, setIsPrinting] = useState(false);
 
+  const [manualEntry, setManualEntry] = useState({
+    admin: "",
+    type: "in",
+    time: null,
+    method: "manual",
+  });
+
+  // Justifications (reasons) for missing punches
+  const [justifications, setJustifications] = useState([]);
+  const [justifyModalOpen, setJustifyModalOpen] = useState(false);
+  const [justifyForm, setJustifyForm] = useState({
+    name: "",
+    date: null,
+    reason: "",
+  });
+
+  // ------------ Effects ------------
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
+
   useEffect(() => {
     setPage(1);
   }, [selectedAdmin, dateFilter.start, dateFilter.end]);
 
+  // ------------ Fetchers ------------
   const fetchRecords = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await fetch("/api/punch");
       const data = await res.json();
-      setRecords(data);
+      setRecords(Array.isArray(data) ? data : []);
       hasFetched.current = true;
-    } catch (error) {
+    } catch {
       toast.error("Daten konnten nicht geladen werden");
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  const fetchJustifications = useCallback(async () => {
+    try {
+      // Current month until today
+      const from = startOfMonth(new Date()).toISOString();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const to = today.toISOString();
+      const qs = new URLSearchParams({ from, to }).toString();
+      const res = await fetch(`/api/punch/missing/justification?${qs}`);
+      const data = await res.json();
+      setJustifications(Array.isArray(data) ? data : []);
+    } catch {
+      // Non-blocking; optional toast
+    }
+  }, []);
+
   useEffect(() => {
     if (status === "authenticated" && !hasFetched.current) {
-      fetchRecords();
+      (async () => {
+        await fetchRecords();
+        await fetchJustifications();
+      })();
     }
-  }, [status, fetchRecords]);
+  }, [status, fetchRecords, fetchJustifications]);
+
+  // ------------ Derived Data ------------
+  const allAdmins = useMemo(() => {
+    const names = new Set(records.map((r) => r.admin?.name).filter(Boolean));
+    return Array.from(names).sort();
+  }, [records]);
 
   const filtered = useMemo(() => {
     return records.filter((r) => {
@@ -99,14 +148,12 @@ export default function Zeiterfassungsverwaltung() {
       const matchDate =
         (!dateFilter.start || recordDate >= startOfDay(dateFilter.start)) &&
         (!dateFilter.end || recordDate <= endOfDay(dateFilter.end));
-
       return matchAdmin && matchDate;
     });
   }, [records, selectedAdmin, dateFilter]);
 
   const paginated = useMemo(() => {
-    const perPage = 10;
-    return filtered.slice((page - 1) * perPage, page * perPage);
+    return filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   }, [filtered, page]);
 
   const summary = useMemo(() => {
@@ -114,17 +161,11 @@ export default function Zeiterfassungsverwaltung() {
     const sorted = [...filtered].sort(
       (a, b) => new Date(a.time) - new Date(b.time)
     );
-
     for (const r of sorted) {
       const name = r.admin?.name || "Unbekannt";
       if (!byAdmin[name]) {
-        byAdmin[name] = {
-          lastIn: null,
-          totalMs: 0,
-          workedDates: new Set(),
-        };
+        byAdmin[name] = { lastIn: null, totalMs: 0, workedDates: new Set() };
       }
-
       if (r.type === "in" && !byAdmin[name].lastIn) {
         byAdmin[name].lastIn = new Date(r.time);
       } else if (r.type === "out" && byAdmin[name].lastIn) {
@@ -133,44 +174,38 @@ export default function Zeiterfassungsverwaltung() {
         const diff = outTime - inTime;
         if (diff > 0) {
           byAdmin[name].totalMs += diff;
-          const dateKey = inTime.toISOString().slice(0, 10);
-          byAdmin[name].workedDates.add(dateKey);
+          byAdmin[name].workedDates.add(inTime.toISOString().slice(0, 10));
         }
         byAdmin[name].lastIn = null;
       }
     }
 
     return Object.entries(byAdmin).map(([name, data]) => {
-      const { totalMs, workedDates } = data;
-      const hours = Math.floor(totalMs / 3_600_000);
-      const minutes = Math.floor((totalMs % 3_600_000) / 60_000);
-      const seconds = Math.floor((totalMs % 60_000) / 1_000);
+      const hours = Math.floor(data.totalMs / 3_600_000);
+      const minutes = Math.floor((data.totalMs % 3_600_000) / 60_000);
+      const seconds = Math.floor((data.totalMs % 60_000) / 1_000);
       return {
         name,
         timeFormatted: `${hours}h ${minutes}m ${seconds}s`,
-        daysWorked: workedDates.size,
+        daysWorked: data.workedDates.size,
       };
     });
   }, [filtered]);
 
-  const allAdmins = useMemo(() => {
-    const names = new Set(records.map((r) => r.admin?.name).filter(Boolean));
-    return Array.from(names).sort();
-  }, [records]);
-  // Put this below `allAdmins` useMemo and above `handleDelete`
+  // Build missing punches (Fehlstempel) for current month up to today
   const missingPunches = useMemo(() => {
-    // Current month range
+    // month window [startOfMonth..today]
     const monthStart = startOfMonth(new Date());
-
-    // Clamp end to *today* to avoid flagging future dates
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const monthEnd = today;
 
-    // Quick lookup: admin -> yyyy-MM-dd -> { ins, outs }
+    // counts per admin/day
     const byAdminDate = new Map();
     for (const r of records) {
       const name = r.admin?.name || "Unbekannt";
+      if (selectedAdmin !== "alle" && name !== selectedAdmin) continue;
+
       const dayKey = format(new Date(r.time), "yyyy-MM-dd");
       if (!byAdminDate.has(name)) byAdminDate.set(name, new Map());
       const dayMap = byAdminDate.get(name);
@@ -180,49 +215,62 @@ export default function Zeiterfassungsverwaltung() {
       if (r.type === "out") entry.outs += 1;
     }
 
+    // Pre-index justifications for O(1) lookups: "name|yyyy-MM-dd" -> justification obj
+    const justificationMap = new Map(
+      justifications.map((j) => {
+        const key = `${j.admin?.name || ""}|${format(
+          new Date(j.date),
+          "yyyy-MM-dd"
+        )}`;
+        return [key, j];
+      })
+    );
+
     // All days in current month (skip Sundays globally)
     const days = eachDayOfInterval({ start: monthStart, end: monthEnd }).filter(
       (d) => !isSunday(d)
     );
 
-    // Optional: define exceptions (names that don't work Saturdays)
-    const saturdayOff = new Set(["abed"]); // lowercase compare
+    // exceptions: "abed" has Saturdays off (case-insensitive)
+    const saturdayOff = new Set(["abed"]);
+
+    // Determine admins to check
+    const adminsToCheck =
+      selectedAdmin === "alle"
+        ? allAdmins
+        : allAdmins.filter((n) => n === selectedAdmin);
 
     const results = [];
-    for (const name of allAdmins) {
+    for (const name of adminsToCheck) {
       const nameLc = (name || "").toLowerCase();
       const dayMap = byAdminDate.get(name) || new Map();
 
       for (const d of days) {
-        // Skip Saturdays for Abed only
         if (saturdayOff.has(nameLc) && isSaturday(d)) continue;
 
-        const key = format(d, "yyyy-MM-dd");
-        const entry = dayMap.get(key);
+        const keyDate = format(d, "yyyy-MM-dd");
+        const entry = dayMap.get(keyDate);
+        let issue = null;
 
         if (!entry) {
-          results.push({
-            name,
-            date: key,
-            issue: "Keine Stempelung (weder EIN noch AUS)",
-          });
-          continue;
-        }
-        if (entry.ins === 0 && entry.outs === 0) {
-          results.push({
-            name,
-            date: key,
-            issue: "Keine Stempelung (weder EIN noch AUS)",
-          });
+          issue = "Keine Stempelung (weder EIN noch AUS)";
+        } else if (entry.ins === 0 && entry.outs === 0) {
+          issue = "Keine Stempelung (weder EIN noch AUS)";
         } else if (entry.ins === 0) {
-          results.push({ name, date: key, issue: "EIN fehlt" });
+          issue = "EIN fehlt";
         } else if (entry.outs === 0) {
-          results.push({ name, date: key, issue: "AUS fehlt" });
+          issue = "AUS fehlt";
         } else if (entry.ins !== entry.outs) {
+          issue = "Unpaarige Stempelungen (Anzahl EIN ≠ AUS)";
+        }
+
+        if (issue) {
+          const j = justificationMap.get(`${name}|${keyDate}`);
           results.push({
             name,
-            date: key,
-            issue: "Unpaarige Stempelungen (Anzahl EIN ≠ AUS)",
+            date: keyDate,
+            issue: j?.reason || issue, // show the justification text if exists
+            justified: Boolean(j),
           });
         }
       }
@@ -231,13 +279,19 @@ export default function Zeiterfassungsverwaltung() {
     return results.sort(
       (a, b) => a.name.localeCompare(b.name) || a.date.localeCompare(b.date)
     );
-  }, [records, allAdmins]);
+  }, [records, allAdmins, selectedAdmin, justifications]);
+  // Count only items that are NOT justified
+  const unresolvedMissingCount = useMemo(
+    () =>
+      missingPunches.filter((m) => !(m.justified && m.issue?.trim())).length,
+    [missingPunches]
+  );
 
-  const handleDelete = async () => {
+  // ------------ Actions ------------
+  const handleDeleteRange = async () => {
     if (!deleteRange.start || !deleteRange.end) {
       return toast.error("Bitte wählen Sie einen Datumsbereich aus");
     }
-
     if (
       !window.confirm(
         "Sind Sie sicher, dass Sie diese Datensätze löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden."
@@ -267,23 +321,17 @@ export default function Zeiterfassungsverwaltung() {
         );
         setDeleteRange({ start: null, end: null });
         hasFetched.current = false;
-        fetchRecords();
+        await fetchRecords();
+        await fetchJustifications();
       } else {
         throw new Error(data.message || "Löschen fehlgeschlagen");
       }
-    } catch (error) {
+    } catch {
       toast.error("Löschen fehlgeschlagen - bitte versuchen Sie es erneut");
     } finally {
       setIsLoading(false);
     }
   };
-
-  const [manualEntry, setManualEntry] = useState({
-    admin: "",
-    type: "in",
-    time: null,
-    method: "manual",
-  });
 
   const handleManualSave = async () => {
     if (!manualEntry.admin || !manualEntry.time || !manualEntry.type) {
@@ -307,11 +355,12 @@ export default function Zeiterfassungsverwaltung() {
         toast.success("Eintrag gespeichert");
         setActiveSection(null);
         setManualEntry({ admin: "", type: "in", time: null, method: "manual" });
-        fetchRecords();
+        await fetchRecords();
+        await fetchJustifications();
       } else {
         throw new Error(data.error || "Fehler beim Speichern");
       }
-    } catch (error) {
+    } catch {
       toast.error("Fehler beim Speichern");
     } finally {
       setIsLoading(false);
@@ -326,7 +375,6 @@ export default function Zeiterfassungsverwaltung() {
 
     setIsPrinting(true);
 
-    // Filter records for printing
     const printRecords = records.filter((r) => {
       const matchEmployee =
         printConfig.employee === "alle" ||
@@ -338,7 +386,6 @@ export default function Zeiterfassungsverwaltung() {
       return matchEmployee && matchDate;
     });
 
-    // Generate print content
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -361,27 +408,21 @@ export default function Zeiterfassungsverwaltung() {
       <body>
         <h1>Zeiterfassungsbericht</h1>
         <div class="header">
-          <div>
-            <strong>Mitarbeiter:</strong> ${
-              printConfig.employee === "alle"
-                ? "Alle Mitarbeiter"
-                : printConfig.employee
-            }
-          </div>
-          <div>
-            <strong>Zeitraum:</strong> ${format(
-              printConfig.startDate,
-              "dd.MM.yyyy"
-            )} - ${format(printConfig.endDate, "dd.MM.yyyy")}
-          </div>
-       
+          <div><strong>Mitarbeiter:</strong> ${
+            printConfig.employee === "alle"
+              ? "Alle Mitarbeiter"
+              : printConfig.employee
+          }</div>
+          <div><strong>Zeitraum:</strong> ${format(
+            printConfig.startDate,
+            "dd.MM.yyyy"
+          )} - ${format(printConfig.endDate, "dd.MM.yyyy")}</div>
         </div>
-        
+
         ${
           printConfig.showSummary
             ? `
           <div class="summary">
-            <h2></h2>
             ${summary
               .filter(
                 (s) =>
@@ -392,15 +433,13 @@ export default function Zeiterfassungsverwaltung() {
                 (s) => `
                 <div>
                   <strong>Zusammenfassung:</strong> ${s.timeFormatted} an ${s.daysWorked} Tagen
-                </div>
-              `
+                </div>`
               )
               .join("")}
-          </div>
-        `
+          </div>`
             : ""
         }
-        
+
         <table>
           <thead>
             <tr>
@@ -438,23 +477,23 @@ export default function Zeiterfassungsverwaltung() {
                         : ""
                     }
                   </td>
-                </tr>
-              `
+                </tr>`
               )
               .join("")}
           </tbody>
         </table>
-        
-     
       </body>
       </html>
     `;
 
     const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Popup blockiert. Bitte Popups erlauben.");
+      setIsPrinting(false);
+      return;
+    }
     printWindow.document.write(printContent);
     printWindow.document.close();
-
-    // Wait for content to load before printing
     printWindow.onload = () => {
       setTimeout(() => {
         printWindow.print();
@@ -463,6 +502,7 @@ export default function Zeiterfassungsverwaltung() {
     };
   };
 
+  // ------------ Rendering ------------
   if (status !== "authenticated") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -486,6 +526,7 @@ export default function Zeiterfassungsverwaltung() {
             <button
               onClick={() => router.push("/AdminDashboard")}
               className="p-2 rounded-lg hover:bg-gray-100"
+              aria-label="Zurück"
             >
               <FiArrowLeft className="text-gray-500" />
             </button>
@@ -496,12 +537,10 @@ export default function Zeiterfassungsverwaltung() {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main */}
       <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-6 sm:py-8">
         {/* Control Panel */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6 sm:mb-8 transition-all duration-300 hover:shadow-xl">
-          {/* Control Panel Header */}
-          {/* Control Panel Header */}
           <div className="grid grid-cols-3 gap-1 sm:flex sm:gap-0 border-b border-gray-100">
             <ControlButton
               active={activeSection === "filter"}
@@ -559,12 +598,12 @@ export default function Zeiterfassungsverwaltung() {
             />
           </div>
 
-          {/* Filter Section */}
+          {/* Filter */}
           {activeSection === "filter" && (
-            <div className="px-6 py-5 bg-gradient-to-r from-blue-50 to-indigo-50 transition-all duration-300">
+            <div className="px-6 py-5 bg-gradient-to-r from-blue-50 to-indigo-50">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <label className=" text-sm font-semibold text-gray-700 mb-1 flex items-center">
+                  <label className="text-sm font-semibold text-gray-700 mb-1 flex items-center">
                     <FiUser className="mr-2 text-blue-500" /> Mitarbeiter
                   </label>
                   <select
@@ -582,7 +621,7 @@ export default function Zeiterfassungsverwaltung() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className=" text-sm font-semibold text-gray-700 mb-1 flex items-center">
+                  <label className="text-sm font-semibold text-gray-700 mb-1 flex items-center">
                     <FiCalendar className="mr-2 text-blue-500" /> Datumsbereich
                   </label>
                   <div className="grid grid-cols-2 gap-3">
@@ -632,9 +671,9 @@ export default function Zeiterfassungsverwaltung() {
             </div>
           )}
 
-          {/* Delete Section */}
+          {/* Delete */}
           {activeSection === "delete" && (
-            <div className="px-6 py-5 bg-gradient-to-r from-red-50 to-orange-50 transition-all duration-300">
+            <div className="px-6 py-5 bg-gradient-to-r from-red-50 to-orange-50">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="md:col-span-2 space-y-2">
                   <div className="grid grid-cols-2 gap-3">
@@ -680,7 +719,7 @@ export default function Zeiterfassungsverwaltung() {
 
                 <div className="flex items-end">
                   <button
-                    onClick={handleDelete}
+                    onClick={handleDeleteRange}
                     disabled={
                       isLoading || !deleteRange.start || !deleteRange.end
                     }
@@ -725,9 +764,9 @@ export default function Zeiterfassungsverwaltung() {
             </div>
           )}
 
-          {/* Summary Section */}
+          {/* Summary */}
           {activeSection === "summary" && (
-            <div className="px-6 py-5 bg-gradient-to-r from-green-50 to-emerald-50 transition-all duration-300">
+            <div className="px-6 py-5 bg-gradient-to-r from-green-50 to-emerald-50">
               <div className="bg-white rounded-xl p-5 shadow-sm border border-green-100">
                 {summary.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -783,12 +822,12 @@ export default function Zeiterfassungsverwaltung() {
             </div>
           )}
 
-          {/* Manual Entry Section */}
+          {/* Manual Entry */}
           {activeSection === "manual" && (
-            <div className="px-6 py-5 bg-gradient-to-r from-purple-50 to-violet-50 transition-all duration-300">
+            <div className="px-6 py-5 bg-gradient-to-r from-purple-50 to-violet-50">
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <label className=" text-sm font-semibold text-gray-700 mb-1 flex items-center">
+                  <label className="text-sm font-semibold text-gray-700 mb-1 flex items-center">
                     <FiUser className="mr-2 text-purple-500" /> Mitarbeiter
                   </label>
                   <select
@@ -811,7 +850,7 @@ export default function Zeiterfassungsverwaltung() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className=" text-sm font-semibold text-gray-700 mb-1 flex items-center">
+                  <label className="text-sm font-semibold text-gray-700 mb-1 flex items-center">
                     <FiTag className="mr-2 text-purple-500" /> Typ
                   </label>
                   <select
@@ -831,7 +870,7 @@ export default function Zeiterfassungsverwaltung() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className=" text-sm font-semibold text-gray-700 mb-1 flex items-center">
+                  <label className="text-sm font-semibold text-gray-700 mb-1 flex items-center">
                     <FiCalendar className="mr-2 text-purple-500" /> Datum &
                     Uhrzeit
                   </label>
@@ -872,19 +911,19 @@ export default function Zeiterfassungsverwaltung() {
             </div>
           )}
 
-          {/* Print Section */}
+          {/* Print */}
           {activeSection === "print" && (
-            <div className="px-6 py-5 bg-gradient-to-r from-indigo-50 to-blue-50 transition-all duration-300">
+            <div className="px-6 py-5 bg-gradient-to-r from-indigo-50 to-blue-50">
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <label className=" text-sm font-semibold text-gray-700 mb-1 flex items-center">
+                  <label className="text-sm font-semibold text-gray-700 mb-1 flex items-center">
                     <FiUser className="mr-2 text-indigo-500" /> Mitarbeiter
                   </label>
                   <select
                     value={printConfig.employee}
                     onChange={(e) =>
-                      setPrintConfig((prev) => ({
-                        ...prev,
+                      setPrintConfig((p) => ({
+                        ...p,
                         employee: e.target.value,
                       }))
                     }
@@ -900,7 +939,7 @@ export default function Zeiterfassungsverwaltung() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className=" text-sm font-semibold text-gray-700 mb-1 flex items-center">
+                  <label className="text-sm font-semibold text-gray-700 mb-1 flex items-center">
                     <FiCalendar className="mr-2 text-indigo-500" />{" "}
                     Datumsbereich
                   </label>
@@ -908,7 +947,7 @@ export default function Zeiterfassungsverwaltung() {
                     <DatePicker
                       selected={printConfig.startDate}
                       onChange={(d) =>
-                        setPrintConfig((prev) => ({ ...prev, startDate: d }))
+                        setPrintConfig((p) => ({ ...p, startDate: d }))
                       }
                       selectsStart
                       startDate={printConfig.startDate}
@@ -921,7 +960,7 @@ export default function Zeiterfassungsverwaltung() {
                     <DatePicker
                       selected={printConfig.endDate}
                       onChange={(d) =>
-                        setPrintConfig((prev) => ({ ...prev, endDate: d }))
+                        setPrintConfig((p) => ({ ...p, endDate: d }))
                       }
                       selectsEnd
                       startDate={printConfig.startDate}
@@ -941,8 +980,8 @@ export default function Zeiterfassungsverwaltung() {
                     id="showSummary"
                     checked={printConfig.showSummary}
                     onChange={(e) =>
-                      setPrintConfig((prev) => ({
-                        ...prev,
+                      setPrintConfig((p) => ({
+                        ...p,
                         showSummary: e.target.checked,
                       }))
                     }
@@ -1012,9 +1051,11 @@ export default function Zeiterfassungsverwaltung() {
               </div>
             </div>
           )}
+
+          {/* Alerts (Fehlstempel) */}
           {activeSection === "alerts" && (
             <div className="px-6 py-5 bg-gradient-to-r from-red-50 to-orange-50">
-              {missingPunches.length === 0 ? (
+              {unresolvedMissingCount === 0 ? (
                 <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4">
                   ✅ Alles gut! Keine fehlenden Stempelungen im gewählten
                   Zeitraum (Sonntag ignoriert).
@@ -1028,28 +1069,111 @@ export default function Zeiterfassungsverwaltung() {
                   </div>
 
                   <ul className="space-y-2">
-                    {missingPunches.map((m, i) => (
-                      <li
-                        key={i}
-                        className="text-sm bg-white border border-red-100 rounded-md px-3 py-2"
-                      >
-                        <span className="font-semibold">{m.name}</span> –{" "}
-                        {format(new Date(m.date), "dd.MM.yyyy")}: {m.issue}
-                      </li>
-                    ))}
+                    {missingPunches.map((m, i) => {
+                      const dateObj = new Date(m.date);
+                      const hasReason = m.justified && m.issue?.trim();
+                      return (
+                        <li
+                          key={`${m.name}-${m.date}-${i}`}
+                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-white border border-purple-100 rounded-md px-3 py-2 text-sm"
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold text-gray-900">
+                              {m.name}
+                            </span>
+                            <span className="text-gray-500">
+                              {format(dateObj, "dd.MM.yyyy")}
+                            </span>
+
+                            {hasReason ? (
+                              <span className="text-green-600 flex items-center gap-1">
+                                <FiCheckCircle /> {m.issue}
+                              </span>
+                            ) : (
+                              <span className="text-gray-800 flex items-center gap-1">
+                                <FiAlertTriangle /> {m.issue}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => {
+                                setJustifyForm({
+                                  name: m.name,
+                                  date: new Date(m.date),
+                                  reason: "",
+                                });
+                                setJustifyModalOpen(true);
+                              }}
+                              className="px-2 py-1 text-xs rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50"
+                            >
+                              Grund
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (
+                                  !window.confirm(
+                                    "Alle Stempel dieses Tages für diese Person löschen?"
+                                  )
+                                )
+                                  return;
+                                try {
+                                  setIsLoading(true);
+                                  const res = await fetch(
+                                    "/api/punch/delete-day",
+                                    {
+                                      method: "DELETE",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                        "x-admin-id": session.user.id,
+                                      },
+                                      body: JSON.stringify({
+                                        adminName: m.name,
+                                        date: m.date,
+                                      }),
+                                    }
+                                  );
+                                  const data = await res.json();
+                                  if (data.success) {
+                                    toast.success(
+                                      `Gelöscht: ${data.deletedCount} Einträge`
+                                    );
+                                    await fetchRecords();
+                                    await fetchJustifications();
+                                  } else {
+                                    throw new Error(
+                                      data.error || "Löschen fehlgeschlagen"
+                                    );
+                                  }
+                                } catch {
+                                  toast.error("Löschen fehlgeschlagen");
+                                } finally {
+                                  setIsLoading(false);
+                                }
+                              }}
+                              className="px-2 py-1 text-xs rounded-md border border-red-200 text-red-600 hover:bg-red-50"
+                            >
+                              Löschen
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}
             </div>
           )}
         </div>
-        {missingPunches.length > 0 && (
+
+        {unresolvedMissingCount > 0 && (
           <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg px-4 py-3 text-xs sm:text-base">
-            ⚠️ {missingPunches.length} Stempel-Hinweise (Sonntag ignoriert).
+            ⚠️ {unresolvedMissingCount} Stempel-Hinweise (Sonntag ignoriert).
           </div>
         )}
 
-        {/* Data Table */}
+        {/* Table */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -1087,17 +1211,18 @@ export default function Zeiterfassungsverwaltung() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginated.length > 0 ? (
                   paginated.map((r, i) => (
-                    <tr key={i} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={`${r._id || i}`}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="text-sm font-medium text-gray-900">
-                            {r.admin?.name || "Unbekannt"}
-                          </div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {r.admin?.name || "Unbekannt"}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-4 text-sm">
-                          <div className="text-gray-700 ">
+                          <div className="text-gray-700">
                             {format(new Date(r.time), "dd.MM.yyyy")}
                           </div>
                           <div className="text-gray-700">
@@ -1105,7 +1230,6 @@ export default function Zeiterfassungsverwaltung() {
                           </div>
                         </div>
                       </td>
-
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -1197,11 +1321,11 @@ export default function Zeiterfassungsverwaltung() {
                 </button>
                 <button
                   onClick={() =>
-                    setPage((p) => (p * 10 < filtered.length ? p + 1 : p))
+                    setPage((p) => (p * PER_PAGE < filtered.length ? p + 1 : p))
                   }
-                  disabled={page * 10 >= filtered.length}
+                  disabled={page * PER_PAGE >= filtered.length}
                   className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                    page * 10 >= filtered.length
+                    page * PER_PAGE >= filtered.length
                       ? "bg-gray-100 text-gray-400"
                       : "bg-white text-gray-700 hover:bg-gray-50"
                   }`}
@@ -1209,14 +1333,17 @@ export default function Zeiterfassungsverwaltung() {
                   Weiter
                 </button>
               </div>
+
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-700">
                     Zeige{" "}
-                    <span className="font-medium">{(page - 1) * 10 + 1}</span>{" "}
+                    <span className="font-medium">
+                      {(page - 1) * PER_PAGE + 1}
+                    </span>{" "}
                     bis{" "}
                     <span className="font-medium">
-                      {Math.min(page * 10, filtered.length)}
+                      {Math.min(page * PER_PAGE, filtered.length)}
                     </span>{" "}
                     von <span className="font-medium">{filtered.length}</span>{" "}
                     Einträgen
@@ -1240,7 +1367,7 @@ export default function Zeiterfassungsverwaltung() {
                       <FiChevronLeft className="h-5 w-5" />
                     </button>
                     {Array.from(
-                      { length: Math.ceil(filtered.length / 10) },
+                      { length: Math.ceil(filtered.length / PER_PAGE) },
                       (_, i) => (
                         <button
                           key={i}
@@ -1257,11 +1384,13 @@ export default function Zeiterfassungsverwaltung() {
                     )}
                     <button
                       onClick={() =>
-                        setPage((p) => (p * 10 < filtered.length ? p + 1 : p))
+                        setPage((p) =>
+                          p * PER_PAGE < filtered.length ? p + 1 : p
+                        )
                       }
-                      disabled={page * 10 >= filtered.length}
+                      disabled={page * PER_PAGE >= filtered.length}
                       className={`relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                        page * 10 >= filtered.length
+                        page * PER_PAGE >= filtered.length
                           ? "text-gray-300"
                           : "text-gray-500 hover:bg-gray-50"
                       }`}
@@ -1280,7 +1409,7 @@ export default function Zeiterfassungsverwaltung() {
       {/* Edit Modal */}
       {editModalOpen && editingRecord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md transform transition-all">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-bold text-gray-800">
                 Eintrag bearbeiten
@@ -1288,6 +1417,7 @@ export default function Zeiterfassungsverwaltung() {
               <button
                 onClick={() => setEditModalOpen(false)}
                 className="text-gray-400 hover:text-gray-500 transition-colors"
+                aria-label="Modal schließen"
               >
                 <FiX className="h-6 w-6" />
               </button>
@@ -1374,13 +1504,14 @@ export default function Zeiterfassungsverwaltung() {
                     if (data.success) {
                       toast.success("Eintrag aktualisiert");
                       setEditModalOpen(false);
-                      fetchRecords();
+                      await fetchRecords();
+                      await fetchJustifications();
                     } else {
                       throw new Error(
                         data.error || "Aktualisierung fehlgeschlagen"
                       );
                     }
-                  } catch (err) {
+                  } catch {
                     toast.error("Aktualisierung fehlgeschlagen");
                   } finally {
                     setIsLoading(false);
@@ -1394,11 +1525,122 @@ export default function Zeiterfassungsverwaltung() {
           </div>
         </div>
       )}
+
+      {/* Justification Modal */}
+      {justifyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-gray-800">
+                Grund hinzufügen
+              </h3>
+              <button
+                onClick={() => setJustifyModalOpen(false)}
+                className="text-gray-400 hover:text-gray-500"
+                aria-label="Modal schließen"
+              >
+                <FiX className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">
+                  Mitarbeiter
+                </label>
+                <input
+                  value={justifyForm.name}
+                  disabled
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">
+                  Datum
+                </label>
+                <input
+                  value={
+                    justifyForm.date
+                      ? format(justifyForm.date, "dd.MM.yyyy")
+                      : ""
+                  }
+                  disabled
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">
+                  Grund
+                </label>
+                <textarea
+                  rows={4}
+                  value={justifyForm.reason}
+                  onChange={(e) =>
+                    setJustifyForm((f) => ({ ...f, reason: e.target.value }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500"
+                  placeholder="z.B. Arzttermin, Außendienst, Urlaub, etc."
+                />
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-2 rounded-b-xl">
+              <button
+                onClick={() => setJustifyModalOpen(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={async () => {
+                  if (!justifyForm.reason.trim()) {
+                    toast.error("Bitte Grund eingeben");
+                    return;
+                  }
+                  try {
+                    setIsLoading(true);
+                    const res = await fetch(
+                      "/api/punch/missing/justification",
+                      {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                          "x-admin-id": session.user.id,
+                          "x-admin-name": session.user.name,
+                        },
+                        body: JSON.stringify({
+                          adminName: justifyForm.name,
+                          date: justifyForm.date,
+                          reason: justifyForm.reason,
+                        }),
+                      }
+                    );
+                    const data = await res.json();
+                    if (data.success) {
+                      toast.success("Grund gespeichert");
+                      setJustifyModalOpen(false);
+                      setJustifyForm({ name: "", date: null, reason: "" });
+                      await fetchJustifications();
+                    } else {
+                      throw new Error(data.error || "Fehler");
+                    }
+                  } catch {
+                    toast.error("Speichern fehlgeschlagen");
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
+                className="px-4 py-2 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700"
+              >
+                Speichern
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// Reusable Control Button Component
+// Reusable Control Button
 function ControlButton({ active, onClick, icon, label, color }) {
   const colorClasses = {
     blue: active
@@ -1422,8 +1664,9 @@ function ControlButton({ active, onClick, icon, label, color }) {
     <button
       onClick={onClick}
       className={`h-12 sm:h-auto flex-1 flex flex-col sm:flex-row items-center justify-center
-                py-2 px-2 sm:py-4 sm:px-4 gap-0.9 sm:gap-2 text-xs sm:text-sm font-medium
-                transition-all duration-300 ${colorClasses[color]}`}
+                  py-2 px-2 sm:py-4 sm:px-4 gap-0.5 sm:gap-2 text-xs sm:text-sm font-medium
+                  transition-all duration-300 ${colorClasses[color]}`}
+      type="button"
     >
       <span className="text-base sm:text-lg">{icon}</span>
       <span className="leading-tight">{label}</span>
