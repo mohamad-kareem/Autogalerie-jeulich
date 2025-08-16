@@ -364,7 +364,7 @@ export default function ReclamationDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
-      <div className="mx-auto w-full max-w-7xl">
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
         <header className="mb-3 sm:mb-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h1 className="text-lg sm:text-xl font-bold text-gray-900">
