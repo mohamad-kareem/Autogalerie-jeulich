@@ -21,8 +21,8 @@ export default function KaufvertragAuswahlPage({ carId }) {
   };
 
   const options = [
-    { value: "karim", label: "Hussein Karim", role: "Geschäftsführer" },
-    { value: "alawie", label: "Jibrail Alawie", role: "Vertriebsleiter" },
+    { value: "karim", label: "Hussein Karim", role: "Inhaber" },
+    { value: "alawie", label: "Jibrail Alawie", role: "Inhaber" },
   ];
 
   return (
