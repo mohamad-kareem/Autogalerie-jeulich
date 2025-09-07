@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/mongodb";
-import PartReclamation from "@/models/PartReclamation";
+import Medicine from "@/models/Medicine";
 
 export async function GET(req, { params }) {
   try {
@@ -13,16 +13,14 @@ export async function GET(req, { params }) {
       });
     }
 
-    const part = await PartReclamation.findById(params.id).lean();
-    if (!part) {
-      return new Response(JSON.stringify({ error: "Part not found" }), {
+    const medicine = await Medicine.findById(params.id).lean();
+    if (!medicine) {
+      return new Response(JSON.stringify({ error: "Medicine not found" }), {
         status: 404,
       });
     }
 
-    return new Response(JSON.stringify({ success: true, data: part }), {
-      status: 200,
-    });
+    return new Response(JSON.stringify(medicine), { status: 200 });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
@@ -41,21 +39,17 @@ export async function PUT(req, { params }) {
     }
 
     const body = await req.json();
-    const updatedPart = await PartReclamation.findByIdAndUpdate(
-      params.id,
-      { ...body, updatedBy: session.user.id },
-      { new: true }
-    );
+    const updated = await Medicine.findByIdAndUpdate(params.id, body, {
+      new: true,
+    });
 
-    if (!updatedPart) {
-      return new Response(JSON.stringify({ error: "Part not found" }), {
+    if (!updated) {
+      return new Response(JSON.stringify({ error: "Medicine not found" }), {
         status: 404,
       });
     }
 
-    return new Response(JSON.stringify({ success: true, data: updatedPart }), {
-      status: 200,
-    });
+    return new Response(JSON.stringify(updated), { status: 200 });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
@@ -73,9 +67,9 @@ export async function DELETE(req, { params }) {
       });
     }
 
-    const deletedPart = await PartReclamation.findByIdAndDelete(params.id);
-    if (!deletedPart) {
-      return new Response(JSON.stringify({ error: "Part not found" }), {
+    const deleted = await Medicine.findByIdAndDelete(params.id);
+    if (!deleted) {
+      return new Response(JSON.stringify({ error: "Medicine not found" }), {
         status: 404,
       });
     }

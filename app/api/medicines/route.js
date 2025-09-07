@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/mongodb";
-import PartReclamation from "@/models/PartReclamation";
+import Medicine from "@/models/Medicine";
 
 export async function GET(req) {
   try {
@@ -14,72 +14,24 @@ export async function GET(req) {
     }
 
     const { searchParams } = new URL(req.url);
-    const search = (searchParams.get("search") || "").trim();
-    const status = searchParams.get("status") || "all";
-    const owner = (searchParams.get("owner") || "all").trim(); // 'all' | 'me' | ownerId
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
-    const page = parseInt(searchParams.get("page") || "1", 10);
+    const q = (searchParams.get("q") || "").trim();
+    const category = (searchParams.get("category") || "All").trim();
 
     const query = {};
-
-    // Text search: partName, vehicleId, finNumber, supplier
-    if (search) {
+    if (q) {
       query.$or = [
-        { partName: { $regex: search, $options: "i" } },
-        { vehicleId: { $regex: search, $options: "i" } },
-        { finNumber: { $regex: search, $options: "i" } },
-        { supplier: { $regex: search, $options: "i" } },
-        { ownerName: { $regex: search, $options: "i" } },
+        { name: { $regex: q, $options: "i" } },
+        { description: { $regex: q, $options: "i" } },
+        { category: { $regex: q, $options: "i" } },
       ];
     }
-
-    if (status !== "all" && status) {
-      query.status = status;
+    if (category !== "All") {
+      query.category = category;
     }
 
-    if (owner && owner !== "all") {
-      if (owner === "me") {
-        query.owner = session.user.id;
-      } else {
-        // either exact ObjectId match or ownerName matches
-        query.$or = [...(query.$or || []), { owner: owner }];
-      }
-    }
+    const items = await Medicine.find(query).sort({ createdAt: -1 }).lean();
 
-    const total = await PartReclamation.countDocuments(query);
-    const parts = await PartReclamation.find(query)
-      .sort({ urgency: -1, createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean();
-
-    // Distinct owners for filter dropdown
-    const ownersAgg = await PartReclamation.aggregate([
-      { $match: {} },
-      {
-        $group: {
-          _id: "$owner",
-          name: { $first: "$ownerName" },
-        },
-      },
-      { $limit: 200 },
-    ]);
-
-    const owners = ownersAgg
-      .filter((o) => o._id)
-      .map((o) => ({ id: String(o._id), name: o.name || "" }));
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        data: parts,
-        total,
-        page,
-        pages: Math.ceil(total / limit),
-        owners,
-      }),
-      { status: 200 }
-    );
+    return new Response(JSON.stringify({ items }), { status: 200 });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
@@ -98,20 +50,9 @@ export async function POST(req) {
     }
 
     const body = await req.json();
+    const newMedicine = await Medicine.create(body);
 
-    const partData = {
-      ...body,
-      createdBy: session.user.id,
-      updatedBy: session.user.id,
-      assignedTo: session.user.id,
-      owner: session.user.id,
-      ownerName: session.user.name || "",
-    };
-
-    const newPart = await PartReclamation.create(partData);
-    return new Response(JSON.stringify({ success: true, data: newPart }), {
-      status: 201,
-    });
+    return new Response(JSON.stringify(newMedicine), { status: 201 });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
