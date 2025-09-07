@@ -1,4 +1,3 @@
-// app/kaufvertrag/auswahl/KaufvertragAuswahlPage.jsx
 "use client";
 
 import { useRouter } from "next/navigation";
