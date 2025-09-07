@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import logo from "@/app/(assets)/kauftraglogo.png";
 import toast from "react-hot-toast";
@@ -35,72 +35,18 @@ export default function KaufvertragClientForm() {
   };
 
   const [form, setForm] = useState(initialFormState);
-
   const searchParams = useSearchParams();
+
+  const issuerQP = useMemo(
+    () => searchParams.get("issuer") || "",
+    [searchParams]
+  );
+  const carId = useMemo(() => searchParams.get("carId") || "", [searchParams]);
+
   const [rawTotal, setRawTotal] = useState("");
   const [rawDownPayment, setRawDownPayment] = useState("");
-  useEffect(() => {
-    setRawDownPayment(`€ ${formatGermanNumber(0)}`);
-  }, []);
 
-  useEffect(() => {
-    const issuer = searchParams.get("issuer");
-
-    if (issuer && !form.issuer) {
-      setForm((prev) => ({ ...prev, issuer }));
-
-      const fetchLastNumber = async () => {
-        const res = await fetch(`/api/kaufvertrag/last?issuer=${issuer}`);
-        const last = await res.json();
-
-        // 🛡️ Handle missing invoiceNumber
-        if (!last || !last.invoiceNumber) {
-          toast.error("Keine vorherige Rechnungsnummer gefunden.");
-          return;
-        }
-
-        let newInvoiceNumber = "";
-
-        if (issuer === "alawie") {
-          const prefix = "RE-";
-          const lastNumber = last.invoiceNumber.replace(prefix, "");
-          const next = parseInt(lastNumber) + 1;
-          newInvoiceNumber = `${prefix}${next}`;
-        }
-
-        if (issuer === "karim") {
-          const parts = last.invoiceNumber.split("/");
-          const next = parseInt(parts[0]) + 1;
-          newInvoiceNumber = `${next}/${parts[1]}`;
-        }
-
-        setForm((prev) => ({ ...prev, invoiceNumber: newInvoiceNumber }));
-      };
-
-      fetchLastNumber();
-    }
-  }, [searchParams]);
-
-  const formatDateToGermanDash = (dateStr) => {
-    if (!dateStr) return "";
-    const date = new Date(dateStr);
-    if (isNaN(date)) return "";
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
-  };
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-
-    const parsedValue = type === "checkbox" ? checked : value;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: parsedValue,
-    }));
-  };
+  // Number helpers
   const formatGermanNumber = (value) =>
     new Intl.NumberFormat("de-DE", {
       minimumFractionDigits: 2,
@@ -116,11 +62,137 @@ export default function KaufvertragClientForm() {
     return parseFloat(cleaned) || 0;
   };
 
+  const formatDateToGermanDash = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    if (isNaN(date)) return "";
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  // Initialize down payment display
+  useEffect(() => {
+    setRawDownPayment(`€ ${formatGermanNumber(0)}`);
+  }, []);
+
+  // 1) Set issuer from query + compute next invoice number (your existing logic)
+  useEffect(() => {
+    if (!issuerQP) return;
+
+    // set issuer once
+    setForm((prev) => (prev.issuer ? prev : { ...prev, issuer: issuerQP }));
+
+    const fetchLastNumber = async () => {
+      try {
+        const res = await fetch(`/api/kaufvertrag/last?issuer=${issuerQP}`);
+        const last = await res.json();
+
+        if (!last || !last.invoiceNumber) {
+          toast.error("Keine vorherige Rechnungsnummer gefunden.");
+          return;
+        }
+
+        let newInvoiceNumber = "";
+
+        if (issuerQP === "alawie") {
+          const prefix = "RE-";
+          const lastNumber = last.invoiceNumber.replace(prefix, "");
+          const next = parseInt(lastNumber) + 1;
+          newInvoiceNumber = `${prefix}${next}`;
+        }
+
+        if (issuerQP === "karim") {
+          const parts = last.invoiceNumber.split("/");
+          const next = parseInt(parts[0]) + 1;
+          newInvoiceNumber = `${next}/${parts[1]}`;
+        }
+
+        setForm((prev) => ({ ...prev, invoiceNumber: newInvoiceNumber }));
+      } catch (e) {
+        console.error(e);
+        toast.error("Fehler beim Abrufen der letzten Rechnungsnummer.");
+      }
+    };
+
+    // only fetch if we don't already have an invoiceNumber
+    // (avoids re-overwriting if user edited)
+    fetchLastNumber();
+  }, [issuerQP]);
+
+  // 2) If carId present, fetch car and prefill car fields
+  useEffect(() => {
+    const fetchAndPrefill = async () => {
+      if (!carId) return;
+      try {
+        const res = await fetch(`/api/cars/${encodeURIComponent(carId)}`);
+        if (!res.ok) throw new Error("Auto nicht gefunden");
+        const car = await res.json();
+
+        // Try to map to your form:
+        // carType → make + model (or modelDescription/title if you prefer)
+        const carType =
+          [car.make, car.model].filter(Boolean).join(" ") ||
+          car.modelDescription ||
+          car.title ||
+          "";
+
+        // firstRegistration may be "YYYY-MM" or a full date — keep raw value in the input
+        // Convert firstRegistration (e.g. "201312" or "2013-12") into "MM/YYYY"
+        let firstRegistration = "";
+        if (car.firstRegistration) {
+          const raw = car.firstRegistration.toString().replace(/[^0-9]/g, ""); // keep only digits
+          if (raw.length === 6) {
+            const year = raw.substring(0, 4);
+            const month = raw.substring(4, 6);
+            firstRegistration = `${month}/${year}`;
+          } else if (raw.length === 7 || raw.length === 8) {
+            // Handle things like 2013-12 or 2013/12
+            const parts = car.firstRegistration.split(/[-/]/);
+            if (parts.length === 2) {
+              firstRegistration = `${parts[1]}/${parts[0]}`;
+            }
+          } else {
+            firstRegistration = car.firstRegistration;
+          }
+        }
+
+        // mileage → plain number text
+        const mileage =
+          typeof car.mileage === "number"
+            ? String(car.mileage)
+            : car.mileage || "";
+
+        setForm((prev) => ({
+          ...prev,
+          carType,
+          vin: car.vin || car.VIN || "", // support both field casings, if any
+          firstRegistration,
+          mileage,
+        }));
+      } catch (e) {
+        console.error(e);
+        toast.error("Fahrzeugdaten konnten nicht geladen werden.");
+      }
+    };
+
+    fetchAndPrefill();
+  }, [carId]);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    const parsedValue = type === "checkbox" ? checked : value;
+    setForm((prev) => ({ ...prev, [name]: parsedValue }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const cleanedForm = {
       ...form,
+      // ensure numbers
+      total: Number.isFinite(form.total) ? Number(form.total) : 0,
       downPayment:
         form.downPayment === "" || form.downPayment === undefined
           ? 0
@@ -138,12 +210,10 @@ export default function KaufvertragClientForm() {
         toast.error("Diese Rechnungsnummer existiert bereits.");
         return;
       }
-
       if (!res.ok) throw new Error("Fehler beim Speichern");
 
       toast.success("Kaufvertrag wurde erfolgreich gespeichert!");
 
-      // ✅ Reset everything
       setForm((prev) => ({
         ...initialFormState,
         issuer: prev.issuer, // keep issuer
@@ -213,6 +283,7 @@ export default function KaufvertragClientForm() {
               className="input w-full p-1"
             />
           </div>
+
           <div className="text-right space-y-1 w-full md:w-auto">
             <input
               type="text"
@@ -220,7 +291,7 @@ export default function KaufvertragClientForm() {
               autoComplete="off"
               value={form.title || ""}
               onChange={handleChange}
-              className="text-red-600 text-xl md:text-2xl print:text-2xl bg-transparent  border-none outline-none w-[160px] text-right"
+              className="text-red-600 text-xl md:text-2xl print:text-2xl bg-transparent border-none outline-none w-[160px] text-right"
             />
 
             <div className="flex justify-end items-center gap-2 text-[13px]">
@@ -241,6 +312,7 @@ export default function KaufvertragClientForm() {
                 placeholder="z.B. RE-202583 oder 37/25"
               />
             </div>
+
             <div className="flex justify-end items-center gap-2 text-[13px] mt-1">
               <label
                 htmlFor="invoiceDate"
@@ -305,7 +377,7 @@ export default function KaufvertragClientForm() {
           />
         </div>
 
-        {/* Vehicle Info */}
+        {/* Vehicle Info (prefilled if carId exists) */}
         <div className="pt-4 md:pt-6 print:pt-1">
           <div className="grid grid-cols-1 sm:grid-cols-4 md:grid-cols-4 gap-2 text-[13px] font-semibold">
             <div>
@@ -339,7 +411,7 @@ export default function KaufvertragClientForm() {
                 type="text"
                 id="firstRegistration"
                 name="firstRegistration"
-                placeholder="TT-MM-JJ"
+                placeholder="TT-MM-JJ oder JJJJ-MM"
                 value={form.firstRegistration || ""}
                 onChange={handleChange}
                 className="input w-full"
@@ -397,8 +469,6 @@ export default function KaufvertragClientForm() {
         {/* Agreements */}
         <div>
           <p className="font-semibold">Besondere Vereinbarungen</p>
-
-          {/* Textarea for editing */}
           <textarea
             name="agreements"
             rows="3"
@@ -407,8 +477,6 @@ export default function KaufvertragClientForm() {
             className="input w-full p-1 text-[13px] print:hidden"
             placeholder="* Ölservice Neu\n* TÜV Neu"
           />
-
-          {/* Render as list for print and view */}
           {!form.agreements || form.agreements.trim() === "" ? (
             <p className="text-[11px] hidden print:block mt-2 italic text-gray-700">
               Keine besonderen Vereinbarungen
@@ -491,10 +559,7 @@ export default function KaufvertragClientForm() {
               onChange={(e) => {
                 const val = e.target.value;
                 setRawTotal(val);
-                setForm((prev) => ({
-                  ...prev,
-                  total: parseGermanNumber(val),
-                }));
+                setForm((prev) => ({ ...prev, total: parseGermanNumber(val) }));
               }}
               onBlur={() => {
                 setRawTotal(`€ ${formatGermanNumber(form.total || 0)}`);
@@ -586,7 +651,6 @@ export default function KaufvertragClientForm() {
               Bezahlung per Überweisung
             </label>
 
-            {/* NEW FINANCING OPTION */}
             <label className="flex items-center gap-2">
               <input
                 type="radio"

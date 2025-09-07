@@ -88,6 +88,10 @@ export default function UsedCarsPage() {
       setLoading(false);
     }
   };
+  // Add under other handlers in UsedCarsPage
+  const goToKaufvertrag = (carId) => {
+    router.push(`/kaufvertrag/auswahl?carId=${encodeURIComponent(carId)}`);
+  };
 
   const syncCars = async () => {
     setSyncing(true);
@@ -569,6 +573,14 @@ export default function UsedCarsPage() {
                         : "Als verkauft markieren"}
                     </button>
                   )}
+                  {session?.user && (
+                    <button
+                      onClick={() => goToKaufvertrag(car._id)}
+                      className="mt-2 ml-2 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-blue-700 text-white text-xs font-semibold shadow hover:scale-105 transition-transform"
+                    >
+                      📄 Vertrag
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -766,6 +778,14 @@ export default function UsedCarsPage() {
                           {car.sold
                             ? "Als verfügbar markieren"
                             : "Als verkauft markieren"}
+                        </button>
+                      )}
+                      {session?.user && (
+                        <button
+                          onClick={() => goToKaufvertrag(car._id)}
+                          className="text-xs ml-2 px-3 py-1 rounded-full font-medium bg-blue-600 text-white hover:bg-blue-700"
+                        >
+                          Kaufvertrag erstellen
                         </button>
                       )}
 
