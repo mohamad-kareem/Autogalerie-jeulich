@@ -235,7 +235,7 @@ const Footbar = () => {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="Datenschutz"
                   className="text-gray-400 hover:text-white transition flex items-center group"
                 >
                   <svg
