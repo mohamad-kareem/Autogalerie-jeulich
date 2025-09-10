@@ -266,6 +266,7 @@ export default function Zeiterfassungsverwaltung() {
 
         if (issue) {
           const j = justificationMap.get(`${name}|${keyDate}`);
+          if (j?.ignored) continue;
           results.push({
             name,
             date: keyDate,
@@ -1114,14 +1115,14 @@ export default function Zeiterfassungsverwaltung() {
                               onClick={async () => {
                                 if (
                                   !window.confirm(
-                                    "Alle Stempel dieses Tages für diese Person löschen?"
+                                    "Diesen Fehlstempel wirklich löschen?"
                                   )
                                 )
                                   return;
                                 try {
                                   setIsLoading(true);
                                   const res = await fetch(
-                                    "/api/punch/delete-day",
+                                    "/api/punch/missing/justification",
                                     {
                                       method: "DELETE",
                                       headers: {
@@ -1136,11 +1137,8 @@ export default function Zeiterfassungsverwaltung() {
                                   );
                                   const data = await res.json();
                                   if (data.success) {
-                                    toast.success(
-                                      `Gelöscht: ${data.deletedCount} Einträge`
-                                    );
-                                    await fetchRecords();
-                                    await fetchJustifications();
+                                    toast.success("Fehlstempel gelöscht");
+                                    await fetchJustifications(); // refresh justifications
                                   } else {
                                     throw new Error(
                                       data.error || "Löschen fehlgeschlagen"

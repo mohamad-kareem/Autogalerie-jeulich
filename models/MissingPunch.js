@@ -1,6 +1,4 @@
-// /models/MissingPunch.js
 import mongoose from "mongoose";
-
 const missingPunchSchema = new mongoose.Schema(
   {
     admin: {
@@ -10,8 +8,9 @@ const missingPunchSchema = new mongoose.Schema(
       index: true,
     },
     date: { type: Date, required: true, index: true }, // store startOfDay
-    reason: { type: String, required: true, trim: true },
-    createdBy: { type: String, required: true }, // human name from header
+    reason: { type: String, trim: true },
+    createdBy: { type: String }, // human name from header
+    ignored: { type: Boolean, default: false }, // ✅ NEW
   },
   { timestamps: true }
 );

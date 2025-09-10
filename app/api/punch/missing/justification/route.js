@@ -74,6 +74,7 @@ export async function POST(request) {
   }
 }
 
+// /app/api/punch/missing/justification/route.js
 export async function DELETE(request) {
   try {
     await connectDB();
@@ -81,16 +82,19 @@ export async function DELETE(request) {
     if (!adminName || !date) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
+
     const admin = await Admin.findOne({ name: adminName });
-    if (!admin)
+    if (!admin) {
       return NextResponse.json({ error: "Admin not found" }, { status: 404 });
+    }
 
-    const res = await MissingPunch.deleteOne({
-      admin: admin._id,
-      date: startOfDay(date),
-    });
+    const doc = await MissingPunch.findOneAndUpdate(
+      { admin: admin._id, date: startOfDay(date) },
+      { ignored: true, reason: null },
+      { upsert: true, new: true }
+    );
 
-    return NextResponse.json({ success: true, deletedCount: res.deletedCount });
+    return NextResponse.json({ success: true, data: doc });
   } catch (e) {
     console.error("DELETE /api/punch/missing/justification", e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
