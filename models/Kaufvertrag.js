@@ -24,6 +24,14 @@ const KaufvertragSchema = new mongoose.Schema(
     total: Number,
     downPayment: Number,
     paymentNote: String, // ← ✅ ADD THIS LINE
+    starred: {
+      type: Boolean,
+      default: false,
+    },
+    originalInvoiceNumber: {
+      type: String,
+      default: null,
+    },
     archived: {
       type: Boolean,
       default: false,

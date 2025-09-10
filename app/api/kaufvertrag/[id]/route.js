@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Kaufvertrag from "@/models/Kaufvertrag";
+import { makeStarredNumber } from "@/app/utils/invoiceHelpers"; // ⭐ missing import
 
 export async function GET(request, { params }) {
   try {
@@ -24,21 +25,41 @@ export async function PUT(request, { params }) {
   try {
     await connectDB();
     const body = await request.json();
+    const contract = await Kaufvertrag.findById(params.id);
 
-    const updatedContract = await Kaufvertrag.findByIdAndUpdate(
-      params.id,
-      body,
-      { new: true }
-    );
-
-    if (!updatedContract) {
+    if (!contract) {
       return NextResponse.json(
-        { error: "Contract not found for update" },
+        { error: "Contract not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(updatedContract);
+    // ⭐ Toggle star logic
+    if (body.toggleStar) {
+      if (!contract.starred) {
+        // Store original and apply starred format
+        contract.originalInvoiceNumber = contract.invoiceNumber;
+        contract.invoiceNumber = makeStarredNumber(
+          contract.invoiceNumber,
+          contract.issuer
+        );
+        contract.starred = true;
+      } else {
+        // Restore original
+        contract.invoiceNumber =
+          contract.originalInvoiceNumber || contract.invoiceNumber;
+        contract.starred = false;
+        contract.originalInvoiceNumber = null;
+      }
+      await contract.save();
+      return NextResponse.json(contract);
+    }
+
+    // Default update
+    const updated = await Kaufvertrag.findByIdAndUpdate(params.id, body, {
+      new: true,
+    });
+    return NextResponse.json(updated);
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

@@ -331,19 +331,60 @@ export default function ArchivPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {c.mileage?.toLocaleString("de-DE") || "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td
+                        className={`px-6 py-4 whitespace-nowrap text-sm ${
+                          c.starred
+                            ? "text-blue-600 font-bold"
+                            : "text-gray-900"
+                        }`}
+                      >
                         {c.invoiceNumber || "-"}
                       </td>
+
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                         {formatCurrency(c.total)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={(e) => handleUnarchive(c._id, e)}
+                          className="text-gray-400 hover:text-blue-600 p-1"
                           title="Wiederherstellen"
-                          className="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
                         >
-                          <ArrowUturnLeftIcon className="h-5 w-5" />
+                          <ArrowUturnLeftIcon className="h-4 w-5" />
+                        </button>
+
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              const res = await fetch(
+                                `/api/kaufvertrag/${c._id}`,
+                                {
+                                  method: "PUT",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({ toggleStar: true }),
+                                }
+                              );
+                              const updated = await res.json();
+                              setContracts((prev) =>
+                                prev.map((x) =>
+                                  x._id === updated._id ? updated : x
+                                )
+                              );
+                            } catch (err) {
+                              console.error("Fehler beim Stern:", err);
+                            }
+                          }}
+                          className={`ml-2 text-xl cursor-pointer transform transition duration-200 ${
+                            c.starred
+                              ? "text-blue-500 hover:scale-125" // yellow + grow on hover
+                              : "text-gray-400 hover:text-blue-500 hover:scale-125"
+                          }`}
+                          title={c.starred ? "Star entfernen" : "Star setzen"}
+                        >
+                          ★
                         </button>
                       </td>
                     </tr>

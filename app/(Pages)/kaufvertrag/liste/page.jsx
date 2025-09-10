@@ -422,22 +422,28 @@ export default function KaufvertragListe() {
                           ? `${contract.mileage.toLocaleString("de-DE")} `
                           : "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td
+                        className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${
+                          contract.starred ? "text-blue-600" : "text-gray-900"
+                        }`}
+                      >
                         {contract.invoiceNumber || "-"}
                       </td>
+
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                         {formatCurrency(contract.total)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center align-middle">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center align-middle flex gap-2 justify-center">
+                        {/* Archive button */}
                         {session?.user?.role === "admin" && (
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              const confirmArchive = confirm(
-                                "Diesen Vertrag archivieren?"
-                              );
-                              if (!confirmArchive) return;
-                              try {
+                          <>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmArchive = confirm(
+                                  "Diesen Vertrag archivieren?"
+                                );
+                                if (!confirmArchive) return;
                                 await fetch(
                                   `/api/kaufvertrag/${contract._id}`,
                                   {
@@ -453,15 +459,54 @@ export default function KaufvertragListe() {
                                     (item) => item._id !== contract._id
                                   )
                                 );
-                              } catch (err) {
-                                console.error("Fehler beim Archivieren:", err);
+                              }}
+                              className="text-gray-500 hover:text-blue-600 transition-colors"
+                              title="Vertrag archivieren"
+                            >
+                              <HiArchiveBoxArrowDown className="w-4 h-4" />
+                            </button>
+
+                            {/* Star toggle */}
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  const res = await fetch(
+                                    `/api/kaufvertrag/${contract._id}`,
+                                    {
+                                      method: "PUT",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                      },
+                                      body: JSON.stringify({
+                                        toggleStar: true,
+                                      }),
+                                    }
+                                  );
+                                  const updated = await res.json();
+                                  setContracts((prev) =>
+                                    prev.map((c) =>
+                                      c._id === updated._id ? updated : c
+                                    )
+                                  );
+                                } catch (err) {
+                                  console.error("Fehler beim Stern:", err);
+                                }
+                              }}
+                              className={`ml-2 text-xl cursor-pointer transform transition duration-200  ${
+                                contract.starred
+                                  ? "text-blue-500 hover:scale-125" // yellow + grow on hover
+                                  : "text-gray-400 hover:text-blue-500 hover:scale-125"
+                              }`}
+                              title={
+                                contract.starred
+                                  ? "Star entfernen"
+                                  : "Star setzen"
                               }
-                            }}
-                            className="text-gray-500 hover:text-blue-600 transition-colors"
-                            title="Vertrag archivieren"
-                          >
-                            <HiArchiveBoxArrowDown className="w-4 h-4 mx-auto" />
-                          </button>
+                            >
+                              ★
+                            </button>
+                          </>
                         )}
                       </td>
                     </tr>

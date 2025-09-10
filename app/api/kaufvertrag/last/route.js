@@ -15,7 +15,10 @@ export async function GET(req) {
       );
     }
 
-    const lastContract = await Kaufvertrag.find({ issuer })
+    const lastContract = await Kaufvertrag.find({
+      issuer,
+      $or: [{ starred: false }, { starred: { $exists: false } }],
+    })
       .sort({ createdAt: -1 })
       .limit(1)
       .lean();

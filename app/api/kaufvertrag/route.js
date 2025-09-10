@@ -66,11 +66,11 @@ export async function POST(req) {
 }
 
 // Get all contracts (for list view)
+// Get all contracts (for list view)
 export async function GET(req) {
   try {
     await connectDB();
 
-    // ✅ Build full URL using req.headers.get('host')
     const { searchParams } = new URL(
       req.url,
       `http://${req.headers.get("host")}`
@@ -82,7 +82,7 @@ export async function GET(req) {
     )
       .sort({ createdAt: -1 })
       .select(
-        "buyerName issuer carType vin mileage invoiceNumber invoiceDate total"
+        "buyerName issuer carType vin mileage invoiceNumber invoiceDate total starred originalInvoiceNumber"
       )
       .lean();
 
