@@ -15,15 +15,20 @@ export async function GET(req) {
       );
     }
 
-    const lastContract = await Kaufvertrag.find({
-      issuer,
-      $or: [{ starred: false }, { starred: { $exists: false } }],
-    })
+    // ✅ Always get last contract for issuer (starred or not)
+    const lastContract = await Kaufvertrag.findOne({ issuer })
       .sort({ createdAt: -1 })
-      .limit(1)
       .lean();
 
-    return NextResponse.json(lastContract[0] || null);
+    if (!lastContract) {
+      return NextResponse.json(null);
+    }
+
+    // ✅ Ensure we return the base number, not the starred version
+    const baseNumber =
+      lastContract.originalInvoiceNumber || lastContract.invoiceNumber;
+
+    return NextResponse.json({ ...lastContract, baseNumber });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

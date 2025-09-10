@@ -97,10 +97,17 @@ export default function KaufvertragClientForm() {
         let newInvoiceNumber = "";
 
         if (issuerQP === "alawie") {
-          const prefix = "RE-";
-          const lastNumber = last.invoiceNumber.replace(prefix, "");
-          const next = parseInt(lastNumber) + 1;
-          newInvoiceNumber = `${prefix}${next}`;
+          const match = (last.baseNumber || last.invoiceNumber).match(
+            /^RE-(\d{4})(\d+)$/
+          );
+          if (match) {
+            const year = match[1]; // e.g. "2025"
+            const seq = parseInt(match[2], 10) + 1; // e.g. 109 → 110
+            newInvoiceNumber = `RE-${year}${seq}`;
+          } else {
+            // fallback if format is unexpected
+            newInvoiceNumber = `RE-${new Date().getFullYear()}1`;
+          }
         }
 
         if (issuerQP === "karim") {
