@@ -10,7 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { FiArrowLeft } from "react-icons/fi";
 import { useSession } from "next-auth/react";
-
+import { NoSymbolIcon } from "@heroicons/react/24/solid";
 export default function ArchivPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -332,11 +332,15 @@ export default function ArchivPage() {
                         {c.mileage?.toLocaleString("de-DE") || "-"}
                       </td>
                       <td
-                        className={`px-6 py-4 whitespace-nowrap text-sm ${
-                          c.starred
-                            ? "text-blue-600 font-bold"
-                            : "text-gray-900"
-                        }`}
+                        className={`px-6 py-4 whitespace-nowrap text-sm font-semibold
+    ${
+      c.ignored
+        ? "text-red-600" // 🔴 Ignored = red
+        : c.starred
+        ? "text-blue-600" // ⭐ Starred = blue
+        : "text-gray-900"
+    }          // Normal = default
+  `}
                       >
                         {c.invoiceNumber || "-"}
                       </td>
@@ -347,10 +351,10 @@ export default function ArchivPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={(e) => handleUnarchive(c._id, e)}
-                          className="text-gray-400 hover:text-blue-600 p-1"
+                          className=" text-gray-400 hover:text-blue-600  "
                           title="Wiederherstellen"
                         >
-                          <ArrowUturnLeftIcon className="h-4 w-5" />
+                          <ArrowUturnLeftIcon className="h-4 w-4" />
                         </button>
 
                         <button
@@ -385,6 +389,45 @@ export default function ArchivPage() {
                           title={c.starred ? "Star entfernen" : "Star setzen"}
                         >
                           ★
+                        </button>
+                        {/* Ignore toggle */}
+                        {/* Ignore toggle */}
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              const res = await fetch(
+                                `/api/kaufvertrag/${c._id}`,
+                                {
+                                  method: "PUT",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({ toggleIgnore: true }),
+                                }
+                              );
+                              const updated = await res.json();
+                              setContracts((prev) =>
+                                prev.map((c) =>
+                                  c._id === updated._id ? updated : c
+                                )
+                              );
+                            } catch (err) {
+                              console.error("Fehler beim Ignorieren:", err);
+                            }
+                          }}
+                          className={`ml-2 text-xl cursor-pointer transform transition duration-200 ${
+                            c.ignored
+                              ? "text-red-500 hover:scale-125"
+                              : "text-gray-400 hover:text-red-500 hover:scale-125"
+                          }`}
+                          title={
+                            c.ignored
+                              ? "Ignorieren entfernen"
+                              : "Ignorieren setzen"
+                          }
+                        >
+                          <NoSymbolIcon className="h-4 w-4" />
                         </button>
                       </td>
                     </tr>

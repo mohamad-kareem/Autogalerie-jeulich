@@ -9,24 +9,22 @@ import {
   ShieldCheck,
   Settings,
   MessageSquare,
-  ChevronRight,
   ArrowRight,
   Check,
 } from "lucide-react";
 import SimpleContactFormModal from "../helpers/SimpleContactFormModal";
 
-import Bild2 from "../../(assets)/img77.png";
-import Bild3 from "../../(assets)/img2.png";
-import Bild5 from "../../(assets)/img44.png";
+import Bild2 from "../../(assets)/img8.png";
+import Bild3 from "../../(assets)/img88.png";
+import Bild5 from "../../(assets)/img10.png";
 
 export default function Hero() {
   const slides = [
     {
       image: Bild2,
       title: "Exklusive Fahrzeugkollektion",
-      subtitle:
-        "TÜV-geprüfte Premium-Fahrzeuge mit flexiblen Finanzierungsoptionen.",
-      features: ["Individuelle Finanzierung", "TÜV-geprüfte Qualität"],
+      subtitle: "TÜV-geprüfte Premium-Fahrzeuge mit flexibler Finanzierung.",
+      features: ["12 Monate Garantie", "Sofort-Zusage"],
       cta: {
         primary: { text: "Fahrzeuge entdecken", href: "/gebrauchtwagen" },
         secondary: { text: "Beratungstermin", href: "/kontakt" },
@@ -36,7 +34,7 @@ export default function Hero() {
       image: Bild3,
       title: "Maßgeschneiderte Finanzierung",
       subtitle: "12 Monate Premium-Garantie mit Sofort-Zusage.",
-      features: ["12 Monate Garantie", "Sofort-Zusage"],
+      features: ["Individuelle Finanzierung", "TÜV-geprüfte Qualität"],
       cta: {
         primary: { text: "Fahrzeuge entdecken", href: "/gebrauchtwagen" },
         secondary: { text: "Beratungstermin", href: "/kontakt" },
@@ -67,7 +65,6 @@ export default function Hero() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Auto-advance slides
   const resetTimeout = () =>
     timeoutRef.current && clearTimeout(timeoutRef.current);
 
@@ -86,18 +83,13 @@ export default function Hero() {
   }, [currentSlide, isHovering]);
 
   const goToSlide = (index) => setCurrentSlide(index);
-  const nextSlide = () =>
-    setCurrentSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-  const prevSlide = () =>
-    setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
-
   const slide = slides[currentSlide];
 
   const iconForFeature = (index) => {
     const icons = [
-      <Car size={isMobile ? 14 : 16} className="text-red-500" />,
-      <ShieldCheck size={isMobile ? 14 : 16} className="text-red-500" />,
-      <Settings size={isMobile ? 14 : 16} className="text-red-500" />,
+      <Car size={18} className="text-red-500" />,
+      <ShieldCheck size={18} className="text-red-500" />,
+      <Settings size={18} className="text-red-500" />,
     ];
     return icons[index % icons.length];
   };
@@ -105,16 +97,16 @@ export default function Hero() {
   return (
     <section className="relative bg-gradient-to-br from-black via-gray-950 to-black text-white overflow-hidden min-h-screen flex items-center">
       {/* Background glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,0,0,0.15),transparent_70%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,0,0,0.12),transparent_70%)]" />
 
-      <div className="relative w-full max-w-[1400px] mx-auto px-6 md:px-12 lg:px-16 py-12 lg:py-20 flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-        {/* Slider Image - first on mobile, right on desktop */}
+      <div className="relative w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 lg:py-16 flex flex-col lg:flex-row items-center gap-6 md:gap-12">
+        {/* Slider Image */}
         <div
           className="w-full lg:w-1/2 relative flex justify-center order-1 lg:order-2"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
         >
-          <div className="relative w-full h-64 sm:h-80 md:h-[420px] lg:h-[500px]">
+          <div className="relative w-full h-64 sm:h-80 md:h-[420px] lg:h-[500px] rounded-lg overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentSlide}
@@ -128,14 +120,38 @@ export default function Hero() {
                   src={slide.image}
                   alt={slide.title}
                   fill
-                  className="object-contain drop-shadow-[0_30px_70px_rgba(255,0,0,0.4)]"
+                  className="object-contain drop-shadow-[0_30px_60px_rgba(255,0,0,0.35)]"
                   priority
                 />
               </motion.div>
             </AnimatePresence>
 
+            {/* Elegant Feature Strip Overlay */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="absolute bottom-0 left-0 right-0 bg-black/40 backdrop-blur-md border-t border-white/10 px-4 sm:px-6 py-2 sm:py-3"
+            >
+              <div className="flex items-center justify-center sm:justify-between gap-4 sm:gap-8 overflow-x-auto scrollbar-hide text-xs sm:text-sm">
+                {slide.features.map((feature, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 text-gray-200 whitespace-nowrap"
+                  >
+                    {iconForFeature(index)}
+                    <span>{feature}</span>
+                    {index < slide.features.length - 1 && (
+                      <span className="hidden sm:inline text-gray-500">|</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
             {/* Indicators */}
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+            {/* Indicators (hidden on mobile) */}
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 hidden sm:flex gap-2">
               {slides.map((_, index) => (
                 <button
                   key={index}
@@ -143,7 +159,7 @@ export default function Hero() {
                   className={`h-2 w-2 rounded-full transition-all ${
                     index === currentSlide
                       ? "bg-white w-4"
-                      : "bg-white/50 hover:bg-white"
+                      : "bg-white/40 hover:bg-white"
                   }`}
                   aria-label={`Go to slide ${index + 1}`}
                 />
@@ -152,7 +168,7 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Content - second on mobile, left on desktop */}
+        {/* Content */}
         <div className="w-full lg:w-1/2 text-center lg:text-left space-y-5 order-2 lg:order-1">
           <motion.span
             initial={{ opacity: 0, y: 10 }}
@@ -168,7 +184,17 @@ export default function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold leading-snug sm:leading-tight"
+            className="
+    text-xl 
+    sm:text-2xl 
+    md:text-3xl 
+    lg:text-4xl 
+    xl:text-5xl 
+    2xl:text-6xl 
+    font-extrabold 
+    leading-snug 
+    sm:leading-tight
+  "
           >
             {slide.title}
           </motion.h1>
@@ -178,52 +204,40 @@ export default function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className="text-sm sm:text-base md:text-base text-gray-300 max-w-md mx-auto lg:mx-0"
+            className="text-sm sm:text-base text-gray-300 max-w-md mx-auto lg:mx-0"
           >
             {slide.subtitle}
           </motion.p>
 
-          {/* Features */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="flex flex-wrap justify-center lg:justify-start gap-2 sm:gap-3 pt-2"
-          >
-            {slide.features.map((feature, index) => (
-              <span
-                key={index}
-                className="flex items-center gap-2 bg-gray-800/70 backdrop-blur-md px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm border border-gray-700 hover:border-red-500 transition-all"
-              >
-                {iconForFeature(index)}
-                {feature}
-              </span>
-            ))}
-          </motion.div>
+          {/* Guarantees */}
 
           {/* CTAs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4"
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start pt-3 sm:pt-4 w-full max-w-xs mx-auto sm:max-w-none"
           >
             <Link
               href={slide.cta.primary.href}
-              className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900 rounded-lg shadow-lg text-white font-semibold text-sm sm:text-base transition-all hover:shadow-red-600/40 flex items-center gap-2"
+              className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-red-600 to-red-800 
+               hover:from-red-700 hover:to-red-900 rounded-lg shadow-md sm:shadow-lg 
+               text-white font-semibold text-sm sm:text-base transition-all 
+               hover:shadow-red-600/40 flex items-center justify-center gap-2"
             >
               {slide.cta.primary.text}
               <ArrowRight size={16} />
             </Link>
+
             <Link
               href={slide.cta.secondary.href}
-              className="px-6 py-3 border border-red-600 text-white rounded-lg font-semibold text-sm sm:text-base hover:bg-red-600/10 transition-all"
+              className="px-4 py-2 sm:px-6 sm:py-3 border border-red-600 text-white rounded-lg 
+               font-semibold text-sm sm:text-base hover:bg-red-600/10 transition-all 
+               flex items-center justify-center"
             >
               {slide.cta.secondary.text}
             </Link>
           </motion.div>
-
-          {/* Guarantees */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

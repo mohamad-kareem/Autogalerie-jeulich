@@ -15,20 +15,24 @@ export async function GET(req) {
       );
     }
 
-    // ✅ Always get last contract for issuer (starred or not)
-    const lastContract = await Kaufvertrag.findOne({ issuer })
+    // ✅ Get the last NON-IGNORED contract for this issuer
+    const lastValidContract = await Kaufvertrag.findOne({
+      issuer,
+      ignored: { $ne: true }, // skip ignored ones
+    })
       .sort({ createdAt: -1 })
       .lean();
 
-    if (!lastContract) {
+    if (!lastValidContract) {
       return NextResponse.json(null);
     }
 
-    // ✅ Ensure we return the base number, not the starred version
+    // ✅ Ensure we return the base/original number (not starred, not ignored)
     const baseNumber =
-      lastContract.originalInvoiceNumber || lastContract.invoiceNumber;
+      lastValidContract.originalInvoiceNumber ||
+      lastValidContract.invoiceNumber;
 
-    return NextResponse.json({ ...lastContract, baseNumber });
+    return NextResponse.json({ ...lastValidContract, baseNumber });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

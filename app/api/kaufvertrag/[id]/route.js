@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Kaufvertrag from "@/models/Kaufvertrag";
-import { makeStarredNumber } from "@/app/utils/invoiceHelpers"; // ⭐ missing import
+import { makeStarredNumber } from "@/app/utils/invoiceHelpers";
 
-export async function GET(request, { params }) {
+// 🔎 Get a single contract
+export async function GET(request, context) {
   try {
     await connectDB();
+    const { params } = context;
     const contract = await Kaufvertrag.findById(params.id).lean();
 
     if (!contract) {
@@ -21,9 +23,11 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function PUT(request, { params }) {
+// ✏️ Update contract (toggle star/ignore/archive or normal update)
+export async function PUT(request, context) {
   try {
     await connectDB();
+    const { params } = context;
     const body = await request.json();
     const contract = await Kaufvertrag.findById(params.id);
 
@@ -34,10 +38,9 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // ⭐ Toggle star logic
+    // ⭐ Toggle star
     if (body.toggleStar) {
       if (!contract.starred) {
-        // Store original and apply starred format
         contract.originalInvoiceNumber = contract.invoiceNumber;
         contract.invoiceNumber = makeStarredNumber(
           contract.invoiceNumber,
@@ -45,7 +48,6 @@ export async function PUT(request, { params }) {
         );
         contract.starred = true;
       } else {
-        // Restore original
         contract.invoiceNumber =
           contract.originalInvoiceNumber || contract.invoiceNumber;
         contract.starred = false;
@@ -55,7 +57,33 @@ export async function PUT(request, { params }) {
       return NextResponse.json(contract);
     }
 
-    // Default update
+    // 🚫 Toggle ignore
+    if (body.toggleIgnore) {
+      if (!contract.ignored) {
+        contract.originalInvoiceNumberX = contract.invoiceNumber;
+        if (!contract.invoiceNumber.endsWith("X")) {
+          contract.invoiceNumber = contract.invoiceNumber + "X";
+        }
+        contract.ignored = true;
+      } else {
+        contract.invoiceNumber =
+          contract.originalInvoiceNumberX ||
+          contract.invoiceNumber.replace(/X$/, "");
+        contract.ignored = false;
+        contract.originalInvoiceNumberX = null;
+      }
+      await contract.save();
+      return NextResponse.json(contract);
+    }
+
+    // 📦 Toggle archive/unarchive
+    if (typeof body.archived !== "undefined") {
+      contract.archived = body.archived;
+      await contract.save();
+      return NextResponse.json(contract);
+    }
+
+    // 🔄 Default update (any other fields)
     const updated = await Kaufvertrag.findByIdAndUpdate(params.id, body, {
       new: true,
     });
@@ -65,10 +93,11 @@ export async function PUT(request, { params }) {
   }
 }
 
-export async function DELETE(request, { params }) {
+// 🗑️ Delete contract
+export async function DELETE(request, context) {
   try {
     await connectDB();
-
+    const { params } = context;
     const deleted = await Kaufvertrag.findByIdAndDelete(params.id);
 
     if (!deleted) {

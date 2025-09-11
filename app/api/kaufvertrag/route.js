@@ -1,16 +1,42 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Kaufvertrag from "@/models/Kaufvertrag";
-import CarSchein from "@/models/CarSchein"; // 👈 import this if not already
+import CarSchein from "@/models/CarSchein";
 
+// 🔧 helper: extract last number and increment
+function generateNextNumber(baseNumber) {
+  if (!baseNumber) return "1"; // if no contracts yet
+  const match = baseNumber.match(/(\d+)$/);
+  if (!match) return baseNumber + "1";
+  const num = parseInt(match[1], 10) + 1;
+  return baseNumber.replace(/\d+$/, String(num));
+}
+
+// ➕ Create new contract
 export async function POST(req) {
   try {
     await connectDB();
     const data = await req.json();
 
-    // 🔒 1. Prevent duplicate invoice numbers
+    // 1️⃣ Find last NON-IGNORED contract for this issuer
+    const lastValidContract = await Kaufvertrag.findOne({
+      issuer: data.issuer,
+      ignored: { $ne: true },
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // 2️⃣ Determine base number
+    const baseNumber =
+      lastValidContract?.originalInvoiceNumber ||
+      lastValidContract?.invoiceNumber;
+
+    // 3️⃣ Generate new invoice number
+    const newInvoiceNumber = generateNextNumber(baseNumber);
+
+    // 4️⃣ Ensure uniqueness
     const exists = await Kaufvertrag.findOne({
-      invoiceNumber: data.invoiceNumber,
+      invoiceNumber: newInvoiceNumber,
     });
     if (exists) {
       return NextResponse.json(
@@ -19,12 +45,14 @@ export async function POST(req) {
       );
     }
 
-    // 🧾 2. Create Kaufvertrag entry
-    const newContract = await Kaufvertrag.create(data);
+    // 5️⃣ Create new contract
+    const newContract = await Kaufvertrag.create({
+      ...data,
+      invoiceNumber: newInvoiceNumber,
+    });
 
-    // 🚗 3. Create or update CarSchein based on VIN
+    // 6️⃣ CarSchein sync
     const { carType, vin, agreements, issuer } = data;
-
     if (carType && vin) {
       const parsedNotes = (agreements || "")
         .split("\n")
@@ -34,20 +62,17 @@ export async function POST(req) {
       const existingSchein = await CarSchein.findOne({ finNumber: vin });
 
       if (existingSchein) {
-        // ✅ Update existing: merge and deduplicate notes if new ones exist
         if (parsedNotes.length > 0) {
           const combinedNotes = [
             ...(existingSchein.notes || []),
             ...parsedNotes,
           ];
           const uniqueNotes = [...new Set(combinedNotes)];
-
           await CarSchein.findByIdAndUpdate(existingSchein._id, {
             $set: { notes: uniqueNotes },
           });
         }
       } else {
-        // ✅ Create new CarSchein even if notes are empty
         await CarSchein.create({
           carName: carType,
           finNumber: vin,
@@ -60,17 +85,15 @@ export async function POST(req) {
 
     return NextResponse.json(newContract, { status: 201 });
   } catch (err) {
-    console.error(err);
+    console.error("POST ERROR:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-// Get all contracts (for list view)
-// Get all contracts (for list view)
+// 📋 List contracts
 export async function GET(req) {
   try {
     await connectDB();
-
     const { searchParams } = new URL(
       req.url,
       `http://${req.headers.get("host")}`
@@ -82,7 +105,7 @@ export async function GET(req) {
     )
       .sort({ createdAt: -1 })
       .select(
-        "buyerName issuer carType vin mileage invoiceNumber invoiceDate total starred originalInvoiceNumber"
+        "buyerName issuer carType vin mileage invoiceNumber invoiceDate total starred ignored archived originalInvoiceNumber"
       )
       .lean();
 
@@ -93,7 +116,7 @@ export async function GET(req) {
   }
 }
 
-// Utility for internal use: fetch single contract by ID
+// 🛠️ Utility for single fetch
 export async function GET_SINGLE(id) {
   try {
     await connectDB();

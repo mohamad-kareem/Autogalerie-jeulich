@@ -9,6 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 import { HiArchiveBoxArrowDown } from "react-icons/hi2";
+import { NoSymbolIcon } from "@heroicons/react/24/solid";
 import { FiArrowLeft } from "react-icons/fi";
 export default function KaufvertragListe() {
   const [contracts, setContracts] = useState([]);
@@ -423,9 +424,15 @@ export default function KaufvertragListe() {
                           : "-"}
                       </td>
                       <td
-                        className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${
-                          contract.starred ? "text-blue-600" : "text-gray-900"
-                        }`}
+                        className={`px-6 py-4 whitespace-nowrap text-sm font-semibold
+    ${
+      contract.ignored
+        ? "text-red-600"
+        : contract.starred
+        ? "text-blue-600"
+        : "text-gray-900"
+    }
+  `}
                       >
                         {contract.invoiceNumber || "-"}
                       </td>
@@ -460,7 +467,7 @@ export default function KaufvertragListe() {
                                   )
                                 );
                               }}
-                              className="text-gray-500 hover:text-blue-600 transition-colors"
+                              className="text-gray-500 hover:text-blue-600 transition-colors mt-1 ml-2"
                               title="Vertrag archivieren"
                             >
                               <HiArchiveBoxArrowDown className="w-4 h-4" />
@@ -493,7 +500,7 @@ export default function KaufvertragListe() {
                                   console.error("Fehler beim Stern:", err);
                                 }
                               }}
-                              className={`ml-2 text-xl cursor-pointer transform transition duration-200  ${
+                              className={`ml-1 text-xl cursor-pointer transform transition duration-200  ${
                                 contract.starred
                                   ? "text-blue-500 hover:scale-125" // yellow + grow on hover
                                   : "text-gray-400 hover:text-blue-500 hover:scale-125"
@@ -505,6 +512,47 @@ export default function KaufvertragListe() {
                               }
                             >
                               ★
+                            </button>
+
+                            {/* Ignore toggle */}
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  const res = await fetch(
+                                    `/api/kaufvertrag/${contract._id}`,
+                                    {
+                                      method: "PUT",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                      },
+                                      body: JSON.stringify({
+                                        toggleIgnore: true,
+                                      }),
+                                    }
+                                  );
+                                  const updated = await res.json();
+                                  setContracts((prev) =>
+                                    prev.map((c) =>
+                                      c._id === updated._id ? updated : c
+                                    )
+                                  );
+                                } catch (err) {
+                                  console.error("Fehler beim Ignorieren:", err);
+                                }
+                              }}
+                              className={`mt-1  text-xl cursor-pointer transform transition duration-200 ${
+                                contract.ignored
+                                  ? "text-red-500 hover:scale-125"
+                                  : "text-gray-400 hover:text-red-500 hover:scale-125"
+                              }`}
+                              title={
+                                contract.ignored
+                                  ? "Ignorieren entfernen"
+                                  : "Ignorieren setzen"
+                              }
+                            >
+                              <NoSymbolIcon className="w-4 h-4" />
                             </button>
                           </>
                         )}
