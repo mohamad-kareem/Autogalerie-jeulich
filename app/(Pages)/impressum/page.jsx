@@ -85,10 +85,19 @@ export default function ImpressumPage() {
             Rechtliche Hinweise
           </h3>
           <p>
-            Trotz sorgfältiger inhaltlicher Kontrolle übernehmen wir keine
-            Haftung für die Inhalte externer Links. Für den Inhalt der
-            verlinkten Seiten sind ausschließlich deren Betreiber
-            verantwortlich.
+            Für die auf unseren Internetseiten veröffentlichten Inhalte und
+            Werke gilt das deutsche Urheberrecht. Jede Vervielfältigung,
+            Bearbeitung, Verbreitung und Verwertung erfordert die schriftliche
+            Zustimmung des jeweiligen Autors oder Erstellers. Downloads und
+            Kopien dieser Seiten sind ausschließlich für den privaten,
+            nichtkommerziellen Gebrauch zulässig. Unsere Seiten können Inhalte
+            aufweisen, die nicht vom Betreiber selbst erstellt wurden. Bei
+            diesen Inhalten wurden die Urheberrechte Dritter beachtet. Inhalte,
+            an denen Dritte das Urheberrecht innehaben, sind entsprechend
+            gekennzeichnet. Stellen Sie auf unseren Internetseiten trotzdem
+            einen Urheberrechtsverstoß fest, bitten wir, uns dies mitzuteilen.
+            Wir werden den entsprechenden Inhalt dann umgehend von unseren
+            Webseiten entfernen.
           </p>
         </div>
       </div>
