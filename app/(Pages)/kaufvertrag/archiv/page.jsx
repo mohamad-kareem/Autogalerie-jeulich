@@ -167,14 +167,14 @@ export default function ArchivPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-2">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center space-x-2 ">
             <button
               onClick={() => router.push("/kaufvertrag/liste")}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-1 bg-gray-200 rounded-xl hover:bg-gray-100 transition-colors"
             >
               <FiArrowLeft className="h-5 w-5 text-gray-600" />
             </button>
@@ -188,20 +188,17 @@ export default function ArchivPage() {
         </div>
 
         {/* Filter Section */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="p-4 mb-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Suche
-              </label>
-              <div className="relative">
+              <div className="relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
                 </div>
                 <input
                   type="text"
-                  className="pl-10 pr-4 py-2.5 w-full border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Käufer, Fahrzeug, FIN..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -211,15 +208,12 @@ export default function ArchivPage() {
 
             {/* Month Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Monat
-              </label>
               <select
                 value={filters.month}
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, month: e.target.value }))
                 }
-                className="w-full py-2.5 px-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
               >
                 {monthOptions.map((m) => (
                   <option key={m.value} value={m.value}>
@@ -234,38 +228,41 @@ export default function ArchivPage() {
               <button
                 onClick={resetFilters}
                 disabled={!searchTerm && !filters.month}
-                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-gray-300 hover:bg-gray-200 text-gray-700 rounded-md text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Filter zurücksetzen
+                Alle Filter zurücksetzen
               </button>
             </div>
           </div>
 
           {/* Active Filters */}
           {(searchTerm || filters.month) && (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className="mt-4 flex flex-wrap gap-2 items-center">
+              <span className="text-sm text-gray-600">Aktive Filter:</span>
+
               {searchTerm && (
-                <span className="inline-flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                   Suche: {searchTerm}
                   <button
                     onClick={() => setSearchTerm("")}
-                    className="ml-2 text-blue-600 hover:text-blue-800"
+                    className="ml-1.5 inline-flex text-blue-400 hover:text-blue-600"
                   >
-                    <XMarkIcon className="h-4 w-4" />
+                    <XMarkIcon className="h-3 w-3" />
                   </button>
                 </span>
               )}
+
               {filters.month && (
-                <span className="inline-flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                   Monat:{" "}
                   {monthOptions.find((m) => m.value === filters.month)?.label}
                   <button
                     onClick={() =>
                       setFilters((prev) => ({ ...prev, month: "" }))
                     }
-                    className="ml-2 text-blue-600 hover:text-blue-800"
+                    className="ml-1.5 inline-flex text-blue-400 hover:text-blue-600"
                   >
-                    <XMarkIcon className="h-4 w-4" />
+                    <XMarkIcon className="h-3 w-3" />
                   </button>
                 </span>
               )}
@@ -308,6 +305,7 @@ export default function ArchivPage() {
                   ))}
                 </tr>
               </thead>
+
               <tbody className="bg-white divide-y divide-gray-200">
                 {currentContracts.length > 0 ? (
                   currentContracts.map((c) => (
@@ -316,42 +314,55 @@ export default function ArchivPage() {
                       className="hover:bg-gray-50 cursor-pointer transition-colors"
                       onClick={() => router.push(`/kaufvertrag/${c._id}`)}
                     >
+                      {/* Datum */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatDate(c.invoiceDate)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+
+                      {/* Käufer -> bold */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                         {c.buyerName || "-"}
                       </td>
+
+                      {/* Fahrzeug */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {c.carType || "-"}
                       </td>
+
+                      {/* FIN */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
                         {c.vin || "-"}
                       </td>
+
+                      {/* Kilometer */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {c.mileage?.toLocaleString("de-DE") || "-"}
                       </td>
+
+                      {/* Rechnungsnr. -> bold */}
                       <td
                         className={`px-6 py-4 whitespace-nowrap text-sm font-semibold
-    ${
-      c.ignored
-        ? "text-red-600" // 🔴 Ignored = red
-        : c.starred
-        ? "text-blue-600" // ⭐ Starred = blue
-        : "text-gray-900"
-    }          // Normal = default
-  `}
+                  ${
+                    c.ignored
+                      ? "text-red-600"
+                      : c.starred
+                      ? "text-blue-600"
+                      : "text-gray-900"
+                  }`}
                       >
                         {c.invoiceNumber || "-"}
                       </td>
 
+                      {/* Betrag -> bold */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                         {formatCurrency(c.total)}
                       </td>
+
+                      {/* Actions */}
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={(e) => handleUnarchive(c._id, e)}
-                          className=" text-gray-400 hover:text-blue-600  "
+                          className=" text-gray-400 hover:text-blue-600"
                           title="Wiederherstellen"
                         >
                           <ArrowUturnLeftIcon className="h-4 w-4" />
@@ -383,15 +394,14 @@ export default function ArchivPage() {
                           }}
                           className={`ml-2 text-xl cursor-pointer transform transition duration-200 ${
                             c.starred
-                              ? "text-blue-500 hover:scale-125" // yellow + grow on hover
+                              ? "text-blue-500 hover:scale-125"
                               : "text-gray-400 hover:text-blue-500 hover:scale-125"
                           }`}
                           title={c.starred ? "Star entfernen" : "Star setzen"}
                         >
                           ★
                         </button>
-                        {/* Ignore toggle */}
-                        {/* Ignore toggle */}
+
                         <button
                           onClick={async (e) => {
                             e.stopPropagation();
@@ -408,8 +418,8 @@ export default function ArchivPage() {
                               );
                               const updated = await res.json();
                               setContracts((prev) =>
-                                prev.map((c) =>
-                                  c._id === updated._id ? updated : c
+                                prev.map((x) =>
+                                  x._id === updated._id ? updated : x
                                 )
                               );
                             } catch (err) {

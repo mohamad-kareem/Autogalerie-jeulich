@@ -169,15 +169,15 @@ export default function KaufvertragListe() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-3">
       <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-2 sm:px-2 lg:px-2 ">
         {/* Header */}
-        <div className="mb-4 flex items-center space-x-2">
+        <div className="mb-1 flex items-center space-x-2">
           <button
             onClick={() => router.push("/AdminDashboard")} // adjust target if needed
             className=" rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <FiArrowLeft className="h-5 w-5 text-gray-600" />
+            <FiArrowLeft className="h-5 w-5 text-gray-600 rounded-4xl bg-gray-300 " />
           </button>
           <h1 className="text-lg sm:text-2xl font-semibold text-gray-800">
             Kaufvertragsübersicht
@@ -185,16 +185,10 @@ export default function KaufvertragListe() {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6 border border-gray-200">
+        <div className="   p-2 mb-4 ">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Search */}
             <div className="md:col-span-2">
-              <label
-                htmlFor="search"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Suche
-              </label>
               <div className="relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
@@ -212,15 +206,9 @@ export default function KaufvertragListe() {
 
             {/* Month Filter */}
             <div>
-              <label
-                htmlFor="month"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Monat
-              </label>
               <select
                 id="month"
-                className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="block w-full py-2 px-3 border border-gray-300  rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                 value={filters.month}
                 onChange={(e) =>
                   setFilters({ ...filters, month: e.target.value })
@@ -236,15 +224,9 @@ export default function KaufvertragListe() {
 
             {/* Seller Filter */}
             <div>
-              <label
-                htmlFor="seller"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Verkäufer
-              </label>
               <select
                 id="seller"
-                className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="block w-full py-2 px-3 border border-gray-300  rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                 value={filters.seller}
                 onChange={(e) =>
                   setFilters({ ...filters, seller: e.target.value })
