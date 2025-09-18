@@ -110,7 +110,7 @@ export default function NavBar() {
   // Enhanced floating dropdown menu
   const FloatingMenu = (
     <div
-      className="fixed top-2 right-4 z-[9999] print:hidden"
+      className="fixed top-3 right-4 z-[9999] print:hidden"
       ref={dropdownRef}
     >
       <div className="relative">
@@ -216,12 +216,6 @@ export default function NavBar() {
     </div>
   );
 
-  // ✅ Only floating menu on admin routes
-  if (session?.user && isAdminRoute && pathname !== "/") {
-    return FloatingMenu;
-  }
-
-  // ✅ Full Navbar (homepage also includes floating menu if logged in)
   return (
     <header
       className={`print:hidden fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
@@ -269,10 +263,8 @@ export default function NavBar() {
             />
           </div>
 
-          {/* Floating menu on homepage */}
-          {session?.user && pathname === "/" && (
-            <div className="ml-2">{FloatingMenu}</div>
-          )}
+          {/* ✅ Floating menu always if logged in */}
+          {session?.user && <div className="ml-2">{FloatingMenu}</div>}
         </div>
       </nav>
     </header>
