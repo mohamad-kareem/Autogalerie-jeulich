@@ -216,7 +216,7 @@ export default function NavBar() {
     </div>
   );
   if (session?.user && isAdminRoute) {
-    return null;
+    return <>{FloatingMenu}</>;
   }
   return (
     <header
