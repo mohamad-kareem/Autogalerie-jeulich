@@ -170,20 +170,20 @@ export default function ArchivPage() {
     <div className="min-h-screen bg-gray-50 p-4 md:p-2">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-2 flex items-center justify-between">
-          <div className="flex items-center space-x-2 ">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => router.push("/kaufvertrag/liste")}
-              className="p-1 bg-gray-200 rounded-xl hover:bg-gray-100 transition-colors"
+              className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
             >
-              <FiArrowLeft className="h-5 w-5 text-gray-600" />
+              <FiArrowLeft className="h-5 w-5 text-gray-700" />
             </button>
-            <h1 className="text-2xl font-bold text-gray-800">
-              Archivierte Kaufverträge
+            <h1 className="text-lg sm:text-xl font-semibold text-gray-800 flex items-baseline gap-2">
+              Archiv -
+              <span className="text-sm sm:text-base font-normal text-gray-800">
+                ({filteredContracts.length})
+              </span>
             </h1>
-          </div>
-          <div className="text-sm text-gray-500">
-            {filteredContracts.length} Einträge
           </div>
         </div>
 
