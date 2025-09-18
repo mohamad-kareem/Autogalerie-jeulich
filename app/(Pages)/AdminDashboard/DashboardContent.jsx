@@ -34,6 +34,13 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 
 const DashboardContent = ({ user, unreadCount }) => {
+  const adminOnlyRoutes = [
+    "/kaufvertrag/archiv",
+    "/Reg",
+    "/Zeiterfassungsverwaltung",
+    "/excel",
+    "/Vehicles",
+  ];
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
@@ -87,12 +94,6 @@ const DashboardContent = ({ user, unreadCount }) => {
           badge: unreadCount > 0 ? unreadCount : null,
           color: "green",
         },
-      ],
-    },
-    {
-      id: "management",
-      name: "Management",
-      items: [
         {
           href: "/Auto-scheins",
           icon: <FiFileText />,
@@ -118,6 +119,7 @@ const DashboardContent = ({ user, unreadCount }) => {
         },
       ],
     },
+
     {
       id: "admin",
       name: "Administration",
@@ -302,7 +304,7 @@ const DashboardContent = ({ user, unreadCount }) => {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="flex flex-wrap gap-1.5 mb-4 sm:mb-6"
+          className="flex flex-wrap gap-1.5 mb-7 sm:mb-6"
         >
           <button
             onClick={() => setActiveCategory("all")}
@@ -315,19 +317,31 @@ const DashboardContent = ({ user, unreadCount }) => {
             Alle Module
           </button>
 
-          {navCategories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setActiveCategory(category.id)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                activeCategory === category.id
-                  ? "bg-red-950 text-white"
-                  : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-              }`}
-            >
-              {category.name}
-            </button>
-          ))}
+          {navCategories
+            .filter((category) => {
+              // hide "Administration" for non-admins
+              if (category.id === "admin" && user?.role !== "admin") {
+                return false;
+              }
+              // hide "Daily Tasks" for non-admins (they already see them under Alle)
+              if (category.id === "core" && user?.role !== "admin") {
+                return false;
+              }
+              return true;
+            })
+            .map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setActiveCategory(category.id)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  activeCategory === category.id
+                    ? "bg-red-950 text-white"
+                    : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                }`}
+              >
+                {category.name}
+              </button>
+            ))}
         </motion.div>
 
         {/* Dashboard modules grid */}
@@ -338,17 +352,44 @@ const DashboardContent = ({ user, unreadCount }) => {
             transition={{ delay: 0.3 }}
             className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
           >
-            {filteredItems.map((item) => (
-              <HolographicCard
-                key={item.href}
-                href={item.href}
-                icon={item.icon}
-                title={item.label}
-                description={getDefaultDescription(item.label)}
-                accentColor={item.color}
-                badge={item.badge}
-              />
-            ))}
+            {filteredItems
+              .filter((item) => {
+                if (
+                  adminOnlyRoutes.includes(item.href) &&
+                  user?.role !== "admin"
+                ) {
+                  return false;
+                }
+                return true;
+              })
+              .sort((a, b) => {
+                const order = [
+                  "/schlussel",
+                  "/kaufvertrag/auswahl",
+                  "/kaufvertrag/liste",
+                  "/kaufvertrag/archiv",
+                  "/Zeiterfassungsverwaltung",
+                  "/punsh",
+                ];
+                const indexA = order.indexOf(a.href);
+                const indexB = order.indexOf(b.href);
+                // If not found in custom order → keep them after
+                return (
+                  (indexA === -1 ? 999 : indexA) -
+                  (indexB === -1 ? 999 : indexB)
+                );
+              })
+              .map((item) => (
+                <HolographicCard
+                  key={item.href}
+                  href={item.href}
+                  icon={item.icon}
+                  title={item.label}
+                  description={getDefaultDescription(item.label)}
+                  accentColor={item.color}
+                  badge={item.badge}
+                />
+              ))}
           </motion.div>
         ) : (
           <motion.div
