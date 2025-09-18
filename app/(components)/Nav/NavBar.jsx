@@ -87,7 +87,7 @@ export default function NavBar() {
           {/* Avatar Button */}
           <button
             onClick={() => setOpen((v) => !v)}
-            className="flex items-center gap-1 pr-1  rounded-full bg-gradient-to-br from-red-200 to-gray-400  backdrop-blur-md border border-blue-200 hover:bg-blue-800 transition-all"
+            className="flex items-center gap-1 pr-1  rounded-full bg-gradient-to-br from-red-100 to-gray-400  backdrop-blur-md border border-blue-200 hover:bg-blue-800 transition-all"
           >
             {avatarUrl ? (
               <Image
