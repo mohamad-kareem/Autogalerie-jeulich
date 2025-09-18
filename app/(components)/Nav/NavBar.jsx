@@ -215,7 +215,9 @@ export default function NavBar() {
       )}
     </div>
   );
-
+  if (session?.user && isAdminRoute) {
+    return null;
+  }
   return (
     <header
       className={`print:hidden fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
