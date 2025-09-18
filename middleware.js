@@ -10,7 +10,13 @@ export default withAuth(
     console.log("🧠 Middleware Role:", role, "| Path:", pathname);
 
     // 🔒 Admin-only routes
-    const adminOnlyPaths = ["/Zeiterfassungsverwaltung", "/excel", "/Reg"];
+    const adminOnlyPaths = [
+      "/Zeiterfassungsverwaltung",
+      "/excel",
+      "/Reg",
+      "/kaufvertrag/archiv",
+      "/Vehicles",
+    ];
     const isAdminOnly = adminOnlyPaths.some((path) =>
       pathname.startsWith(path)
     );
