@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -25,12 +25,19 @@ import {
   FiCalendar,
   FiDollarSign,
   FiPackage,
+  FiGrid,
+  FiX,
+  FiMenu,
+  FiSearch,
+  FiBell,
 } from "react-icons/fi";
-import { motion } from "framer-motion";
-import NavigationCard from "../../(components)/admin/NavigationCard";
+import { motion, AnimatePresence } from "framer-motion";
 
-const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
+const DashboardContent = ({ user, unreadCount }) => {
   const pathname = usePathname();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const firstName = user?.name?.split(" ")[0] || "Admin";
   const today = new Date().toLocaleDateString("de-DE", {
     weekday: "long",
@@ -39,222 +46,335 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
     year: "numeric",
   });
 
-  // Navigation items
-  const navItems = [
+  // Navigation items organized by category
+  const navCategories = [
     {
-      href: "/schlussel",
-      icon: <FiKey />,
-      label: "Schlüssel",
-      badge: null,
-      color: "cyan",
+      id: "core",
+      name: "Daily Tasks",
+      items: [
+        {
+          href: "/schlussel",
+          icon: <FiKey />,
+          label: "Schlüssel",
+          badge: null,
+          color: "cyan",
+        },
+        {
+          href: "/kaufvertrag/auswahl",
+          icon: <FiFileText />,
+          label: "Neuer Vertrag",
+          badge: null,
+          color: "purple",
+        },
+        {
+          href: "/Autoteil",
+          icon: <FiPackage />,
+          label: "Teile-Reklamation",
+          description: "Teile reklamieren & verfolgen",
+          color: "orange",
+        },
+        {
+          href: "/kaufvertrag/liste",
+          icon: <FiArchive />,
+          label: "Verträge",
+          badge: null,
+          color: "gray",
+        },
+        {
+          href: "/Posteingang",
+          icon: <FiInbox />,
+          label: "Posteingang",
+          badge: unreadCount > 0 ? unreadCount : null,
+          color: "green",
+        },
+      ],
     },
     {
-      href: "/kaufvertrag/auswahl",
-      icon: <FiFileText />,
-      label: "Neuer Vertrag",
-      badge: null,
-      color: "purple",
-    },
-    {
-      href: "/Autoteil", // <- change if your route is different
-      icon: <FiPackage />,
-      label: "Teile-Reklamation",
-      description: "Teile reklamieren & verfolgen",
-      color: "orange",
-    },
-    {
-      href: "/kaufvertrag/liste",
-      icon: <FiArchive />,
-      label: "Verträge",
-      badge: null,
-      color: "gray",
-    },
-    {
-      href: "/Posteingang",
-      icon: <FiInbox />,
-      label: "Posteingang",
-      badge: unreadCount > 0 ? unreadCount : null,
-      color: "sky",
-    },
+      id: "management",
+      name: "Management",
+      items: [
+        {
+          href: "/Auto-scheins",
+          icon: <FiFileText />,
+          label: "Fahrzeugscheine",
+          description: "Dokumente verwalten",
+          color: "pink",
+        },
+        ,
+        {
+          href: "/punsh",
+          icon: <FiClock />,
+          label: "Stempeluhr",
+          description: "Arbeitszeiten erfassen",
+          color: "lime",
+        },
 
-    ...(user.role === "admin"
-      ? [
-          {
-            href: "/kaufvertrag/archiv",
-            icon: <FiArchive />,
-            label: "Archiv",
-            badge: null,
-            color: "red",
-          },
-          {
-            href: "/Zeiterfassungsverwaltung",
-            icon: <FiClock />,
-            label: "Zeiterfassung",
-            badge: null,
-            color: "yellow",
-          },
-
-          {
-            href: "/Vehicles",
-            icon: <FiTruck />,
-            label: "Fahrzeuginventar",
-            badge: null,
-            color: "orange",
-          },
-          {
-            href: "/excel",
-            icon: <FiPieChart />,
-            label: "Buchhaltung",
-            badge: null,
-            color: "green",
-          },
-          {
-            href: "/Reg",
-            icon: <FiUserPlus />,
-            label: "Admin hinzufügen",
-            badge: null,
-            color: "pink",
-          },
-        ]
-      : []),
+        {
+          href: "/PersonalData",
+          icon: <FiUsers />,
+          label: "Kontakte",
+          description: "Kundendaten verwalten",
+          color: "rose",
+        },
+      ],
+    },
+    {
+      id: "admin",
+      name: "Administration",
+      items: [
+        {
+          href: "/kaufvertrag/archiv",
+          icon: <FiArchive />,
+          label: "Archiv",
+          badge: null,
+          color: "red",
+        },
+        {
+          href: "/Zeiterfassungsverwaltung",
+          icon: <FiClock />,
+          label: "Zeiterfassung",
+          badge: null,
+          color: "yellow",
+        },
+        {
+          href: "/excel",
+          icon: <FiPieChart />,
+          label: "Buchhaltung",
+          badge: null,
+          color: "green",
+        },
+        {
+          href: "/Vehicles",
+          icon: <FiTruck />,
+          label: "Fahrzeuginventar",
+          badge: null,
+          color: "orange",
+        },
+        {
+          href: "/Reg",
+          icon: <FiUserPlus />,
+          label: "Admin hinzufügen",
+          badge: null,
+          color: "pink",
+        },
+      ],
+    },
   ];
 
-  const widgetItems = [
-    ...navItems,
-    {
-      href: "/punsh",
-      icon: <FiClock />,
-      label: "Stempeluhr",
-      description: "Arbeitszeiten erfassen",
-      color: "lime",
-    },
-    {
-      href: "/Auto-scheins",
-      icon: <FiFileText />,
-      label: "Fahrzeugscheine",
-      description: "Dokumente verwalten",
-      color: "pink",
-    },
+  // Flatten all items for search
+  const allItems = navCategories.flatMap((category) => category.items);
 
-    {
-      href: "/PersonalData",
-      icon: <FiUsers />,
-      label: "Kontakte",
-      description: "Kundendaten verwalten",
-      color: "rose",
-    },
-  ];
+  // Filter items based on search and category
+  const filteredItems = allItems.filter((item) => {
+    const matchesSearch =
+      item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.description &&
+        item.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesCategory =
+      activeCategory === "all" ||
+      navCategories.find((cat) => cat.items.includes(item))?.id ===
+        activeCategory;
+
+    return matchesSearch && matchesCategory;
+  });
+
+  // Holographic card component - made more compact
+  const HolographicCard = ({
+    href,
+    icon,
+    title,
+    description,
+    accentColor,
+    badge,
+  }) => {
+    const colorMap = {
+      cyan: "from-cyan-500 to-teal-500",
+      purple: "from-purple-500 to-indigo-500",
+      orange: "from-orange-500 to-amber-500",
+      gray: "from-gray-500 to-slate-500",
+      sky: "from-sky-500 to-blue-500",
+      lime: "from-lime-500 to-green-500",
+      pink: "from-pink-500 to-rose-500",
+      rose: "from-rose-500 to-red-500",
+      red: "from-red-500 to-orange-500",
+      yellow: "from-yellow-500 to-amber-500",
+      green: "from-green-500 to-emerald-500",
+    };
+
+    return (
+      <motion.div
+        whileHover={{ y: -3, scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className="relative group"
+      >
+        <Link href={href}>
+          <div className="relative h-full bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-4 overflow-hidden border border-gray-700 shadow-lg">
+            {/* Holographic effect */}
+            <div
+              className={`absolute inset-0 bg-gradient-to-br ${colorMap[accentColor]} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}
+            />
+
+            {/* Glow effect */}
+            <div
+              className={`absolute -inset-1 bg-gradient-to-r ${colorMap[accentColor]} opacity-0 group-hover:opacity-20 blur transition-opacity duration-500`}
+            />
+
+            {/* Content */}
+            <div className="relative z-10 flex flex-col h-full">
+              {/* Title + Icon Row */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`p-2 rounded-lg bg-gradient-to-br ${colorMap[accentColor]} text-white shadow-md`}
+                  >
+                    {React.cloneElement(icon, {
+                      className: "h-4 w-4 sm:h-5 sm:w-5",
+                    })}
+                  </div>
+                  <h3 className="text-sm sm:text-base font-semibold text-white">
+                    {title}
+                  </h3>
+                </div>
+
+                {badge && (
+                  <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-red-500 text-white">
+                    {badge}
+                  </span>
+                )}
+              </div>
+
+              {/* Description */}
+              <p className="text-gray-400 text-xs sm:text-sm mb-2 flex-grow">
+                {description}
+              </p>
+
+              {/* Footer link */}
+              <div className="mt-auto flex items-center text-xs text-gray-400 group-hover:text-gray-400 transition-colors">
+                Zugriff starten
+                <FiChevronRight className="ml-0.5 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </div>
+          </div>
+        </Link>
+      </motion.div>
+    );
+  };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 text-gray-900">
-      {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex flex-col w-58 bg-white border-r border-gray-200 p-6">
-        <div className="flex items-center gap-4 mb-10">
-          <button
-            onClick={onProfileClick}
-            className="relative group transition-all"
-          >
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="relative h-11 w-11"
-            >
-              <Image
-                src={user.image || "/default-avatar.png"}
-                alt={user.name}
-                width={40}
-                height={40}
-                unoptimized
-                className="h-12 w-8 md:h-10 md:w-10 rounded-full object-cover ring-1 md:ring-2 ring-white shadow-md"
-              />
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 ring-2 ring-white rounded-full" />
-            </motion.div>
-          </button>
-          <div className="overflow-hidden">
-            <p className="  font-semibold truncate">{user.name}</p>
-            <p className="text-xs text-gray-500 truncate">{user.role}</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-red-950 text-white overflow-hidden">
+      {/* Floating navbar - made more compact */}
+      <motion.nav
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="sticky top-0 z-50 bg-gradient-to-r from-red-950 to-gray-950 backdrop-blur-md border-b border-gray-800"
+      >
+        <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto px-3 sm:px-4 lg:px-6">
+          <div className="flex justify-between items-center h-14">
+            {/* Left side */}
+            <div className="flex items-center">
+              <div className="bg-gradient-to-r from-red-800 to-gray-600 p-1.5 rounded-lg">
+                <FiGrid className="h-3 w-3 sm:h-5 sm:w-5 text-gray-300" />
+              </div>
+              <motion.header
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className="ml-2"
+              >
+                <h1 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold ">
+                  Willkommen ,{" "}
+                  <span className="bg-gradient-to-r from-red-600 to-gray-500 bg-clip-text text-transparent">
+                    {firstName}
+                  </span>
+                </h1>
+              </motion.header>
+            </div>
           </div>
         </div>
-
-        <nav className="flex-1 space-y-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center justify-between p-3 rounded-lg transition-all ${
-                pathname === item.href
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "hover:bg-gray-100 text-gray-700"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span
-                  className={`text-${item.color}-600`}
-                  style={{ color: `var(--${item.color}-600)` }}
-                >
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </div>
-              {item.badge && (
-                <span className="px-2 py-0.5 text-xs rounded-full bg-red-500 text-white">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="mt-auto pt-6 border-t border-gray-200 space-y-1">
-          <button
-            onClick={onProfileClick}
-            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 text-gray-700 transition-all"
-          >
-            <FiSettings className="w-5 h-5 text-gray-500" />
-            <span>Einstellungen</span>
-          </button>
-          <button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 text-gray-700 transition-all"
-          >
-            <FiLogOut className="w-5 h-5 text-gray-500" />
-            <span>Abmelden</span>
-          </button>
-        </div>
-      </aside>
+      </motion.nav>
 
       {/* Main content */}
-      <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+      <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
         {/* Header */}
-        <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-          <div>
-            <h1 className="text-xl md:text-3xl font-bold tracking-tight">
-              Willkommen ,{" "}
-              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                {firstName}
-              </span>
-            </h1>
-            <p className="text-xs text-gray-500">{today}</p>
-            <div className="mt-2 h-0.5 md:h-1 w-12 md:w-16 rounded-full bg-gradient-to-br from-red-600 to-black/80"></div>
-          </div>
-        </header>
 
-        {/* Dashboard Widgets */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {widgetItems.map((item) => (
-            <NavigationCard
-              key={item.href}
-              href={item.href}
-              icon={item.icon}
-              title={item.label}
-              description={
-                item.description || getDefaultDescription(item.label)
-              }
-              accentColor={item.color}
-              badge={item.badge} // ✅ Add this line
-            />
+        {/* Category filters */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="flex flex-wrap gap-1.5 mb-4 sm:mb-6"
+        >
+          <button
+            onClick={() => setActiveCategory("all")}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+              activeCategory === "all"
+                ? "bg-red-950 text-white"
+                : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+            }`}
+          >
+            Alle Module
+          </button>
+
+          {navCategories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setActiveCategory(category.id)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                activeCategory === category.id
+                  ? "bg-red-950 text-white"
+                  : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+              }`}
+            >
+              {category.name}
+            </button>
           ))}
-        </div>
+        </motion.div>
+
+        {/* Dashboard modules grid */}
+        {filteredItems.length > 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
+          >
+            {filteredItems.map((item) => (
+              <HolographicCard
+                key={item.href}
+                href={item.href}
+                icon={item.icon}
+                title={item.label}
+                description={getDefaultDescription(item.label)}
+                accentColor={item.color}
+                badge={item.badge}
+              />
+            ))}
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-8"
+          >
+            <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-gray-800 mb-3">
+              <FiSearch className="h-6 w-6 text-gray-400" />
+            </div>
+            <h3 className="text-base font-medium text-white mb-1">
+              Keine Ergebnisse gefunden
+            </h3>
+            <p className="text-gray-400 text-sm">
+              Versuchen Sie, andere Suchbegriffe zu verwenden oder eine andere
+              Kategorie auszuwählen.
+            </p>
+          </motion.div>
+        )}
       </main>
+
+      {/* Animated background elements */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-60 h-60 bg-cyan-500/5 rounded-full blur-2xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-60 h-60 bg-purple-500/5 rounded-full blur-2xl"></div>
+      </div>
     </div>
   );
 };
@@ -262,7 +382,7 @@ const DashboardContent = ({ user, onProfileClick, unreadCount }) => {
 // Helper function for default descriptions
 const getDefaultDescription = (label) => {
   const descriptions = {
-    Schlüssel: "Fahrzeugschlüssel verwalten und nachverfolgen",
+    Schlüssel: "Schlüssel nachverfolgen",
     "Neuer Vertrag": "Neuen Kaufvertrag erstellen",
     Posteingang: "Neue Anfragen und Nachrichten",
     Verträge: "Alle aktiven Verträge einsehen",
@@ -274,6 +394,7 @@ const getDefaultDescription = (label) => {
     Fahrzeugscheine: "Fahrzeugdokumente verwalten",
     Kontakte: "Kunden- und Lieferantendaten",
     Fahrzeuginventar: "Fahrzeugbestand verwalten",
+    "Teile-Reklamation": "Teile reklamieren & verfolgen",
   };
   return descriptions[label] || "Zum Modul navigieren";
 };

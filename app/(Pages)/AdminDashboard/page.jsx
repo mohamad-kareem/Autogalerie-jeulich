@@ -4,15 +4,12 @@ import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import DashboardContent from "./DashboardContent";
-import ProfileEditModal from "@/app/(components)/admin/ProfileEditModal";
 
 export default function Dashboard() {
-  const { data: session, status } = useSession(); // add status
+  const { data: session, status } = useSession();
   const [user, setUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
-
   const [loading, setLoading] = useState(true);
-  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -44,10 +41,6 @@ export default function Dashboard() {
     }
   }, [session?.user?.id, status]);
 
-  const handleSaveProfile = (updatedData) => {
-    setUser((prev) => ({ ...prev, ...updatedData }));
-  };
-
   if (loading || status === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50">
@@ -74,21 +67,10 @@ export default function Dashboard() {
   }
 
   return (
-    <>
-      <DashboardContent
-        user={user}
-        unreadCount={unreadCount}
-        setUnreadCount={setUnreadCount}
-        onProfileClick={() => setShowProfileModal(true)}
-      />
-
-      {showProfileModal && (
-        <ProfileEditModal
-          user={user}
-          onClose={() => setShowProfileModal(false)}
-          onSave={handleSaveProfile}
-        />
-      )}
-    </>
+    <DashboardContent
+      user={user}
+      unreadCount={unreadCount}
+      setUnreadCount={setUnreadCount}
+    />
   );
 }

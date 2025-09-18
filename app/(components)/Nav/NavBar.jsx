@@ -12,16 +12,19 @@ import Logo from "../../(assets)/sm1car.png";
 import DesktopMenu from "./DesktopMenu";
 import MobMenu from "./MobMenu";
 import { Menus } from "../../utils/NavData";
+import ProfileEditModal from "@/app/(components)/admin/ProfileEditModal";
 
 export default function NavBar() {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const avatarUrl = session?.user?.image || "";
 
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+
+  // Profile modal state
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [user, setUser] = useState(session?.user || null);
 
   const dropdownRef = useRef(null);
 
@@ -49,60 +52,79 @@ export default function NavBar() {
     pathname?.toLowerCase().startsWith(route.toLowerCase())
   );
 
+  // Sync user with session
+  useEffect(() => {
+    if (session?.user) {
+      setUser(session.user);
+    }
+  }, [session]);
+
   useEffect(() => {
     setHydrated(true);
 
     const handleScroll = () => setScrolled(window.scrollY > 10);
-    const handleResize = () => setIsMobile(window.innerWidth <= 1024);
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setOpen(false);
       }
     };
 
-    handleScroll();
-    handleResize();
-
     window.addEventListener("scroll", handleScroll);
-    window.addEventListener("resize", handleResize);
     document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+  useEffect(() => {
+    const fetchAdmin = async () => {
+      if (!session?.user?.id) return;
+
+      try {
+        const res = await fetch(`/api/admins?id=${session.user.id}`);
+        if (!res.ok) throw new Error("Admin data could not be loaded");
+        const data = await res.json();
+        setUser(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchAdmin();
+  }, [session?.user?.id]);
 
   if (!hydrated) return null;
+
+  const avatarUrl = user?.image || "";
 
   // Reusable floating menu
   const FloatingMenu = (
     <div
-      className="fixed top-4 right-4 z-[9999] print:hidden"
+      className="fixed top-3 right-4 z-[9999] print:hidden"
       ref={dropdownRef}
     >
       <div className="relative">
         {/* Avatar Button */}
         <button
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1 pr-1 rounded-full bg-gradient-to-br from-red-100 to-gray-400 backdrop-blur-md border border-blue-200 hover:bg-blue-800 transition-all"
+          className="flex items-center gap-1 pr-2 rounded-full bg-gradient-to-br from-red-200 to-gray-900 backdrop-blur-md border border-blue-200 hover:bg-blue-800 transition-all"
         >
           {avatarUrl ? (
             <Image
               src={avatarUrl}
               alt="User Avatar"
-              width={28}
-              height={28}
-              className="rounded-full object-cover w-7 h-7"
+              width={32}
+              height={32}
+              className="rounded-full object-cover w-8 h-8"
             />
           ) : (
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-red-200 to-gray-700 flex items-center justify-center">
-              <User className="text-white w-4 h-4" />
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-red-100 to-gray-900 flex items-center justify-center">
+              <User className="text-yellow w-4 h-4" />
             </div>
           )}
           <ChevronDown
-            className={`w-4 h-4 text-purple-800 transition-transform ${
+            className={`w-4 h-4 text-white transition-transform ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -116,7 +138,7 @@ export default function NavBar() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6, scale: 0.97 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-lg py-1 z-50 border border-gray-100"
+              className="absolute right-0 mt-2 w-44 bg-white shadow-lg rounded-lg py-1 z-50 border border-gray-100"
             >
               <Link
                 href="/AdminDashboard"
@@ -135,6 +157,16 @@ export default function NavBar() {
                 Home
               </Link>
               <button
+                onClick={() => {
+                  setOpen(false);
+                  setShowProfileModal(true);
+                }}
+                className="flex w-full items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+              >
+                <User className="w-4 h-4 mr-2 text-gray-400" />
+                Profile
+              </button>
+              <button
                 onClick={() => signOut({ callbackUrl: "/" })}
                 className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
               >
@@ -145,6 +177,20 @@ export default function NavBar() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Profile Modal */}
+      {showProfileModal && user && (
+        <ProfileEditModal
+          user={{
+            _id: user._id || session?.user?.id || "",
+            name: user.name || "",
+            email: user.email || "",
+            image: user.image || "",
+          }}
+          onClose={() => setShowProfileModal(false)}
+          onSave={(updatedUser) => setUser(updatedUser)}
+        />
+      )}
     </div>
   );
 
