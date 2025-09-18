@@ -4,7 +4,15 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { User, ChevronDown, Settings, Home, LogOut } from "lucide-react";
+import {
+  User,
+  ChevronDown,
+  Settings,
+  Home,
+  LogOut,
+  Mail,
+  UserCog,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 
@@ -77,6 +85,7 @@ export default function NavBar() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
   useEffect(() => {
     const fetchAdmin = async () => {
       if (!session?.user?.id) return;
@@ -98,17 +107,18 @@ export default function NavBar() {
 
   const avatarUrl = user?.image || "";
 
-  // Reusable floating menu
+  // Enhanced floating dropdown menu
   const FloatingMenu = (
     <div
-      className="fixed top-3 right-4 z-[9999] print:hidden"
+      className="fixed top-2 right-4 z-[9999] print:hidden"
       ref={dropdownRef}
     >
       <div className="relative">
         {/* Avatar Button */}
-        <button
+        <motion.button
+          whileTap={{ scale: 0.95 }}
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1 pr-2 rounded-full bg-gradient-to-br from-red-200 to-gray-900 backdrop-blur-md border border-blue-200 hover:bg-blue-800 transition-all"
+          className="flex items-center gap-2 p-0.5 rounded-full bg-gradient-to-br from-red-950 to-gray-950 backdrop-blur-md border border-gray-700 hover:border-red-400/50 shadow-lg hover:shadow-red-500/10 transition-all duration-300"
         >
           {avatarUrl ? (
             <Image
@@ -116,63 +126,75 @@ export default function NavBar() {
               alt="User Avatar"
               width={32}
               height={32}
-              className="rounded-full object-cover w-8 h-8"
+              className="rounded-full object-cover w-8 h-8 ring-2 ring-red-900"
             />
           ) : (
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-red-100 to-gray-900 flex items-center justify-center">
-              <User className="text-yellow w-4 h-4" />
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-800 to-gray-900 flex items-center justify-center">
+              <User className="text-white w-4 h-4" />
             </div>
           )}
           <ChevronDown
-            className={`w-4 h-4 text-white transition-transform ${
+            className={`w-4 h-4 text-gray-300 transition-transform duration-300 mr-1 ${
               open ? "rotate-180" : ""
             }`}
           />
-        </button>
+        </motion.button>
 
-        {/* Dropdown */}
+        {/* Enhanced Dropdown */}
         <AnimatePresence>
           {open && (
             <motion.div
-              initial={{ opacity: 0, y: -6, scale: 0.97 }}
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -6, scale: 0.97 }}
-              transition={{ duration: 0.18, ease: "easeOut" }}
-              className="absolute right-0 mt-2 w-44 bg-white shadow-lg rounded-lg py-1 z-50 border border-gray-100"
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="absolute right-0 mt-0.5 w-42 sm:w-50 bg-gradient-to-br from-red-950 to-gray-950 backdrop-blur-xl shadow-xl rounded-xl py-2 z-50 border border-gray-700/50 overflow-hidden"
             >
-              <Link
-                href="/AdminDashboard"
-                className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
-                onClick={() => setOpen(false)}
-              >
-                <Settings className="w-4 h-4 mr-2 text-gray-400" />
-                Dashboard
-              </Link>
-              <Link
-                href="/"
-                className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
-                onClick={() => setOpen(false)}
-              >
-                <Home className="w-4 h-4 mr-2 text-gray-400" />
-                Home
-              </Link>
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  setShowProfileModal(true);
-                }}
-                className="flex w-full items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
-              >
-                <User className="w-4 h-4 mr-2 text-gray-400" />
-                Profile
-              </button>
-              <button
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Log Out
-              </button>
+              {/* User info header */}
+              <div className="px-4 py-3 border-b border-gray-800">
+                <p className="text-sm font-medium text-white truncate">
+                  {user?.name || "User"}
+                </p>
+              </div>
+
+              <div className="py-1.5">
+                <Link
+                  href="/AdminDashboard"
+                  className="flex items-center px-4 py-2.5 text-sm text-gray-300 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 group"
+                  onClick={() => setOpen(false)}
+                >
+                  <Settings className="w-4 h-4 mr-3 text-gray-400 group-hover:text-red-400 transition-colors" />
+                  Dashboard
+                </Link>
+                <Link
+                  href="/"
+                  className="flex items-center px-4 py-2.5 text-sm text-gray-300 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 group"
+                  onClick={() => setOpen(false)}
+                >
+                  <Home className="w-4 h-4 mr-3 text-gray-400 group-hover:text-red-400 transition-colors" />
+                  Homepage
+                </Link>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setShowProfileModal(true);
+                  }}
+                  className="flex w-full items-center px-4 py-2.5 text-sm text-gray-300 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 group"
+                >
+                  <UserCog className="w-4 h-4 mr-3 text-gray-400 group-hover:text-red-400 transition-colors" />
+                  Edit Profile
+                </button>
+              </div>
+
+              <div className="px-4 py-2 border-t border-gray-800">
+                <button
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="flex items-center w-full px-2  text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-md transition-all duration-200 group"
+                >
+                  <LogOut className="w-4 h-4 mr-3" />
+                  Sign Out
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
