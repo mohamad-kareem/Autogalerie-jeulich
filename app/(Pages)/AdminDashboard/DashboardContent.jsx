@@ -428,7 +428,7 @@ const getDefaultDescription = (label) => {
     Posteingang: "Neue Anfragen und Nachrichten",
     Verträge: "Alle aktiven Verträge einsehen",
     Archiv: "Abgeschlossene Verträge archivieren",
-    Zeiterfassung: "Teamzeiten analysieren",
+    Zeiterfassung: "Teamzeiten Management",
     Buchhaltung: "Finanzberichte und Übersichten",
     "Admin hinzufügen": "Neue Benutzerkonten erstellen",
     Stempeluhr: "Arbeitszeiten erfassen",

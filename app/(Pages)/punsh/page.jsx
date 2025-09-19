@@ -187,7 +187,7 @@ export default function ZeiterfassungPage() {
 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm">
-                <FiUser className="text-blue-600" />
+                <FiUser className="text-red-800" />
                 <span className="font-medium">{session.user.name}</span>
               </div>
 
@@ -223,7 +223,7 @@ export default function ZeiterfassungPage() {
                   className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
                     statusZeiterfassung === "eingestempelt" || wirdGeladen
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                      : "bg-red-800 hover:bg-red-950 text-white"
                   }`}
                 >
                   <FiLogIn />
@@ -254,7 +254,7 @@ export default function ZeiterfassungPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <FiClock className="text-blue-600" />
+                    <FiClock className="text-red-800" />
                     <span>Stempelstatus</span>
                   </div>
                   <span
@@ -272,7 +272,7 @@ export default function ZeiterfassungPage() {
 
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <FiSmartphone className="text-blue-600" />
+                    <FiSmartphone className="text-red-800" />
                     <span>Gerätestatus</span>
                   </div>
                   <span className="text-sm font-medium">
@@ -286,10 +286,10 @@ export default function ZeiterfassungPage() {
           {/* Seitenleiste */}
           <div className="space-y-6">
             {zeigeGerätePanel ? (
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-blue-200">
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-red-200">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <FiSmartphone className="text-blue-600" />
+                    <FiSmartphone className="text-red-800" />
                     Geräteregistrierung
                   </h2>
                   <button
@@ -301,9 +301,9 @@ export default function ZeiterfassungPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="bg-red-50 p-4 rounded-lg">
                     <div className="flex items-start gap-3">
-                      <FiShield className="text-blue-600 mt-1 flex-shrink-0" />
+                      <FiShield className="text-red-800 mt-1 flex-shrink-0" />
                       <div>
                         <h3 className="font-medium">Sicherheit</h3>
                         <p className="text-sm text-gray-600 mt-1">
@@ -316,7 +316,7 @@ export default function ZeiterfassungPage() {
 
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-start gap-3">
-                      <FiMapPin className="text-blue-600 mt-1 flex-shrink-0" />
+                      <FiMapPin className="text-red-800 mt-1 flex-shrink-0" />
                       <div>
                         <h3 className="font-medium">Standort</h3>
                         <p className="text-sm text-gray-600 mt-1">
@@ -331,9 +331,7 @@ export default function ZeiterfassungPage() {
                     onClick={handleGerätRegistrierung}
                     disabled={wirdGeladen}
                     className={`w-full py-3 rounded-lg font-medium text-white transition-colors ${
-                      wirdGeladen
-                        ? "bg-blue-400"
-                        : "bg-blue-600 hover:bg-blue-700"
+                      wirdGeladen ? "bg-red-400" : "bg-red-800 hover:bg-red-950"
                     }`}
                   >
                     {wirdGeladen ? "Wird registriert..." : "Gerät registrieren"}
@@ -343,7 +341,7 @@ export default function ZeiterfassungPage() {
             ) : (
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <FiSmartphone className="text-blue-600" />
+                  <FiSmartphone className="text-red-800" />
                   Schnellstempelung
                 </h2>
 
@@ -354,7 +352,7 @@ export default function ZeiterfassungPage() {
 
                 <button
                   onClick={() => setZeigeGerätePanel(true)}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+                  className="w-full py-3 bg-red-800 hover:bg-red-950 text-white rounded-lg font-medium"
                 >
                   {gerätRegistriert ? "Gerät verwalten" : "Gerät registrieren"}
                 </button>
@@ -364,7 +362,7 @@ export default function ZeiterfassungPage() {
             {/* Hilfe-Karte */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <FiHelpCircle className="text-blue-600" />
+                <FiHelpCircle className="text-red-800" />
                 Hinweis
               </h2>
               <p className="text-gray-600 mb-3">

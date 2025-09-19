@@ -28,14 +28,14 @@ export default function KaufvertragAuswahlPage({ carId }) {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
+        <div className="bg-gradient-to-r from-red-900 to-red-950 p-6 text-white">
           <div className="flex items-center justify-center mb-3">
             <div className="bg-white/20 p-2 rounded-full mr-3">
               <FileText className="w-7 h-7" />
             </div>
             <h1 className="text-2xl font-bold">Vertragsersteller auswählen</h1>
           </div>
-          <p className="text-blue-100 text-center text-sm opacity-90">
+          <p className="text-red-100 text-center text-sm opacity-90">
             Bitte wählen Sie aus, auf wen der Kaufvertrag ausgestellt werden
             soll.
           </p>
@@ -49,18 +49,18 @@ export default function KaufvertragAuswahlPage({ carId }) {
               onClick={() => setSelected(opt.value)}
               className={`cursor-pointer flex items-start p-4 rounded-xl border transition-all duration-200 ${
                 selected === opt.value
-                  ? "border-blue-500 bg-blue-50 shadow-sm"
-                  : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                  ? "border-red-500 bg-red-50 shadow-sm"
+                  : "border-gray-200 hover:border-red-300 hover:bg-gray-50"
               }`}
             >
               <div
                 className={`flex items-center justify-center h-10 w-10 rounded-full mr-4 ${
-                  selected === opt.value ? "bg-blue-100" : "bg-gray-100"
+                  selected === opt.value ? "bg-red-100" : "bg-gray-100"
                 }`}
               >
                 <User
                   className={`h-5 w-5 ${
-                    selected === opt.value ? "text-blue-600" : "text-gray-500"
+                    selected === opt.value ? "text-red-600" : "text-gray-500"
                   }`}
                 />
               </div>
@@ -69,7 +69,7 @@ export default function KaufvertragAuswahlPage({ carId }) {
                 <p className="text-sm text-gray-500">{opt.role}</p>
               </div>
               {selected === opt.value && (
-                <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                <CheckCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
               )}
             </div>
           ))}
@@ -82,7 +82,7 @@ export default function KaufvertragAuswahlPage({ carId }) {
             disabled={!selected}
             className={`w-full flex items-center justify-center py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
               selected
-                ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md"
+                ? "bg-red-900 hover:bg-red-700 text-white shadow-md"
                 : "bg-gray-200 text-gray-500 cursor-not-allowed"
             }`}
           >
