@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Kaufvertrag from "@/models/Kaufvertrag";
+import { generateNextNumber } from "@/app/utils/invoiceHelpers";
 
 export async function GET(req) {
   try {
@@ -23,16 +24,15 @@ export async function GET(req) {
       .sort({ createdAt: -1 })
       .lean();
 
-    if (!lastValidContract) {
-      return NextResponse.json(null);
-    }
-
-    // ✅ Ensure we return the base/original number (not starred, not ignored)
     const baseNumber =
-      lastValidContract.originalInvoiceNumber ||
-      lastValidContract.invoiceNumber;
+      lastValidContract?.originalInvoiceNumber ||
+      lastValidContract?.invoiceNumber ||
+      null;
 
-    return NextResponse.json({ ...lastValidContract, baseNumber });
+    // ✅ Generate the next number with utils
+    const nextNumber = generateNextNumber(baseNumber, issuer);
+
+    return NextResponse.json({ nextNumber });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

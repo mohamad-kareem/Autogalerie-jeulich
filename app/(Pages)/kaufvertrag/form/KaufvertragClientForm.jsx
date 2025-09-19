@@ -81,51 +81,28 @@ export default function KaufvertragClientForm() {
   useEffect(() => {
     if (!issuerQP) return;
 
-    // set issuer once
     setForm((prev) => (prev.issuer ? prev : { ...prev, issuer: issuerQP }));
 
-    const fetchLastNumber = async () => {
+    const fetchNextNumber = async () => {
       try {
         const res = await fetch(`/api/kaufvertrag/last?issuer=${issuerQP}`);
-        const last = await res.json();
+        const { nextNumber } = await res.json();
 
-        if (!last || !last.invoiceNumber) {
-          toast.error("Keine vorherige Rechnungsnummer gefunden.");
+        if (!nextNumber) {
+          toast.error("Keine Rechnungsnummer gefunden.");
           return;
         }
 
-        let newInvoiceNumber = "";
-
-        if (issuerQP === "alawie") {
-          const match = (last.baseNumber || last.invoiceNumber).match(
-            /^RE-(\d{4})(\d+)$/
-          );
-          if (match) {
-            const year = match[1]; // e.g. "2025"
-            const seq = parseInt(match[2], 10) + 1; // e.g. 109 → 110
-            newInvoiceNumber = `RE-${year}${seq}`;
-          } else {
-            // fallback if format is unexpected
-            newInvoiceNumber = `RE-${new Date().getFullYear()}1`;
-          }
-        }
-
-        if (issuerQP === "karim") {
-          const parts = last.invoiceNumber.split("/");
-          const next = parseInt(parts[0]) + 1;
-          newInvoiceNumber = `${next}/${parts[1]}`;
-        }
-
-        setForm((prev) => ({ ...prev, invoiceNumber: newInvoiceNumber }));
+        setForm((prev) => ({ ...prev, invoiceNumber: nextNumber }));
       } catch (e) {
         console.error(e);
-        toast.error("Fehler beim Abrufen der letzten Rechnungsnummer.");
+        toast.error("Fehler beim Abrufen der Rechnungsnummer.");
       }
     };
 
-    // only fetch if we don't already have an invoiceNumber
-    // (avoids re-overwriting if user edited)
-    fetchLastNumber();
+    if (!form.invoiceNumber) {
+      fetchNextNumber();
+    }
   }, [issuerQP]);
 
   // 2) If carId present, fetch car and prefill car fields

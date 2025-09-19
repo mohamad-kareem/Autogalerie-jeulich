@@ -2,16 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Kaufvertrag from "@/models/Kaufvertrag";
 import CarSchein from "@/models/CarSchein";
-
-// 🔧 helper: extract last number and increment
-function generateNextNumber(baseNumber) {
-  if (!baseNumber) return "1"; // if no contracts yet
-  const match = baseNumber.match(/(\d+)$/);
-  if (!match) return baseNumber + "1";
-  const num = parseInt(match[1], 10) + 1;
-  return baseNumber.replace(/\d+$/, String(num));
-}
-
+import { generateNextNumber } from "@/app/utils/invoiceHelpers";
 // ➕ Create new contract
 export async function POST(req) {
   try {
@@ -32,7 +23,7 @@ export async function POST(req) {
       lastValidContract?.invoiceNumber;
 
     // 3️⃣ Generate new invoice number
-    const newInvoiceNumber = generateNextNumber(baseNumber);
+    const newInvoiceNumber = generateNextNumber(baseNumber, data.issuer);
 
     // 4️⃣ Ensure uniqueness
     const exists = await Kaufvertrag.findOne({
