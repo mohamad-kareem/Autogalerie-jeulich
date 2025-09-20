@@ -142,7 +142,7 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
             </button>
             <button
               type="submit"
-              className="rounded-lg md:rounded-xl bg-gradient-to-r from-indigo-600 to-blue-500 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-white shadow-md transition-all hover:shadow-lg hover:brightness-105"
+              className="rounded-lg md:rounded-xl bg-gradient-to-r from-red-600 to-red-900 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-white shadow-md transition-all hover:shadow-lg hover:brightness-105"
             >
               Änderungen speichern
             </button>

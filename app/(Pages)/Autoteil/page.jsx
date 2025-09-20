@@ -577,7 +577,6 @@ export default function ReclamationDashboard() {
                   >
                     <option value="EUR">EUR</option>
                     <option value="USD">USD</option>
-                    <option value="GBP">GBP</option>
                   </select>
                 </div>
 
