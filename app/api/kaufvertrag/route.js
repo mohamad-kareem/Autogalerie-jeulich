@@ -3,19 +3,16 @@ import { connectDB } from "@/lib/mongodb";
 import Kaufvertrag from "@/models/Kaufvertrag";
 import CarSchein from "@/models/CarSchein";
 import { generateNextNumber } from "@/app/utils/invoiceHelpers";
+import { getLastValidContract } from "@/app/utils/getLastValidContract"; // ✅ import helper
+
 // ➕ Create new contract
 export async function POST(req) {
   try {
     await connectDB();
     const data = await req.json();
 
-    // 1️⃣ Find last NON-IGNORED contract for this issuer
-    const lastValidContract = await Kaufvertrag.findOne({
-      issuer: data.issuer,
-      ignored: { $ne: true },
-    })
-      .sort({ createdAt: -1 })
-      .lean();
+    // 1️⃣ Use helper to get correct last contract
+    const lastValidContract = await getLastValidContract(data.issuer);
 
     // 2️⃣ Determine base number
     const baseNumber =
