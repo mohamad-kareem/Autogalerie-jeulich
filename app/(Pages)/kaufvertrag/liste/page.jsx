@@ -367,25 +367,25 @@ export default function KaufvertragListe() {
                       onClick={() => router.push(`/kaufvertrag/${c._id}`)}
                       className="hover:bg-black/50 transition cursor-pointer"
                     >
-                      <td className="px-6 py-4 font-light text-gray-400">
+                      <td className="px-6 py-4 font-light text-gray-400  whitespace-nowrap">
                         {formatDate(c.invoiceDate)}
                       </td>
-                      <td className="px-6 py-4 text-gray-400">
+                      <td className="px-6 py-4 text-gray-400  whitespace-nowrap">
                         {c.buyerName || "-"}
                       </td>
-                      <td className="px-6 py-4 font-light text-gray-400">
+                      <td className="px-6 py-4 font-light text-gray-400  whitespace-nowrap">
                         {c.carType || "-"}
                       </td>
-                      <td className="px-6 py-4 font-light text-gray-400 tracking-wide">
+                      <td className="px-6 py-4 font-light text-gray-400 tracking-wide  whitespace-nowrap">
                         {c.vin || "-"}
                       </td>
-                      <td className="px-6 py-4 font-light text-gray-400">
+                      <td className="px-6 py-4 font-light text-gray-400  whitespace-nowrap">
                         {c.mileage
                           ? `${c.mileage.toLocaleString("de-DE")}`
                           : "-"}
                       </td>
                       <td
-                        className={`px-6 py-4 font-medium tracking-widest ${
+                        className={`px-6 py-4 font-medium tracking-widest  whitespace-nowrap ${
                           c.ignored
                             ? "text-red-500"
                             : c.starred
@@ -395,7 +395,7 @@ export default function KaufvertragListe() {
                       >
                         {c.invoiceNumber || "-"}
                       </td>
-                      <td className="px-6 py-4 font-semibold text-gray-400">
+                      <td className="px-6 py-4 font-semibold text-gray-400  whitespace-nowrap">
                         {formatCurrency(c.total)}
                       </td>
 
