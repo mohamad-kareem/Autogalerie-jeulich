@@ -418,7 +418,7 @@ export default function KaufvertragListe() {
                                   prev.filter((item) => item._id !== c._id)
                                 );
                               }}
-                              className="text-gray-400 hover:text-blue-400"
+                              className="text-green-400 hover:text-blue-400"
                             >
                               <HiArchiveBoxArrowDown className="w-4 h-4" />
                             </button>
@@ -447,7 +447,7 @@ export default function KaufvertragListe() {
                               className={`text-lg ${
                                 c.starred
                                   ? "text-blue-500"
-                                  : "text-gray-400 hover:text-blue-400"
+                                  : "text-yellow-400 hover:text-blue-400"
                               }`}
                             >
                               ★
@@ -478,8 +478,8 @@ export default function KaufvertragListe() {
                               }}
                               className={`${
                                 c.ignored
-                                  ? "text-red-500"
-                                  : "text-gray-400 hover:text-red-400"
+                                  ? "text-blue-500"
+                                  : "text-red-500 hover:text-blue-400"
                               }`}
                             >
                               <NoSymbolIcon className="w-4 h-4" />
