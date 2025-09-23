@@ -175,10 +175,10 @@ export default function KaufvertragListe() {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-0 py-1 text-xs">
             {/* Search */}
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-2 top-1.5 h-3 w-3 text-gray-400" />
+              <MagnifyingGlassIcon className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                className="w-full sm:w-[140px] pl-6 pr-2 py-1 rounded-md bg-transparent text-gray-200 placeholder-gray-400 border border-gray-700 focus:outline-none focus:border-red-500"
+                className="w-full sm:w-[140px] pl-7 pr-2 py-2 rounded-md bg-transparent text-gray-200 placeholder-gray-400 border border-gray-700 focus:outline-none focus:border-red-500"
                 placeholder="Suche..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -191,7 +191,7 @@ export default function KaufvertragListe() {
               onChange={(e) =>
                 setFilters({ ...filters, month: e.target.value })
               }
-              className="px-2 py-1 rounded-md bg-gray-800 text-gray-300 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto"
+              className="px-2 py-2 rounded-md bg-gray-800 text-gray-300 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto"
             >
               {monthOptions.map((m) => (
                 <option
@@ -210,7 +210,7 @@ export default function KaufvertragListe() {
               onChange={(e) =>
                 setFilters({ ...filters, seller: e.target.value })
               }
-              className="px-2 py-1 rounded-md bg-gray-800 text-gray-300 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto"
+              className="px-2 py-2 rounded-md bg-gray-800 text-gray-300 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto"
             >
               <option value="" className="bg-gray-900 text-white">
                 Alle Verkäufer
