@@ -172,7 +172,7 @@ export default function KaufvertragListe() {
           transition={{ delay: 0.1 }}
           className=" p-1 mb-4"
         >
-          <div className="inline-flex items-center gap-2 bg-gray-900/70 border border-gray-800 rounded-lg px-2 py-1 text-xs">
+          <div className="inline-flex items-center gap-2  px-2 py-1 text-xs">
             {/* Search */}
             <div className="relative">
               <MagnifyingGlassIcon className="absolute left-2 top-1.5 h-3 w-3 text-gray-400" />
