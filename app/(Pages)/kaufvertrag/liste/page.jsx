@@ -373,13 +373,13 @@ export default function KaufvertragListe() {
                       <td className="px-6 py-4 text-gray-400  whitespace-nowrap">
                         {c.buyerName || "-"}
                       </td>
-                      <td className="px-6 py-4 font-light text-gray-400  whitespace-nowrap">
+                      <td className="px-8 py-4 font-light text-gray-400  whitespace-nowrap">
                         {c.carType || "-"}
                       </td>
                       <td className="px-6 py-4 font-light text-gray-400 tracking-wide  whitespace-nowrap">
                         {c.vin || "-"}
                       </td>
-                      <td className="px-6 py-4 font-light text-gray-400  whitespace-nowrap">
+                      <td className="px-10 py-4 font-light text-gray-400  whitespace-nowrap">
                         {c.mileage
                           ? `${c.mileage.toLocaleString("de-DE")}`
                           : "-"}
