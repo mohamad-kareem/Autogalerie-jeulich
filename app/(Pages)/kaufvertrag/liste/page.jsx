@@ -319,7 +319,7 @@ export default function KaufvertragListe() {
                   </th>
 
                   {/* FIN (not sortable) */}
-                  <th className="px-0 py-3 text-center font-light uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center font-light uppercase tracking-wider">
                     FIN
                   </th>
 
