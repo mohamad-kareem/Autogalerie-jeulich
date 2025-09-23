@@ -2,25 +2,24 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   MagnifyingGlassIcon,
   ChevronUpDownIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useSession } from "next-auth/react";
 import { HiArchiveBoxArrowDown } from "react-icons/hi2";
 import { NoSymbolIcon } from "@heroicons/react/24/solid";
 import { FiArrowLeft } from "react-icons/fi";
+import { motion } from "framer-motion";
+
 export default function KaufvertragListe() {
   const [contracts, setContracts] = useState([]);
   const [filteredContracts, setFilteredContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const { data: session } = useSession();
-  const [filters, setFilters] = useState({
-    month: "",
-    seller: "",
-  });
+  const [filters, setFilters] = useState({ month: "", seller: "" });
   const [sortConfig, setSortConfig] = useState({
     key: "invoiceDate",
     direction: "desc",
@@ -46,11 +45,10 @@ export default function KaufvertragListe() {
     fetchData();
   }, []);
 
-  // Apply filters and search
+  // Apply filters + search
   useEffect(() => {
     let results = [...contracts];
 
-    // Search
     if (searchTerm) {
       results = results.filter((contract) =>
         Object.values(contract).some(
@@ -61,33 +59,26 @@ export default function KaufvertragListe() {
       );
     }
 
-    // Month filter
     if (filters.month) {
       results = results.filter((contract) => {
-        const contractDate = new Date(contract.invoiceDate);
+        const d = new Date(contract.invoiceDate);
         return (
-          contractDate.getMonth() + 1 === parseInt(filters.month) &&
-          contractDate.getFullYear() === new Date().getFullYear()
+          d.getMonth() + 1 === parseInt(filters.month) &&
+          d.getFullYear() === new Date().getFullYear()
         );
       });
     }
 
-    // Seller filter
     if (filters.seller) {
-      results = results.filter(
-        (contract) => contract.issuer === filters.seller
-      );
+      results = results.filter((c) => c.issuer === filters.seller);
     }
 
-    // Sorting
     if (sortConfig.key) {
       results.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+        if (a[sortConfig.key] < b[sortConfig.key])
           return sortConfig.direction === "asc" ? -1 : 1;
-        }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (a[sortConfig.key] > b[sortConfig.key])
           return sortConfig.direction === "asc" ? 1 : -1;
-        }
         return 0;
       });
     }
@@ -96,7 +87,6 @@ export default function KaufvertragListe() {
     setCurrentPage(1);
   }, [contracts, searchTerm, filters, sortConfig]);
 
-  // Sort handler
   const requestSort = (key) => {
     let direction = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc") {
@@ -105,36 +95,24 @@ export default function KaufvertragListe() {
     setSortConfig({ key, direction });
   };
 
-  // Pagination
-  const indexOfLastContract = currentPage * contractsPerPage;
-  const indexOfFirstContract = indexOfLastContract - contractsPerPage;
-  const currentContracts = filteredContracts.slice(
-    indexOfFirstContract,
-    indexOfLastContract
-  );
+  const indexOfLast = currentPage * contractsPerPage;
+  const indexOfFirst = indexOfLast - contractsPerPage;
+  const currentContracts = filteredContracts.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredContracts.length / contractsPerPage);
 
-  // Formatting functions
-  const formatDate = (dateString) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("de-DE");
-  };
+  const formatDate = (date) =>
+    date ? new Date(date).toLocaleDateString("de-DE") : "-";
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("de-DE", {
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat("de-DE", {
       style: "currency",
       currency: "EUR",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
     }).format(amount || 0);
-  };
 
-  // Get unique sellers for filter
-  const uniqueSellers = [
-    ...new Set(contracts.map((contract) => contract.issuer)),
-  ].filter(Boolean);
+  const uniqueSellers = [...new Set(contracts.map((c) => c.issuer))].filter(
+    Boolean
+  );
 
-  // Month options for filter
   const monthOptions = [
     { value: "", label: "Alle Monate" },
     { value: "1", label: "Januar" },
@@ -151,388 +129,358 @@ export default function KaufvertragListe() {
     { value: "12", label: "Dezember" },
   ];
 
-  // Reset filters
   const resetFilters = () => {
     setSearchTerm("");
-    setFilters({
-      month: "",
-      seller: "",
-    });
+    setFilters({ month: "", seller: "" });
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-400"></div>
+      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-red-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-3">
-      <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-2 sm:px-2 lg:px-2 ">
-        {/* Header */}
-        <div className="mb-1 flex items-center space-x-2">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-red-950 text-white">
+      {/* Header */}
+      <motion.div
+        initial={{ y: -15, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className=" z-40   px-4 sm:px-6 py-2"
+      >
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => router.push("/AdminDashboard")} // adjust target if needed
-            className=" rounded-lg hover:bg-gray-100 transition-colors"
+            onClick={() => router.push("/AdminDashboard")}
+            className="p-2 rounded-lg bg-gray-900/60 hover:bg-red-800 transition"
           >
-            <FiArrowLeft className="h-5 w-5 text-gray-600 rounded-4xl bg-gray-300 " />
+            <FiArrowLeft className="h-4 w-4 text-white " />
           </button>
-          <h1 className="text-lg sm:text-2xl font-semibold text-gray-800">
+          <h1 className="text-lg sm:text-xl font-bold">
             Kaufvertragsübersicht
           </h1>
         </div>
+      </motion.div>
 
-        {/* Search and Filters */}
-        <div className="   p-2 mb-4 ">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Content */}
+      <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1600px] mx-auto px-3 sm:px-1 py-2">
+        {/* Filters */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className=" p-1 mb-4"
+        >
+          <div className="inline-flex items-center gap-2 bg-gray-900/70 border border-gray-800 rounded-lg px-2 py-1 text-xs">
             {/* Search */}
-            <div className="md:col-span-2">
-              <div className="relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  id="search"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Suche nach Käufer, Fahrzeug, FIN..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+            <div className="relative">
+              <MagnifyingGlassIcon className="absolute left-2 top-1.5 h-3 w-3 text-gray-400" />
+              <input
+                type="text"
+                className="w-[140px] pl-6 pr-2 py-1 rounded-md bg-transparent text-gray-200 placeholder-gray-400 border border-gray-700 focus:outline-none focus:border-red-500"
+                placeholder="Suche..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
 
-            {/* Month Filter */}
-            <div>
-              <select
-                id="month"
-                className="block w-full py-2 px-3 border border-gray-300  rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-                value={filters.month}
-                onChange={(e) =>
-                  setFilters({ ...filters, month: e.target.value })
-                }
-              >
-                {monthOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Month filter */}
+            <select
+              value={filters.month}
+              onChange={(e) =>
+                setFilters({ ...filters, month: e.target.value })
+              }
+              className="px-2 py-1 rounded-md bg-gray-800 text-gray-300 focus:outline-none focus:ring-1 focus:ring-red-500"
+            >
+              {monthOptions.map((m) => (
+                <option
+                  key={m.value}
+                  value={m.value}
+                  className="bg-gray-900 text-white"
+                >
+                  {m.label}
+                </option>
+              ))}
+            </select>
 
-            {/* Seller Filter */}
-            <div>
-              <select
-                id="seller"
-                className="block w-full py-2 px-3 border border-gray-300  rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-                value={filters.seller}
-                onChange={(e) =>
-                  setFilters({ ...filters, seller: e.target.value })
-                }
+            {/* Seller filter */}
+            <select
+              value={filters.seller}
+              onChange={(e) =>
+                setFilters({ ...filters, seller: e.target.value })
+              }
+              className="px-2 py-1 rounded-md bg-gray-800 text-gray-300 focus:outline-none focus:ring-1 focus:ring-red-500"
+            >
+              <option value="" className="bg-gray-900 text-white">
+                Alle Verkäufer
+              </option>
+              {uniqueSellers.map((s) => (
+                <option key={s} value={s} className="bg-gray-900 text-white">
+                  {s}
+                </option>
+              ))}
+            </select>
+
+            {/* Reset button */}
+            {(searchTerm || filters.month || filters.seller) && (
+              <button
+                onClick={resetFilters}
+                className="p-1 rounded hover:bg-red-600/20 text-gray-400 hover:text-red-400"
+                title="Filter zurücksetzen"
               >
-                <option value="">Alle Verkäufer</option>
-                {uniqueSellers.map((seller) => (
-                  <option key={seller} value={seller}>
-                    {seller}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <XMarkIcon className="h-3 w-3" />
+              </button>
+            )}
           </div>
 
           {/* Active filters */}
           {(searchTerm || filters.month || filters.seller) && (
-            <div className="mt-4 flex flex-wrap gap-2 items-center">
-              <span className="text-sm text-gray-600">Aktive Filter:</span>
-
+            <div className="mt-3 flex flex-wrap gap-2">
               {searchTerm && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="px-2 py-1 bg-red-900/40 text-xs rounded-md flex items-center gap-1">
                   Suche: {searchTerm}
-                  <button
-                    onClick={() => setSearchTerm("")}
-                    className="ml-1.5 inline-flex text-blue-400 hover:text-blue-600"
-                  >
+                  <button onClick={() => setSearchTerm("")}>
                     <XMarkIcon className="h-3 w-3" />
                   </button>
                 </span>
               )}
-
               {filters.month && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="px-2 py-1 bg-red-900/40 text-xs rounded-md flex items-center gap-1">
                   Monat:{" "}
                   {monthOptions.find((m) => m.value === filters.month)?.label}
-                  <button
-                    onClick={() => setFilters({ ...filters, month: "" })}
-                    className="ml-1.5 inline-flex text-blue-400 hover:text-blue-600"
-                  >
+                  <button onClick={() => setFilters({ ...filters, month: "" })}>
                     <XMarkIcon className="h-3 w-3" />
                   </button>
                 </span>
               )}
-
               {filters.seller && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="px-2 py-1 bg-red-900/40 text-xs rounded-md flex items-center gap-1">
                   Verkäufer: {filters.seller}
                   <button
                     onClick={() => setFilters({ ...filters, seller: "" })}
-                    className="ml-1.5 inline-flex text-blue-400 hover:text-blue-600"
                   >
                     <XMarkIcon className="h-3 w-3" />
                   </button>
                 </span>
               )}
-
               <button
                 onClick={resetFilters}
-                className="ml-2 text-sm text-blue-600 hover:text-blue-800"
+                className="text-xs text-red-400 hover:text-red-300 ml-2"
               >
-                Alle Filter zurücksetzen
+                Alle zurücksetzen
               </button>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-          <div className="overflow-x-auto scrollbar-hide">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden"
+        >
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-800 text-gray-300">
                 <tr>
+                  {/* Datum */}
                   <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => requestSort("invoiceDate")}
+                    className="px-4 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
                   >
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-1">
                       Datum
-                      <ChevronUpDownIcon className="ml-1 h-3 w-3 text-gray-400" />
+                      <ChevronUpDownIcon className="h-3 w-3" />
                     </div>
                   </th>
 
+                  {/* Käufer */}
                   <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => requestSort("buyerName")}
+                    className="px-6 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
                   >
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-1">
                       Käufer
-                      <ChevronUpDownIcon className="ml-1 h-3 w-3 text-gray-400" />
+                      <ChevronUpDownIcon className="h-3 w-3" />
                     </div>
                   </th>
+
+                  {/* Fahrzeug */}
                   <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => requestSort("carType")}
+                    className="px-1 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
                   >
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-1">
                       Fahrzeug
-                      <ChevronUpDownIcon className="ml-1 h-3 w-3 text-gray-400" />
+                      <ChevronUpDownIcon className="h-3 w-3" />
                     </div>
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+
+                  {/* FIN (not sortable) */}
+                  <th className="px-13 py-3 text-left font-light uppercase tracking-wider">
                     FIN
                   </th>
+
+                  {/* Kilometer */}
                   <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => requestSort("mileage")}
+                    className="px-4 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
                   >
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-1">
                       Kilometer
-                      <ChevronUpDownIcon className="ml-1 h-3 w-3 text-gray-400" />
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => requestSort("invoiceNumber")}
-                  >
-                    <div className="flex items-center">
-                      Rechnungsnr.
-                      <ChevronUpDownIcon className="ml-1 h-3 w-3 text-gray-400" />
+                      <ChevronUpDownIcon className="h-3 w-3" />
                     </div>
                   </th>
 
+                  {/* Rechnungsnr. */}
                   <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => requestSort("total")}
+                    onClick={() => requestSort("invoiceNumber")}
+                    className="px-1 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
                   >
-                    <div className="flex items-center">
-                      Betrag
-                      <ChevronUpDownIcon className="ml-1 h-3 w-3 text-gray-400" />
+                    <div className=" flex items-center gap-1">
+                      Re-Nr.
+                      <ChevronUpDownIcon className="h-3 w-3" />
                     </div>
                   </th>
-                  <th scope="col" className="relative px-6 py-3">
-                    <span className="sr-only">Details</span>
+
+                  {/* Betrag */}
+                  <th
+                    onClick={() => requestSort("total")}
+                    className="px-4 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
+                  >
+                    <div className="flex items-center gap-1">
+                      Betrag
+                      <ChevronUpDownIcon className="h-3 w-3" />
+                    </div>
                   </th>
+                  <th className="w-[1%] px-0 py-0"></th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+
+              <tbody className="divide-y divide-gray-800 ">
                 {currentContracts.length > 0 ? (
-                  currentContracts.map((contract) => (
+                  currentContracts.map((c) => (
                     <tr
-                      key={contract._id}
-                      className="hover:bg-gray-50 cursor-pointer"
-                      onClick={() =>
-                        router.push(`/kaufvertrag/${contract._id}`)
-                      }
+                      key={c._id}
+                      onClick={() => router.push(`/kaufvertrag/${c._id}`)}
+                      className="hover:bg-gray-800/50 transition cursor-pointer"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(contract.invoiceDate)}
+                      <td className="px-4 py-5 font-light text-gray-400">
+                        {formatDate(c.invoiceDate)}
+                      </td>
+                      <td className="px-4 py-3">{c.buyerName || "-"}</td>
+                      <td className="px-1 py-3 font-light">
+                        {c.carType || "-"}
                       </td>
 
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {contract.buyerName || "-"}
-                        </div>
+                      <td className="px-0 text-left py-3 font-light text-gray-400 tracking-wide">
+                        {c.vin || "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {contract.carType || "-"}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
-                        {contract.vin || "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contract.mileage
-                          ? `${contract.mileage.toLocaleString("de-DE")} `
+                      <td className="px-8 py-3 text-left font-light text-gray-400">
+                        {c.mileage
+                          ? `${c.mileage.toLocaleString("de-DE")} `
                           : "-"}
                       </td>
                       <td
-                        className={`px-6 py-4 whitespace-nowrap text-sm font-semibold
-    ${
-      contract.ignored
-        ? "text-red-600"
-        : contract.starred
-        ? "text-blue-600"
-        : "text-gray-900"
-    }
-  `}
+                        className={`px-1 py-3 font-medium tracking-widest ${
+                          c.ignored
+                            ? "text-red-500"
+                            : c.starred
+                            ? "text-blue-500"
+                            : "text-white"
+                        }`}
                       >
-                        {contract.invoiceNumber || "-"}
+                        {c.invoiceNumber || "-"}
                       </td>
-
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                        {formatCurrency(contract.total)}
+                      <td className="px-4 py-3 font-semibold text-gray-400">
+                        {formatCurrency(c.total)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center align-middle flex gap-2 justify-center">
-                        {/* Archive button */}
+                      {/* inside <tbody> */}
+                      <td className="px-2 py-3 flex justify-end gap-2 w-25">
                         {session?.user?.role === "admin" && (
                           <>
+                            {/* Archive */}
                             <button
                               onClick={async (e) => {
                                 e.stopPropagation();
-                                const confirmArchive = confirm(
-                                  "Diesen Vertrag archivieren?"
+                                if (!confirm("Diesen Vertrag archivieren?"))
+                                  return;
+                                await fetch(`/api/kaufvertrag/${c._id}`, {
+                                  method: "PUT",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({ archived: true }),
+                                });
+                                setContracts((prev) =>
+                                  prev.filter((item) => item._id !== c._id)
                                 );
-                                if (!confirmArchive) return;
-                                await fetch(
-                                  `/api/kaufvertrag/${contract._id}`,
+                              }}
+                              className="text-gray-400 hover:text-blue-400"
+                            >
+                              <HiArchiveBoxArrowDown className="w-4 h-4" />
+                            </button>
+
+                            {/* Star */}
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const res = await fetch(
+                                  `/api/kaufvertrag/${c._id}`,
                                   {
                                     method: "PUT",
                                     headers: {
                                       "Content-Type": "application/json",
                                     },
-                                    body: JSON.stringify({ archived: true }),
+                                    body: JSON.stringify({ toggleStar: true }),
                                   }
                                 );
+                                const updated = await res.json();
                                 setContracts((prev) =>
-                                  prev.filter(
-                                    (item) => item._id !== contract._id
+                                  prev.map((ct) =>
+                                    ct._id === updated._id ? updated : ct
                                   )
                                 );
                               }}
-                              className="text-gray-500 hover:text-blue-600 transition-colors mt-1 ml-2"
-                              title="Vertrag archivieren"
-                            >
-                              <HiArchiveBoxArrowDown className="w-4 h-4" />
-                            </button>
-
-                            {/* Star toggle */}
-                            <button
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                try {
-                                  const res = await fetch(
-                                    `/api/kaufvertrag/${contract._id}`,
-                                    {
-                                      method: "PUT",
-                                      headers: {
-                                        "Content-Type": "application/json",
-                                      },
-                                      body: JSON.stringify({
-                                        toggleStar: true,
-                                      }),
-                                    }
-                                  );
-                                  const updated = await res.json();
-                                  setContracts((prev) =>
-                                    prev.map((c) =>
-                                      c._id === updated._id ? updated : c
-                                    )
-                                  );
-                                } catch (err) {
-                                  console.error("Fehler beim Stern:", err);
-                                }
-                              }}
-                              className={`ml-1 text-xl cursor-pointer transform transition duration-200  ${
-                                contract.starred
-                                  ? "text-blue-500 hover:scale-125" // yellow + grow on hover
-                                  : "text-gray-400 hover:text-blue-500 hover:scale-125"
+                              className={`text-lg ${
+                                c.starred
+                                  ? "text-blue-500"
+                                  : "text-gray-400 hover:text-blue-400"
                               }`}
-                              title={
-                                contract.starred
-                                  ? "Star entfernen"
-                                  : "Star setzen"
-                              }
                             >
                               ★
                             </button>
 
-                            {/* Ignore toggle */}
+                            {/* Ignore */}
                             <button
                               onClick={async (e) => {
                                 e.stopPropagation();
-                                try {
-                                  const res = await fetch(
-                                    `/api/kaufvertrag/${contract._id}`,
-                                    {
-                                      method: "PUT",
-                                      headers: {
-                                        "Content-Type": "application/json",
-                                      },
-                                      body: JSON.stringify({
-                                        toggleIgnore: true,
-                                      }),
-                                    }
-                                  );
-                                  const updated = await res.json();
-                                  setContracts((prev) =>
-                                    prev.map((c) =>
-                                      c._id === updated._id ? updated : c
-                                    )
-                                  );
-                                } catch (err) {
-                                  console.error("Fehler beim Ignorieren:", err);
-                                }
+                                const res = await fetch(
+                                  `/api/kaufvertrag/${c._id}`,
+                                  {
+                                    method: "PUT",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      toggleIgnore: true,
+                                    }),
+                                  }
+                                );
+                                const updated = await res.json();
+                                setContracts((prev) =>
+                                  prev.map((ct) =>
+                                    ct._id === updated._id ? updated : ct
+                                  )
+                                );
                               }}
-                              className={`mt-1  text-xl cursor-pointer transform transition duration-200 ${
-                                contract.ignored
-                                  ? "text-red-500 hover:scale-125"
-                                  : "text-gray-400 hover:text-red-500 hover:scale-125"
+                              className={`${
+                                c.ignored
+                                  ? "text-red-500"
+                                  : "text-gray-400 hover:text-red-400"
                               }`}
-                              title={
-                                contract.ignored
-                                  ? "Ignorieren entfernen"
-                                  : "Ignorieren setzen"
-                              }
                             >
                               <NoSymbolIcon className="w-4 h-4" />
                             </button>
@@ -544,8 +492,8 @@ export default function KaufvertragListe() {
                 ) : (
                   <tr>
                     <td
-                      colSpan="9"
-                      className="px-6 py-4 text-center text-sm text-gray-500"
+                      colSpan="8"
+                      className="px-6 py-4 text-center text-gray-400"
                     >
                       Keine Kaufverträge gefunden
                     </td>
@@ -557,111 +505,75 @@ export default function KaufvertragListe() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="bg-white px-6 py-3 flex items-center justify-between border-t border-gray-200">
-              <div className="flex-1 flex justify-between sm:hidden">
+            <div className="px-4 py-3 flex items-center justify-between bg-gray-800 border-t border-gray-700 text-sm">
+              <p>
+                Seite <span className="font-medium">{currentPage}</span> von{" "}
+                <span className="font-medium">{totalPages}</span> –{" "}
+                {filteredContracts.length} Einträge
+              </p>
+              <div className="flex gap-1">
                 <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
+                  onClick={() => setCurrentPage(1)}
                   disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40"
                 >
-                  Zurück
+                  «
                 </button>
                 <button
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40"
+                >
+                  ‹
+                </button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) pageNum = i + 1;
+                  else if (currentPage <= 3) pageNum = i + 1;
+                  else if (currentPage >= totalPages - 2)
+                    pageNum = totalPages - 4 + i;
+                  else pageNum = currentPage - 2 + i;
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-1 rounded ${
+                        currentPage === pageNum
+                          ? "bg-red-600 text-white"
+                          : "bg-gray-700 hover:bg-gray-600"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                <button
                   onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    setCurrentPage((p) => Math.min(p + 1, totalPages))
                   }
                   disabled={currentPage === totalPages}
-                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40"
                 >
-                  Weiter
+                  ›
                 </button>
-              </div>
-              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Seite <span className="font-medium">{currentPage}</span> von{" "}
-                    <span className="font-medium">{totalPages}</span> -{" "}
-                    <span className="font-medium">
-                      {filteredContracts.length}
-                    </span>{" "}
-                    Einträge
-                  </p>
-                </div>
-                <div>
-                  <nav
-                    className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
-                    aria-label="Pagination"
-                  >
-                    <button
-                      onClick={() => setCurrentPage(1)}
-                      disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                    >
-                      <span className="sr-only">Erste Seite</span>
-                      &laquo;
-                    </button>
-                    <button
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(prev - 1, 1))
-                      }
-                      disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                    >
-                      <span className="sr-only">Zurück</span>
-                      &lsaquo;
-                    </button>
-                    {/* Page numbers */}
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                            currentPage === pageNum
-                              ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
-                              : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                    <button
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                      }
-                      disabled={currentPage === totalPages}
-                      className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                    >
-                      <span className="sr-only">Weiter</span>
-                      &rsaquo;
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage(totalPages)}
-                      disabled={currentPage === totalPages}
-                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                    >
-                      <span className="sr-only">Letzte Seite</span>
-                      &raquo;
-                    </button>
-                  </nav>
-                </div>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40"
+                >
+                  »
+                </button>
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
+      </main>
+
+      {/* Background Glow */}
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <div className="absolute top-0 left-1/3 w-60 h-60 bg-red-500/10 blur-3xl rounded-full" />
+        <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-purple-500/10 blur-3xl rounded-full" />
       </div>
     </div>
   );
