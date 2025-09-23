@@ -365,13 +365,15 @@ export default function KaufvertragListe() {
                     <tr
                       key={c._id}
                       onClick={() => router.push(`/kaufvertrag/${c._id}`)}
-                      className="hover:bg-gray-800/50 transition cursor-pointer"
+                      className="hover:bg-black/50 transition cursor-pointer"
                     >
                       <td className="px-4 py-5 font-light text-gray-400">
                         {formatDate(c.invoiceDate)}
                       </td>
-                      <td className="px-4 py-3">{c.buyerName || "-"}</td>
-                      <td className="px-1 py-3 font-light">
+                      <td className="px-4 py-3 text-gray-400">
+                        {c.buyerName || "-"}
+                      </td>
+                      <td className="px-1 py-3 font-light text-gray-400">
                         {c.carType || "-"}
                       </td>
 
