@@ -172,7 +172,7 @@ export default function KaufvertragListe() {
           transition={{ delay: 0.1 }}
           className=" p-1 mb-4"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-2 py-1 text-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-0 py-1 text-xs">
             {/* Search */}
             <div className="relative">
               <MagnifyingGlassIcon className="absolute left-2 top-1.5 h-3 w-3 text-gray-400" />
@@ -281,14 +281,14 @@ export default function KaufvertragListe() {
           transition={{ delay: 0.2 }}
           className="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden"
         >
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-hide ">
             <table className="min-w-full text-sm">
               <thead className="bg-gray-800 text-gray-300">
                 <tr>
                   {/* Datum */}
                   <th
                     onClick={() => requestSort("invoiceDate")}
-                    className="px-4 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
+                    className="px-6 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
                   >
                     <div className="flex items-center gap-1">
                       Datum
@@ -310,7 +310,7 @@ export default function KaufvertragListe() {
                   {/* Fahrzeug */}
                   <th
                     onClick={() => requestSort("carType")}
-                    className="px-1 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
+                    className="px-6 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
                   >
                     <div className="flex items-center gap-1">
                       Fahrzeug
@@ -319,14 +319,14 @@ export default function KaufvertragListe() {
                   </th>
 
                   {/* FIN (not sortable) */}
-                  <th className="px-13 py-3 text-left font-light uppercase tracking-wider">
+                  <th className="px-0 py-3 text-center font-light uppercase tracking-wider">
                     FIN
                   </th>
 
                   {/* Kilometer */}
                   <th
                     onClick={() => requestSort("mileage")}
-                    className="px-4 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
+                    className="px-6 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
                   >
                     <div className="flex items-center gap-1">
                       Kilometer
@@ -337,9 +337,9 @@ export default function KaufvertragListe() {
                   {/* Rechnungsnr. */}
                   <th
                     onClick={() => requestSort("invoiceNumber")}
-                    className="px-1 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
+                    className="px-6 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
                   >
-                    <div className=" flex items-center gap-1">
+                    <div className="flex items-center gap-1">
                       Re-Nr.
                       <ChevronUpDownIcon className="h-3 w-3" />
                     </div>
@@ -348,18 +348,18 @@ export default function KaufvertragListe() {
                   {/* Betrag */}
                   <th
                     onClick={() => requestSort("total")}
-                    className="px-4 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
+                    className="px-6 py-3 text-left font-light uppercase tracking-wider cursor-pointer"
                   >
                     <div className="flex items-center gap-1">
                       Betrag
                       <ChevronUpDownIcon className="h-3 w-3" />
                     </div>
                   </th>
-                  <th className="w-[1%] px-0 py-0"></th>
+                  <th className="w-[1%] px-6 py-3"></th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-gray-800 ">
+              <tbody className="divide-y divide-gray-800">
                 {currentContracts.length > 0 ? (
                   currentContracts.map((c) => (
                     <tr
@@ -367,26 +367,25 @@ export default function KaufvertragListe() {
                       onClick={() => router.push(`/kaufvertrag/${c._id}`)}
                       className="hover:bg-black/50 transition cursor-pointer"
                     >
-                      <td className="px-4 py-5 font-light text-gray-400">
+                      <td className="px-6 py-4 font-light text-gray-400">
                         {formatDate(c.invoiceDate)}
                       </td>
-                      <td className="px-4 py-3 text-gray-400">
+                      <td className="px-6 py-4 text-gray-400">
                         {c.buyerName || "-"}
                       </td>
-                      <td className="px-1 py-3 font-light text-gray-400">
+                      <td className="px-6 py-4 font-light text-gray-400">
                         {c.carType || "-"}
                       </td>
-
-                      <td className="px-0 text-left py-3 font-light text-gray-400 tracking-wide">
+                      <td className="px-6 py-4 font-light text-gray-400 tracking-wide">
                         {c.vin || "-"}
                       </td>
-                      <td className="px-8 py-3 text-left font-light text-gray-400">
+                      <td className="px-6 py-4 font-light text-gray-400">
                         {c.mileage
-                          ? `${c.mileage.toLocaleString("de-DE")} `
+                          ? `${c.mileage.toLocaleString("de-DE")}`
                           : "-"}
                       </td>
                       <td
-                        className={`px-1 py-3 font-medium tracking-widest ${
+                        className={`px-6 py-4 font-medium tracking-widest ${
                           c.ignored
                             ? "text-red-500"
                             : c.starred
@@ -396,11 +395,12 @@ export default function KaufvertragListe() {
                       >
                         {c.invoiceNumber || "-"}
                       </td>
-                      <td className="px-4 py-3 font-semibold text-gray-400">
+                      <td className="px-6 py-4 font-semibold text-gray-400">
                         {formatCurrency(c.total)}
                       </td>
-                      {/* inside <tbody> */}
-                      <td className="px-2 py-3 flex justify-end gap-2 w-25">
+
+                      {/* Actions */}
+                      <td className="px-6 py-4 flex justify-end gap-2">
                         {session?.user?.role === "admin" && (
                           <>
                             {/* Archive */}
