@@ -172,13 +172,13 @@ export default function KaufvertragListe() {
           transition={{ delay: 0.1 }}
           className=" p-1 mb-4"
         >
-          <div className="inline-flex items-center gap-2  px-2 py-1 text-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-2 py-1 text-xs">
             {/* Search */}
             <div className="relative">
               <MagnifyingGlassIcon className="absolute left-2 top-1.5 h-3 w-3 text-gray-400" />
               <input
                 type="text"
-                className="w-[140px] pl-6 pr-2 py-1 rounded-md bg-transparent text-gray-200 placeholder-gray-400 border border-gray-700 focus:outline-none focus:border-red-500"
+                className="w-full sm:w-[140px] pl-6 pr-2 py-1 rounded-md bg-transparent text-gray-200 placeholder-gray-400 border border-gray-700 focus:outline-none focus:border-red-500"
                 placeholder="Suche..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -191,7 +191,7 @@ export default function KaufvertragListe() {
               onChange={(e) =>
                 setFilters({ ...filters, month: e.target.value })
               }
-              className="px-2 py-1 rounded-md bg-gray-800 text-gray-300 focus:outline-none focus:ring-1 focus:ring-red-500"
+              className="px-2 py-1 rounded-md bg-gray-800 text-gray-300 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto"
             >
               {monthOptions.map((m) => (
                 <option
@@ -210,7 +210,7 @@ export default function KaufvertragListe() {
               onChange={(e) =>
                 setFilters({ ...filters, seller: e.target.value })
               }
-              className="px-2 py-1 rounded-md bg-gray-800 text-gray-300 focus:outline-none focus:ring-1 focus:ring-red-500"
+              className="px-2 py-1 rounded-md bg-gray-800 text-gray-300 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto"
             >
               <option value="" className="bg-gray-900 text-white">
                 Alle Verkäufer
@@ -226,10 +226,10 @@ export default function KaufvertragListe() {
             {(searchTerm || filters.month || filters.seller) && (
               <button
                 onClick={resetFilters}
-                className="p-1 rounded hover:bg-red-600/20 text-gray-400 hover:text-red-400"
+                className="p-1 rounded hover:bg-red-600/20 text-gray-400 hover:text-red-400 w-full sm:w-auto"
                 title="Filter zurücksetzen"
               >
-                <XMarkIcon className="h-3 w-3" />
+                <XMarkIcon className="h-3 w-3 mx-auto sm:mx-0" />
               </button>
             )}
           </div>
