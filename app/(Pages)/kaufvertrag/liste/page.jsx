@@ -164,7 +164,7 @@ export default function KaufvertragListe() {
       </motion.div>
 
       {/* Content */}
-      <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1600px] mx-auto px-3 sm:px-1 py-2">
+      <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1600px] mx-auto px-1 sm:px-0 py-2">
         {/* Filters */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
