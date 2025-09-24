@@ -39,7 +39,6 @@ const DashboardContent = ({ user, unreadCount }) => {
     "/Reg",
     "/Zeiterfassungsverwaltung",
     "/excel",
-    "/Vehicles",
   ];
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -145,13 +144,7 @@ const DashboardContent = ({ user, unreadCount }) => {
           badge: null,
           color: "green",
         },
-        {
-          href: "/Vehicles",
-          icon: <FiTruck />,
-          label: "Fahrzeuginventar",
-          badge: null,
-          color: "orange",
-        },
+
         {
           href: "/Reg",
           icon: <FiUserPlus />,

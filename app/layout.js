@@ -3,6 +3,7 @@ import NavBar from "./(components)/Nav/NavBar";
 import SessionWrapper from "@/app/(components)/helpers/SessionWrapper";
 import { Toaster } from "react-hot-toast";
 import PageLogger from "@/app/(components)/PageLogger";
+import LayoutWrapper from "@/app/(components)/helpers/LayoutWrapper"; // 👈 new wrapper
 export const metadata = {
   title: "Autogalerie Jülich",
   description:
@@ -47,7 +48,10 @@ export default function RootLayout({ children }) {
         />
         <SessionWrapper>
           <NavBar />
-          {children}
+
+          {/* 👇 wrap children + floating widget logic here */}
+          <LayoutWrapper>{children}</LayoutWrapper>
+
           <PageLogger />
         </SessionWrapper>
       </body>

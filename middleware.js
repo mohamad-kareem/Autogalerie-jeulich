@@ -15,7 +15,6 @@ export default withAuth(
       "/excel",
       "/Reg",
       "/kaufvertrag/archiv",
-      "/Vehicles",
     ];
     const isAdminOnly = adminOnlyPaths.some((path) =>
       pathname.startsWith(path)
@@ -40,13 +39,13 @@ export default withAuth(
 export const config = {
   matcher: [
     "/admin/:path*",
-    "/Aufgaben/:path*",
+
     "/forms/:path*",
     "/schlussel/:path*",
-    "/trello/:path*",
+
     "/AdminDashboard/:path*",
     "/PersonalData/:path*",
-    "/Plate/:path*",
+
     "/Posteingang/:path*",
     "/punsh/:path*",
     "/Zeiterfassungsverwaltung/:path*",

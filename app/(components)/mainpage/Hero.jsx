@@ -260,30 +260,6 @@ export default function Hero() {
           </motion.div>
         </div>
       </div>
-
-      {/* Floating contact button */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1 }}
-        className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50"
-      >
-        <button
-          onClick={() => setShowContactModal(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-800 text-white px-5 py-3 rounded-full shadow-lg hover:shadow-xl hover:shadow-red-600/40 transition-all active:scale-95"
-        >
-          <MessageSquare size={20} />
-          {!isMobile && (
-            <span className="text-sm md:text-base font-medium">Beratung</span>
-          )}
-        </button>
-      </motion.div>
-
-      {/* Contact Modal */}
-      <SimpleContactFormModal
-        isOpen={showContactModal}
-        onClose={() => setShowContactModal(false)}
-      />
     </section>
   );
 }
