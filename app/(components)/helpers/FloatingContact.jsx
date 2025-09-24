@@ -63,7 +63,7 @@ export default function FloatingContact() {
 
             {/* WhatsApp */}
             <a
-              href="https://wa.me/4924619163780"
+              href="https://wa.me/4915234205041"
               target="_blank"
               rel="noopener noreferrer"
               className="p-3 hover:bg-red-600 transition-colors duration-200"
@@ -118,7 +118,7 @@ export default function FloatingContact() {
                 <p>
                   <strong>WhatsApp:</strong>{" "}
                   <a
-                    href="https://wa.me/4924619163780"
+                    href="https://wa.me/4915234205041"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-red-600 hover:text-red-800"
