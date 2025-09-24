@@ -39,7 +39,7 @@ export default function Dashboard() {
         } finally {
           // ⏳ Ensure loader shows for at least 1.2s
           const elapsed = Date.now() - startTime;
-          const delay = Math.max(0, 2500 - elapsed);
+          const delay = Math.max(0, 2000 - elapsed);
           setTimeout(() => setLoading(false), delay);
         }
       };
