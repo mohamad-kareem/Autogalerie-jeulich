@@ -43,20 +43,20 @@ export default function FloatingContact() {
               />
             </button>
 
-            {/* Phone */}
+            {/* Telefon */}
             <a
               href="tel:+4924619163780"
               className="p-3 hover:bg-red-600 transition-colors duration-200"
-              title="Call us"
+              title="Anrufen"
             >
               <FiPhone size={20} />
             </a>
 
-            {/* Email */}
+            {/* E-Mail */}
             <button
               onClick={handleContactClick}
               className="p-3 hover:bg-red-600 transition-colors duration-200"
-              title="Email us"
+              title="E-Mail senden"
             >
               <FiMail size={20} />
             </button>
@@ -73,11 +73,11 @@ export default function FloatingContact() {
             </a>
           </div>
 
-          {/* Contact Panel */}
+          {/* Kontakt-Panel */}
           <div
             className={`absolute bg-white shadow-2xl overflow-hidden transform transition-all duration-300 ease-out
-    left-1/2 -translate-x-1/2 bottom-full mb-1 w-80 
-    md:w-80 md:top-0 md:right-full  md:bottom-auto md:rounded-xl rounded-xl md:left-auto md:translate-x-0
+    left-1/2 -translate-x-1/2 bottom-full mb-1 w-80 mr-2
+    md:w-80 md:top-0 md:right-full  md:bottom-auto md:rounded-lg rounded-sm md:left-auto md:translate-x-0
     ${
       isOpen
         ? "translate-y-0 md:translate-x-0 opacity-100 scale-100"
@@ -85,20 +85,19 @@ export default function FloatingContact() {
     }`}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-2">
-              <h3 className="font-bold text-lg text-center">Contact Us</h3>
+            <div className="bg-gradient-to-r from-red-950 to-red-700 text-white p-2">
+              <h3 className="font-bold text-lg text-center">Kontakt</h3>
             </div>
 
-            {/* Content */}
-            <div className="p-4 space-y-4">
-              <p className="text-gray-600 text-sm">
-                Do you have further questions? We're always available to assist
-                you.
+            {/* Inhalt */}
+            <div className="p-4 space-y-2">
+              <p className="text-gray-600 text-base">
+                <span className="pr-12"> </span>Wir sind jederzeit für Sie da.
               </p>
-
+              <div className="border border-red-800"></div>
               <div className="space-y-2 text-sm">
                 <p>
-                  <strong>Email:</strong>{" "}
+                  <strong>E-Mail:</strong>{" "}
                   <a
                     href="mailto:autogalerie.jülich@web.de"
                     className="text-red-600 hover:text-red-800"
@@ -107,7 +106,7 @@ export default function FloatingContact() {
                   </a>
                 </p>
                 <p>
-                  <strong>Phone:</strong>{" "}
+                  <strong>Telefon:</strong>{" "}
                   <a
                     href="tel:+4924619163780"
                     className="text-red-600 hover:text-red-800"
@@ -123,23 +122,25 @@ export default function FloatingContact() {
                     rel="noopener noreferrer"
                     className="text-red-600 hover:text-red-800"
                   >
-                    Open App
+                    App öffnen
                   </a>
                 </p>
               </div>
 
-              <button
-                onClick={handleContactClick}
-                className="w-full bg-gradient-to-r from-gray-950 to-red-800 hover:from-red-600 hover:to-red-700 text-white py-2 px-3 text-sm rounded-xl font-semibold shadow-lg transition-all hover:scale-[1.02]"
-              >
-                Contact us
-              </button>
+              <div className="flex justify-center">
+                <button
+                  onClick={handleContactClick}
+                  className="flex items-center gap-1 bg-gradient-to-r from-red-950 to-red-700 hover:from-red-600 hover:to-red-700 text-white py-2 px-4 text-sm rounded-xl font-semibold shadow-lg transition-all hover:scale-[1.02]"
+                >
+                  Jetzt kontaktieren
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Contact Modal */}
+      {/* Kontakt-Modal */}
       <SimpleContactFormModal
         isOpen={showForm}
         onClose={() => setShowForm(false)}
