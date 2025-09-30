@@ -536,66 +536,85 @@ export default function Zeiterfassungsverwaltung() {
       <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1600px] mx-auto px-1 sm:px-0 py-2">
         {/* Control Panel */}
         <div className="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden mb-4">
-          <div className="grid grid-cols-3 gap-1 sm:flex sm:gap-0 border-b border-gray-800">
-            {[
-              {
-                key: "filter",
-                icon: <FiFilter className="sm:h-4 sm:w-4 h-3 w-3" />,
-                label: "Filter",
-                color: "blue",
-              },
-              {
-                key: "delete",
-                icon: <FiTrash2 className="sm:h-4 sm:w-4 h-3 w-3" />,
-                label: "Löschen",
-                color: "red",
-              },
-              {
-                key: "summary",
-                icon: <FiClock className="sm:h-4 sm:w-4 h-3 w-3" />,
-                label: "Übersicht",
-                color: "green",
-              },
-              {
-                key: "manual",
-                icon: <FiPlusCircle className="sm:h-4 sm:w-4 h-3 w-3" />,
-                label: "Manuell",
-                color: "purple",
-              },
-              {
-                key: "print",
-                icon: <FiPrinter className="sm:h-4 sm:w-4 h-3 w-3" />,
-                label: "Drucken",
-                color: "indigo",
-              },
-              {
-                key: "alerts",
-                icon: <FiAlertTriangle className="sm:h-4 sm:w-4 h-3 w-3" />,
-                label: "Fehlstempel",
-                color: "red",
-              },
-            ].map(({ key, icon, label, color }) => (
-              <button
-                key={key}
-                onClick={() =>
-                  setActiveSection(activeSection === key ? null : key)
-                }
-                className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 text-xs sm:text-sm  font-s transition-all ${
-                  activeSection === key
-                    ? "bg-red-900/40 text-white border-b-2 border-red-500 "
-                    : "text-gray-400 hover:text-white hover:bg-gray-800/60  "
-                }`}
+          {/* Top Navigation */}
+          <div className="border-b border-gray-800">
+            {/* ✅ Desktop/Tablet → Horizontal Buttons */}
+            <div className="hidden sm:flex flex-wrap">
+              {[
+                {
+                  key: "filter",
+                  icon: <FiFilter className="h-4 w-4" />,
+                  label: "Filter",
+                },
+                {
+                  key: "delete",
+                  icon: <FiTrash2 className="h-4 w-4" />,
+                  label: "Löschen",
+                },
+                {
+                  key: "summary",
+                  icon: <FiClock className="h-4 w-4" />,
+                  label: "Übersicht",
+                },
+                {
+                  key: "manual",
+                  icon: <FiPlusCircle className="h-4 w-4" />,
+                  label: "Manuell",
+                },
+                {
+                  key: "print",
+                  icon: <FiPrinter className="h-4 w-4" />,
+                  label: "Drucken",
+                },
+                {
+                  key: "alerts",
+                  icon: <FiAlertTriangle className="h-4 w-4" />,
+                  label: "Fehlstempel",
+                },
+              ].map(({ key, icon, label }) => (
+                <button
+                  key={key}
+                  onClick={() =>
+                    setActiveSection(activeSection === key ? null : key)
+                  }
+                  className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-all
+            ${
+              activeSection === key
+                ? "bg-red-900/40 text-white border-b-2 border-red-500"
+                : "text-gray-400 hover:text-white hover:bg-gray-800/60"
+            }`}
+                >
+                  {icon}
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* ✅ Mobile → Dropdown Menu */}
+            <div className="sm:hidden p-3">
+              <label className="text-xs text-gray-400 block mb-2">
+                Aktion wählen
+              </label>
+              <select
+                value={activeSection || ""}
+                onChange={(e) => setActiveSection(e.target.value || null)}
+                className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-red-500"
               >
-                {icon}
-                {label}
-              </button>
-            ))}
+                <option value="">— Bitte wählen —</option>
+                <option value="filter">🔍 Filter</option>
+                <option value="delete">🗑️ Löschen</option>
+                <option value="summary">⏱ Übersicht</option>
+                <option value="manual">➕ Manuell</option>
+                <option value="print">🖨 Drucken</option>
+                <option value="alerts">⚠️ Fehlstempel</option>
+              </select>
+            </div>
           </div>
 
           {/* Filter Section */}
           {activeSection === "filter" && (
-            <div className="p-6 border-b border-gray-800">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="p-4 sm:p-6 border-b border-gray-800">
+              <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm text-gray-300 mb-2 block">
                     Mitarbeiter
@@ -603,7 +622,7 @@ export default function Zeiterfassungsverwaltung() {
                   <select
                     value={selectedAdmin}
                     onChange={(e) => setSelectedAdmin(e.target.value)}
-                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
                   >
                     <option value="alle">Alle Mitarbeiter</option>
                     {allAdmins.map((name) => (
@@ -613,12 +632,11 @@ export default function Zeiterfassungsverwaltung() {
                     ))}
                   </select>
                 </div>
-
                 <div>
                   <label className="text-sm text-gray-300 mb-2 block">
                     Datumsbereich
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <DatePicker
                       selected={dateFilter.start}
                       onChange={(d) =>
@@ -627,12 +645,12 @@ export default function Zeiterfassungsverwaltung() {
                       selectsStart
                       startDate={dateFilter.start}
                       endDate={dateFilter.end}
+                      placeholderText="Startdatum"
+                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                      dateFormat="dd.MM.yyyy"
                       popperClassName="z-50" // Tailwind helper
                       popperPlacement="bottom-start"
                       portalId="root-portal" // render outside overflow:hidden
-                      placeholderText="Startdatum"
-                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
-                      dateFormat="dd.MM.yyyy"
                     />
                     <DatePicker
                       selected={dateFilter.end}
@@ -641,16 +659,15 @@ export default function Zeiterfassungsverwaltung() {
                       startDate={dateFilter.start}
                       endDate={dateFilter.end}
                       minDate={dateFilter.start}
+                      placeholderText="Enddatum"
+                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                      dateFormat="dd.MM.yyyy"
                       popperClassName="z-50" // Tailwind helper
                       popperPlacement="bottom-start"
                       portalId="root-portal" // render outside overflow:hidden
-                      placeholderText="Enddatum"
-                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
-                      dateFormat="dd.MM.yyyy"
                     />
                   </div>
                 </div>
-
                 <div className="flex items-end">
                   <button
                     onClick={() => {
@@ -660,7 +677,7 @@ export default function Zeiterfassungsverwaltung() {
                       });
                       setSelectedAdmin("alle");
                     }}
-                    className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-md transition"
+                    className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-md transition text-sm"
                   >
                     Filter zurücksetzen
                   </button>
@@ -671,61 +688,58 @@ export default function Zeiterfassungsverwaltung() {
 
           {/* Delete Section */}
           {activeSection === "delete" && (
-            <div className="p-6 border-b border-gray-800">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="md:col-span-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-sm text-gray-300 mb-2 block">
-                        Von
-                      </label>
-                      <DatePicker
-                        selected={deleteRange.start}
-                        onChange={(d) =>
-                          setDeleteRange((r) => ({ ...r, start: d }))
-                        }
-                        selectsStart
-                        startDate={deleteRange.start}
-                        endDate={deleteRange.end}
-                        placeholderText="Startdatum"
-                        popperClassName="z-50" // Tailwind helper
-                        popperPlacement="bottom-start"
-                        portalId="root-portal" // render outside overflow:hidden
-                        className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
-                        dateFormat="dd.MM.yyyy"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-300 mb-2 block">
-                        Bis
-                      </label>
-                      <DatePicker
-                        selected={deleteRange.end}
-                        onChange={(d) =>
-                          setDeleteRange((r) => ({ ...r, end: d }))
-                        }
-                        selectsEnd
-                        startDate={deleteRange.start}
-                        endDate={deleteRange.end}
-                        minDate={deleteRange.start}
-                        popperClassName="z-50" // Tailwind helper
-                        popperPlacement="bottom-start"
-                        portalId="root-portal" // render outside overflow:hidden
-                        placeholderText="Enddatum"
-                        className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
-                        dateFormat="dd.MM.yyyy"
-                      />
-                    </div>
+            <div className="p-4 sm:p-6 border-b border-gray-800">
+              <div className="flex flex-col sm:grid sm:grid-cols-4 gap-4">
+                <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-sm text-gray-300 mb-2 block">
+                      Von
+                    </label>
+                    <DatePicker
+                      selected={deleteRange.start}
+                      onChange={(d) =>
+                        setDeleteRange((r) => ({ ...r, start: d }))
+                      }
+                      selectsStart
+                      startDate={deleteRange.start}
+                      endDate={deleteRange.end}
+                      placeholderText="Startdatum"
+                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                      dateFormat="dd.MM.yyyy"
+                      popperClassName="z-50" // Tailwind helper
+                      popperPlacement="bottom-start"
+                      portalId="root-portal" // render outside overflow:hidden
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-300 mb-2 block">
+                      Bis
+                    </label>
+                    <DatePicker
+                      selected={deleteRange.end}
+                      onChange={(d) =>
+                        setDeleteRange((r) => ({ ...r, end: d }))
+                      }
+                      selectsEnd
+                      startDate={deleteRange.start}
+                      endDate={deleteRange.end}
+                      minDate={deleteRange.start}
+                      placeholderText="Enddatum"
+                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                      dateFormat="dd.MM.yyyy"
+                      popperClassName="z-50" // Tailwind helper
+                      popperPlacement="bottom-start"
+                      portalId="root-portal" // render outside overflow:hidden
+                    />
                   </div>
                 </div>
-
                 <div className="flex items-end">
                   <button
                     onClick={handleDeleteRange}
                     disabled={
                       isLoading || !deleteRange.start || !deleteRange.end
                     }
-                    className={`w-full px-4 py-2 rounded-md transition ${
+                    className={`w-full px-4 py-2 rounded-md transition text-sm ${
                       isLoading || !deleteRange.start || !deleteRange.end
                         ? "bg-gray-700 text-gray-400 cursor-not-allowed"
                         : "bg-red-600 hover:bg-red-700 text-white"
@@ -740,7 +754,7 @@ export default function Zeiterfassungsverwaltung() {
 
           {/* Summary Section */}
           {activeSection === "summary" && (
-            <div className="p-6 border-b border-gray-800">
+            <div className="p-4 sm:p-6 border-b border-gray-800">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {summary.map((s, i) => (
                   <div
@@ -750,7 +764,7 @@ export default function Zeiterfassungsverwaltung() {
                     <div className="font-semibold text-white mb-3">
                       {s.name}
                     </div>
-                    <div className="space-y-2 text-sm">
+                    <div className="space-y-2 text-sm sm:text-base">
                       <div className="flex justify-between">
                         <span className="text-green-400">Gesamtzeit:</span>
                         <span className="text-green-400">
@@ -772,8 +786,8 @@ export default function Zeiterfassungsverwaltung() {
 
           {/* Manual Entry Section */}
           {activeSection === "manual" && (
-            <div className="p-6 border-b border-gray-800">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 sm:p-6 border-b border-gray-800">
+              <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm text-gray-300 mb-2 block">
                     Mitarbeiter
@@ -786,7 +800,7 @@ export default function Zeiterfassungsverwaltung() {
                         admin: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
                   >
                     <option value="">Bitte wählen</option>
                     {allAdmins.map((name) => (
@@ -796,7 +810,6 @@ export default function Zeiterfassungsverwaltung() {
                     ))}
                   </select>
                 </div>
-
                 <div>
                   <label className="text-sm text-gray-300 mb-2 block">
                     Typ
@@ -809,13 +822,12 @@ export default function Zeiterfassungsverwaltung() {
                         type: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
                   >
                     <option value="in">EIN</option>
                     <option value="out">AUS</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="text-sm text-gray-300 mb-2 block">
                     Datum & Uhrzeit
@@ -827,27 +839,27 @@ export default function Zeiterfassungsverwaltung() {
                     }
                     showTimeSelect
                     timeFormat="HH:mm"
-                    timeIntervals={5}
-                    dateFormat="dd.MM.yyyy HH:mm"
                     popperClassName="z-50" // Tailwind helper
                     popperPlacement="bottom-start"
                     portalId="root-portal" // render outside overflow:hidden
+                    timeIntervals={5}
+                    dateFormat="dd.MM.yyyy HH:mm"
                     placeholderText="Datum und Uhrzeit"
-                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
                   />
                 </div>
               </div>
-              <div className="flex justify-end space-x-3 mt-4">
+              <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
                 <button
                   onClick={() => setActiveSection(null)}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition"
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition text-sm"
                 >
                   Abbrechen
                 </button>
                 <button
                   onClick={handleManualSave}
                   disabled={!manualEntry.admin || !manualEntry.time}
-                  className={`px-4 py-2 rounded-md transition ${
+                  className={`px-4 py-2 rounded-md transition text-sm ${
                     !manualEntry.admin || !manualEntry.time
                       ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                       : "bg-red-600 hover:bg-red-700 text-white"
@@ -861,8 +873,8 @@ export default function Zeiterfassungsverwaltung() {
 
           {/* Print Section */}
           {activeSection === "print" && (
-            <div className="p-6 border-b border-gray-800">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 sm:p-6 border-b border-gray-800">
+              <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm text-gray-300 mb-2 block">
                     Mitarbeiter
@@ -875,7 +887,7 @@ export default function Zeiterfassungsverwaltung() {
                         employee: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
                   >
                     <option value="alle">Alle Mitarbeiter</option>
                     {allAdmins.map((name) => (
@@ -885,12 +897,11 @@ export default function Zeiterfassungsverwaltung() {
                     ))}
                   </select>
                 </div>
-
                 <div>
                   <label className="text-sm text-gray-300 mb-2 block">
                     Datumsbereich
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <DatePicker
                       selected={printConfig.startDate}
                       onChange={(d) =>
@@ -899,12 +910,12 @@ export default function Zeiterfassungsverwaltung() {
                       selectsStart
                       startDate={printConfig.startDate}
                       endDate={printConfig.endDate}
+                      placeholderText="Startdatum"
+                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                      dateFormat="dd.MM.yyyy"
                       popperClassName="z-50" // Tailwind helper
                       popperPlacement="bottom-start"
                       portalId="root-portal" // render outside overflow:hidden
-                      placeholderText="Startdatum"
-                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
-                      dateFormat="dd.MM.yyyy"
                     />
                     <DatePicker
                       selected={printConfig.endDate}
@@ -915,16 +926,15 @@ export default function Zeiterfassungsverwaltung() {
                       startDate={printConfig.startDate}
                       endDate={printConfig.endDate}
                       minDate={printConfig.startDate}
+                      placeholderText="Enddatum"
+                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                      dateFormat="dd.MM.yyyy"
                       popperClassName="z-50" // Tailwind helper
                       popperPlacement="bottom-start"
                       portalId="root-portal" // render outside overflow:hidden
-                      placeholderText="Enddatum"
-                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
-                      dateFormat="dd.MM.yyyy"
                     />
                   </div>
                 </div>
-
                 <div className="flex items-center">
                   <input
                     type="checkbox"
@@ -946,10 +956,10 @@ export default function Zeiterfassungsverwaltung() {
                   </label>
                 </div>
               </div>
-              <div className="flex justify-end space-x-3 mt-4">
+              <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
                 <button
                   onClick={() => setActiveSection(null)}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition"
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition text-sm"
                 >
                   Abbrechen
                 </button>
@@ -958,7 +968,7 @@ export default function Zeiterfassungsverwaltung() {
                   disabled={
                     isPrinting || !printConfig.startDate || !printConfig.endDate
                   }
-                  className={`px-4 py-2 rounded-md transition ${
+                  className={`px-4 py-2 rounded-md transition text-sm ${
                     isPrinting || !printConfig.startDate || !printConfig.endDate
                       ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                       : "bg-red-600 hover:bg-red-700 text-white"
@@ -972,7 +982,7 @@ export default function Zeiterfassungsverwaltung() {
 
           {/* Alerts Section */}
           {activeSection === "alerts" && (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {unresolvedMissingCount === 0 ? (
                 <div className="text-green-400 text-sm">
                   ✅ Alles gut! Keine fehlenden Stempelungen im gewählten
@@ -980,22 +990,21 @@ export default function Zeiterfassungsverwaltung() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="text-sm text-red-400">
+                  <div className="text-sm text-red-400 bg-red-300/10 p-3 rounded border border-red-500  ">
                     <strong>Hinweis:</strong> Sonntag ist ausgenommen; Und{" "}
                     <strong>Abed</strong> ist auch <strong>Samstag</strong>{" "}
                     ausgenommen.
                   </div>
-
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                  <div className="space-y-2">
                     {missingPunches.map((m, i) => {
                       const dateObj = new Date(m.date);
                       const hasReason = m.justified && m.issue?.trim();
                       return (
                         <div
                           key={`${m.name}-${m.date}-${i}`}
-                          className="flex justify-between items-center p-3 bg-gray-800/40 rounded border border-gray-700 text-sm"
+                          className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-3 bg-gray-800/30 rounded border border-gray-900 text-sm"
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex flex-wrap items-center gap-3">
                             <span className="font-semibold text-white">
                               {m.name}
                             </span>
@@ -1015,7 +1024,6 @@ export default function Zeiterfassungsverwaltung() {
                               {m.issue}
                             </span>
                           </div>
-
                           <div className="flex gap-2">
                             <button
                               onClick={() => {
