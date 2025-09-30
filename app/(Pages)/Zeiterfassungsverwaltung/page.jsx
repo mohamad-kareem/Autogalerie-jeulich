@@ -1,4 +1,5 @@
 "use client";
+
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -37,6 +38,12 @@ import {
 } from "react-icons/fi";
 import { IoMdLocate } from "react-icons/io";
 
+import {
+  MagnifyingGlassIcon,
+  ChevronUpDownIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+
 const PER_PAGE = 10;
 
 export default function Zeiterfassungsverwaltung() {
@@ -57,7 +64,6 @@ export default function Zeiterfassungsverwaltung() {
   }));
 
   const [deleteRange, setDeleteRange] = useState({ start: null, end: null });
-
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
 
@@ -111,7 +117,6 @@ export default function Zeiterfassungsverwaltung() {
 
   const fetchJustifications = useCallback(async () => {
     try {
-      // Current month until today
       const from = startOfMonth(new Date()).toISOString();
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -194,13 +199,11 @@ export default function Zeiterfassungsverwaltung() {
 
   // Build missing punches (Fehlstempel) for current month up to today
   const missingPunches = useMemo(() => {
-    // month window [startOfMonth..today]
     const monthStart = startOfMonth(new Date());
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const monthEnd = today;
 
-    // counts per admin/day
     const byAdminDate = new Map();
     for (const r of records) {
       const name = r.admin?.name || "Unbekannt";
@@ -215,7 +218,6 @@ export default function Zeiterfassungsverwaltung() {
       if (r.type === "out") entry.outs += 1;
     }
 
-    // Pre-index justifications for O(1) lookups: "name|yyyy-MM-dd" -> justification obj
     const justificationMap = new Map(
       justifications.map((j) => {
         const key = `${j.admin?.name || ""}|${format(
@@ -226,15 +228,12 @@ export default function Zeiterfassungsverwaltung() {
       })
     );
 
-    // All days in current month (skip Sundays globally)
     const days = eachDayOfInterval({ start: monthStart, end: monthEnd }).filter(
       (d) => !isSunday(d)
     );
 
-    // exceptions: "abed" has Saturdays off (case-insensitive)
     const saturdayOff = new Set(["abed"]);
 
-    // Determine admins to check
     const adminsToCheck =
       selectedAdmin === "alle"
         ? allAdmins
@@ -270,7 +269,7 @@ export default function Zeiterfassungsverwaltung() {
           results.push({
             name,
             date: keyDate,
-            issue: j?.reason || issue, // show the justification text if exists
+            issue: j?.reason || issue,
             justified: Boolean(j),
           });
         }
@@ -281,7 +280,7 @@ export default function Zeiterfassungsverwaltung() {
       (a, b) => a.name.localeCompare(b.name) || a.date.localeCompare(b.date)
     );
   }, [records, allAdmins, selectedAdmin, justifications]);
-  // Count only items that are NOT justified
+
   const unresolvedMissingCount = useMemo(
     () =>
       missingPunches.filter((m) => !(m.justified && m.issue?.trim())).length,
@@ -464,7 +463,7 @@ export default function Zeiterfassungsverwaltung() {
                   <td>
                     ${
                       r.method === "qr"
-                        ? "NFC-Verifiziert"
+                        ? "gescannt"
                         : r.method === "added"
                         ? "Hinzugefügt"
                         : r.method === "edited"
@@ -506,111 +505,105 @@ export default function Zeiterfassungsverwaltung() {
   // ------------ Rendering ------------
   if (status !== "authenticated") {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center p-8 bg-white rounded-xl shadow-lg max-w-md w-full">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            Authentifizierung wird geladen
-          </h2>
-          <p className="text-gray-600">Bitte warten Sie einen Moment...</p>
-        </div>
+      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-red-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-red-950 text-white">
       {/* Header */}
-      <header className="bg-white shadow-md sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-3">
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={() => router.push("/AdminDashboard")}
-              className="p-2 rounded-lg hover:bg-gray-100"
-              aria-label="Zurück"
-            >
-              <FiArrowLeft className="text-gray-500" />
-            </button>
-            <h1 className="text-lg sm:text-xl font-semibold text-gray-800">
-              Zeiterfassung
-            </h1>
-          </div>
+      <div
+        initial={{ y: -15, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="z-40 px-4 sm:px-6 py-2"
+      >
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push("/AdminDashboard")}
+            className="p-2 rounded-lg bg-gray-900/60 hover:bg-red-800 transition"
+          >
+            <FiArrowLeft className="h-4 w-4 text-white" />
+          </button>
+          <h1 className="text-lg sm:text-xl font-bold">
+            Zeiterfassungsübersicht
+          </h1>
         </div>
-      </header>
+      </div>
 
-      {/* Main */}
-      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-6 sm:py-8">
+      {/* Main Content */}
+      <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1600px] mx-auto px-1 sm:px-0 py-2">
         {/* Control Panel */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6 sm:mb-8 transition-all duration-300 hover:shadow-xl">
-          <div className="grid grid-cols-3 gap-1 sm:flex sm:gap-0 border-b border-gray-100">
-            <ControlButton
-              active={activeSection === "filter"}
-              onClick={() =>
-                setActiveSection(activeSection === "filter" ? null : "filter")
-              }
-              icon={<FiFilter className="text-lg" />}
-              label="Filter"
-              color="blue"
-            />
-            <ControlButton
-              active={activeSection === "delete"}
-              onClick={() =>
-                setActiveSection(activeSection === "delete" ? null : "delete")
-              }
-              icon={<FiTrash2 className="text-lg" />}
-              label="Löschen"
-              color="red"
-            />
-            <ControlButton
-              active={activeSection === "summary"}
-              onClick={() =>
-                setActiveSection(activeSection === "summary" ? null : "summary")
-              }
-              icon={<FiClock className="text-lg" />}
-              label="Übersicht"
-              color="green"
-            />
-            <ControlButton
-              active={activeSection === "manual"}
-              onClick={() =>
-                setActiveSection(activeSection === "manual" ? null : "manual")
-              }
-              icon={<FiPlusCircle className="text-lg" />}
-              label="Manuell"
-              color="purple"
-            />
-            <ControlButton
-              active={activeSection === "print"}
-              onClick={() =>
-                setActiveSection(activeSection === "print" ? null : "print")
-              }
-              icon={<FiPrinter className="text-lg" />}
-              label="Drucken"
-              color="indigo"
-            />
-            <ControlButton
-              active={activeSection === "alerts"}
-              onClick={() =>
-                setActiveSection(activeSection === "alerts" ? null : "alerts")
-              }
-              icon={<FiAlertTriangle className="text-lg" />}
-              label="Fehlstempel"
-              color="red"
-            />
+        <div className="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden mb-4">
+          <div className="grid grid-cols-3 gap-1 sm:flex sm:gap-0 border-b border-gray-800">
+            {[
+              {
+                key: "filter",
+                icon: <FiFilter className="sm:h-4 sm:w-4 h-3 w-3" />,
+                label: "Filter",
+                color: "blue",
+              },
+              {
+                key: "delete",
+                icon: <FiTrash2 className="sm:h-4 sm:w-4 h-3 w-3" />,
+                label: "Löschen",
+                color: "red",
+              },
+              {
+                key: "summary",
+                icon: <FiClock className="sm:h-4 sm:w-4 h-3 w-3" />,
+                label: "Übersicht",
+                color: "green",
+              },
+              {
+                key: "manual",
+                icon: <FiPlusCircle className="sm:h-4 sm:w-4 h-3 w-3" />,
+                label: "Manuell",
+                color: "purple",
+              },
+              {
+                key: "print",
+                icon: <FiPrinter className="sm:h-4 sm:w-4 h-3 w-3" />,
+                label: "Drucken",
+                color: "indigo",
+              },
+              {
+                key: "alerts",
+                icon: <FiAlertTriangle className="sm:h-4 sm:w-4 h-3 w-3" />,
+                label: "Fehlstempel",
+                color: "red",
+              },
+            ].map(({ key, icon, label, color }) => (
+              <button
+                key={key}
+                onClick={() =>
+                  setActiveSection(activeSection === key ? null : key)
+                }
+                className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 text-xs sm:text-sm  font-s transition-all ${
+                  activeSection === key
+                    ? "bg-red-900/40 text-white border-b-2 border-red-500 "
+                    : "text-gray-400 hover:text-white hover:bg-gray-800/60  "
+                }`}
+              >
+                {icon}
+                {label}
+              </button>
+            ))}
           </div>
 
-          {/* Filter */}
+          {/* Filter Section */}
           {activeSection === "filter" && (
-            <div className="px-6 py-5 bg-gradient-to-r from-blue-50 to-indigo-50">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 mb-1 flex items-center">
-                    <FiUser className="mr-2 text-blue-500" /> Mitarbeiter
+            <div className="p-6 border-b border-gray-800">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm text-gray-300 mb-2 block">
+                    Mitarbeiter
                   </label>
                   <select
                     value={selectedAdmin}
                     onChange={(e) => setSelectedAdmin(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white shadow-sm"
+                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                   >
                     <option value="alle">Alle Mitarbeiter</option>
                     {allAdmins.map((name) => (
@@ -621,11 +614,11 @@ export default function Zeiterfassungsverwaltung() {
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 mb-1 flex items-center">
-                    <FiCalendar className="mr-2 text-blue-500" /> Datumsbereich
+                <div>
+                  <label className="text-sm text-gray-300 mb-2 block">
+                    Datumsbereich
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     <DatePicker
                       selected={dateFilter.start}
                       onChange={(d) =>
@@ -634,10 +627,12 @@ export default function Zeiterfassungsverwaltung() {
                       selectsStart
                       startDate={dateFilter.start}
                       endDate={dateFilter.end}
+                      popperClassName="z-50" // Tailwind helper
+                      popperPlacement="bottom-start"
+                      portalId="root-portal" // render outside overflow:hidden
                       placeholderText="Startdatum"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white shadow-sm"
+                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                       dateFormat="dd.MM.yyyy"
-                      locale="de"
                     />
                     <DatePicker
                       selected={dateFilter.end}
@@ -646,10 +641,12 @@ export default function Zeiterfassungsverwaltung() {
                       startDate={dateFilter.start}
                       endDate={dateFilter.end}
                       minDate={dateFilter.start}
+                      popperClassName="z-50" // Tailwind helper
+                      popperPlacement="bottom-start"
+                      portalId="root-portal" // render outside overflow:hidden
                       placeholderText="Enddatum"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white shadow-sm"
+                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                       dateFormat="dd.MM.yyyy"
-                      locale="de"
                     />
                   </div>
                 </div>
@@ -663,23 +660,23 @@ export default function Zeiterfassungsverwaltung() {
                       });
                       setSelectedAdmin("alle");
                     }}
-                    className="w-full bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium transition-all duration-300 shadow-sm flex items-center justify-center"
+                    className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-md transition"
                   >
-                    <FiRefreshCw className="mr-2" /> Filter zurücksetzen
+                    Filter zurücksetzen
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Delete */}
+          {/* Delete Section */}
           {activeSection === "delete" && (
-            <div className="px-6 py-5 bg-gradient-to-r from-red-50 to-orange-50">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="md:col-span-2 space-y-2">
-                  <div className="grid grid-cols-2 gap-3">
+            <div className="p-6 border-b border-gray-800">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">
+                      <label className="text-sm text-gray-300 mb-2 block">
                         Von
                       </label>
                       <DatePicker
@@ -691,13 +688,15 @@ export default function Zeiterfassungsverwaltung() {
                         startDate={deleteRange.start}
                         endDate={deleteRange.end}
                         placeholderText="Startdatum"
-                        className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all bg-white shadow-sm"
+                        popperClassName="z-50" // Tailwind helper
+                        popperPlacement="bottom-start"
+                        portalId="root-portal" // render outside overflow:hidden
+                        className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                         dateFormat="dd.MM.yyyy"
-                        locale="de"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">
+                      <label className="text-sm text-gray-300 mb-2 block">
                         Bis
                       </label>
                       <DatePicker
@@ -709,10 +708,12 @@ export default function Zeiterfassungsverwaltung() {
                         startDate={deleteRange.start}
                         endDate={deleteRange.end}
                         minDate={deleteRange.start}
+                        popperClassName="z-50" // Tailwind helper
+                        popperPlacement="bottom-start"
+                        portalId="root-portal" // render outside overflow:hidden
                         placeholderText="Enddatum"
-                        className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all bg-white shadow-sm"
+                        className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                         dateFormat="dd.MM.yyyy"
-                        locale="de"
                       />
                     </div>
                   </div>
@@ -724,112 +725,58 @@ export default function Zeiterfassungsverwaltung() {
                     disabled={
                       isLoading || !deleteRange.start || !deleteRange.end
                     }
-                    className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center shadow-md ${
+                    className={`w-full px-4 py-2 rounded-md transition ${
                       isLoading || !deleteRange.start || !deleteRange.end
-                        ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                        : "bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white transform hover:scale-[1.02]"
+                        ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                        : "bg-red-600 hover:bg-red-700 text-white"
                     }`}
                   >
-                    {isLoading ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Löschen...
-                      </>
-                    ) : (
-                      <>
-                        <FiTrash2 className="mr-2" /> Löschen
-                      </>
-                    )}
+                    {isLoading ? "Löschen..." : "Löschen"}
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Summary */}
+          {/* Summary Section */}
           {activeSection === "summary" && (
-            <div className="px-6 py-5 bg-gradient-to-r from-green-50 to-emerald-50">
-              <div className="bg-white rounded-xl p-5 shadow-sm border border-green-100">
-                {summary.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {summary.map((s, i) => (
-                      <div
-                        key={i}
-                        className="bg-gradient-to-br from-white to-gray-50 rounded-xl border border-green-200 shadow-sm p-3 flex flex-col justify-between h-full min-h-[140px] transition-all duration-300 hover:shadow-md hover:border-green-300"
-                      >
-                        <div className="text-lg font-bold text-gray-800 mb-3 truncate flex items-center">
-                          {s.name}
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex items-center">
-                            <div className="bg-blue-100 p-2 rounded-lg mr-3">
-                              <FiClock className="text-blue-600" />
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-500">
-                                Gesamtzeit
-                              </div>
-                              <div className="font-semibold text-blue-600">
-                                {s.timeFormatted}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center">
-                            <div className="bg-green-100 p-2 rounded-lg mr-3">
-                              <FiCalendar className="text-green-600" />
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-500">
-                                Arbeitstage
-                              </div>
-                              <div className="font-semibold text-green-600">
-                                {s.daysWorked}{" "}
-                                {s.daysWorked === 1 ? "Tag" : "Tage"}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-10">
-                    <div className="inline-block p-4 rounded-full bg-gray-100 mb-4">
-                      <FiInbox className="text-gray-400 text-2xl" />
+            <div className="p-6 border-b border-gray-800">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {summary.map((s, i) => (
+                  <div
+                    key={i}
+                    className="bg-gray-800/40 rounded-lg p-4 border border-gray-700"
+                  >
+                    <div className="font-semibold text-white mb-3">
+                      {s.name}
                     </div>
-                    <p className="text-gray-500">Keine Daten verfügbar</p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-green-400">Gesamtzeit:</span>
+                        <span className="text-green-400">
+                          {s.timeFormatted}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-yellow-400">Arbeitstage:</span>
+                        <span className="text-yellow-400">
+                          {s.daysWorked} {s.daysWorked === 1 ? "Tag" : "Tage"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
             </div>
           )}
 
-          {/* Manual Entry */}
+          {/* Manual Entry Section */}
           {activeSection === "manual" && (
-            <div className="px-6 py-5 bg-gradient-to-r from-purple-50 to-violet-50">
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 mb-1 flex items-center">
-                    <FiUser className="mr-2 text-purple-500" /> Mitarbeiter
+            <div className="p-6 border-b border-gray-800">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm text-gray-300 mb-2 block">
+                    Mitarbeiter
                   </label>
                   <select
                     value={manualEntry.admin}
@@ -839,7 +786,7 @@ export default function Zeiterfassungsverwaltung() {
                         admin: e.target.value,
                       }))
                     }
-                    className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all bg-white shadow-sm"
+                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                   >
                     <option value="">Bitte wählen</option>
                     {allAdmins.map((name) => (
@@ -850,9 +797,9 @@ export default function Zeiterfassungsverwaltung() {
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 mb-1 flex items-center">
-                    <FiTag className="mr-2 text-purple-500" /> Typ
+                <div>
+                  <label className="text-sm text-gray-300 mb-2 block">
+                    Typ
                   </label>
                   <select
                     value={manualEntry.type}
@@ -862,18 +809,16 @@ export default function Zeiterfassungsverwaltung() {
                         type: e.target.value,
                       }))
                     }
-                    className="w-full py-3 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-700"
+                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                   >
-                    <option value="">Bitte wählen</option>
                     <option value="in">EIN</option>
                     <option value="out">AUS</option>
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 mb-1 flex items-center">
-                    <FiCalendar className="mr-2 text-purple-500" /> Datum &
-                    Uhrzeit
+                <div>
+                  <label className="text-sm text-gray-300 mb-2 block">
+                    Datum & Uhrzeit
                   </label>
                   <DatePicker
                     selected={manualEntry.time}
@@ -884,41 +829,43 @@ export default function Zeiterfassungsverwaltung() {
                     timeFormat="HH:mm"
                     timeIntervals={5}
                     dateFormat="dd.MM.yyyy HH:mm"
-                    placeholderText="Datum und Uhrzeit wählen"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all bg-white shadow-sm"
+                    popperClassName="z-50" // Tailwind helper
+                    popperPlacement="bottom-start"
+                    portalId="root-portal" // render outside overflow:hidden
+                    placeholderText="Datum und Uhrzeit"
+                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                   />
                 </div>
-
-                <div className="flex justify-end space-x-3 pt-2">
-                  <button
-                    onClick={() => setActiveSection(null)}
-                    className="px-5 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-all duration-300 flex items-center"
-                  >
-                    <FiX className="mr-2" /> Abbrechen
-                  </button>
-                  <button
-                    onClick={handleManualSave}
-                    disabled={!manualEntry.admin || !manualEntry.time}
-                    className={`px-5 py-3 rounded-lg font-medium text-white transition-all duration-300 flex items-center shadow-md ${
-                      !manualEntry.admin || !manualEntry.time
-                        ? "bg-purple-300 cursor-not-allowed"
-                        : "bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 transform hover:scale-[1.02]"
-                    }`}
-                  >
-                    <FiSave className="mr-2" /> Speichern
-                  </button>
-                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-4">
+                <button
+                  onClick={() => setActiveSection(null)}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onClick={handleManualSave}
+                  disabled={!manualEntry.admin || !manualEntry.time}
+                  className={`px-4 py-2 rounded-md transition ${
+                    !manualEntry.admin || !manualEntry.time
+                      ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700 text-white"
+                  }`}
+                >
+                  Speichern
+                </button>
               </div>
             </div>
           )}
 
-          {/* Print */}
+          {/* Print Section */}
           {activeSection === "print" && (
-            <div className="px-6 py-5 bg-gradient-to-r from-indigo-50 to-blue-50">
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 mb-1 flex items-center">
-                    <FiUser className="mr-2 text-indigo-500" /> Mitarbeiter
+            <div className="p-6 border-b border-gray-800">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm text-gray-300 mb-2 block">
+                    Mitarbeiter
                   </label>
                   <select
                     value={printConfig.employee}
@@ -928,7 +875,7 @@ export default function Zeiterfassungsverwaltung() {
                         employee: e.target.value,
                       }))
                     }
-                    className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white shadow-sm"
+                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                   >
                     <option value="alle">Alle Mitarbeiter</option>
                     {allAdmins.map((name) => (
@@ -939,12 +886,11 @@ export default function Zeiterfassungsverwaltung() {
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 mb-1 flex items-center">
-                    <FiCalendar className="mr-2 text-indigo-500" />{" "}
+                <div>
+                  <label className="text-sm text-gray-300 mb-2 block">
                     Datumsbereich
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     <DatePicker
                       selected={printConfig.startDate}
                       onChange={(d) =>
@@ -953,10 +899,12 @@ export default function Zeiterfassungsverwaltung() {
                       selectsStart
                       startDate={printConfig.startDate}
                       endDate={printConfig.endDate}
+                      popperClassName="z-50" // Tailwind helper
+                      popperPlacement="bottom-start"
+                      portalId="root-portal" // render outside overflow:hidden
                       placeholderText="Startdatum"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white shadow-sm"
+                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                       dateFormat="dd.MM.yyyy"
-                      locale="de"
                     />
                     <DatePicker
                       selected={printConfig.endDate}
@@ -967,15 +915,17 @@ export default function Zeiterfassungsverwaltung() {
                       startDate={printConfig.startDate}
                       endDate={printConfig.endDate}
                       minDate={printConfig.startDate}
+                      popperClassName="z-50" // Tailwind helper
+                      popperPlacement="bottom-start"
+                      portalId="root-portal" // render outside overflow:hidden
                       placeholderText="Enddatum"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white shadow-sm"
+                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                       dateFormat="dd.MM.yyyy"
-                      locale="de"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center p-3 bg-white rounded-lg border border-gray-200">
+                <div className="flex items-center">
                   <input
                     type="checkbox"
                     id="showSummary"
@@ -986,118 +936,87 @@ export default function Zeiterfassungsverwaltung() {
                         showSummary: e.target.checked,
                       }))
                     }
-                    className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-700 bg-gray-800 rounded"
                   />
                   <label
                     htmlFor="showSummary"
-                    className="ml-3 block text-sm text-gray-700 font-medium"
+                    className="ml-2 text-sm text-gray-300"
                   >
                     Zusammenfassung einschließen
                   </label>
                 </div>
-
-                <div className="flex justify-end space-x-3 pt-2">
-                  <button
-                    onClick={() => setActiveSection(null)}
-                    className="px-5 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-all duration-300 flex items-center"
-                  >
-                    <FiX className="mr-2" /> Abbrechen
-                  </button>
-                  <button
-                    onClick={handlePrint}
-                    disabled={
-                      isPrinting ||
-                      !printConfig.startDate ||
-                      !printConfig.endDate
-                    }
-                    className={`px-5 py-3 rounded-lg font-medium text-white transition-all duration-300 flex items-center shadow-md ${
-                      isPrinting ||
-                      !printConfig.startDate ||
-                      !printConfig.endDate
-                        ? "bg-indigo-300 cursor-not-allowed"
-                        : "bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 transform hover:scale-[1.02]"
-                    }`}
-                  >
-                    {isPrinting ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Drucken...
-                      </>
-                    ) : (
-                      <>
-                        <FiPrinter className="mr-2" /> Drucken
-                      </>
-                    )}
-                  </button>
-                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-4">
+                <button
+                  onClick={() => setActiveSection(null)}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onClick={handlePrint}
+                  disabled={
+                    isPrinting || !printConfig.startDate || !printConfig.endDate
+                  }
+                  className={`px-4 py-2 rounded-md transition ${
+                    isPrinting || !printConfig.startDate || !printConfig.endDate
+                      ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700 text-white"
+                  }`}
+                >
+                  {isPrinting ? "Drucken..." : "Drucken"}
+                </button>
               </div>
             </div>
           )}
 
-          {/* Alerts (Fehlstempel) */}
+          {/* Alerts Section */}
           {activeSection === "alerts" && (
-            <div className="px-6 py-5 bg-gradient-to-r from-red-50 to-orange-50">
+            <div className="p-6">
               {unresolvedMissingCount === 0 ? (
-                <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="text-green-400 text-sm">
                   ✅ Alles gut! Keine fehlenden Stempelungen im gewählten
-                  Zeitraum (Sonntag ignoriert).
+                  Zeitraum.
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="text-xs sm:text-sm text-red-800 bg-white border border-red-200 rounded-lg p-4">
+                  <div className="text-sm text-red-400">
                     <strong>Hinweis:</strong> Sonntag ist ausgenommen; Und{" "}
                     <strong>Abed</strong> ist auch <strong>Samstag</strong>{" "}
                     ausgenommen.
                   </div>
 
-                  <ul className="space-y-2">
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
                     {missingPunches.map((m, i) => {
                       const dateObj = new Date(m.date);
                       const hasReason = m.justified && m.issue?.trim();
                       return (
-                        <li
+                        <div
                           key={`${m.name}-${m.date}-${i}`}
-                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-white border border-purple-100 rounded-md px-3 py-2 text-sm"
+                          className="flex justify-between items-center p-3 bg-gray-800/40 rounded border border-gray-700 text-sm"
                         >
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-semibold text-gray-900">
+                          <div className="flex items-center gap-3">
+                            <span className="font-semibold text-white">
                               {m.name}
                             </span>
-                            <span className="text-gray-500">
+                            <span className="text-gray-400">
                               {format(dateObj, "dd.MM.yyyy")}
                             </span>
-
-                            {hasReason ? (
-                              <span className="text-green-600 flex items-center gap-1">
-                                <FiCheckCircle /> {m.issue}
-                              </span>
-                            ) : (
-                              <span className="text-gray-800 flex items-center gap-1">
-                                <FiAlertTriangle /> {m.issue}
-                              </span>
-                            )}
+                            <span
+                              className={`flex items-center gap-1 ${
+                                hasReason ? "text-green-400" : "text-red-400"
+                              }`}
+                            >
+                              {hasReason ? (
+                                <FiCheckCircle />
+                              ) : (
+                                <FiAlertTriangle />
+                              )}
+                              {m.issue}
+                            </span>
                           </div>
 
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex gap-2">
                             <button
                               onClick={() => {
                                 setJustifyForm({
@@ -1107,7 +1026,7 @@ export default function Zeiterfassungsverwaltung() {
                                 });
                                 setJustifyModalOpen(true);
                               }}
-                              className="px-2 py-1 text-xs rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50"
+                              className="px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded transition"
                             >
                               Grund
                             </button>
@@ -1138,7 +1057,7 @@ export default function Zeiterfassungsverwaltung() {
                                   const data = await res.json();
                                   if (data.success) {
                                     toast.success("Fehlstempel gelöscht");
-                                    await fetchJustifications(); // refresh justifications
+                                    await fetchJustifications();
                                   } else {
                                     throw new Error(
                                       data.error || "Löschen fehlgeschlagen"
@@ -1150,121 +1069,121 @@ export default function Zeiterfassungsverwaltung() {
                                   setIsLoading(false);
                                 }
                               }}
-                              className="px-2 py-1 text-xs rounded-md border border-red-200 text-red-600 hover:bg-red-50"
+                              className="px-2 py-1 text-xs bg-red-700 hover:bg-red-600 rounded transition"
                             >
                               Löschen
                             </button>
                           </div>
-                        </li>
+                        </div>
                       );
                     })}
-                  </ul>
+                  </div>
                 </div>
               )}
             </div>
           )}
         </div>
 
+        {/* Alert Banner */}
         {unresolvedMissingCount > 0 && (
-          <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg px-4 py-3 text-xs sm:text-base">
+          <div className="mb-4 bg-red-900/40 border border-red-700 text-yellow-600 rounded-lg px-4 py-2 sm:py-3 text-xs sm:text-sm">
             ⚠️ {unresolvedMissingCount} Stempel-Hinweise (Sonntag ignoriert).
           </div>
         )}
 
         {/* Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <FiClock className="text-indigo-500" /> Zeiterfassungen
+        <div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden"
+        >
+          <div className="px-6 py-4 border-b border-gray-800 bg-gray-800/40 flex justify-between items-center">
+            <h2 className="text-sm sm:text-lg font-semibold text-white flex items-center gap-2">
+              <FiClock className="text-red-400" /> Zeiterfassungen
             </h2>
-            <span className="text-sm text-gray-500">
+            <span className="text-xs sm:text-sm text-gray-400">
               {filtered.length} Einträge
             </span>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-800 text-gray-300">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider text-xs sm:text-sm">
                     Mitarbeiter
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider text-xs sm:text-sm">
                     Datum & Uhrzeit
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Aktion
+                  <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider text-xs sm:text-sm">
+                    stempeln
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex items-center">
-                      <IoMdLocate className="mr-1" />
-                      <span>Verifizierung</span>
-                    </div>
+                  <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider text-xs sm:text-sm">
+                    Verifizierung
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider text-xs sm:text-sm">
                     Aktionen
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-800">
                 {paginated.length > 0 ? (
                   paginated.map((r, i) => (
                     <tr
                       key={`${r._id || i}`}
-                      className="hover:bg-gray-50 transition-colors"
+                      className="hover:bg-black/50 transition cursor-pointer"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {r.admin?.name || "Unbekannt"}
-                        </div>
+                      <td className="px-6 py-4 font-s text-gray-400 whitespace-nowrap">
+                        {r.admin?.name || "Unbekannt"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-4 text-sm">
-                          <div className="text-gray-700">
-                            {format(new Date(r.time), "dd.MM.yyyy")}
-                          </div>
-                          <div className="text-gray-700">
+                      <td className="px-6 py-4 text-gray-400 whitespace-nowrap">
+                        <div className="flex flex-row gap-4">
+                          <span>{format(new Date(r.time), "dd.MM.yyyy")}</span>
+                          <span className="text-purple-400">
                             {format(new Date(r.time), "HH:mm")}
-                          </div>
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                             r.type === "in"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                              ? "bg-green-900/40 text-green-400 border border-green-800"
+                              : "bg-red-900/40 text-red-400 border border-red-800"
                           }`}
                         >
                           {r.type === "in" ? "EIN" : "AUS"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                      <td className="px-6 py-4 font-semibold text-gray-400 whitespace-nowrap">
+                        <div>
                           {r.method === "qr"
-                            ? "NFC-Verifiziert"
+                            ? "gescannt"
                             : r.method === "added"
-                            ? "Hinzugefügt"
+                            ? "hinzugefügt"
                             : r.method === "edited"
-                            ? "Bearbeitet"
-                            : "Manuell"}
+                            ? "bearbeitet"
+                            : "manuell"}
                         </div>
                         {(r.method === "edited" && r.editedBy) ||
                         (r.method === "added" && r.addedBy) ? (
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-yellow-500 font-semibold">
                             von {r.editedBy || r.addedBy}
                           </div>
                         ) : null}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setEditingRecord(r);
                             setEditModalOpen(true);
                           }}
-                          className="text-indigo-600 hover:text-indigo-900 flex items-center"
+                          className="text-gray-400 hover:text-red-300 flex items-center gap-1 transition"
                         >
-                          <FiEdit className="mr-1" />
+                          <FiEdit className="h-4 w-4" />
                           <span>Bearbeiten</span>
                         </button>
                       </td>
@@ -1272,29 +1191,11 @@ export default function Zeiterfassungsverwaltung() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="px-6 py-12 text-center">
-                      <div className="text-gray-400">
-                        <svg
-                          className="mx-auto h-12 w-12"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      </div>
-                      <h3 className="mt-2 text-sm font-medium text-gray-900">
-                        Keine Datensätze gefunden
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500">
-                        Versuchen Sie, Ihre Filter zu ändern oder neue Einträge
-                        hinzuzufügen.
-                      </p>
+                    <td
+                      colSpan="5"
+                      className="px-6 py-12 text-center text-gray-400"
+                    >
+                      Keine Zeiterfassungen gefunden
                     </td>
                   </tr>
                 )}
@@ -1304,100 +1205,83 @@ export default function Zeiterfassungsverwaltung() {
 
           {/* Pagination */}
           {filtered.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
-              <div className="flex-1 flex justify-between sm:hidden">
+            <div className="px-4 py-3 flex items-center justify-between bg-gray-800 border-t border-gray-700 text-sm">
+              <p className="text-gray-400">
+                Zeige{" "}
+                <span className="font-medium text-white">
+                  {(page - 1) * PER_PAGE + 1}
+                </span>{" "}
+                bis{" "}
+                <span className="font-medium text-white">
+                  {Math.min(page * PER_PAGE, filtered.length)}
+                </span>{" "}
+                von{" "}
+                <span className="font-medium text-white">
+                  {filtered.length}
+                </span>{" "}
+                Einträgen
+              </p>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setPage(1)}
+                  disabled={page === 1}
+                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-white transition"
+                >
+                  «
+                </button>
                 <button
                   onClick={() => setPage((p) => Math.max(p - 1, 1))}
                   disabled={page === 1}
-                  className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                    page === 1
-                      ? "bg-gray-100 text-gray-400"
-                      : "bg-white text-gray-700 hover:bg-gray-50"
-                  }`}
+                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-white transition"
                 >
-                  Zurück
+                  ‹
                 </button>
+                {Array.from(
+                  {
+                    length: Math.min(5, Math.ceil(filtered.length / PER_PAGE)),
+                  },
+                  (_, i) => {
+                    let pageNum;
+                    const totalPages = Math.ceil(filtered.length / PER_PAGE);
+                    if (totalPages <= 5) pageNum = i + 1;
+                    else if (page <= 3) pageNum = i + 1;
+                    else if (page >= totalPages - 2)
+                      pageNum = totalPages - 4 + i;
+                    else pageNum = page - 2 + i;
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`px-3 py-1 rounded transition ${
+                          page === pageNum
+                            ? "bg-red-600 text-white"
+                            : "bg-gray-700 hover:bg-gray-600 text-white"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  }
+                )}
                 <button
                   onClick={() =>
-                    setPage((p) => (p * PER_PAGE < filtered.length ? p + 1 : p))
+                    setPage((p) =>
+                      Math.min(p + 1, Math.ceil(filtered.length / PER_PAGE))
+                    )
                   }
-                  disabled={page * PER_PAGE >= filtered.length}
-                  className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                    page * PER_PAGE >= filtered.length
-                      ? "bg-gray-100 text-gray-400"
-                      : "bg-white text-gray-700 hover:bg-gray-50"
-                  }`}
+                  disabled={page >= Math.ceil(filtered.length / PER_PAGE)}
+                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-white transition"
                 >
-                  Weiter
+                  ›
                 </button>
-              </div>
-
-              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Zeige{" "}
-                    <span className="font-medium">
-                      {(page - 1) * PER_PAGE + 1}
-                    </span>{" "}
-                    bis{" "}
-                    <span className="font-medium">
-                      {Math.min(page * PER_PAGE, filtered.length)}
-                    </span>{" "}
-                    von <span className="font-medium">{filtered.length}</span>{" "}
-                    Einträgen
-                  </p>
-                </div>
-                <div>
-                  <nav
-                    className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
-                    aria-label="Pagination"
-                  >
-                    <button
-                      onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                      disabled={page === 1}
-                      className={`relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
-                        page === 1
-                          ? "text-gray-300"
-                          : "text-gray-500 hover:bg-gray-50"
-                      }`}
-                    >
-                      <span className="sr-only">Zurück</span>
-                      <FiChevronLeft className="h-5 w-5" />
-                    </button>
-                    {Array.from(
-                      { length: Math.ceil(filtered.length / PER_PAGE) },
-                      (_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setPage(i + 1)}
-                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                            page === i + 1
-                              ? "z-10 bg-indigo-50 border-indigo-500 text-indigo-600"
-                              : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-                          }`}
-                        >
-                          {i + 1}
-                        </button>
-                      )
-                    )}
-                    <button
-                      onClick={() =>
-                        setPage((p) =>
-                          p * PER_PAGE < filtered.length ? p + 1 : p
-                        )
-                      }
-                      disabled={page * PER_PAGE >= filtered.length}
-                      className={`relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                        page * PER_PAGE >= filtered.length
-                          ? "text-gray-300"
-                          : "text-gray-500 hover:bg-gray-50"
-                      }`}
-                    >
-                      <span className="sr-only">Weiter</span>
-                      <FiChevronRight className="h-5 w-5" />
-                    </button>
-                  </nav>
-                </div>
+                <button
+                  onClick={() => setPage(Math.ceil(filtered.length / PER_PAGE))}
+                  disabled={page >= Math.ceil(filtered.length / PER_PAGE)}
+                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-white transition"
+                >
+                  »
+                </button>
               </div>
             </div>
           )}
@@ -1407,22 +1291,21 @@ export default function Zeiterfassungsverwaltung() {
       {/* Edit Modal */}
       {editModalOpen && editingRecord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-800">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-xl w-full max-w-md">
+            <div className="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-white">
                 Eintrag bearbeiten
               </h3>
               <button
                 onClick={() => setEditModalOpen(false)}
-                className="text-gray-400 hover:text-gray-500 transition-colors"
-                aria-label="Modal schließen"
+                className="text-gray-400 hover:text-white transition-colors"
               >
                 <FiX className="h-6 w-6" />
               </button>
             </div>
             <div className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Typ
                 </label>
                 <select
@@ -1433,14 +1316,14 @@ export default function Zeiterfassungsverwaltung() {
                       type: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                  className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                 >
                   <option value="in">EIN</option>
                   <option value="out">AUS</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Datum & Uhrzeit
                 </label>
                 <DatePicker
@@ -1452,11 +1335,11 @@ export default function Zeiterfassungsverwaltung() {
                   timeFormat="HH:mm"
                   timeIntervals={5}
                   dateFormat="dd.MM.yyyy HH:mm"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                  className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Methode
                 </label>
                 <select
@@ -1467,17 +1350,17 @@ export default function Zeiterfassungsverwaltung() {
                       method: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                  className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                 >
                   <option value="qr">QR</option>
                   <option value="manual">Manuell</option>
                 </select>
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50 rounded-b-xl">
+            <div className="px-6 py-4 border-t border-gray-700 flex justify-end space-x-3 bg-gray-800/40 rounded-b-xl">
               <button
                 onClick={() => setEditModalOpen(false)}
-                className="px-4 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
               >
                 Abbrechen
               </button>
@@ -1515,7 +1398,7 @@ export default function Zeiterfassungsverwaltung() {
                     setIsLoading(false);
                   }
                 }}
-                className="px-4 py-2.5 rounded-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+                className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors"
               >
                 Speichern
               </button>
@@ -1527,32 +1410,29 @@ export default function Zeiterfassungsverwaltung() {
       {/* Justification Modal */}
       {justifyModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-800">
-                Grund hinzufügen
-              </h3>
+          <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-xl w-full max-w-md">
+            <div className="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-white">Grund hinzufügen</h3>
               <button
                 onClick={() => setJustifyModalOpen(false)}
-                className="text-gray-400 hover:text-gray-500"
-                aria-label="Modal schließen"
+                className="text-gray-400 hover:text-white"
               >
                 <FiX className="h-6 w-6" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm text-gray-600 mb-1">
+                <label className="block text-sm text-gray-300 mb-1">
                   Mitarbeiter
                 </label>
                 <input
                   value={justifyForm.name}
                   disabled
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50"
+                  className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-gray-400"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">
+                <label className="block text-sm text-gray-300 mb-1">
                   Datum
                 </label>
                 <input
@@ -1562,11 +1442,11 @@ export default function Zeiterfassungsverwaltung() {
                       : ""
                   }
                   disabled
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50"
+                  className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-gray-400"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">
+                <label className="block text-sm text-gray-300 mb-1">
                   Grund
                 </label>
                 <textarea
@@ -1575,15 +1455,15 @@ export default function Zeiterfassungsverwaltung() {
                   onChange={(e) =>
                     setJustifyForm((f) => ({ ...f, reason: e.target.value }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
                   placeholder="z.B. Arzttermin, Außendienst, Urlaub, etc."
                 />
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-2 rounded-b-xl">
+            <div className="px-6 py-4 border-t border-gray-700 bg-gray-800/40 flex justify-end gap-2 rounded-b-xl">
               <button
                 onClick={() => setJustifyModalOpen(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition"
               >
                 Abbrechen
               </button>
@@ -1626,7 +1506,7 @@ export default function Zeiterfassungsverwaltung() {
                     setIsLoading(false);
                   }
                 }}
-                className="px-4 py-2 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700"
+                className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition"
               >
                 Speichern
               </button>
@@ -1634,40 +1514,12 @@ export default function Zeiterfassungsverwaltung() {
           </div>
         </div>
       )}
+
+      {/* Background Glow */}
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <div className="absolute top-0 left-1/3 w-60 h-60 bg-red-500/10 blur-3xl rounded-full" />
+        <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-purple-500/10 blur-3xl rounded-full" />
+      </div>
     </div>
-  );
-}
-
-// Reusable Control Button
-function ControlButton({ active, onClick, icon, label, color }) {
-  const colorClasses = {
-    blue: active
-      ? "bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 border-b-2 border-blue-500 shadow-sm"
-      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-    red: active
-      ? "bg-gradient-to-b from-red-50 to-red-100 text-red-600 border-b-2 border-red-500 shadow-sm"
-      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-    green: active
-      ? "bg-gradient-to-b from-green-50 to-green-100 text-green-600 border-b-2 border-green-500 shadow-sm"
-      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-    purple: active
-      ? "bg-gradient-to-b from-purple-50 to-purple-100 text-purple-600 border-b-2 border-purple-500 shadow-sm"
-      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-    indigo: active
-      ? "bg-gradient-to-b from-indigo-50 to-indigo-100 text-indigo-600 border-b-2 border-indigo-500 shadow-sm"
-      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      className={`h-12 sm:h-auto flex-1 flex flex-col sm:flex-row items-center justify-center
-                  py-2 px-2 sm:py-4 sm:px-4 gap-0.5 sm:gap-2 text-xs sm:text-sm font-medium
-                  transition-all duration-300 ${colorClasses[color]}`}
-      type="button"
-    >
-      <span className="text-base sm:text-lg">{icon}</span>
-      <span className="leading-tight">{label}</span>
-    </button>
   );
 }
