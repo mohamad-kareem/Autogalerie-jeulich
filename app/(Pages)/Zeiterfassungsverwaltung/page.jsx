@@ -202,7 +202,10 @@ export default function Zeiterfassungsverwaltung() {
     const monthStart = startOfMonth(new Date());
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const monthEnd = today;
+
+    // Exclude today → only check up to yesterday
+    const monthEnd = new Date(today);
+    monthEnd.setDate(monthEnd.getDate() - 1);
 
     const byAdminDate = new Map();
     for (const r of records) {

@@ -172,7 +172,7 @@ export default function KaufvertragListe() {
         >
           <div className="flex items-center gap-2 px-0 py-1 text-xs">
             {/* Archiv button */}
-            {/* Archiv button (only for admins) */}
+
             {session?.user?.role === "admin" && (
               <button
                 onClick={() => router.push("/kaufvertrag/archiv")}
