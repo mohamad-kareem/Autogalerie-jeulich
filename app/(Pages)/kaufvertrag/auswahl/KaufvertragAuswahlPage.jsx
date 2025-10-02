@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { CheckCircle, FileText, ChevronRight, User } from "lucide-react";
 
 export default function KaufvertragAuswahlPage({ carId }) {
@@ -25,17 +26,31 @@ export default function KaufvertragAuswahlPage({ carId }) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-red-950 flex items-center justify-center p-4 text-white relative">
+      {/* Glow Background */}
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <div className="absolute top-0 left-1/3 w-60 h-60 bg-red-500/10 blur-3xl rounded-full" />
+        <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-purple-500/10 blur-3xl rounded-full" />
+      </div>
+
+      {/* Card */}
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="max-w-md w-full bg-gray-900/60 backdrop-blur-md rounded-2xl shadow-xl border border-gray-800 overflow-hidden"
+      >
         {/* Header */}
-        <div className="bg-gradient-to-r from-red-900 to-red-950 p-6 text-white">
+        <div className="bg-gradient-to-r from-red-900 to-red-950 p-6 text-center">
           <div className="flex items-center justify-center mb-3">
-            <div className="bg-white/20 p-2 rounded-full mr-3">
-              <FileText className="w-7 h-7" />
+            <div className="bg-white/10 p-2 rounded-full mr-3">
+              <FileText className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-2xl font-bold">Vertragsersteller auswählen</h1>
+            <h1 className="text-xl sm:text-2xl font-bold">
+              Vertragsersteller auswählen
+            </h1>
           </div>
-          <p className="text-red-100 text-center text-sm opacity-90">
+          <p className="text-gray-300 text-sm">
             Bitte wählen Sie aus, auf wen der Kaufvertrag ausgestellt werden
             soll.
           </p>
@@ -49,27 +64,27 @@ export default function KaufvertragAuswahlPage({ carId }) {
               onClick={() => setSelected(opt.value)}
               className={`cursor-pointer flex items-start p-4 rounded-xl border transition-all duration-200 ${
                 selected === opt.value
-                  ? "border-red-500 bg-red-50 shadow-sm"
-                  : "border-gray-200 hover:border-red-300 hover:bg-gray-50"
+                  ? "border-red-600 bg-red-950/30 shadow-sm"
+                  : "border-gray-700 hover:border-red-600 hover:bg-gray-800/40"
               }`}
             >
               <div
                 className={`flex items-center justify-center h-10 w-10 rounded-full mr-4 ${
-                  selected === opt.value ? "bg-red-100" : "bg-gray-100"
+                  selected === opt.value ? "bg-red-900" : "bg-gray-800"
                 }`}
               >
                 <User
                   className={`h-5 w-5 ${
-                    selected === opt.value ? "text-red-600" : "text-gray-500"
+                    selected === opt.value ? "text-red-400" : "text-gray-400"
                   }`}
                 />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">{opt.label}</h3>
-                <p className="text-sm text-gray-500">{opt.role}</p>
+                <h3 className="font-semibold text-white">{opt.label}</h3>
+                <p className="text-sm text-gray-400">{opt.role}</p>
               </div>
               {selected === opt.value && (
-                <CheckCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                <CheckCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
               )}
             </div>
           ))}
@@ -82,15 +97,15 @@ export default function KaufvertragAuswahlPage({ carId }) {
             disabled={!selected}
             className={`w-full flex items-center justify-center py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
               selected
-                ? "bg-red-900 hover:bg-red-700 text-white shadow-md"
-                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                ? "bg-red-900 hover:bg-red-600 text-white shadow-md"
+                : "bg-gray-700 text-gray-400 cursor-not-allowed"
             }`}
           >
             <span>Weiter</span>
             <ChevronRight className="ml-2 h-4 w-4" />
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

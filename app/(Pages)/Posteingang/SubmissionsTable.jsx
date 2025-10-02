@@ -18,6 +18,8 @@ import {
 } from "react-icons/fi";
 import { FaCar } from "react-icons/fa";
 import { useSession } from "next-auth/react";
+import { motion } from "framer-motion";
+
 export default function SubmissionsTable({ setUnreadCount }) {
   const [submissions, setSubmissions] = useState([]);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
@@ -39,7 +41,6 @@ export default function SubmissionsTable({ setUnreadCount }) {
       const data = await res.json();
       setSubmissions(data.submissions);
 
-      // 👇 Update unread count in parent
       if (setUnreadCount) {
         const unread = data.submissions.filter((s) => !s.isRead).length;
         setUnreadCount(unread);
@@ -62,7 +63,6 @@ export default function SubmissionsTable({ setUnreadCount }) {
         prev.map((s) => (s._id === id ? { ...s, isRead: true } : s))
       );
 
-      // ⬇️ Decrease unread count in AdminDashboard immediately
       if (setUnreadCount) {
         setUnreadCount((prev) => Math.max(prev - 1, 0));
       }
@@ -81,7 +81,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
         method: "DELETE",
       });
       if (res.ok) {
-        toast.success(" erfolgreich gelöscht");
+        toast.success("Erfolgreich gelöscht");
         setSubmissions((prev) => prev.filter((s) => s._id !== submissionId));
         setSelectedSubmission(null);
       } else {
@@ -117,19 +117,19 @@ export default function SubmissionsTable({ setUnreadCount }) {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[300px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
       </div>
     );
   }
 
   if (submissions.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-gray-100">
+      <div className="bg-gray-900/60 backdrop-blur-md rounded-xl shadow-sm p-8 text-center border border-gray-800">
         <FiInfo className="mx-auto text-gray-400 text-4xl mb-4" />
-        <h3 className="text-xl font-medium text-gray-700 mb-2">
+        <h3 className="text-xl font-medium text-gray-200 mb-2">
           Keine Anfragen gefunden
         </h3>
-        <p className="text-gray-500">
+        <p className="text-gray-400">
           Es wurden noch keine Kontaktanfragen übermittelt
         </p>
       </div>
@@ -138,10 +138,15 @@ export default function SubmissionsTable({ setUnreadCount }) {
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden"
+      >
         {/* Desktop View */}
         <div className="hidden md:block">
-          <div className="grid grid-cols-12 bg-gradient-to-r from-black-50 to-red-50 p-4 font-medium text-gray-700 text-xs uppercase tracking-wider border-b border-gray-200">
+          <div className="grid grid-cols-12 bg-gray-800 p-4 font-medium text-gray-300 text-xs uppercase tracking-wider border-b border-gray-700">
             <div className="col-span-3">Kontakt</div>
             <div className="col-span-3">Betreff</div>
             <div className="col-span-3">Fahrzeug</div>
@@ -152,17 +157,20 @@ export default function SubmissionsTable({ setUnreadCount }) {
           {submissions.map((submission) => (
             <div
               key={submission._id}
-              className="grid grid-cols-12 p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors items-center"
+              className="grid grid-cols-12 p-4 border-b border-gray-800 hover:bg-black/50 transition-colors items-center cursor-pointer"
+              onClick={() => {
+                setSelectedSubmission(submission);
+                if (!submission.isRead) markAsRead(submission._id);
+              }}
             >
               <div className="col-span-3">
-                <p className="font-medium text-gray-900 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-200 text-white text-sm font-semibold shadow-sm">
+                <p className="font-medium text-gray-200 flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-900/40 text-red-300 text-sm font-semibold shadow-sm border border-red-800/50">
                     {submission.name?.charAt(0).toUpperCase() || "A"}
                   </span>
 
                   <span className="truncate">{submission.name || "—"}</span>
 
-                  {/* 🔴 UNREAD DOT */}
                   {!submission.isRead && (
                     <span
                       className="ml-2 relative flex h-3 w-3"
@@ -175,54 +183,48 @@ export default function SubmissionsTable({ setUnreadCount }) {
                   )}
                 </p>
 
-                <div className="text-sm text-gray-500 mt-1 flex items-center gap-1">
-                  <FiMail className="text-black-400" size={14} />
+                <div className="text-sm text-gray-400 mt-1 flex items-center gap-1">
+                  <FiMail className="text-red-400" size={14} />
                   <span className="truncate">{submission.email || "—"}</span>
                 </div>
               </div>
               <div className="col-span-3">
-                <p className="text-gray-700 font-medium truncate">
+                <p className="text-gray-300 font-medium truncate">
                   {submission.subject || "Kein Betreff"}
                 </p>
               </div>
               <div className="col-span-3">
                 {submission.carName ? (
                   <div className="flex items-center gap-2">
-                    <FaCar className="text-red-900" />
+                    <FaCar className="text-red-400" />
                     <div>
-                      <p className="text-gray-700 truncate">
+                      <p className="text-gray-300 truncate">
                         {truncateText(submission.carName, 3)}
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <span className="text-gray-400">Kein Fahrzeug</span>
+                  <span className="text-gray-500">Kein Fahrzeug</span>
                 )}
               </div>
               <div className="col-span-2">
-                <div className="text-sm text-gray-500 flex items-center gap-1">
-                  <FiCalendar className="text-black-400" size={14} />
+                <div className="text-sm text-gray-400 flex items-center gap-1">
+                  <FiCalendar className="text-red-400" size={14} />
                   <span>{formatDate(submission.createdAt)}</span>
                 </div>
               </div>
               <div className="col-span-1 flex justify-end items-center gap-1">
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setSelectedSubmission(submission);
                     if (!submission.isRead) markAsRead(submission._id);
                   }}
-                  className="p-2 text-gray-500 hover:text-white hover:bg-red-600 rounded-md transition-colors duration-200"
+                  className="p-2 text-gray-400 hover:text-white hover:bg-red-600 rounded-md transition-colors duration-200 border border-gray-700 hover:border-red-500"
                   title="Details anzeigen"
                 >
                   <FiEye />
                 </button>
-                {/* <button
-                  onClick={() => handleDeleteSubmission(submission._id)}
-                  className="p-2 text-gray-500 hover:text-white hover:bg-red-600 rounded-md transition-colors duration-200"
-                  title="Anfrage löschen"
-                >
-                  <FiTrash2 />
-                </button> */}
               </div>
             </div>
           ))}
@@ -233,41 +235,48 @@ export default function SubmissionsTable({ setUnreadCount }) {
           {submissions.map((submission) => (
             <div
               key={submission._id}
-              className="border-b border-gray-200 last:border-b-0"
+              className="border-b border-gray-800 last:border-b-0 hover:bg-black/50 transition-colors"
             >
-              <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors">
+              <div
+                className="p-4 flex justify-between items-center cursor-pointer"
+                onClick={() => {
+                  setSelectedSubmission(submission);
+                  if (!submission.isRead) markAsRead(submission._id);
+                }}
+              >
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-300 text-white text-sm font-semibold shadow-sm">
+                  <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-900/40 text-red-300 text-sm font-semibold shadow-sm border border-red-800/50">
                     {submission.name?.charAt(0).toUpperCase() || "A"}
                   </span>
 
                   <div>
-                    <p className="font-medium text-gray-900 flex items-center gap-1">
+                    <p className="font-medium text-gray-200 flex items-center gap-1">
                       {submission.name || "—"}
                       {!submission.isRead && (
                         <span
-                          className="ml-2 inline-flex h-2 w-2 rounded-full bg-red-600 ring-2 ring-white shadow-sm"
+                          className="ml-2 inline-flex h-2 w-2 rounded-full bg-red-600 ring-2 ring-gray-900 shadow-sm"
                           title="Ungelesen"
                           aria-label="Ungelesen"
                         ></span>
                       )}
                     </p>
 
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-400">
                       {submission.subject || "Kein Betreff"}
                     </p>
-                    <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                       <FiCalendar size={12} />
                       {formatDate(submission.createdAt)}
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setSelectedSubmission(submission);
                     if (!submission.isRead) markAsRead(submission._id);
                   }}
-                  className="p-2 text-gray-500 hover:text-black-600 rounded-md hover:bg-black-50 transition-colors"
+                  className="p-2 text-gray-400 hover:text-red-400 rounded-md hover:bg-red-900/20 transition-colors border border-gray-700"
                   title="Details anzeigen"
                 >
                   <FiEye />
@@ -276,7 +285,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
             </div>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Detail Modal */}
       {selectedSubmission && (
@@ -286,7 +295,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
               className="fixed inset-0 transition-opacity"
               aria-hidden="true"
             >
-              <div className="absolute inset-0 bg-gray-900 bg-opacity-75"></div>
+              <div className="absolute inset-0 bg-gray-900 bg-opacity-90 backdrop-blur-sm"></div>
             </div>
 
             <span
@@ -296,18 +305,18 @@ export default function SubmissionsTable({ setUnreadCount }) {
               &#8203;
             </span>
 
-            <div className="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full mx-4">
-              <div className="bg-gradient-to-r from-black to-red-900 px-6 py-4">
+            <div className="inline-block align-bottom bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full mx-4 border border-gray-800">
+              <div className="bg-gradient-to-r from-black to-red-900 px-6 py-3 border-b border-gray-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="bg-gray-100 inline-flex items-center justify-center h-10 w-10 rounded-full bg-black-500 text-black">
+                    <div className="bg-red-900/40 inline-flex items-center justify-center h-10 w-10 rounded-full text-red-300 border border-red-800/50">
                       {selectedSubmission.name?.charAt(0).toUpperCase() || "A"}
                     </div>
                     <div>
-                      <h3 className="text-xl md:text-2xl font-bold text-white ">
+                      <h3 className="text-base md:text-xl font-bold text-white">
                         Anfrage von {selectedSubmission.name}
                       </h3>
-                      <p className="text-gray-200 mt-1 text-xs md:text-xs flex items-center gap-1">
+                      <p className="text-gray-300 mt-1 text-xs md:text-xs flex items-center gap-1">
                         <FiCalendar size={14} />
                         {formatDate(selectedSubmission.createdAt)}
                       </p>
@@ -315,38 +324,37 @@ export default function SubmissionsTable({ setUnreadCount }) {
                   </div>
                   <button
                     onClick={() => setSelectedSubmission(null)}
-                    className="text-black-100 hover:text-white transition-colors"
+                    className="text-gray-400 hover:text-white transition-colors hover:bg-red-600/20 p-1 rounded-md"
                   >
                     <FiX className="h-6 w-6" />
                   </button>
                 </div>
               </div>
 
-              <div className="px-4 md:px-6 py-4 max-h-[70vh] overflow-y-auto">
+              <div className="px-4 md:px-6 py-4 max-h-[70vh] overflow-y-auto custom-scroll">
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-800">
+                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Name
                       </p>
-                      <p className="text-gray-800 font-medium flex items-center gap-2">
-                        <FiUser className="text-black-600" />
+                      <p className="text-gray-200 font-medium flex items-center gap-2">
+                        <FiUser className="text-red-400" />
                         {selectedSubmission.name || "—"}
                       </p>
                     </div>
                     {selectedSubmission.carLink && (
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-800">
+                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                           Fahrzeug-Link
                         </p>
-                        <p className="text-gray-800 font-medium flex items-center gap-2">
-                          <FiNavigation className="text-black-600" />
-                          <span className="text-black">Link:</span>
+                        <p className="text-gray-200 font-medium flex items-center gap-2">
+                          <FiNavigation className="text-red-400" />
                           <a
                             href={selectedSubmission.carLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 underline"
+                            className="text-red-400 underline hover:text-red-300"
                           >
                             Zum Fahrzeug
                           </a>
@@ -354,67 +362,65 @@ export default function SubmissionsTable({ setUnreadCount }) {
                       </div>
                     )}
 
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-800">
+                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                         E-Mail
                       </p>
-                      <p className="text-gray-800 font-medium flex items-center gap-2">
-                        <FiMail className="text-black-600" />
+                      <p className="text-gray-200 font-medium flex items-center gap-2">
+                        <FiMail className="text-red-400" />
                         {selectedSubmission.email || "—"}
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-800">
+                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Telefon
                       </p>
-                      <p className="text-gray-800 font-medium flex items-center gap-2">
-                        <FiPhone className="text-black-600" />
+                      <p className="text-gray-200 font-medium flex items-center gap-2">
+                        <FiPhone className="text-red-400" />
                         {selectedSubmission.phone || "—"}
                       </p>
                     </div>
                     {selectedSubmission.date && (
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-800">
+                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                           Terminwunsch
                         </p>
-                        <p className="text-gray-800 font-medium flex items-center gap-2">
-                          <FiCalendar className="text-black-600" />
+                        <p className="text-gray-200 font-medium flex items-center gap-2">
+                          <FiCalendar className="text-red-400" />
                           {formatDate(selectedSubmission.date)}
                         </p>
                       </div>
                     )}
 
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-800">
+                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Betreff
                       </p>
-                      <p className="text-gray-800 font-medium flex items-center gap-2">
-                        <FiInfo className="text-black-600" />
+                      <p className="text-gray-200 font-medium flex items-center gap-2">
+                        <FiInfo className="text-red-400" />
                         {selectedSubmission.subject || "—"}
                       </p>
                     </div>
                     {selectedSubmission.carName && (
-                      <>
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Fahrzeug
-                          </p>
-                          <p className="text-gray-800 font-medium flex items-center gap-2">
-                            <FaCar className="text-red-500" />
-                            {selectedSubmission.carName}
-                          </p>
-                        </div>
-                      </>
+                      <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-800 w-176">
+                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          Fahrzeug
+                        </p>
+                        <p className="text-gray-200 font-medium flex items-center gap-2">
+                          <FaCar className="text-red-400" />
+                          {selectedSubmission.carName}
+                        </p>
+                      </div>
                     )}
                   </div>
 
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                      <FiMessageSquare className="mr-2 text-black-600" />
+                  <div className="bg-gray-800/40 p-4 rounded-lg border border-gray-800">
+                    <h4 className="text-lg font-semibold text-gray-200 mb-3 flex items-center">
+                      <FiMessageSquare className="mr-2 text-red-400" />
                       Nachricht
                     </h4>
-                    <div className="bg-white p-4 rounded border border-gray-200">
-                      <p className="text-gray-700 whitespace-pre-line">
+                    <div className="bg-gray-900/60 p-4 rounded border border-gray-800">
+                      <p className="text-gray-300 whitespace-pre-line">
                         {selectedSubmission.message || "Keine Nachricht"}
                       </p>
                     </div>
@@ -422,16 +428,16 @@ export default function SubmissionsTable({ setUnreadCount }) {
                 </div>
               </div>
 
-              <div className="bg-gray-50 px-6 py-4 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 border-t border-gray-200">
+              <div className="bg-gray-800 px-6 py-2 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 border-t border-gray-700">
                 <button
                   onClick={() => setSelectedSubmission(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-100 focus:outline-none transition-colors"
+                  className="px-2 py-2 border text-xs border-gray-700 rounded-lg text-gray-300 bg-gray-800 hover:bg-gray-600 focus:outline-none transition-colors"
                 >
                   Schließen
                 </button>
                 <button
                   onClick={() => handleDeleteSubmission(selectedSubmission._id)}
-                  className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:outline-none transition-colors"
+                  className="px-2 py-2 border text-xs  border-transparent rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none transition-colors"
                 >
                   Anfrage löschen
                 </button>

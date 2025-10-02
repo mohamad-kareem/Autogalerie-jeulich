@@ -16,6 +16,7 @@ import {
   FiMapPin,
   FiHelpCircle,
 } from "react-icons/fi";
+import { motion } from "framer-motion";
 import * as turf from "@turf/turf";
 
 const dealershipCoords = turf.polygon([
@@ -164,8 +165,8 @@ export default function ZeiterfassungPage() {
 
   if (status !== "authenticated") {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-pulse text-gray-600">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-950 to-red-950">
+        <div className="animate-pulse text-gray-400">
           Authentifizierung läuft...
         </div>
       </div>
@@ -173,29 +174,35 @@ export default function ZeiterfassungPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-red-950 text-white p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
         {/* Kopfbereich */}
-        <header className="mb-8">
+        <motion.header
+          initial={{ y: -15, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="mb-8"
+        >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-200">
                 Zeiterfassungssystem
               </h1>
-              <p className="text-gray-600">Erfassen Sie Ihre Arbeitszeiten</p>
+              <p className="text-gray-400">Erfassen Sie Ihre Arbeitszeiten</p>
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm">
-                <FiUser className="text-red-800" />
-                <span className="font-medium">{session.user.name}</span>
+              <div className="flex items-center gap-2 bg-gray-800/60 backdrop-blur-md px-3 py-2 rounded-lg border border-gray-800">
+                <FiUser className="text-red-400" />
+                <span className="font-medium text-gray-200">
+                  {session.user.name}
+                </span>
               </div>
 
               <div
-                className={`px-3 py-2 rounded-lg font-medium ${
+                className={`px-3 py-2 rounded-lg font-medium border ${
                   statusZeiterfassung === "eingestempelt"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-gray-100 text-gray-800"
+                    ? "bg-green-900/40 text-green-300 border-green-800/50"
+                    : "bg-gray-800/60 text-gray-300 border-gray-800"
                 }`}
               >
                 {statusZeiterfassung === "eingestempelt"
@@ -204,15 +211,22 @@ export default function ZeiterfassungPage() {
               </div>
             </div>
           </div>
-        </header>
+        </motion.header>
 
         {/* Hauptinhalt */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Stempelungsfunktionen */}
           <div className="lg:col-span-2 space-y-6">
             {/* Stempelkarte */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <h2 className="text-lg font-semibold mb-4">Stempelaktionen</h2>
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="bg-gray-900/60 backdrop-blur-md p-6 rounded-xl border border-gray-800"
+            >
+              <h2 className="text-lg font-semibold mb-4 text-gray-200">
+                Stempelaktionen
+              </h2>
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
@@ -220,10 +234,10 @@ export default function ZeiterfassungPage() {
                   disabled={
                     statusZeiterfassung === "eingestempelt" || wirdGeladen
                   }
-                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors border ${
                     statusZeiterfassung === "eingestempelt" || wirdGeladen
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-red-800 hover:bg-red-950 text-white"
+                      ? "bg-gray-800/40 text-gray-500 cursor-not-allowed border-gray-800"
+                      : "bg-red-700 hover:bg-red-900 text-white border-red-500"
                   }`}
                 >
                   <FiLogIn />
@@ -235,33 +249,40 @@ export default function ZeiterfassungPage() {
                   disabled={
                     statusZeiterfassung !== "eingestempelt" || wirdGeladen
                   }
-                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors border ${
                     statusZeiterfassung !== "eingestempelt" || wirdGeladen
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-red-600 hover:bg-red-700 text-white"
+                      ? "bg-gray-800/40 text-gray-500 cursor-not-allowed border-gray-800"
+                      : "bg-red-800 hover:bg-red-900 text-white border-red-700"
                   }`}
                 >
                   <FiLogOut />
                   Ausstempeln
                 </button>
               </div>
-            </div>
+            </motion.div>
 
             {/* Statuskarte */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <h2 className="text-lg font-semibold mb-4">Aktueller Status</h2>
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="bg-gray-900/60 backdrop-blur-md p-6 rounded-xl border border-gray-800"
+            >
+              <h2 className="text-lg font-semibold mb-4 text-gray-200">
+                Aktueller Status
+              </h2>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <FiClock className="text-red-800" />
+                <div className="flex items-center justify-between p-3 bg-gray-800/40 rounded-lg border border-gray-800">
+                  <div className="flex items-center gap-3 text-gray-300">
+                    <FiClock className="text-red-400" />
                     <span>Stempelstatus</span>
                   </div>
                   <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    className={`px-3 py-1 rounded-full text-sm font-medium border ${
                       statusZeiterfassung === "eingestempelt"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
+                        ? "bg-green-900/40 text-green-300 border-green-800/50"
+                        : "bg-gray-800/60 text-gray-300 border-gray-800"
                     }`}
                   >
                     {statusZeiterfassung === "eingestempelt"
@@ -270,43 +291,49 @@ export default function ZeiterfassungPage() {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <FiSmartphone className="text-red-800" />
+                <div className="flex items-center justify-between p-3 bg-gray-800/40 rounded-lg border border-gray-800">
+                  <div className="flex items-center gap-3 text-gray-300">
+                    <FiSmartphone className="text-red-400" />
                     <span>Gerätestatus</span>
                   </div>
-                  <span className="text-sm font-medium">
+                  <span className="text-sm font-medium text-gray-300">
                     {gerätRegistriert ? "Registriert" : "Nicht registriert"}
                   </span>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Seitenleiste */}
           <div className="space-y-6">
             {zeigeGerätePanel ? (
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-red-200">
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-gray-900/60 backdrop-blur-md p-6 rounded-xl border border-red-800/50"
+              >
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <FiSmartphone className="text-red-800" />
+                  <h2 className="text-lg font-semibold flex items-center gap-2 text-gray-200">
+                    <FiSmartphone className="text-red-400" />
                     Geräteregistrierung
                   </h2>
                   <button
                     onClick={() => setZeigeGerätePanel(false)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 hover:text-gray-200 transition-colors"
                   >
                     ✕
                   </button>
                 </div>
 
                 <div className="space-y-4">
-                  <div className="bg-red-50 p-4 rounded-lg">
+                  <div className="bg-red-900/20 p-4 rounded-lg border border-red-800/30">
                     <div className="flex items-start gap-3">
-                      <FiShield className="text-red-800 mt-1 flex-shrink-0" />
+                      <FiShield className="text-red-400 mt-1 flex-shrink-0" />
                       <div>
-                        <h3 className="font-medium">Sicherheit</h3>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <h3 className="font-medium text-gray-200">
+                          Sicherheit
+                        </h3>
+                        <p className="text-sm text-gray-400 mt-1">
                           Ihre Gerätekennung wird sicher gespeichert und nur mit
                           Ihrem Konto verknüpft.
                         </p>
@@ -314,12 +341,12 @@ export default function ZeiterfassungPage() {
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-gray-800/40 p-4 rounded-lg border border-gray-800">
                     <div className="flex items-start gap-3">
-                      <FiMapPin className="text-red-800 mt-1 flex-shrink-0" />
+                      <FiMapPin className="text-red-400 mt-1 flex-shrink-0" />
                       <div>
-                        <h3 className="font-medium">Standort</h3>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <h3 className="font-medium text-gray-200">Standort</h3>
+                        <p className="text-sm text-gray-400 mt-1">
                           Die Standortüberprüfung bleibt auch mit registriertem
                           Gerät aktiv.
                         </p>
@@ -330,48 +357,66 @@ export default function ZeiterfassungPage() {
                   <button
                     onClick={handleGerätRegistrierung}
                     disabled={wirdGeladen}
-                    className={`w-full py-3 rounded-lg font-medium text-white transition-colors ${
-                      wirdGeladen ? "bg-red-400" : "bg-red-800 hover:bg-red-950"
+                    className={`w-full py-3 rounded-lg font-medium text-white transition-colors border ${
+                      wirdGeladen
+                        ? "bg-red-800/40 text-red-300 border-red-700 cursor-not-allowed"
+                        : "bg-red-700 hover:bg-red-900 border-red-500"
                     }`}
                   >
                     {wirdGeladen ? "Wird registriert..." : "Gerät registrieren"}
                   </button>
                 </div>
-              </div>
+              </motion.div>
             ) : (
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <FiSmartphone className="text-red-800" />
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="bg-gray-900/60 backdrop-blur-md p-6 rounded-xl border border-gray-800"
+              >
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-200">
+                  <FiSmartphone className="text-red-400" />
                   Schnellstempelung
                 </h2>
 
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-400 mb-4">
                   Registrieren Sie dieses Gerät für schnellere Stempelungen ohne
                   erneute Anmeldung.
                 </p>
 
                 <button
                   onClick={() => setZeigeGerätePanel(true)}
-                  className="w-full py-3 bg-red-800 hover:bg-red-950 text-white rounded-lg font-medium"
+                  className="w-full py-3 bg-red-700 hover:bg-red-900 text-white rounded-lg font-medium border border-red-500 transition-colors"
                 >
                   {gerätRegistriert ? "Gerät verwalten" : "Gerät registrieren"}
                 </button>
-              </div>
+              </motion.div>
             )}
 
             {/* Hilfe-Karte */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <FiHelpCircle className="text-red-800" />
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="bg-gray-900/60 backdrop-blur-md p-6 rounded-xl border border-gray-800"
+            >
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-200">
+                <FiHelpCircle className="text-red-400" />
                 Hinweis
               </h2>
-              <p className="text-gray-600 mb-3">
+              <p className="text-gray-400 mb-3">
                 Die Standortüberprüfung stellt sicher, dass Stempelungen nur im
                 Autohaus möglich sind.
               </p>
-            </div>
+            </motion.div>
           </div>
         </div>
+      </div>
+
+      {/* Background Glow */}
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <div className="absolute top-0 left-1/3 w-60 h-60 bg-red-500/10 blur-3xl rounded-full" />
+        <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-purple-500/10 blur-3xl rounded-full" />
       </div>
     </div>
   );

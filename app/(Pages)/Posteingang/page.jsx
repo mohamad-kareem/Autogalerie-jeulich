@@ -2,83 +2,99 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { toast } from "react-hot-toast";
-import { FiXCircle, FiUser, FiMessageSquare } from "react-icons/fi";
+import { FiXCircle, FiMessageSquare } from "react-icons/fi";
 import { FaCar } from "react-icons/fa";
 import CarsTable from "./CarsTable";
 import SubmissionsTable from "./SubmissionsTable";
+import { motion } from "framer-motion";
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const [viewMode, setViewMode] = useState("submissions"); // 'cars' or 'submissions'
   const [unreadCount, setUnreadCount] = useState(0);
+
   if (status === "loading") {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-red-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
       </div>
     );
   }
 
   if (!session?.user) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gray-50">
-        <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px]  mx-4 text-center">
+      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-red-950 text-white">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gray-900/70 backdrop-blur-md p-8 rounded-2xl border border-gray-800 shadow-xl max-w-lg text-center"
+        >
           <FiXCircle className="mx-auto text-red-500 text-5xl mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Zugriff verweigert
-          </h2>
-          <p className="text-gray-600">
+          <h2 className="text-2xl font-bold mb-2">Zugriff verweigert</h2>
+          <p className="text-gray-400">
             Sie sind nicht berechtigt, diese Seite zu sehen. Bitte wenden Sie
             sich an Ihren Administrator.
           </p>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6 md:mb-8">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <FaCar className="text-red-600" />
-              Posteingang / Ankaufsangebote
-            </h1>
-            <p className="text-gray-500 mt-1 text-sm md:text-base">
-              Hier sehen Sie alle eingegangenen Fahrzeugangebote und Nachrichten
-              von Kunden
-            </p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-red-950 text-white relative p-4 md:p-6">
+      {/* Glow Background */}
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <div className="absolute top-0 left-1/3 w-60 h-60 bg-red-500/10 blur-3xl rounded-full" />
+        <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-purple-500/10 blur-3xl rounded-full" />
+      </div>
 
-        {/* View Mode Toggle */}
-        <div className="flex mb-6 bg-white rounded-lg shadow-sm p-1 max-w-md">
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1600px] mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-3 md:mb-4"
+        >
+          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-3">
+            <FaCar className="text-red-500" />
+            Posteingang
+          </h1>
+        </motion.div>
+
+        {/* Toggle Buttons */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex mb-4 bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-lg p-1 max-w-sm"
+        >
           <button
             onClick={() => setViewMode("submissions")}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
+            className={`flex-1 py-1  rounded-md text-sm font-medium transition ${
               viewMode === "submissions"
-                ? "bg-red-600 text-white"
-                : "text-gray-700 hover:bg-gray-100"
+                ? "bg-red-600 text-white shadow"
+                : "text-gray-300 hover:bg-gray-800"
             }`}
           >
             <FiMessageSquare className="inline mr-2" />
             Kontaktanfragen
+            {unreadCount > 0 && (
+              <span className="ml-2 bg-red-500 text-xs px-2 py-0.5 rounded-full">
+                {unreadCount}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setViewMode("cars")}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
+            className={`flex-1 py-1  rounded-md text-sm font-medium transition ${
               viewMode === "cars"
-                ? "bg-red-600 text-white"
-                : "text-gray-700 hover:bg-gray-100"
+                ? "bg-red-600 text-white shadow"
+                : "text-gray-300 hover:bg-gray-800"
             }`}
           >
             <FaCar className="inline mr-2" />
             Fahrzeuge
           </button>
-        </div>
+        </motion.div>
 
         {/* Main Content */}
         {viewMode === "cars" ? (
