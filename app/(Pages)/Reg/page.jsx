@@ -1,7 +1,15 @@
 "use client";
 import { useState } from "react";
-import { FiUser, FiMail, FiLock, FiCamera, FiArrowRight } from "react-icons/fi";
+import {
+  FiUser,
+  FiMail,
+  FiLock,
+  FiCamera,
+  FiArrowRight,
+  FiX,
+} from "react-icons/fi";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 export default function RegistrationPage() {
   const [formData, setFormData] = useState({
@@ -81,29 +89,35 @@ export default function RegistrationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-red-950 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-gray-900/60 backdrop-blur-md rounded-xl border border-gray-800 overflow-hidden shadow-2xl"
+        >
           <div className="p-8">
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-200">
                 Admin-Konto erstellen
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-gray-400 mt-1">
                 Richten Sie Ihre Administratoranmeldeinformationen ein
               </p>
             </div>
 
             {message.text && (
-              <div
-                className={`mb-6 p-3 rounded-md text-sm ${
+              <motion.div
+                initial={{ y: -10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className={`mb-6 p-3 rounded-md border text-sm ${
                   message.type === "success"
-                    ? "bg-green-50 text-green-700"
-                    : "bg-red-50 text-red-700"
+                    ? "bg-green-900/20 text-green-300 border-green-800/50"
+                    : "bg-red-900/20 text-red-300 border-red-800/50"
                 }`}
               >
                 {message.text}
-              </div>
+              </motion.div>
             )}
 
             <form
@@ -111,11 +125,11 @@ export default function RegistrationPage() {
               className="grid grid-cols-1 md:grid-cols-2 gap-6"
             >
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Profilbild
                 </label>
                 <div className="flex items-center space-x-4">
-                  <div className="flex-shrink-0 h-16 w-16 rounded-full bg-gray-200 overflow-hidden border border-gray-300">
+                  <div className="flex-shrink-0 h-16 w-16 rounded-full bg-gray-800 overflow-hidden border border-gray-700">
                     {previewImage ? (
                       <img
                         className="h-full w-full object-cover"
@@ -123,14 +137,14 @@ export default function RegistrationPage() {
                         alt="Preview"
                       />
                     ) : (
-                      <div className="h-full w-full flex items-center justify-center text-gray-400">
+                      <div className="h-full w-full flex items-center justify-center text-gray-500">
                         <FiCamera className="h-6 w-6" />
                       </div>
                     )}
                   </div>
                   <div className="flex-1">
                     <label className="cursor-pointer">
-                      <span className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                      <span className="inline-flex items-center px-3 py-2 border border-gray-700 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-300 bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
                         {previewImage ? "ändern" : "hochladen"}
                       </span>
                       <input
@@ -145,7 +159,7 @@ export default function RegistrationPage() {
                       <button
                         type="button"
                         onClick={removeImage}
-                        className="ml-3 inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="ml-3 inline-flex items-center px-3 py-2 border border-gray-700 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-300 bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                       >
                         löschen
                       </button>
@@ -160,13 +174,13 @@ export default function RegistrationPage() {
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-gray-300 mb-1"
                 >
                   voller Name
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiUser className="text-gray-400" />
+                    <FiUser className="text-gray-500" />
                   </div>
                   <input
                     id="name"
@@ -175,7 +189,7 @@ export default function RegistrationPage() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-red-500 focus:border-red-500 transition-colors"
                     placeholder="Thomas Müller"
                   />
                 </div>
@@ -184,13 +198,13 @@ export default function RegistrationPage() {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-gray-300 mb-1"
                 >
                   E-Mail-Adresse
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiMail className="text-gray-400" />
+                    <FiMail className="text-gray-500" />
                   </div>
                   <input
                     id="email"
@@ -199,7 +213,7 @@ export default function RegistrationPage() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-red-500 focus:border-red-500 transition-colors"
                     placeholder="admin@company.com"
                   />
                 </div>
@@ -208,13 +222,13 @@ export default function RegistrationPage() {
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-gray-300 mb-1"
                 >
                   Passwort
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiLock className="text-gray-400" />
+                    <FiLock className="text-gray-500" />
                   </div>
                   <input
                     id="password"
@@ -224,7 +238,7 @@ export default function RegistrationPage() {
                     onChange={handleChange}
                     required
                     minLength="8"
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-red-500 focus:border-red-500 transition-colors"
                     placeholder="••••••••"
                   />
                 </div>
@@ -236,7 +250,7 @@ export default function RegistrationPage() {
               <div>
                 <label
                   htmlFor="role"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-gray-300 mb-1"
                 >
                   Rolle
                 </label>
@@ -245,10 +259,14 @@ export default function RegistrationPage() {
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
-                  className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full pl-3 pr-10 py-2 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-200 focus:outline-none focus:ring-red-500 focus:border-red-500 transition-colors"
                 >
-                  <option value="admin">Administrator</option>
-                  <option value="user">benutzer</option>
+                  <option value="admin" className="bg-gray-800">
+                    Administrator
+                  </option>
+                  <option value="user" className="bg-gray-800">
+                    benutzer
+                  </option>
                 </select>
               </div>
 
@@ -256,7 +274,7 @@ export default function RegistrationPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                  className={`w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors ${
                     isSubmitting ? "opacity-75 cursor-not-allowed" : ""
                   }`}
                 >
@@ -293,7 +311,13 @@ export default function RegistrationPage() {
               </div>
             </form>
           </div>
-        </div>
+        </motion.div>
+      </div>
+
+      {/* Background Glow */}
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <div className="absolute top-0 left-1/3 w-60 h-60 bg-red-500/10 blur-3xl rounded-full" />
+        <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-purple-500/10 blur-3xl rounded-full" />
       </div>
     </div>
   );
