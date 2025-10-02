@@ -7,6 +7,7 @@ import {
   MagnifyingGlassIcon,
   ChevronUpDownIcon,
   XMarkIcon,
+  ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import { HiArchiveBoxArrowDown } from "react-icons/hi2";
 import { NoSymbolIcon } from "@heroicons/react/24/solid";
@@ -114,7 +115,7 @@ export default function KaufvertragListe() {
   );
 
   const monthOptions = [
-    { value: "", label: "Alle Monate" },
+    { value: "", label: "Monate" },
     { value: "1", label: "Januar" },
     { value: "2", label: "Februar" },
     { value: "3", label: "März" },
@@ -151,14 +152,11 @@ export default function KaufvertragListe() {
         className=" z-40   px-4 sm:px-6 py-2"
       >
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push("/AdminDashboard")}
-            className="p-2 rounded-lg bg-gray-900/60 hover:bg-red-800 transition"
-          >
-            <FiArrowLeft className="h-4 w-4 text-white " />
-          </button>
           <h1 className="text-lg sm:text-xl font-bold">
-            Kaufvertragsübersicht
+            Verträge
+            <span className="ml-2 text-sm font-normal text-gray-300">
+              ({filteredContracts.length})
+            </span>
           </h1>
         </div>
       </motion.div>
@@ -170,15 +168,27 @@ export default function KaufvertragListe() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className=" p-1 mb-4"
+          className="  mb-4"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-0 py-1 text-xs">
+          <div className="flex items-center gap-2 px-0 py-1 text-xs">
+            {/* Archiv button */}
+            {/* Archiv button (only for admins) */}
+            {session?.user?.role === "admin" && (
+              <button
+                onClick={() => router.push("/kaufvertrag/archiv")}
+                className="p-2 rounded hover:bg-red-600/20 text-gray-400 hover:text-red-400 flex-shrink-0"
+                title="Zum Archiv"
+              >
+                <ArchiveBoxIcon className="h-5 w-5" />
+              </button>
+            )}
+
             {/* Search */}
-            <div className="relative">
+            <div className="relative flex-shrink-0 w-[120px] sm:w-[160px]">
               <MagnifyingGlassIcon className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                className="w-full sm:w-[140px] pl-7 pr-2 py-2 rounded-md bg-transparent text-gray-200 placeholder-gray-400 border border-gray-700 focus:outline-none focus:border-red-500"
+                className="w-full pl-7 pr-2 py-2 rounded-md bg-transparent text-gray-200 placeholder-gray-400 border border-gray-700 focus:outline-none focus:border-red-500"
                 placeholder="Suche..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -191,7 +201,7 @@ export default function KaufvertragListe() {
               onChange={(e) =>
                 setFilters({ ...filters, month: e.target.value })
               }
-              className="px-2 py-2 rounded-md bg-gray-800 text-gray-300 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto"
+              className="flex-shrink-0 w-[90px] sm:w-[120px] px-2 py-2 rounded-md bg-gray-800 text-gray-300 focus:outline-none focus:ring-1 focus:ring-red-500"
             >
               {monthOptions.map((m) => (
                 <option
@@ -210,10 +220,10 @@ export default function KaufvertragListe() {
               onChange={(e) =>
                 setFilters({ ...filters, seller: e.target.value })
               }
-              className="px-2 py-2 rounded-md bg-gray-800 text-gray-300 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto"
+              className="flex-shrink-0 w-[90px] sm:w-[120px] px-2 py-2 rounded-md bg-gray-800 text-gray-300 focus:outline-none focus:ring-1 focus:ring-red-500"
             >
               <option value="" className="bg-gray-900 text-white">
-                Alle Verkäufer
+                Verkäufer
               </option>
               {uniqueSellers.map((s) => (
                 <option key={s} value={s} className="bg-gray-900 text-white">
@@ -226,10 +236,10 @@ export default function KaufvertragListe() {
             {(searchTerm || filters.month || filters.seller) && (
               <button
                 onClick={resetFilters}
-                className="p-1 rounded hover:bg-red-600/20 text-gray-400 hover:text-red-400 w-full sm:w-auto"
+                className="p-2 rounded bg-gray-800 hover:bg-red-600/20 text-gray-400 hover:text-red-400 flex-shrink-0"
                 title="Filter zurücksetzen"
               >
-                <XMarkIcon className="h-3 w-3 mx-auto sm:mx-0" />
+                <XMarkIcon className="h-4 w-4" />
               </button>
             )}
           </div>

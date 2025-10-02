@@ -858,14 +858,16 @@ export default function Zeiterfassungsverwaltung() {
                 </button>
                 <button
                   onClick={handleManualSave}
-                  disabled={!manualEntry.admin || !manualEntry.time}
+                  disabled={
+                    isLoading || !manualEntry.admin || !manualEntry.time
+                  }
                   className={`px-4 py-2 rounded-md transition text-sm ${
-                    !manualEntry.admin || !manualEntry.time
+                    isLoading || !manualEntry.admin || !manualEntry.time
                       ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                       : "bg-red-600 hover:bg-red-700 text-white"
                   }`}
                 >
-                  Speichern
+                  {isLoading ? "Speichern..." : "Speichern"}
                 </button>
               </div>
             </div>
@@ -1183,17 +1185,60 @@ export default function Zeiterfassungsverwaltung() {
                         ) : null}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingRecord(r);
-                            setEditModalOpen(true);
-                          }}
-                          className="text-gray-400 hover:text-red-300 flex items-center gap-1 transition"
-                        >
-                          <FiEdit className="h-4 w-4" />
-                          <span>Bearbeiten</span>
-                        </button>
+                        <div className="flex gap-3">
+                          {/* Edit Icon */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingRecord(r);
+                              setEditModalOpen(true);
+                            }}
+                            className="p-2 rounded-full hover:bg-gray-700 text-gray-400 hover:text-green-400 transition"
+                            title="Bearbeiten"
+                          >
+                            <FiEdit className="h-4 w-4" />
+                          </button>
+
+                          {/* Delete Icon */}
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (
+                                !window.confirm(
+                                  "Diesen Eintrag wirklich löschen?"
+                                )
+                              )
+                                return;
+                              try {
+                                setIsLoading(true);
+                                const res = await fetch(`/api/punch/${r._id}`, {
+                                  method: "DELETE",
+                                  headers: {
+                                    "x-admin-id": session.user.id,
+                                  },
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                  toast.success("Eintrag gelöscht");
+                                  await fetchRecords();
+                                  await fetchJustifications();
+                                } else {
+                                  throw new Error(
+                                    data.error || "Löschen fehlgeschlagen"
+                                  );
+                                }
+                              } catch {
+                                toast.error("Löschen fehlgeschlagen");
+                              } finally {
+                                setIsLoading(false);
+                              }
+                            }}
+                            className="p-2 rounded-full hover:bg-gray-700 text-gray-400 hover:text-red-500 transition"
+                            title="Löschen"
+                          >
+                            <FiTrash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
