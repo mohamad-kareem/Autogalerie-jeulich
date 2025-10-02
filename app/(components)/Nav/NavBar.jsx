@@ -16,7 +16,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 
-import Logo from "../../(assets)/sm1car.png";
+import Logo from "../../(assets)/logo12.png";
 import DesktopMenu from "./DesktopMenu";
 import MobMenu from "./MobMenu";
 import { Menus } from "../../utils/NavData";
@@ -110,7 +110,7 @@ export default function NavBar() {
   // Enhanced floating dropdown menu
   const FloatingMenu = (
     <div
-      className="fixed top-3 right-4 z-[9999] print:hidden"
+      className="fixed top-3 right-3 z-[9999] print:hidden"
       ref={dropdownRef}
     >
       <div className="relative">
@@ -233,17 +233,17 @@ export default function NavBar() {
             src={Logo}
             alt="Logo"
             priority
-            className={`object-contain w-10 h-10 sm:w-[85px] sm:h-[110px] transition-transform duration-300 ${
+            className={`object-contain w-15 h-15 sm:w-[85px] sm:h-[110px] transition-transform duration-300 ${
               scrolled ? "scale-70" : "scale-100"
             }`}
           />
-          <span
+          {/*   <span
             className={`ml-2 font-semibold whitespace-nowrap transition-all duration-300 text-white text-[10px] sm:text-base ${
               scrolled ? "sm:text-sm" : "sm:text-base"
             }`}
           >
             Autogalerie Jülich
-          </span>
+          </span>*/}
         </Link>
 
         {/* Right Side */}
