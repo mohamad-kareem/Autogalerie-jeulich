@@ -55,7 +55,7 @@ export default function Zeiterfassungsverwaltung() {
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const hasFetched = useRef(false);
-
+  const [initialLoading, setInitialLoading] = useState(true);
   const [activeSection, setActiveSection] = useState(null);
   const [selectedAdmin, setSelectedAdmin] = useState("alle");
   const [dateFilter, setDateFilter] = useState(() => ({
@@ -90,7 +90,7 @@ export default function Zeiterfassungsverwaltung() {
     date: null,
     reason: "",
   });
-
+  const [justificationsLoaded, setJustificationsLoaded] = useState(false);
   // ------------ Effects ------------
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -127,6 +127,9 @@ export default function Zeiterfassungsverwaltung() {
       setJustifications(Array.isArray(data) ? data : []);
     } catch {
       // Non-blocking; optional toast
+    } finally {
+      // 👇 important
+      setJustificationsLoaded(true);
     }
   }, []);
 
@@ -135,6 +138,7 @@ export default function Zeiterfassungsverwaltung() {
       (async () => {
         await fetchRecords();
         await fetchJustifications();
+        setInitialLoading(false); //
       })();
     }
   }, [status, fetchRecords, fetchJustifications]);
@@ -506,7 +510,21 @@ export default function Zeiterfassungsverwaltung() {
   };
 
   // ------------ Rendering ------------
-  if (status !== "authenticated") {
+  // While NextAuth is still checking the session → show loader
+  if (status === "loading") {
+    return (
+      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-red-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+      </div>
+    );
+  }
+
+  // If not logged in → do nothing, redirect effect will push to /login
+  if (status === "unauthenticated") {
+    return null;
+  }
+
+  if (initialLoading) {
     return (
       <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-red-950">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
@@ -1098,7 +1116,7 @@ export default function Zeiterfassungsverwaltung() {
         </div>
 
         {/* Alert Banner */}
-        {unresolvedMissingCount > 0 && (
+        {justificationsLoaded && unresolvedMissingCount > 0 && (
           <div className="mb-4 bg-red-900/40 border border-red-700 text-yellow-600 rounded-lg px-4 py-2 sm:py-3 text-xs sm:text-sm">
             ⚠️ {unresolvedMissingCount} Stempel-Hinweise (Sonntag ignoriert).
           </div>
