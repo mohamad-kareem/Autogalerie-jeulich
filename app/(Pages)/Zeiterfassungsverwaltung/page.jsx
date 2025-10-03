@@ -35,6 +35,7 @@ import {
   FiAlertTriangle,
   FiInbox,
   FiCheckCircle,
+  FiBell,
 } from "react-icons/fi";
 import { IoMdLocate } from "react-icons/io";
 
@@ -1115,13 +1116,11 @@ export default function Zeiterfassungsverwaltung() {
           )}
         </div>
 
-        {/* Alert Banner */}
-        {justificationsLoaded && unresolvedMissingCount > 0 && (
+        {/*  {justificationsLoaded && unresolvedMissingCount > 0 && (
           <div className="mb-4 bg-red-900/40 border border-red-700 text-yellow-600 rounded-lg px-4 py-2 sm:py-3 text-xs sm:text-sm">
             ⚠️ {unresolvedMissingCount} Stempel-Hinweise (Sonntag ignoriert).
           </div>
-        )}
-
+        )}*/}
         {/* Table */}
         <div
           initial={{ opacity: 0 }}
@@ -1129,13 +1128,27 @@ export default function Zeiterfassungsverwaltung() {
           transition={{ delay: 0.2 }}
           className="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden"
         >
-          <div className="px-6 py-4 border-b border-gray-800 bg-gray-800/40 flex justify-between items-center">
+          <div className="px-6 py-2 border-b border-gray-800 bg-gray-800/40 flex justify-between items-center">
             <h2 className="text-sm sm:text-lg font-semibold text-white flex items-center gap-2">
               <FiClock className="text-red-400" /> Zeiterfassungen
             </h2>
-            <span className="text-xs sm:text-sm text-gray-400">
-              {filtered.length} Einträge
-            </span>
+            <div className="flex items-center ">
+              {/* Entry count */}
+
+              {/* Notification bell */}
+              <button
+                onClick={() => setActiveSection("alerts")}
+                className="relative p-2 rounded-full hover:bg-gray-700 transition"
+                title="Fehlstempel Hinweise"
+              >
+                <FiBell className="h-5 w-5 text-gray-400 hover:text-yellow-400" />
+                {unresolvedMissingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">
+                    {unresolvedMissingCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
