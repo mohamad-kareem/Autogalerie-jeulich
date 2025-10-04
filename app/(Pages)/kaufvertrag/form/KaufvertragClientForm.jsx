@@ -25,7 +25,7 @@ export default function KaufvertragClientForm() {
     firstRegistration: "",
     mileage: "",
     warranty: "",
-    agreements: "",
+    agreements: [],
     kfzBrief: false,
     kfzSchein: false,
     tuev: "",
@@ -175,7 +175,7 @@ export default function KaufvertragClientForm() {
 
     const cleanedForm = {
       ...form,
-      // ensure numbers
+      agreements: (form.agreements || []).filter((line) => line.trim() !== ""),
       total: Number.isFinite(form.total) ? Number(form.total) : 0,
       downPayment:
         form.downPayment === "" || form.downPayment === undefined
@@ -479,7 +479,7 @@ export default function KaufvertragClientForm() {
                           ),
                         }))
                       }
-                      className="ml-2 text-gray-400 hover:text-red-500 text-xs opacity-0 group-hover:opacity-100 transition"
+                      className="ml-2 text-gray-500 hover:text-red-600 text-sm font-bold transition"
                     >
                       ✕
                     </button>
