@@ -390,7 +390,7 @@ export default function KaufvertragDetail() {
                 {form.agreements.map((item, idx) => (
                   <li
                     key={idx}
-                    className="relative pl-6 flex items-center justify-between group"
+                    className="relative pl-5 flex items-center justify-between group"
                   >
                     <span className="absolute left-2 top-2 w-1 h-1 rounded-full bg-black" />
                     <span className="flex-1">{item}</span>

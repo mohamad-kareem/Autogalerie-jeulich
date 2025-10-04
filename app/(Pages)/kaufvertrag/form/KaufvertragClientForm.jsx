@@ -464,7 +464,7 @@ export default function KaufvertragClientForm() {
                 {form.agreements.map((item, idx) => (
                   <li
                     key={idx}
-                    className="relative pl-6 flex items-center justify-between group"
+                    className="relative pl-5 flex items-center justify-between group"
                   >
                     {/* Smaller custom bullet for screen */}
                     <span className="absolute left-2 top-2 w-1 h-1 rounded-full bg-black" />
