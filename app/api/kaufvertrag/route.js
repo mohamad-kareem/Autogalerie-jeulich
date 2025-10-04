@@ -42,10 +42,16 @@ export async function POST(req) {
     // 6️⃣ CarSchein sync
     const { carType, vin, agreements, issuer } = data;
     if (carType && vin) {
-      const parsedNotes = (agreements || "")
-        .split("\n")
-        .map((line) => line.replace(/^\* /, "").trim())
-        .filter((line) => line !== "");
+      let parsedNotes = [];
+
+      if (Array.isArray(agreements)) {
+        parsedNotes = agreements.map((line) => line.trim()).filter(Boolean);
+      } else if (typeof agreements === "string") {
+        parsedNotes = agreements
+          .split(/\r?\n|;/) // split by newline or semicolon
+          .map((line) => line.replace(/^\* /, "").trim())
+          .filter(Boolean);
+      }
 
       const existingSchein = await CarSchein.findOne({ finNumber: vin });
 
