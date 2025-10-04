@@ -16,7 +16,10 @@ const KaufvertragSchema = new mongoose.Schema(
     firstRegistration: String,
     mileage: String,
     warranty: String,
-    agreements: String,
+    agreements: {
+      type: [String], // ✅ array of strings
+      default: [],
+    },
     kfzBrief: Boolean,
     kfzSchein: Boolean,
     tuev: String,

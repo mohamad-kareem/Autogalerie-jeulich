@@ -25,7 +25,7 @@ export default function KaufvertragClientForm() {
     firstRegistration: "",
     mileage: "",
     warranty: "",
-    agreements: "",
+    agreements: [],
     kfzBrief: false,
     kfzSchein: false,
     tuev: "",
@@ -175,7 +175,7 @@ export default function KaufvertragClientForm() {
 
     const cleanedForm = {
       ...form,
-      // ensure numbers
+      agreements: (form.agreements || []).filter((line) => line.trim() !== ""),
       total: Number.isFinite(form.total) ? Number(form.total) : 0,
       downPayment:
         form.downPayment === "" || form.downPayment === undefined
@@ -452,29 +452,109 @@ export default function KaufvertragClientForm() {
 
         {/* Agreements */}
         <div>
-          <p className="font-semibold">Besondere Vereinbarungen</p>
-          <textarea
-            name="agreements"
-            rows="3"
-            onChange={handleChange}
-            value={form.agreements || ""}
-            className="input w-full p-1 text-[13px] print:hidden"
-            placeholder="* Ölservice Neu\n* TÜV Neu"
-          />
-          {!form.agreements || form.agreements.trim() === "" ? (
-            <p className="text-[11px] hidden print:block mt-2 italic text-gray-700">
-              Keine besonderen Vereinbarungen
-            </p>
-          ) : (
-            <ul className="list-disc pl-5 text-[13px] hidden print:block mt-2">
-              {form.agreements
-                .split("\n")
-                .filter((line) => line.trim() !== "")
-                .map((line, idx) => (
-                  <li key={idx}>{line.replace(/^\* /, "")}</li>
+          {/* Title shows on both screen & print */}
+          <p className="font-semibold  text-[14px] print:text-[13px]">
+            Besondere Vereinbarungen
+          </p>
+
+          {/* Screen view */}
+          <div className="print:hidden">
+            {form.agreements?.length > 0 ? (
+              <ul className="space-y-1 text-[13px]">
+                {form.agreements.map((item, idx) => (
+                  <li
+                    key={idx}
+                    className="relative pl-6 flex items-center justify-between group"
+                  >
+                    {/* Smaller custom bullet for screen */}
+                    <span className="absolute left-2 top-2 w-1 h-1 rounded-full bg-black" />
+                    <span className="flex-1">{item}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          agreements: prev.agreements.filter(
+                            (_, i) => i !== idx
+                          ),
+                        }))
+                      }
+                      className="ml-2 text-gray-500 hover:text-red-600 text-sm font-bold transition"
+                    >
+                      ✕
+                    </button>
+                  </li>
                 ))}
-            </ul>
-          )}
+              </ul>
+            ) : (
+              <p className="text-gray-500 italic text-[12px]">
+                Keine besonderen Vereinbarungen
+              </p>
+            )}
+
+            {/* Add new agreement input */}
+            <div className="flex items-center gap-2 mt-2">
+              <input
+                type="text"
+                name="agreementInput"
+                placeholder="Neue Vereinbarung..."
+                value={form.agreementInput || ""}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    agreementInput: e.target.value,
+                  }))
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && form.agreementInput?.trim()) {
+                    e.preventDefault();
+                    setForm((prev) => ({
+                      ...prev,
+                      agreements: [
+                        ...(prev.agreements || []),
+                        prev.agreementInput.trim(),
+                      ],
+                      agreementInput: "",
+                    }));
+                  }
+                }}
+                className="flex-1 border border-gray-300 rounded px-2 py-1 text-[13px] focus:ring-1 focus:ring-black focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (form.agreementInput?.trim()) {
+                    setForm((prev) => ({
+                      ...prev,
+                      agreements: [
+                        ...(prev.agreements || []),
+                        prev.agreementInput.trim(),
+                      ],
+                      agreementInput: "",
+                    }));
+                  }
+                }}
+                className="px-3 py-1 bg-black text-white text-sm rounded hover:bg-gray-800"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          {/* Print view */}
+          <div className="hidden print:block mt-2">
+            {form.agreements?.length > 0 ? (
+              <ul className="list-disc list-outside pl-5 text-[13px]">
+                {form.agreements.map((line, idx) => (
+                  <li key={idx}>{line}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="italic text-[12px] text-gray-700">
+                Keine besonderen Vereinbarungen
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Documents */}

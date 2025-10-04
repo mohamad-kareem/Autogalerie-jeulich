@@ -22,7 +22,7 @@ export default function KaufvertragDetail() {
     firstRegistration: "",
     mileage: "",
     warranty: "",
-    agreements: "",
+    agreements: [],
     kfzBrief: false,
     kfzSchein: false,
     tuev: "",
@@ -41,11 +41,28 @@ export default function KaufvertragDetail() {
   const isAdmin = session?.user?.role === "admin";
   const sanitizeData = (data) => {
     const sanitized = { ...defaultForm };
+
     for (const key in sanitized) {
       const defaultType = typeof sanitized[key];
       const value = data[key];
 
-      if (defaultType === "string") {
+      if (key === "agreements") {
+        if (Array.isArray(value)) {
+          // ✅ Already an array → keep as is
+          sanitized[key] = value;
+        } else if (typeof value === "string" && value.trim() !== "") {
+          // ✅ Old string → split into multiple bullets by line breaks or semicolons
+          sanitized[key] = value
+            .split(/\r?\n|;/) // split on newlines OR semicolons
+            .map((line) => line.trim())
+            .filter(Boolean);
+        } else {
+          // ✅ Nothing there → default empty array
+          sanitized[key] = [];
+        }
+      } else if (Array.isArray(value)) {
+        sanitized[key] = value;
+      } else if (defaultType === "string") {
         sanitized[key] =
           typeof value === "string" ? value : sanitized[key] || "";
       } else if (defaultType === "number") {
@@ -56,6 +73,7 @@ export default function KaufvertragDetail() {
         sanitized[key] = value ?? sanitized[key];
       }
     }
+
     return sanitized;
   };
 
@@ -364,27 +382,104 @@ export default function KaufvertragDetail() {
         {/* Agreements */}
         <div>
           <p className="font-semibold">Besondere Vereinbarungen</p>
-          <textarea
-            name="agreements"
-            rows="3"
-            onChange={handleChange}
-            value={form.agreements || ""}
-            className="input w-full p-1 text-[13px] print:hidden"
-          />
-          {!form.agreements || form.agreements.trim() === "" ? (
-            <p className="text-[11px] hidden print:block mt-2 italic text-gray-700">
-              Keine besonderen Vereinbarungen
-            </p>
-          ) : (
-            <ul className="list-disc pl-5 text-[13px] hidden print:block mt-2">
-              {form.agreements
-                .split("\n")
-                .filter((line) => line.trim() !== "")
-                .map((line, idx) => (
-                  <li key={idx}>{line.replace(/^\* /, "")}</li>
+
+          {/* Screen view */}
+          <div className="print:hidden">
+            {form.agreements?.length > 0 ? (
+              <ul className="space-y-1 text-[13px]">
+                {form.agreements.map((item, idx) => (
+                  <li
+                    key={idx}
+                    className="relative pl-6 flex items-center justify-between group"
+                  >
+                    <span className="absolute left-2 top-2 w-1 h-1 rounded-full bg-black" />
+                    <span className="flex-1">{item}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          agreements: prev.agreements.filter(
+                            (_, i) => i !== idx
+                          ),
+                        }))
+                      }
+                      className="ml-2 text-gray-500 hover:text-red-600 text-sm font-bold transition"
+                    >
+                      ✕
+                    </button>
+                  </li>
                 ))}
-            </ul>
-          )}
+              </ul>
+            ) : (
+              <p className="text-gray-500 italic text-[12px]">
+                Keine besonderen Vereinbarungen
+              </p>
+            )}
+
+            {/* Add new agreement input */}
+            <div className="flex items-center gap-2 mt-2">
+              <input
+                type="text"
+                name="agreementInput"
+                placeholder="Neue Vereinbarung..."
+                value={form.agreementInput || ""}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    agreementInput: e.target.value,
+                  }))
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && form.agreementInput?.trim()) {
+                    e.preventDefault();
+                    setForm((prev) => ({
+                      ...prev,
+                      agreements: [
+                        ...(prev.agreements || []),
+                        prev.agreementInput.trim(),
+                      ],
+                      agreementInput: "",
+                    }));
+                  }
+                }}
+                className="flex-1 border border-gray-300 rounded px-2 py-1 text-[13px]"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (form.agreementInput?.trim()) {
+                    setForm((prev) => ({
+                      ...prev,
+                      agreements: [
+                        ...(prev.agreements || []),
+                        prev.agreementInput.trim(),
+                      ],
+                      agreementInput: "",
+                    }));
+                  }
+                }}
+                className="px-3 py-1 bg-black text-white text-sm rounded hover:bg-gray-800"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          {/* Print view */}
+          <div className="hidden print:block mt-2">
+            {form.agreements?.length > 0 ? (
+              <ul className="list-disc list-outside pl-5 text-[13px]">
+                {form.agreements.map((line, idx) => (
+                  <li key={idx}>{line}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="italic text-[12px] text-gray-700">
+                Keine besonderen Vereinbarungen
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Documents */}
