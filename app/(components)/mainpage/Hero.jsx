@@ -15,7 +15,7 @@ export default function Hero() {
     {
       image: Bild2,
       title: "Exklusive Fahrzeugkollektion",
-      subtitle: "TÜV-geprüfte Premium-Fahrzeuge mit flexibler Finanzierung.",
+      subtitle: "TÜV-geprüfte Premium-Fahrzeuge mit Finanzierung.",
       features: ["12 Monate Garantie", "Sofort-Zusage"],
       cta: {
         primary: { text: "Fahrzeuge entdecken", href: "/gebrauchtwagen" },
@@ -105,33 +105,8 @@ export default function Hero() {
         />
       </div>
 
-      {/* Digital Rain Effect - Reduced on mobile */}
-      <div className="absolute inset-0 opacity-10 md:opacity-20">
-        {[...Array(15)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute text-red-400/30 text-xs md:text-sm font-mono"
-            style={{
-              left: `${5 + i * 6}%`,
-              top: "-20px",
-            }}
-            animate={{
-              y: ["0vh", "100vh"],
-              opacity: [0, 1, 0],
-            }}
-            transition={{
-              duration: 2 + Math.random() * 3,
-              delay: Math.random() * 2,
-              repeat: Infinity,
-            }}
-          >
-            {Math.random().toString(36).substring(2, 3)}
-          </motion.div>
-        ))}
-      </div>
-
       {/* Main Content - Mobile first column layout */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12 flex flex-col lg:grid lg:grid-cols-2 gap-8 md:gap-16 items-center">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 py-5 md:py-12 flex flex-col lg:grid lg:grid-cols-2 gap-8 md:gap-16 items-center">
         {/* RIGHT SIDE - Larger Frame on Desktop */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -162,9 +137,9 @@ export default function Hero() {
               {/* Cyber Header */}
               <div className="flex items-center justify-between px-3 md:px-4 lg:px-6 py-2 md:py-3 lg:py-4 border-b border-red-500/30 bg-gradient-to-r from-red-900/20 to-black/50">
                 <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2">
-                  <div className="w-1.5 h-1.5 md:w-2 md:h-2 lg:w-2.5 lg:h-2.5 rounded-full bg-red-500 shadow-[0_0_4px_#ef4444] md:shadow-[0_0_6px_#ef4444] lg:shadow-[0_0_8px_#ef4444]" />
-                  <div className="w-1.5 h-1.5 md:w-2 md:h-2 lg:w-2.5 lg:h-2.5 rounded-full bg-red-400 shadow-[0_0_4px_#f87171] md:shadow-[0_0_6px_#f87171] lg:shadow-[0_0_8px_#f87171]" />
-                  <div className="w-1.5 h-1.5 md:w-2 md:h-2 lg:w-2.5 lg:h-2.5 rounded-full bg-red-300 shadow-[0_0_4px_#fca5a5] md:shadow-[0_0_6px_#fca5a5] lg:shadow-[0_0_8px_#fca5a5]" />
+                  <div className="w-1.5 h-1.5 md:w-2 md:h-2 lg:w-2.5 lg:h-2.5 rounded-full bg-red-500 " />
+                  <div className="w-1.5 h-1.5 md:w-2 md:h-2 lg:w-2.5 lg:h-2.5 rounded-full bg-red-400 " />
+                  <div className="w-1.5 h-1.5 md:w-2 md:h-2 lg:w-2.5 lg:h-2.5 rounded-full bg-red-300 " />
                 </div>
                 <div className="text-xs md:text-sm font-bold text-red-200 tracking-wider font-mono">
                   AUTOGALERIE JÜLICH
@@ -173,7 +148,7 @@ export default function Hero() {
               </div>
 
               {/* Holographic Stage - Larger on desktop */}
-              <div className="relative h-48 sm:h-56 md:h-64 lg:h-80 xl:h-96 bg-gradient-to-br from-gray-900 via-black to-red-900/30 overflow-hidden">
+              <div className="relative h-48 sm:h-56 md:h-64 lg:h-80 xl:h-96 bg-gradient-to-br from-gray-90 via-black to-red-900/30 overflow-hidden">
                 {/* Animated Grid */}
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(220,38,38,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.15)_1px,transparent_1px)] bg-[size:20px_20px] md:bg-[size:30px_30px] lg:bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_70%)]" />
 
@@ -292,12 +267,16 @@ export default function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="font-bold leading-tight text-xl sm:text-2xl md:text-4xl "
+              className="
+    font-bold leading-tight 
+    text-xl sm:text-2xl md:text-4xl 
+    flex flex-wrap items-baseline gap-2
+    justify-center lg:justify-start
+  "
             >
               <span className="bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
                 {slide.title.split(" ")[0]}
               </span>
-              <br />
               <span className="text-white text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl">
                 {slide.title.split(" ").slice(1).join(" ")}
               </span>
@@ -308,7 +287,7 @@ export default function Hero() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.6 }}
-              className="text-sm md:text-base lg:text-lg text-gray-300 max-w-md mx-auto lg:mx-0 leading-relaxed font-light"
+              className="text-xs md:text-base lg:text-lg text-gray-300 max-w-md mx-auto lg:mx-0 leading-relaxed font-light"
             >
               {slide.subtitle}
             </motion.p>
@@ -323,18 +302,18 @@ export default function Hero() {
           >
             <Link
               href={slide.cta.primary.href}
-              className="group relative px-5 py-2.5 md:px-6 md:py-3 lg:px-4 lg:py-3.5 bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 rounded-lg font-semibold text-sm md:text-base lg:text-lg transition-all duration-300 hover:scale-105 hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] overflow-hidden"
+              className="
+    group relative 
+    px-5 py-2.5 md:px-6 md:py-3 lg:px-4 lg:py-3.5 
+    rounded-lg font-semibold text-sm md:text-base lg:text-lg
+    bg-gradient-to-br from-red-600 to-black
+    hover:from-red-600 hover:to-red-800
+    text-white transition-all duration-300
+  "
             >
-              <span className="relative z-10 flex items-center gap-2 justify-center">
+              <span className="group-hover:text-white transition-colors">
                 {slide.cta.primary.text}
-                <motion.span
-                  animate={{ x: [0, 3, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
-                  →
-                </motion.span>
               </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
             </Link>
 
             <Link
@@ -353,7 +332,7 @@ export default function Hero() {
             className="flex flex-wrap items-center justify-center lg:justify-start gap-3 md:gap-4 pt-4 md:pt-6"
           >
             {[
-              "24 Monate Garantie",
+              "12 Monate Garantie",
               "+100 Fahrzeuge",
               "Persönliche Beratung",
             ].map((item) => (
