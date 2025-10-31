@@ -173,6 +173,14 @@ export default function KaufvertragClientForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // ✅ Validation for required fields
+    if (!form.phone.trim() || !form.email.trim()) {
+      toast.error(
+        "Bitte füllen Sie Telefon und E-Mail aus, bevor Sie fortfahren."
+      );
+      return;
+    }
+
     const cleanedForm = {
       ...form,
       agreements: (form.agreements || []).filter((line) => line.trim() !== ""),
@@ -342,6 +350,7 @@ export default function KaufvertragClientForm() {
           <input
             type="text"
             name="phone"
+            required
             value={form.phone || ""}
             autoComplete="off"
             onChange={handleChange}
@@ -354,6 +363,7 @@ export default function KaufvertragClientForm() {
           <input
             type="email"
             name="email"
+            required
             value={form.email || ""}
             autoComplete="off"
             onChange={handleChange}
