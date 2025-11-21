@@ -290,8 +290,8 @@ export default function ScheinTable({
   return (
     <>
       {/* Tabelle */}
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-        <div>
+      <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div className="w-full overflow-x-auto custom-scroll">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr className="text-left text-xs font-medium uppercase tracking-wider text-gray-500">

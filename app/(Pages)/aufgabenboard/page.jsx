@@ -347,7 +347,7 @@ export default function AufgabenboardPage() {
   const totalTasks = Object.keys(board.tasks || {}).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-900 via-amber-900/90 to-slate-900 text-slate-50">
+    <div className="pt-1  h-screen overflow-y-hidden bg-gradient-to-b from-amber-900 via-amber-900/90 to-slate-900 text-slate-50">
       <div className="mx-auto flex min-h-screen w-full flex-col px-3 pb-4 pt-1 sm:px-6 lg:px-4">
         {/* Header */}
         <header className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between">
