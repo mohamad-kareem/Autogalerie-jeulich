@@ -39,7 +39,7 @@ export async function POST(req) {
       invoiceNumber: newInvoiceNumber,
     });
 
-    // 6️⃣ CarSchein sync
+    // 6️⃣ CarSchein sync + Fahrzeug als verkauft markieren
     const { carType, vin, agreements, issuer } = data;
     if (carType && vin) {
       let parsedNotes = [];
@@ -56,16 +56,24 @@ export async function POST(req) {
       const existingSchein = await CarSchein.findOne({ finNumber: vin });
 
       if (existingSchein) {
+        const update = {};
+
+        // Notizen mergen, wenn vorhanden
         if (parsedNotes.length > 0) {
           const combinedNotes = [
             ...(existingSchein.notes || []),
             ...parsedNotes,
           ];
           const uniqueNotes = [...new Set(combinedNotes)];
-          await CarSchein.findByIdAndUpdate(existingSchein._id, {
-            $set: { notes: uniqueNotes },
-          });
+          update.notes = uniqueNotes;
         }
+
+        // 🔴 Hier: Fahrzeug als verkauft markieren
+        update.keySold = true;
+
+        await CarSchein.findByIdAndUpdate(existingSchein._id, {
+          $set: update,
+        });
       } else {
         await CarSchein.create({
           carName: carType,
@@ -73,6 +81,8 @@ export async function POST(req) {
           notes: parsedNotes,
           assignedTo: "",
           owner: issuer === "karim" ? "Karim" : "Alawie",
+          // 🔴 Neuer Schein aus Vertrag = direkt verkauft
+          keySold: true,
         });
       }
     }

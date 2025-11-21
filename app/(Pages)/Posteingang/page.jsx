@@ -15,21 +15,21 @@ export default function AdminDashboard() {
 
   if (status === "loading") {
     return (
-      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-red-950">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-slate-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-slate-500"></div>
       </div>
     );
   }
 
   if (!session?.user) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-red-950 text-white">
+      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-slate-950 text-white">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-gray-900/70 backdrop-blur-md p-8 rounded-2xl border border-gray-800 shadow-xl max-w-lg text-center"
         >
-          <FiXCircle className="mx-auto text-red-500 text-5xl mb-4" />
+          <FiXCircle className="mx-auto text-slate-500 text-5xl mb-4" />
           <h2 className="text-2xl font-bold mb-2">Zugriff verweigert</h2>
           <p className="text-gray-400">
             Sie sind nicht berechtigt, diese Seite zu sehen. Bitte wenden Sie
@@ -41,10 +41,10 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-red-950 text-white relative p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-slate-950 text-white relative p-4 md:p-6">
       {/* Glow Background */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-60 h-60 bg-red-500/10 blur-3xl rounded-full" />
+        <div className="absolute top-0 left-1/3 w-60 h-60 bg-slate-500/10 blur-3xl rounded-full" />
         <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-purple-500/10 blur-3xl rounded-full" />
       </div>
 
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
           className="mb-3 md:mb-4"
         >
           <h1 className="text-xl md:text-2xl font-bold flex items-center gap-3">
-            <FaCar className="text-red-500" />
+            <FaCar className="text-slate-500" />
             Posteingang
           </h1>
         </motion.div>
@@ -71,14 +71,14 @@ export default function AdminDashboard() {
             onClick={() => setViewMode("submissions")}
             className={`flex-1 py-1  rounded-md text-sm font-medium transition ${
               viewMode === "submissions"
-                ? "bg-red-600 text-white shadow"
+                ? "bg-slate-600 text-white shadow"
                 : "text-gray-300 hover:bg-gray-800"
             }`}
           >
             <FiMessageSquare className="inline mr-2" />
             Kontaktanfragen
             {unreadCount > 0 && (
-              <span className="ml-2 bg-red-500 text-xs px-2 py-0.5 rounded-full">
+              <span className="ml-2 bg-slate-500 text-xs px-2 py-0.5 rounded-full">
                 {unreadCount}
               </span>
             )}
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
             onClick={() => setViewMode("cars")}
             className={`flex-1 py-1  rounded-md text-sm font-medium transition ${
               viewMode === "cars"
-                ? "bg-red-600 text-white shadow"
+                ? "bg-slate-600 text-white shadow"
                 : "text-gray-300 hover:bg-gray-800"
             }`}
           >

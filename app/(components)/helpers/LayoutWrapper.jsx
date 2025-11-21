@@ -20,7 +20,8 @@ export default function LayoutWrapper({ children }) {
     pathname.startsWith("/Reg") ||
     pathname.startsWith("/kaufvertrag") ||
     pathname.startsWith("/Auto-scheins") ||
-    pathname.startsWith("/Autoteil");
+    pathname.startsWith("/Autoteil") ||
+    pathname.startsWith("/aufgabenboard");
 
   return (
     <>

@@ -31,8 +31,8 @@ export default function Rating() {
         {/* Text Content */}
         <div className="space-y-6">
           <div className="flex items-center gap-3">
-            <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-400" />
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-yellow-300">
+            <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-blue-400" />
+            <h2 className="text-2xl font-playfair leading-tight sm:text-3xl md:text-4xl  text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-300">
               Kundenzufriedenheit
             </h2>
           </div>
@@ -47,16 +47,18 @@ export default function Rating() {
           <div className="flex flex-col sm:flex-row gap-4 items-start">
             <Link
               href="https://www.mobile.de/bewertungen/AutogalerieJuelich#1"
-              passHref
+              className="
+                            inline-flex items-center justify-center 
+                            rounded-full border border-white/60 px-5 py-2 
+                            text-sm md:text-base font-semibold text-white 
+                            transition 
+                            hover:border-blue-400 hover:text-blue-200
+                          "
             >
-              <Button size="lg" className="group">
-                <span className="group-hover:text-yellow-300 transition-colors">
-                  Geben Sie uns Ihr Feedback
-                </span>
-              </Button>
+              Beratung vereinbaren
             </Link>
 
-            <div className="flex items-center gap-2 text-yellow-400">
+            <div className="flex items-center gap-2 text-blue-400 mt-2">
               <div className="flex">
                 {[...Array(5)].map((_, i) => (
                   <StarIcon
@@ -76,7 +78,7 @@ export default function Rating() {
           whileHover={{ scale: 1.03 }}
           transition={{ type: "spring", stiffness: 300 }}
         >
-          <div className="relative p-1 bg-gradient-to-br from-yellow-400 to-red-500 rounded-3xl shadow-2xl w-full max-w-xs">
+          <div className="relative p-1 bg-gradient-to-br from-blue-400 to-blue-900 rounded-3xl shadow-2xl w-full max-w-xs">
             <div className="bg-black p-3 sm:p-4 rounded-2xl">
               <Image
                 src={Rate}
@@ -90,7 +92,7 @@ export default function Rating() {
             </div>
 
             {/* Floating badge - now smaller */}
-            <div className="absolute -bottom-3 -right-3 bg-yellow-400 text-black px-3 py-1 rounded-full font-bold text-xs sm:text-sm shadow-lg">
+            <div className="absolute -bottom-3 -right-3 bg-blue-400 text-black px-3 py-1 rounded-full font-bold text-xs sm:text-sm shadow-lg">
               TOP BEWERTET
             </div>
           </div>
@@ -98,7 +100,7 @@ export default function Rating() {
       </motion.div>
 
       {/* Glow Effects */}
-      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-64 h-64 bg-gradient-to-r from-yellow-500/20 to-red-500/20 rounded-full blur-[80px] pointer-events-none" />
+      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-64 h-64 bg-gradient-to-r from-blue-500/20 to-blue-900/20 rounded-full blur-[80px] pointer-events-none" />
     </section>
   );
 }

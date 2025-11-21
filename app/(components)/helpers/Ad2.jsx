@@ -21,23 +21,23 @@ export default function OpelPremiumAd() {
           className="text-center mb-14 sm:mb-16"
         >
           <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-12 h-px bg-gray-300"></div>
-            <span className="text-gray-500 font-medium text-sm tracking-widest uppercase">
+            <div className="w-12 h-px bg-slate-300"></div>
+            <span className="text-slate-500 font-medium text-sm tracking-widest uppercase">
               Premium Kollektion
             </span>
-            <div className="w-12 h-px bg-gray-300"></div>
+            <div className="w-12 h-px bg-slate-300"></div>
           </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-light text-gray-900 mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-light text-slate-900 mb-4">
             Die Essenz von <span className="font-semibold">Opel</span>
           </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base">
+          <p className="text-slate-600 max-w-2xl mx-auto text-sm sm:text-base">
             Deutsche Ingenieurskunst in Perfektion. Entdecken Sie unsere
             exklusive Auswahl an Fahrzeugen für höchste Ansprüche.
           </p>
         </motion.div>
 
         {/* Main content */}
-        <div className="bg-gray-50 rounded-none overflow-hidden border border-gray-100">
+        <div className="bg-slate-50 rounded-none overflow-hidden border border-slate-100">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
             {/* Image side */}
             <motion.div
@@ -68,12 +68,12 @@ export default function OpelPremiumAd() {
               className="p-6 sm:p-10 md:p-12 lg:p-16 flex flex-col justify-center"
             >
               <div className="mb-6 sm:mb-8">
-                <h3 className="text-lg sm:text-3xl font-light text-gray-900 mb-5 sm:mb-6">
+                <h3 className="text-lg sm:text-3xl font-light text-slate-900 mb-5 sm:mb-6">
                   Präzision trifft auf{" "}
                   <span className="font-semibold">Luxus</span>
                 </h3>
 
-                <p className="text-gray-600 mb-8 text-sm sm:text-base">
+                <p className="text-slate-600 mb-8 text-sm sm:text-base">
                   Unsere Opel Premium Kollektion steht für höchste Qualität.
                   Jedes Fahrzeug wird sorgfältig ausgewählt und geprüft, um
                   unseren Standards zu entsprechen.
@@ -82,30 +82,30 @@ export default function OpelPremiumAd() {
                 {/* Feature grid */}
                 <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-10 sm:mb-12">
                   <div>
-                    <h4 className=" text-xs sm:text-sm font-medium text-gray-900 mb-1">
+                    <h4 className=" text-xs sm:text-sm font-medium text-slate-900 mb-1">
                       12 Monate Garantie
                     </h4>
-                    <p className="text-gray-500 text-xs">Umfassender Schutz</p>
+                    <p className="text-slate-500 text-xs">Umfassender Schutz</p>
                   </div>
                   <div>
-                    <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-1">
+                    <h4 className="text-xs sm:text-sm font-medium text-slate-900 mb-1">
                       Premium Auswahl
                     </h4>
-                    <p className="text-gray-500 text-xs">
+                    <p className="text-slate-500 text-xs">
                       Sorgfältig ausgewählt
                     </p>
                   </div>
                   <div>
-                    <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-1">
+                    <h4 className="text-xs sm:text-sm font-medium text-slate-900 mb-1">
                       Effiziente Leistung
                     </h4>
-                    <p className="text-gray-500 text-xs">Geringer Verbrauch</p>
+                    <p className="text-slate-500 text-xs">Geringer Verbrauch</p>
                   </div>
                   <div>
-                    <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-1">
+                    <h4 className="text-xs sm:text-sm font-medium text-slate-900 mb-1">
                       Exklusiver Service
                     </h4>
-                    <p className="text-gray-500 text-xs">
+                    <p className="text-slate-500 text-xs">
                       Persönliche Betreuung
                     </p>
                   </div>
@@ -115,14 +115,14 @@ export default function OpelPremiumAd() {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link
                     href="/gebrauchtwagen/689393c6576dad3d00c02f38"
-                    className="px-6 sm:px-8 py-3 bg-black hover:bg-gray-800 text-white font-medium rounded-none transition-all duration-300 flex items-center justify-center gap-2 group text-sm sm:text-base"
+                    className="px-6 sm:px-8 py-3 bg-slate-800 hover:bg-slate-800 text-white font-medium rounded-none transition-all duration-300 flex items-center justify-center gap-2 group text-sm sm:text-base"
                   >
                     entdecken
                     <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                   </Link>
                   <Link
                     href="/kontakt"
-                    className="px-6 sm:px-8 py-3 bg-transparent border border-gray-300 hover:border-black text-gray-800 hover:text-black font-medium rounded-none transition-all duration-300 flex items-center justify-center text-sm sm:text-base"
+                    className="px-6 sm:px-8 py-3 bg-transparent border border-slate-300 hover:border-slate-700 text-slate-800 hover:text-slate-700 font-medium rounded-none transition-all duration-300 flex items-center justify-center text-sm sm:text-base"
                   >
                     Beratung anfragen
                   </Link>

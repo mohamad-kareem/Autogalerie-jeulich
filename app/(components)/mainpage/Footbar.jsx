@@ -1,9 +1,10 @@
 import React from "react";
 import { FaFacebook, FaUserShield } from "react-icons/fa";
 import Link from "next/link";
+
 const Footbar = () => {
   return (
-    <footer className="bg-gradient-to-br from-black to-red-950 text-white py-16 px-6 md:px-20 w-full border-t-4 border-red-600">
+    <footer className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white py-16 px-6 md:px-20 w-full border-t border-slate-700/70">
       <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
         {/* Main Content */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
@@ -11,7 +12,7 @@ const Footbar = () => {
           <div className="md:col-span-1">
             <div className="flex items-center mb-4">
               <svg
-                className="w-10 h-10 text-red-500 mr-2"
+                className="w-10 h-10 text-blue-400 mr-2"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -25,29 +26,29 @@ const Footbar = () => {
                 />
               </svg>
               <span className="text-xl font-bold text-white">
-                Autogalerie <span className="text-red-500">Jülich</span>
+                Autogalerie <span className="text-blue-400">Jülich</span>
               </span>
             </div>
-            <p className="text-gray-400 text-sm mb-4">
+            <p className="text-slate-400 text-sm mb-4 leading-relaxed">
               Ihr zuverlässiger Partner für hochwertige Fahrzeuge und
               exzellenten Service.
             </p>
-            <div className="flex justify-center space-x-4 mt-4">
+            <div className="flex space-x-4 mt-6">
               <a
                 href="https://www.facebook.com/p/Autogalerie-J%C3%BClich-100063891427082/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-white transition"
+                className="text-slate-400 hover:text-blue-400 transition-colors duration-300 p-2 rounded-lg hover:bg-slate-800/50"
               >
                 <FaFacebook className="w-5 h-5" />
               </a>
               <Link
                 href="/login"
-                className="text-gray-400 hover:text-white transition group relative"
-                title="Admin Anmeldung "
+                className="text-slate-400 hover:text-blue-400 transition-colors duration-300 p-2 rounded-lg hover:bg-slate-800/50 group relative"
+                title="Admin Anmeldung"
               >
                 <FaUserShield className="w-5 h-5" />
-                <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs  text-gray-500 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs text-slate-500 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap bg-slate-900/90 backdrop-blur-sm">
                   Admin Bereich
                 </span>
               </Link>
@@ -56,13 +57,13 @@ const Footbar = () => {
 
           {/* Opening Hours */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-6 relative pb-2 after:absolute after:bottom-0 after:left-0 after:w-12 after:h-0.5 after:bg-red-500">
+            <h3 className="text-lg font-semibold text-white mb-6 relative pb-2 after:absolute after:bottom-0 after:left-0 after:w-12 after:h-0.5 after:bg-blue-500">
               Öffnungszeiten
             </h3>
-            <ul className="text-gray-400 space-y-3">
-              <li className="flex items-start">
+            <ul className="text-slate-400 space-y-3">
+              <li className="flex items-start group">
                 <svg
-                  className="w-5 h-5 text-red-500 mr-2 mt-0.5 flex-shrink-0"
+                  className="w-5 h-5 text-blue-400 mr-2 mt-0.5 flex-shrink-0 group-hover:text-blue-300 transition-colors"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -75,16 +76,16 @@ const Footbar = () => {
                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <div>
-                  <span className="font-medium text-white">
+                <div className="group-hover:text-slate-300 transition-colors">
+                  <span className="font-medium text-slate-200">
                     Montag bis Freitag:
                   </span>{" "}
                   10:00 – 18:00 Uhr
                 </div>
               </li>
-              <li className="flex items-start">
+              <li className="flex items-start group">
                 <svg
-                  className="w-5 h-5 text-red-500 mr-2 mt-0.5 flex-shrink-0"
+                  className="w-5 h-5 text-blue-400 mr-2 mt-0.5 flex-shrink-0 group-hover:text-blue-300 transition-colors"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -97,14 +98,14 @@ const Footbar = () => {
                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <div>
-                  <span className="font-medium text-white">Samstag:</span> 10:00
-                  – 15:00 Uhr
+                <div className="group-hover:text-slate-300 transition-colors">
+                  <span className="font-medium text-slate-200">Samstag:</span>{" "}
+                  10:00 – 15:00 Uhr
                 </div>
               </li>
-              <li className="flex items-start">
+              <li className="flex items-start group">
                 <svg
-                  className="w-5 h-5 text-red-500 mr-2 mt-0.5 flex-shrink-0"
+                  className="w-5 h-5 text-blue-400 mr-2 mt-0.5 flex-shrink-0 group-hover:text-blue-300 transition-colors"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -117,9 +118,9 @@ const Footbar = () => {
                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <div>
-                  <span className="font-medium text-white">Sonntag:</span> nach
-                  telefonischer Absprache
+                <div className="group-hover:text-slate-300 transition-colors">
+                  <span className="font-medium text-slate-200">Sonntag:</span>{" "}
+                  nach telefonischer Absprache
                 </div>
               </li>
             </ul>
@@ -127,13 +128,13 @@ const Footbar = () => {
 
           {/* Contact Information */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-6 relative pb-2 after:absolute after:bottom-0 after:left-0 after:w-12 after:h-0.5 after:bg-red-500">
+            <h3 className="text-lg font-semibold text-white mb-6 relative pb-2 after:absolute after:bottom-0 after:left-0 after:w-12 after:h-0.5 after:bg-blue-500">
               Kontakt
             </h3>
-            <ul className="text-gray-400 space-y-3">
-              <li className="flex items-start">
+            <ul className="text-slate-400 space-y-3">
+              <li className="flex items-start group">
                 <svg
-                  className="w-5 h-5 text-red-500 mr-2 mt-0.5 flex-shrink-0"
+                  className="w-5 h-5 text-blue-400 mr-2 mt-0.5 flex-shrink-0 group-hover:text-blue-300 transition-colors"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -147,15 +148,15 @@ const Footbar = () => {
                   />
                 </svg>
                 <a
-                  href="mailto:info@autogalerie-juelich.de"
-                  className="hover:text-white transition"
+                  href="mailto:autogalerie.jülich@web.de"
+                  className="hover:text-blue-400 transition-colors duration-300"
                 >
                   autogalerie.jülich@web.de
                 </a>
               </li>
-              <li className="flex items-start">
+              <li className="flex items-start group">
                 <svg
-                  className="w-5 h-5 text-red-500 mr-2 mt-0.5 flex-shrink-0"
+                  className="w-5 h-5 text-blue-400 mr-2 mt-0.5 flex-shrink-0 group-hover:text-blue-300 transition-colors"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -170,14 +171,14 @@ const Footbar = () => {
                 </svg>
                 <a
                   href="tel:+4924619163780"
-                  className="hover:text-white transition"
+                  className="hover:text-blue-400 transition-colors duration-300"
                 >
                   +49 (0)2461 9163780
                 </a>
               </li>
-              <li className="flex items-start mt-6">
+              <li className="flex items-start mt-6 group">
                 <svg
-                  className="w-5 h-5 text-red-500 mr-2 mt-0.5 flex-shrink-0"
+                  className="w-5 h-5 text-blue-400 mr-2 mt-0.5 flex-shrink-0 group-hover:text-blue-300 transition-colors"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -196,8 +197,8 @@ const Footbar = () => {
                     d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                   />
                 </svg>
-                <div>
-                  <p className="font-medium text-white">Adresse</p>
+                <div className="group-hover:text-slate-300 transition-colors">
+                  <p className="font-medium text-slate-200">Adresse</p>
                   <p>Alte Dürenerstraße 4 </p>
                   <p>52428 Jülich</p>
                 </div>
@@ -207,17 +208,17 @@ const Footbar = () => {
 
           {/* Navigation Links */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-6 relative pb-2 after:absolute after:bottom-0 after:left-0 after:w-12 after:h-0.5 after:bg-red-500">
+            <h3 className="text-lg font-semibold text-white mb-6 relative pb-2 after:absolute after:bottom-0 after:left-0 after:w-12 after:h-0.5 after:bg-blue-500">
               Rechtliches
             </h3>
             <ul className="space-y-3">
               <li>
                 <a
-                  href="impressum"
-                  className="text-gray-400 hover:text-white transition flex items-center group"
+                  href="/impressum"
+                  className="text-slate-400 hover:text-blue-400 transition-colors duration-300 flex items-center group"
                 >
                   <svg
-                    className="w-4 h-4 text-red-500 mr-2 transform group-hover:translate-x-1 transition"
+                    className="w-4 h-4 text-blue-400 mr-2 transform group-hover:translate-x-1 transition-transform duration-300"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -235,11 +236,11 @@ const Footbar = () => {
               </li>
               <li>
                 <a
-                  href="Datenschutz"
-                  className="text-gray-400 hover:text-white transition flex items-center group"
+                  href="/Datenschutz"
+                  className="text-slate-400 hover:text-blue-400 transition-colors duration-300 flex items-center group"
                 >
                   <svg
-                    className="w-4 h-4 text-red-500 mr-2 transform group-hover:translate-x-1 transition"
+                    className="w-4 h-4 text-blue-400 mr-2 transform group-hover:translate-x-1 transition-transform duration-300"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -260,12 +261,19 @@ const Footbar = () => {
         </div>
 
         {/* Bottom Text */}
-        <div className="flex flex-col md:flex-row justify-center items-center gap-4">
-          <p className="text-sm text-gray-500 mb-4 md:mb-0">
-            © 2025{" "}
-            <span className="font-semibold text-white">Autogalerie Jülich</span>
-            . Alle Rechte vorbehalten.
-          </p>
+        <div className="pt-8 border-t border-slate-700/50">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <p className="text-sm text-slate-500 text-center md:text-left">
+              © 2025{" "}
+              <span className="font-semibold text-slate-300">
+                Autogalerie Jülich
+              </span>
+              . Alle Rechte vorbehalten.
+            </p>
+            <p className="text-xs text-slate-600 mt-2 md:mt-0">
+              Professionelle Fahrzeugdienstleistungen seit Jahren
+            </p>
+          </div>
         </div>
       </div>
     </footer>

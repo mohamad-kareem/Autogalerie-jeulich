@@ -32,7 +32,7 @@ import ImageSlider from "@/app/(Pages)/gebrauchtwagen/[id]/ImageSlider";
 
 export default function CarsTable() {
   const [cars, setCars] = useState([]);
-  const [filteredCars, setFilteredCars] = useState([]);
+  const [filteslateCars, setFilteslateCars] = useState([]);
   const [selectedCar, setSelectedCar] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +51,7 @@ export default function CarsTable() {
       const res = await fetch("/api/manualcars");
       const data = await res.json();
       setCars(data);
-      setFilteredCars(data);
+      setFilteslateCars(data);
     } catch {
       toast.error("Fahrzeuge konnten nicht geladen werden");
     } finally {
@@ -109,7 +109,7 @@ export default function CarsTable() {
   const renderDetailItem = (icon, label, value, unit = "") => {
     return (
       <div className="flex items-start space-x-3 p-3 bg-gray-800/40 rounded-lg transition-colors hover:bg-gray-700/40 border border-gray-800 ">
-        <div className="text-red-400 mt-1">{icon}</div>
+        <div className="text-slate-400 mt-1">{icon}</div>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wider truncate ">
             {label}
@@ -126,20 +126,20 @@ export default function CarsTable() {
   // Pagination
   const indexOfLast = currentPage * carsPerPage;
   const indexOfFirst = indexOfLast - carsPerPage;
-  const currentCars = filteredCars.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filteredCars.length / carsPerPage);
+  const currentCars = filteslateCars.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteslateCars.length / carsPerPage);
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-red-950">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-slate-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-slate-500"></div>
       </div>
     );
   }
 
   if (cars.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-950 to-red-950 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 to-slate-950 flex items-center justify-center">
         <div className="bg-gray-900/60 backdrop-blur-md rounded-xl shadow-sm p-8 text-center border border-gray-800">
           <FiInfo className="mx-auto text-gray-400 text-4xl mb-4" />
           <h3 className="text-xl font-medium text-gray-200 mb-2">
@@ -198,11 +198,11 @@ export default function CarsTable() {
                       {car.make} {car.model}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs bg-red-900/40 text-red-300 px-2 py-0.5 rounded-full border border-red-800/50">
+                      <span className="text-xs bg-slate-900/40 text-slate-300 px-2 py-0.5 rounded-full border border-slate-800/50">
                         {car.registration || "Keine Angabe"}
                       </span>
                       {car.fuel && (
-                        <span className="text-xs bg-red-900/40 text-red-300 px-2 py-0.5 rounded-full border border-red-800/50">
+                        <span className="text-xs bg-slate-900/40 text-slate-300 px-2 py-0.5 rounded-full border border-slate-800/50">
                           {car.fuel}
                         </span>
                       )}
@@ -221,7 +221,7 @@ export default function CarsTable() {
                 </div>
                 <div className="col-span-2">
                   <div className="text-sm text-gray-400 flex items-center gap-1">
-                    <FiCalendar className="text-red-400" size={14} />
+                    <FiCalendar className="text-slate-400" size={14} />
                     <span>{formatDate(car.createdAt)}</span>
                   </div>
                 </div>
@@ -232,7 +232,7 @@ export default function CarsTable() {
                       setSelectedCar(car);
                       setActiveTab("übersicht");
                     }}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-red-600 rounded-md transition-colors duration-200 border border-gray-700 hover:border-red-500"
+                    className="p-2 text-gray-400 hover:text-white hover:bg-slate-600 rounded-md transition-colors duration-200 border border-gray-700 hover:border-slate-500"
                     title="Details anzeigen"
                   >
                     <FiEye />
@@ -242,7 +242,7 @@ export default function CarsTable() {
                       e.stopPropagation();
                       handleDeleteCar(car._id);
                     }}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-red-600 rounded-md transition-colors duration-200 border border-gray-700 hover:border-red-500"
+                    className="p-2 text-gray-400 hover:text-white hover:bg-slate-600 rounded-md transition-colors duration-200 border border-gray-700 hover:border-slate-500"
                     title="Fahrzeug löschen"
                   >
                     <FiTrash2 />
@@ -296,7 +296,7 @@ export default function CarsTable() {
                       setSelectedCar(car);
                       setActiveTab("übersicht");
                     }}
-                    className="p-2 text-gray-400 hover:text-red-400 rounded-md hover:bg-red-900/20 transition-colors border border-gray-700"
+                    className="p-2 text-gray-400 hover:text-slate-400 rounded-md hover:bg-slate-900/20 transition-colors border border-gray-700"
                     title="Details anzeigen"
                   >
                     <FiEye />
@@ -312,7 +312,7 @@ export default function CarsTable() {
               <p className="text-gray-300">
                 Seite <span className="font-medium">{currentPage}</span> von{" "}
                 <span className="font-medium">{totalPages}</span> –{" "}
-                {filteredCars.length} Einträge
+                {filteslateCars.length} Einträge
               </p>
               <div className="flex gap-1">
                 <button
@@ -343,7 +343,7 @@ export default function CarsTable() {
                       onClick={() => setCurrentPage(pageNum)}
                       className={`px-3 py-1 rounded ${
                         currentPage === pageNum
-                          ? "bg-red-600 text-white"
+                          ? "bg-slate-600 text-white"
                           : "bg-gray-700 hover:bg-gray-600 text-gray-300"
                       }`}
                     >
@@ -392,7 +392,7 @@ export default function CarsTable() {
             </span>
 
             <div className="inline-block align-bottom bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full mx-4 border border-gray-800">
-              <div className="bg-gradient-to-r from-black to-red-900 px-6 py-3 border-b border-gray-800">
+              <div className="bg-gradient-to-r from-black to-slate-900 px-6 py-3 border-b border-gray-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div>
@@ -407,7 +407,7 @@ export default function CarsTable() {
                   </div>
                   <button
                     onClick={() => setSelectedCar(null)}
-                    className="text-gray-400 hover:text-white transition-colors hover:bg-red-600/20 p-1 rounded-md"
+                    className="text-gray-400 hover:text-white transition-colors hover:bg-slate-600/20 p-1 rounded-md"
                   >
                     <FiX className="h-6 w-6" />
                   </button>
@@ -437,7 +437,7 @@ export default function CarsTable() {
                           onClick={() => setActiveTab(tab)}
                           className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
                             activeTab === tab
-                              ? "border-red-500 text-red-400"
+                              ? "border-slate-500 text-slate-400"
                               : "border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-600"
                           }`}
                         >
@@ -551,7 +551,7 @@ export default function CarsTable() {
 
                     <div>
                       <h4 className="text-lg font-semibold text-gray-200 mb-3 flex items-center">
-                        <FiInfo className="mr-2 text-red-400" />
+                        <FiInfo className="mr-2 text-slate-400" />
                         Beschreibung
                       </h4>
                       <div className="bg-gray-800/40 p-4 rounded-lg border border-gray-700">
@@ -672,7 +672,7 @@ export default function CarsTable() {
                   <div className="space-y-6">
                     <div>
                       <h4 className="text-lg font-semibold text-gray-200 mb-3 flex items-center">
-                        <MdColorLens className="mr-2 text-red-400" />
+                        <MdColorLens className="mr-2 text-slate-400" />
                         Farben & Materialien
                       </h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -706,7 +706,7 @@ export default function CarsTable() {
 
                     <div>
                       <h4 className="text-lg font-semibold text-gray-200 mb-3 flex items-center">
-                        <FiStar className="mr-2 text-red-400" />
+                        <FiStar className="mr-2 text-slate-400" />
                         Serienausstattung
                       </h4>
                       {selectedCar.features?.length > 0 ? (
@@ -730,7 +730,7 @@ export default function CarsTable() {
 
                     <div>
                       <h4 className="text-lg font-semibold text-gray-200 mb-3 flex items-center">
-                        <FiStar className="mr-2 text-red-400" />
+                        <FiStar className="mr-2 text-slate-400" />
                         Sonderausstattung
                       </h4>
                       {selectedCar.specialFeatures?.length > 0 ? (
@@ -738,9 +738,9 @@ export default function CarsTable() {
                           {selectedCar.specialFeatures.map((feature, index) => (
                             <div
                               key={index}
-                              className="flex items-start bg-red-900/20 px-4 py-3 rounded-lg border border-red-800/30"
+                              className="flex items-start bg-slate-900/20 px-4 py-3 rounded-lg border border-slate-800/30"
                             >
-                              <FiStar className="text-red-400 mr-2 mt-0.5 flex-shrink-0" />
+                              <FiStar className="text-slate-400 mr-2 mt-0.5 flex-shrink-0" />
                               <span className="text-gray-300">{feature}</span>
                             </div>
                           ))}
@@ -783,7 +783,7 @@ export default function CarsTable() {
                 </button>
                 <button
                   onClick={() => handleDeleteCar(selectedCar._id)}
-                  className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none transition-colors"
+                  className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-white bg-slate-600 hover:bg-slate-700 focus:outline-none transition-colors"
                 >
                   Fahrzeug löschen
                 </button>
@@ -795,7 +795,7 @@ export default function CarsTable() {
 
       {/* Background Glow */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-60 h-60 bg-red-500/10 blur-3xl rounded-full" />
+        <div className="absolute top-0 left-1/3 w-60 h-60 bg-slate-500/10 blur-3xl rounded-full" />
         <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-purple-500/10 blur-3xl rounded-full" />
       </div>
     </div>

@@ -36,6 +36,8 @@ import {
   FiInbox,
   FiCheckCircle,
   FiBell,
+  FiSun,
+  FiMoon,
 } from "react-icons/fi";
 import { IoMdLocate } from "react-icons/io";
 
@@ -50,6 +52,37 @@ const PER_PAGE = 10;
 export default function Zeiterfassungsverwaltung() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Initialize dark mode
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+
+    const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
+    setDarkMode(isDark);
+
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+
+    if (newDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
 
   // ------------ State ------------
   const [records, setRecords] = useState([]);
@@ -92,6 +125,7 @@ export default function Zeiterfassungsverwaltung() {
     reason: "",
   });
   const [justificationsLoaded, setJustificationsLoaded] = useState(false);
+
   // ------------ Effects ------------
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -129,7 +163,6 @@ export default function Zeiterfassungsverwaltung() {
     } catch {
       // Non-blocking; optional toast
     } finally {
-      // 👇 important
       setJustificationsLoaded(true);
     }
   }, []);
@@ -139,7 +172,7 @@ export default function Zeiterfassungsverwaltung() {
       (async () => {
         await fetchRecords();
         await fetchJustifications();
-        setInitialLoading(false); //
+        setInitialLoading(false);
       })();
     }
   }, [status, fetchRecords, fetchJustifications]);
@@ -514,8 +547,16 @@ export default function Zeiterfassungsverwaltung() {
   // While NextAuth is still checking the session → show loader
   if (status === "loading") {
     return (
-      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-red-950">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+      <div
+        className={`flex justify-center items-center h-screen transition-colors duration-300 ${
+          darkMode ? "bg-slate-900" : "bg-slate-50"
+        }`}
+      >
+        <div
+          className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${
+            darkMode ? "border-slate-400" : "border-slate-600"
+          }`}
+        ></div>
       </div>
     );
   }
@@ -527,40 +568,114 @@ export default function Zeiterfassungsverwaltung() {
 
   if (initialLoading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-red-950">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+      <div
+        className={`flex justify-center items-center h-screen transition-colors duration-300 ${
+          darkMode ? "bg-slate-900" : "bg-slate-50"
+        }`}
+      >
+        <div
+          className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${
+            darkMode ? "border-slate-400" : "border-slate-600"
+          }`}
+        ></div>
       </div>
     );
   }
 
+  // Theme classes
+  const bgGradient = darkMode
+    ? "bg-gradient-to-br from-slate-900 to-slate-800"
+    : "bg-gradient-to-br from-slate-50 to-slate-100";
+
+  const cardBg = darkMode
+    ? "bg-slate-800/60 backdrop-blur-md border border-slate-700"
+    : "bg-white/80 backdrop-blur-md border border-slate-200";
+
+  const headerBg = darkMode
+    ? "bg-slate-800/40 border-slate-700"
+    : "bg-white/90 border-slate-200";
+
+  const textPrimary = darkMode ? "text-white" : "text-slate-900";
+  const textSecondary = darkMode ? "text-slate-300" : "text-slate-600";
+  const textMuted = darkMode ? "text-slate-400" : "text-slate-500";
+
+  const buttonPrimary = darkMode
+    ? "bg-slate-700 hover:bg-slate-600 text-white"
+    : "bg-slate-600 hover:bg-slate-700 text-white";
+
+  const buttonDanger = darkMode
+    ? "bg-red-600 hover:bg-red-700 text-white"
+    : "bg-red-500 hover:bg-red-600 text-white";
+
+  const buttonSecondary = darkMode
+    ? "bg-slate-700 hover:bg-slate-600 text-white"
+    : "bg-slate-200 hover:bg-slate-300 text-slate-700";
+
+  const inputBg = darkMode
+    ? "bg-slate-800 border-slate-700 text-white"
+    : "bg-white border-slate-300 text-slate-900";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-red-950 text-white">
+    <div
+      className={`min-h-screen transition-colors duration-300 ${bgGradient} ${textPrimary}`}
+    >
       {/* Header */}
-      <div
-        initial={{ y: -15, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="z-40 px-4 sm:px-6 py-2"
-      >
-        <div className="flex items-center gap-3">
+      <div className="z-40 px-4 sm:px-6 py-2">
+        <div className="flex ">
+          <div className="flex items-center gap-3 mr-3">
+            <button
+              onClick={() => router.push("/AdminDashboard")}
+              className={`p-2 rounded-lg transition-colors ${
+                darkMode
+                  ? "bg-slate-800 hover:bg-slate-700"
+                  : "bg-slate-200 hover:bg-slate-300"
+              }`}
+            >
+              <FiArrowLeft
+                className={`h-4 w-4 ${
+                  darkMode ? "text-white" : "text-slate-700"
+                }`}
+              />
+            </button>
+            <h1 className="text-lg sm:text-xl font-bold">
+              Zeiterfassungsübersicht
+            </h1>
+          </div>
+
+          {/* Dark Mode Toggle */}
           <button
-            onClick={() => router.push("/AdminDashboard")}
-            className="p-2 rounded-lg bg-gray-900/60 hover:bg-red-800 transition"
+            onClick={toggleDarkMode}
+            className={`p-2 rounded-lg transition-colors ${
+              darkMode
+                ? "bg-slate-800 hover:bg-slate-700"
+                : "bg-slate-200 hover:bg-slate-300"
+            }`}
+            title={
+              darkMode ? "Zu Hellmodus wechseln" : "Zu Dunkelmodus wechseln"
+            }
           >
-            <FiArrowLeft className="h-4 w-4 text-white" />
+            {darkMode ? (
+              <FiSun className="h-4 w-4 text-yellow-400" />
+            ) : (
+              <FiMoon className="h-4 w-4 text-slate-600" />
+            )}
           </button>
-          <h1 className="text-lg sm:text-xl font-bold">
-            Zeiterfassungsübersicht
-          </h1>
         </div>
       </div>
 
       {/* Main Content */}
       <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1600px] mx-auto px-1 sm:px-0 py-2">
         {/* Control Panel */}
-        <div className="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden mb-4">
+        <div
+          className={`${cardBg} rounded-xl overflow-hidden mb-4 transition-colors duration-300`}
+        >
           {/* Top Navigation */}
-          <div className="border-b border-gray-800">
-            {/* ✅ Desktop/Tablet → Horizontal Buttons */}
+          <div
+            className={`border-b transition-colors duration-300 ${
+              darkMode ? "border-slate-700" : "border-slate-200"
+            }`}
+          >
+            {/* Desktop/Tablet → Horizontal Buttons */}
             <div className="hidden sm:flex flex-wrap">
               {[
                 {
@@ -602,8 +717,16 @@ export default function Zeiterfassungsverwaltung() {
                   className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-all
             ${
               activeSection === key
-                ? "bg-red-900/40 text-white border-b-2 border-red-500"
-                : "text-gray-400 hover:text-white hover:bg-gray-800/60"
+                ? `${
+                    darkMode
+                      ? "bg-slate-700 text-white border-b-2 border-slate-400"
+                      : "bg-slate-200 text-slate-800 border-b-2 border-slate-600"
+                  }`
+                : `${
+                    darkMode
+                      ? "text-slate-400 hover:text-white hover:bg-slate-700/60"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                  }`
             }`}
                 >
                   {icon}
@@ -612,15 +735,23 @@ export default function Zeiterfassungsverwaltung() {
               ))}
             </div>
 
-            {/* ✅ Mobile → Dropdown Menu */}
+            {/* Mobile → Dropdown Menu */}
             <div className="sm:hidden p-3">
-              <label className="text-xs text-gray-400 block mb-2">
+              <label
+                className={`text-xs mb-2 block transition-colors duration-300 ${
+                  darkMode ? "text-slate-400" : "text-slate-500"
+                }`}
+              >
                 Aktion wählen
               </label>
               <select
                 value={activeSection || ""}
                 onChange={(e) => setActiveSection(e.target.value || null)}
-                className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-red-500"
+                className={`w-full px-3 py-2 rounded-md border text-sm focus:outline-none transition-colors duration-300 ${
+                  darkMode
+                    ? "bg-slate-800 border-slate-700 text-white focus:border-slate-400"
+                    : "bg-white border-slate-300 text-slate-900 focus:border-slate-500"
+                }`}
               >
                 <option value="">— Bitte wählen —</option>
                 <option value="filter">🔍 Filter</option>
@@ -635,16 +766,28 @@ export default function Zeiterfassungsverwaltung() {
 
           {/* Filter Section */}
           {activeSection === "filter" && (
-            <div className="p-4 sm:p-6 border-b border-gray-800">
+            <div
+              className={`p-4 sm:p-6 border-b transition-colors duration-300 ${
+                darkMode ? "border-slate-700" : "border-slate-200"
+              }`}
+            >
               <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-sm text-gray-300 mb-2 block">
+                  <label
+                    className={`text-sm mb-2 block transition-colors duration-300 ${
+                      darkMode ? "text-slate-300" : "text-slate-600"
+                    }`}
+                  >
                     Mitarbeiter
                   </label>
                   <select
                     value={selectedAdmin}
                     onChange={(e) => setSelectedAdmin(e.target.value)}
-                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                    className={`w-full px-3 py-2 rounded-md border text-sm transition-colors duration-300 ${
+                      darkMode
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-white border-slate-300 text-slate-900"
+                    }`}
                   >
                     <option value="alle">Alle Mitarbeiter</option>
                     {allAdmins.map((name) => (
@@ -655,7 +798,11 @@ export default function Zeiterfassungsverwaltung() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-300 mb-2 block">
+                  <label
+                    className={`text-sm mb-2 block transition-colors duration-300 ${
+                      darkMode ? "text-slate-300" : "text-slate-600"
+                    }`}
+                  >
                     Datumsbereich
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -668,11 +815,15 @@ export default function Zeiterfassungsverwaltung() {
                       startDate={dateFilter.start}
                       endDate={dateFilter.end}
                       placeholderText="Startdatum"
-                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                      className={`w-full px-3 py-2 rounded-md border text-sm transition-colors duration-300 ${
+                        darkMode
+                          ? "bg-slate-800 border-slate-700 text-white"
+                          : "bg-white border-slate-300 text-slate-900"
+                      }`}
                       dateFormat="dd.MM.yyyy"
-                      popperClassName="z-50" // Tailwind helper
+                      popperClassName="z-50"
                       popperPlacement="bottom-start"
-                      portalId="root-portal" // render outside overflow:hidden
+                      portalId="root-portal"
                     />
                     <DatePicker
                       selected={dateFilter.end}
@@ -682,11 +833,15 @@ export default function Zeiterfassungsverwaltung() {
                       endDate={dateFilter.end}
                       minDate={dateFilter.start}
                       placeholderText="Enddatum"
-                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                      className={`w-full px-3 py-2 rounded-md border text-sm transition-colors duration-300 ${
+                        darkMode
+                          ? "bg-slate-800 border-slate-700 text-white"
+                          : "bg-white border-slate-300 text-slate-900"
+                      }`}
                       dateFormat="dd.MM.yyyy"
-                      popperClassName="z-50" // Tailwind helper
+                      popperClassName="z-50"
                       popperPlacement="bottom-start"
-                      portalId="root-portal" // render outside overflow:hidden
+                      portalId="root-portal"
                     />
                   </div>
                 </div>
@@ -699,7 +854,7 @@ export default function Zeiterfassungsverwaltung() {
                       });
                       setSelectedAdmin("alle");
                     }}
-                    className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-md transition text-sm"
+                    className={`w-full px-4 py-2 rounded-md transition text-sm ${buttonSecondary}`}
                   >
                     Filter zurücksetzen
                   </button>
@@ -710,11 +865,19 @@ export default function Zeiterfassungsverwaltung() {
 
           {/* Delete Section */}
           {activeSection === "delete" && (
-            <div className="p-4 sm:p-6 border-b border-gray-800">
+            <div
+              className={`p-4 sm:p-6 border-b transition-colors duration-300 ${
+                darkMode ? "border-slate-700" : "border-slate-200"
+              }`}
+            >
               <div className="flex flex-col sm:grid sm:grid-cols-4 gap-4">
                 <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label className="text-sm text-gray-300 mb-2 block">
+                    <label
+                      className={`text-sm mb-2 block transition-colors duration-300 ${
+                        darkMode ? "text-slate-300" : "text-slate-600"
+                      }`}
+                    >
                       Von
                     </label>
                     <DatePicker
@@ -726,15 +889,23 @@ export default function Zeiterfassungsverwaltung() {
                       startDate={deleteRange.start}
                       endDate={deleteRange.end}
                       placeholderText="Startdatum"
-                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                      className={`w-full px-3 py-2 rounded-md border text-sm transition-colors duration-300 ${
+                        darkMode
+                          ? "bg-slate-800 border-slate-700 text-white"
+                          : "bg-white border-slate-300 text-slate-900"
+                      }`}
                       dateFormat="dd.MM.yyyy"
-                      popperClassName="z-50" // Tailwind helper
+                      popperClassName="z-50"
                       popperPlacement="bottom-start"
-                      portalId="root-portal" // render outside overflow:hidden
+                      portalId="root-portal"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-300 mb-2 block">
+                    <label
+                      className={`text-sm mb-2 block transition-colors duration-300 ${
+                        darkMode ? "text-slate-300" : "text-slate-600"
+                      }`}
+                    >
                       Bis
                     </label>
                     <DatePicker
@@ -747,11 +918,15 @@ export default function Zeiterfassungsverwaltung() {
                       endDate={deleteRange.end}
                       minDate={deleteRange.start}
                       placeholderText="Enddatum"
-                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                      className={`w-full px-3 py-2 rounded-md border text-sm transition-colors duration-300 ${
+                        darkMode
+                          ? "bg-slate-800 border-slate-700 text-white"
+                          : "bg-white border-slate-300 text-slate-900"
+                      }`}
                       dateFormat="dd.MM.yyyy"
-                      popperClassName="z-50" // Tailwind helper
+                      popperClassName="z-50"
                       popperPlacement="bottom-start"
-                      portalId="root-portal" // render outside overflow:hidden
+                      portalId="root-portal"
                     />
                   </div>
                 </div>
@@ -763,8 +938,12 @@ export default function Zeiterfassungsverwaltung() {
                     }
                     className={`w-full px-4 py-2 rounded-md transition text-sm ${
                       isLoading || !deleteRange.start || !deleteRange.end
-                        ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                        : "bg-red-600 hover:bg-red-700 text-white"
+                        ? `${
+                            darkMode
+                              ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                              : "bg-slate-300 text-slate-400 cursor-not-allowed"
+                          }`
+                        : buttonDanger
                     }`}
                   >
                     {isLoading ? "Löschen..." : "Löschen"}
@@ -776,26 +955,38 @@ export default function Zeiterfassungsverwaltung() {
 
           {/* Summary Section */}
           {activeSection === "summary" && (
-            <div className="p-4 sm:p-6 border-b border-gray-800">
+            <div
+              className={`p-4 sm:p-6 border-b transition-colors duration-300 ${
+                darkMode ? "border-slate-700" : "border-slate-200"
+              }`}
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {summary.map((s, i) => (
                   <div
                     key={i}
-                    className="bg-gray-800/40 rounded-lg p-4 border border-gray-700"
+                    className={`rounded-lg p-4 border transition-colors duration-300 ${
+                      darkMode
+                        ? "bg-slate-800/40 border-slate-700"
+                        : "bg-slate-50 border-slate-200"
+                    }`}
                   >
-                    <div className="font-semibold text-white mb-3">
+                    <div
+                      className={`font-semibold mb-3 transition-colors duration-300 ${
+                        darkMode ? "text-white" : "text-slate-900"
+                      }`}
+                    >
                       {s.name}
                     </div>
                     <div className="space-y-2 text-sm sm:text-base">
                       <div className="flex justify-between">
-                        <span className="text-green-400">Gesamtzeit:</span>
-                        <span className="text-green-400">
+                        <span className="text-green-500">Gesamtzeit:</span>
+                        <span className="text-green-500">
                           {s.timeFormatted}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-yellow-400">Arbeitstage:</span>
-                        <span className="text-yellow-400">
+                        <span className="text-amber-500">Arbeitstage:</span>
+                        <span className="text-amber-500">
                           {s.daysWorked} {s.daysWorked === 1 ? "Tag" : "Tage"}
                         </span>
                       </div>
@@ -808,10 +999,18 @@ export default function Zeiterfassungsverwaltung() {
 
           {/* Manual Entry Section */}
           {activeSection === "manual" && (
-            <div className="p-4 sm:p-6 border-b border-gray-800">
+            <div
+              className={`p-4 sm:p-6 border-b transition-colors duration-300 ${
+                darkMode ? "border-slate-700" : "border-slate-200"
+              }`}
+            >
               <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-sm text-gray-300 mb-2 block">
+                  <label
+                    className={`text-sm mb-2 block transition-colors duration-300 ${
+                      darkMode ? "text-slate-300" : "text-slate-600"
+                    }`}
+                  >
                     Mitarbeiter
                   </label>
                   <select
@@ -822,7 +1021,11 @@ export default function Zeiterfassungsverwaltung() {
                         admin: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                    className={`w-full px-3 py-2 rounded-md border text-sm transition-colors duration-300 ${
+                      darkMode
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-white border-slate-300 text-slate-900"
+                    }`}
                   >
                     <option value="">Bitte wählen</option>
                     {allAdmins.map((name) => (
@@ -833,7 +1036,11 @@ export default function Zeiterfassungsverwaltung() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-300 mb-2 block">
+                  <label
+                    className={`text-sm mb-2 block transition-colors duration-300 ${
+                      darkMode ? "text-slate-300" : "text-slate-600"
+                    }`}
+                  >
                     Typ
                   </label>
                   <select
@@ -844,14 +1051,22 @@ export default function Zeiterfassungsverwaltung() {
                         type: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                    className={`w-full px-3 py-2 rounded-md border text-sm transition-colors duration-300 ${
+                      darkMode
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-white border-slate-300 text-slate-900"
+                    }`}
                   >
                     <option value="in">EIN</option>
                     <option value="out">AUS</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-300 mb-2 block">
+                  <label
+                    className={`text-sm mb-2 block transition-colors duration-300 ${
+                      darkMode ? "text-slate-300" : "text-slate-600"
+                    }`}
+                  >
                     Datum & Uhrzeit
                   </label>
                   <DatePicker
@@ -861,20 +1076,24 @@ export default function Zeiterfassungsverwaltung() {
                     }
                     showTimeSelect
                     timeFormat="HH:mm"
-                    popperClassName="z-50" // Tailwind helper
+                    popperClassName="z-50"
                     popperPlacement="bottom-start"
-                    portalId="root-portal" // render outside overflow:hidden
+                    portalId="root-portal"
                     timeIntervals={5}
                     dateFormat="dd.MM.yyyy HH:mm"
                     placeholderText="Datum und Uhrzeit"
-                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                    className={`w-full px-3 py-2 rounded-md border text-sm transition-colors duration-300 ${
+                      darkMode
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-white border-slate-300 text-slate-900"
+                    }`}
                   />
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
                 <button
                   onClick={() => setActiveSection(null)}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition text-sm"
+                  className={`px-4 py-2 rounded-md transition text-sm ${buttonSecondary}`}
                 >
                   Abbrechen
                 </button>
@@ -885,8 +1104,12 @@ export default function Zeiterfassungsverwaltung() {
                   }
                   className={`px-4 py-2 rounded-md transition text-sm ${
                     isLoading || !manualEntry.admin || !manualEntry.time
-                      ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                      : "bg-red-600 hover:bg-red-700 text-white"
+                      ? `${
+                          darkMode
+                            ? "bg-slate-600 text-slate-400 cursor-not-allowed"
+                            : "bg-slate-300 text-slate-400 cursor-not-allowed"
+                        }`
+                      : buttonPrimary
                   }`}
                 >
                   {isLoading ? "Speichern..." : "Speichern"}
@@ -897,10 +1120,18 @@ export default function Zeiterfassungsverwaltung() {
 
           {/* Print Section */}
           {activeSection === "print" && (
-            <div className="p-4 sm:p-6 border-b border-gray-800">
+            <div
+              className={`p-4 sm:p-6 border-b transition-colors duration-300 ${
+                darkMode ? "border-slate-700" : "border-slate-200"
+              }`}
+            >
               <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-sm text-gray-300 mb-2 block">
+                  <label
+                    className={`text-sm mb-2 block transition-colors duration-300 ${
+                      darkMode ? "text-slate-300" : "text-slate-600"
+                    }`}
+                  >
                     Mitarbeiter
                   </label>
                   <select
@@ -911,7 +1142,11 @@ export default function Zeiterfassungsverwaltung() {
                         employee: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                    className={`w-full px-3 py-2 rounded-md border text-sm transition-colors duration-300 ${
+                      darkMode
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-white border-slate-300 text-slate-900"
+                    }`}
                   >
                     <option value="alle">Alle Mitarbeiter</option>
                     {allAdmins.map((name) => (
@@ -922,7 +1157,11 @@ export default function Zeiterfassungsverwaltung() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-300 mb-2 block">
+                  <label
+                    className={`text-sm mb-2 block transition-colors duration-300 ${
+                      darkMode ? "text-slate-300" : "text-slate-600"
+                    }`}
+                  >
                     Datumsbereich
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -935,11 +1174,15 @@ export default function Zeiterfassungsverwaltung() {
                       startDate={printConfig.startDate}
                       endDate={printConfig.endDate}
                       placeholderText="Startdatum"
-                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                      className={`w-full px-3 py-2 rounded-md border text-sm transition-colors duration-300 ${
+                        darkMode
+                          ? "bg-slate-800 border-slate-700 text-white"
+                          : "bg-white border-slate-300 text-slate-900"
+                      }`}
                       dateFormat="dd.MM.yyyy"
-                      popperClassName="z-50" // Tailwind helper
+                      popperClassName="z-50"
                       popperPlacement="bottom-start"
-                      portalId="root-portal" // render outside overflow:hidden
+                      portalId="root-portal"
                     />
                     <DatePicker
                       selected={printConfig.endDate}
@@ -951,11 +1194,15 @@ export default function Zeiterfassungsverwaltung() {
                       endDate={printConfig.endDate}
                       minDate={printConfig.startDate}
                       placeholderText="Enddatum"
-                      className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white text-sm"
+                      className={`w-full px-3 py-2 rounded-md border text-sm transition-colors duration-300 ${
+                        darkMode
+                          ? "bg-slate-800 border-slate-700 text-white"
+                          : "bg-white border-slate-300 text-slate-900"
+                      }`}
                       dateFormat="dd.MM.yyyy"
-                      popperClassName="z-50" // Tailwind helper
+                      popperClassName="z-50"
                       popperPlacement="bottom-start"
-                      portalId="root-portal" // render outside overflow:hidden
+                      portalId="root-portal"
                     />
                   </div>
                 </div>
@@ -970,11 +1217,17 @@ export default function Zeiterfassungsverwaltung() {
                         showSummary: e.target.checked,
                       }))
                     }
-                    className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-700 bg-gray-800 rounded"
+                    className={`h-4 w-4 focus:ring-slate-500 border rounded transition-colors duration-300 ${
+                      darkMode
+                        ? "text-slate-400 border-slate-600 bg-slate-800"
+                        : "text-slate-600 border-slate-400 bg-white"
+                    }`}
                   />
                   <label
                     htmlFor="showSummary"
-                    className="ml-2 text-sm text-gray-300"
+                    className={`ml-2 text-sm transition-colors duration-300 ${
+                      darkMode ? "text-slate-300" : "text-slate-600"
+                    }`}
                   >
                     Zusammenfassung einschließen
                   </label>
@@ -983,7 +1236,7 @@ export default function Zeiterfassungsverwaltung() {
               <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
                 <button
                   onClick={() => setActiveSection(null)}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition text-sm"
+                  className={`px-4 py-2 rounded-md transition text-sm ${buttonSecondary}`}
                 >
                   Abbrechen
                 </button>
@@ -994,8 +1247,12 @@ export default function Zeiterfassungsverwaltung() {
                   }
                   className={`px-4 py-2 rounded-md transition text-sm ${
                     isPrinting || !printConfig.startDate || !printConfig.endDate
-                      ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                      : "bg-red-600 hover:bg-red-700 text-white"
+                      ? `${
+                          darkMode
+                            ? "bg-slate-600 text-slate-400 cursor-not-allowed"
+                            : "bg-slate-300 text-slate-400 cursor-not-allowed"
+                        }`
+                      : buttonPrimary
                   }`}
                 >
                   {isPrinting ? "Drucken..." : "Drucken"}
@@ -1008,13 +1265,19 @@ export default function Zeiterfassungsverwaltung() {
           {activeSection === "alerts" && (
             <div className="p-4 sm:p-6">
               {unresolvedMissingCount === 0 ? (
-                <div className="text-green-400 text-sm">
+                <div className="text-green-500 text-sm">
                   ✅ Alles gut! Keine fehlenden Stempelungen im gewählten
                   Zeitraum.
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="text-sm text-red-400 bg-red-300/10 p-3 rounded border border-red-500  ">
+                  <div
+                    className={`text-sm p-3 rounded border transition-colors duration-300 ${
+                      darkMode
+                        ? "text-amber-400 bg-amber-400/10 border-amber-500/30"
+                        : "text-amber-600 bg-amber-50 border-amber-200"
+                    }`}
+                  >
                     <strong>Hinweis:</strong> Sonntag ist ausgenommen; Und{" "}
                     <strong>Abed</strong> ist auch <strong>Samstag</strong>{" "}
                     ausgenommen.
@@ -1026,18 +1289,26 @@ export default function Zeiterfassungsverwaltung() {
                       return (
                         <div
                           key={`${m.name}-${m.date}-${i}`}
-                          className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-3 bg-gray-800/30 rounded border border-gray-900 text-sm"
+                          className={`flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-3 rounded border text-sm transition-colors duration-300 ${
+                            darkMode
+                              ? "bg-slate-800/30 border-slate-700"
+                              : "bg-slate-50 border-slate-200"
+                          }`}
                         >
                           <div className="flex flex-wrap items-center gap-3">
-                            <span className="font-semibold text-white">
+                            <span
+                              className={`font-semibold transition-colors duration-300 ${
+                                darkMode ? "text-white" : "text-slate-900"
+                              }`}
+                            >
                               {m.name}
                             </span>
-                            <span className="text-gray-400">
+                            <span className={textMuted}>
                               {format(dateObj, "dd.MM.yyyy")}
                             </span>
                             <span
                               className={`flex items-center gap-1 ${
-                                hasReason ? "text-green-400" : "text-red-400"
+                                hasReason ? "text-green-500" : "text-red-500"
                               }`}
                             >
                               {hasReason ? (
@@ -1058,7 +1329,7 @@ export default function Zeiterfassungsverwaltung() {
                                 });
                                 setJustifyModalOpen(true);
                               }}
-                              className="px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded transition"
+                              className={`px-2 py-1 text-xs rounded transition ${buttonSecondary}`}
                             >
                               Grund
                             </button>
@@ -1101,7 +1372,7 @@ export default function Zeiterfassungsverwaltung() {
                                   setIsLoading(false);
                                 }
                               }}
-                              className="px-2 py-1 text-xs bg-red-700 hover:bg-red-600 rounded transition"
+                              className={`px-2 py-1 text-xs rounded transition ${buttonDanger}`}
                             >
                               Löschen
                             </button>
@@ -1116,34 +1387,45 @@ export default function Zeiterfassungsverwaltung() {
           )}
         </div>
 
-        {/*  {justificationsLoaded && unresolvedMissingCount > 0 && (
-          <div className="mb-4 bg-red-900/40 border border-red-700 text-yellow-600 rounded-lg px-4 py-2 sm:py-3 text-xs sm:text-sm">
-            ⚠️ {unresolvedMissingCount} Stempel-Hinweise (Sonntag ignoriert).
-          </div>
-        )}*/}
         {/* Table */}
         <div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden"
+          className={`${cardBg} rounded-xl overflow-hidden transition-colors duration-300`}
         >
-          <div className="px-6 py-2 border-b border-gray-800 bg-gray-800/40 flex justify-between items-center">
-            <h2 className="text-sm sm:text-lg font-semibold text-white flex items-center gap-2">
-              <FiClock className="text-red-400" /> Zeiterfassungen
+          <div
+            className={`px-6 py-2 border-b flex justify-between items-center transition-colors duration-300 ${
+              darkMode
+                ? "bg-slate-800/40 border-slate-700"
+                : "bg-slate-100/40 border-slate-200"
+            }`}
+          >
+            <h2
+              className={`text-sm sm:text-lg font-semibold flex items-center gap-2 transition-colors duration-300 ${
+                darkMode ? "text-white" : "text-slate-900"
+              }`}
+            >
+              <FiClock
+                className={darkMode ? "text-slate-400" : "text-slate-600"}
+              />{" "}
+              Zeiterfassungen
             </h2>
-            <div className="flex items-center ">
-              {/* Entry count */}
-
+            <div className="flex items-center">
               {/* Notification bell */}
               <button
                 onClick={() => setActiveSection("alerts")}
-                className="relative p-2 rounded-full hover:bg-gray-700 transition"
+                className={`relative p-2 rounded-full transition-colors duration-300 ${
+                  darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
+                }`}
                 title="Fehlstempel Hinweise"
               >
-                <FiBell className="h-5 w-5 text-gray-400 hover:text-yellow-400" />
+                <FiBell
+                  className={`h-5 w-5 transition-colors duration-300 ${
+                    darkMode
+                      ? "text-slate-400 hover:text-amber-400"
+                      : "text-slate-500 hover:text-amber-500"
+                  }`}
+                />
                 {unresolvedMissingCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">
                     {unresolvedMissingCount}
                   </span>
                 )}
@@ -1153,7 +1435,13 @@ export default function Zeiterfassungsverwaltung() {
 
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-800 text-gray-300">
+              <thead
+                className={`transition-colors duration-300 ${
+                  darkMode
+                    ? "bg-slate-800 text-slate-300"
+                    : "bg-slate-100 text-slate-600"
+                }`}
+              >
                 <tr>
                   <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider text-xs sm:text-sm">
                     Mitarbeiter
@@ -1172,36 +1460,68 @@ export default function Zeiterfassungsverwaltung() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
+              <tbody
+                className={`divide-y transition-colors duration-300 ${
+                  darkMode ? "divide-slate-700" : "divide-slate-200"
+                }`}
+              >
                 {paginated.length > 0 ? (
                   paginated.map((r, i) => (
                     <tr
                       key={`${r._id || i}`}
-                      className="hover:bg-black/50 transition cursor-pointer"
+                      className={`transition-colors duration-300 ${
+                        darkMode
+                          ? "hover:bg-slate-700/50 cursor-pointer"
+                          : "hover:bg-slate-50 cursor-pointer"
+                      }`}
                     >
-                      <td className="px-6 py-4 font-s text-gray-400 whitespace-nowrap">
+                      <td
+                        className={`px-6 py-4 whitespace-nowrap transition-colors duration-300 ${
+                          darkMode ? "text-slate-300" : "text-slate-600"
+                        }`}
+                      >
                         {r.admin?.name || "Unbekannt"}
                       </td>
-                      <td className="px-6 py-4 text-gray-400 whitespace-nowrap">
+                      <td
+                        className={`px-6 py-4 whitespace-nowrap transition-colors duration-300 ${
+                          darkMode ? "text-slate-300" : "text-slate-600"
+                        }`}
+                      >
                         <div className="flex flex-row gap-4">
                           <span>{format(new Date(r.time), "dd.MM.yyyy")}</span>
-                          <span className="text-purple-400">
+                          <span
+                            className={
+                              darkMode ? "text-purple-400" : "text-purple-600"
+                            }
+                          >
                             {format(new Date(r.time), "HH:mm")}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border transition-colors duration-300 ${
                             r.type === "in"
-                              ? "bg-green-900/40 text-green-400 border border-green-800"
-                              : "bg-red-900/40 text-red-400 border border-red-800"
+                              ? `${
+                                  darkMode
+                                    ? "bg-green-900/40 text-green-400 border-green-800"
+                                    : "bg-green-100 text-green-700 border-green-200"
+                                }`
+                              : `${
+                                  darkMode
+                                    ? "bg-red-900/40 text-red-400 border-red-800"
+                                    : "bg-red-100 text-red-700 border-red-200"
+                                }`
                           }`}
                         >
                           {r.type === "in" ? "EIN" : "AUS"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 font-semibold text-gray-400 whitespace-nowrap">
+                      <td
+                        className={`px-6 py-4 font-semibold whitespace-nowrap transition-colors duration-300 ${
+                          darkMode ? "text-slate-300" : "text-slate-600"
+                        }`}
+                      >
                         <div>
                           {r.method === "qr"
                             ? "gescannt"
@@ -1213,7 +1533,11 @@ export default function Zeiterfassungsverwaltung() {
                         </div>
                         {(r.method === "edited" && r.editedBy) ||
                         (r.method === "added" && r.addedBy) ? (
-                          <div className="text-xs text-yellow-500 font-semibold">
+                          <div
+                            className={`text-xs font-semibold transition-colors duration-300 ${
+                              darkMode ? "text-amber-400" : "text-amber-600"
+                            }`}
+                          >
                             von {r.editedBy || r.addedBy}
                           </div>
                         ) : null}
@@ -1227,7 +1551,11 @@ export default function Zeiterfassungsverwaltung() {
                               setEditingRecord(r);
                               setEditModalOpen(true);
                             }}
-                            className="p-2 rounded-full hover:bg-gray-700 text-gray-400 hover:text-green-400 transition"
+                            className={`p-2 rounded-full transition-colors duration-300 ${
+                              darkMode
+                                ? "hover:bg-slate-700 text-slate-400 hover:text-green-400"
+                                : "hover:bg-slate-200 text-slate-500 hover:text-green-600"
+                            }`}
                             title="Bearbeiten"
                           >
                             <FiEdit className="h-4 w-4" />
@@ -1267,7 +1595,11 @@ export default function Zeiterfassungsverwaltung() {
                                 setIsLoading(false);
                               }
                             }}
-                            className="p-2 rounded-full hover:bg-gray-700 text-gray-400 hover:text-red-500 transition"
+                            className={`p-2 rounded-full transition-colors duration-300 ${
+                              darkMode
+                                ? "hover:bg-slate-700 text-slate-400 hover:text-red-400"
+                                : "hover:bg-slate-200 text-slate-500 hover:text-red-600"
+                            }`}
                             title="Löschen"
                           >
                             <FiTrash2 className="h-4 w-4" />
@@ -1280,7 +1612,9 @@ export default function Zeiterfassungsverwaltung() {
                   <tr>
                     <td
                       colSpan="5"
-                      className="px-6 py-12 text-center text-gray-400"
+                      className={`px-6 py-12 text-center transition-colors duration-300 ${
+                        darkMode ? "text-slate-400" : "text-slate-500"
+                      }`}
                     >
                       Keine Zeiterfassungen gefunden
                     </td>
@@ -1292,18 +1626,36 @@ export default function Zeiterfassungsverwaltung() {
 
           {/* Pagination */}
           {filtered.length > 0 && (
-            <div className="px-4 py-3 flex items-center justify-between bg-gray-800 border-t border-gray-700 text-sm">
-              <p className="text-gray-400">
+            <div
+              className={`px-4 py-3 flex items-center justify-between border-t text-sm transition-colors duration-300 ${
+                darkMode
+                  ? "bg-slate-800 border-slate-700 text-slate-400"
+                  : "bg-slate-100 border-slate-200 text-slate-600"
+              }`}
+            >
+              <p>
                 Zeige{" "}
-                <span className="font-medium text-white">
+                <span
+                  className={`font-medium transition-colors duration-300 ${
+                    darkMode ? "text-white" : "text-slate-900"
+                  }`}
+                >
                   {(page - 1) * PER_PAGE + 1}
                 </span>{" "}
                 bis{" "}
-                <span className="font-medium text-white">
+                <span
+                  className={`font-medium transition-colors duration-300 ${
+                    darkMode ? "text-white" : "text-slate-900"
+                  }`}
+                >
                   {Math.min(page * PER_PAGE, filtered.length)}
                 </span>{" "}
                 von{" "}
-                <span className="font-medium text-white">
+                <span
+                  className={`font-medium transition-colors duration-300 ${
+                    darkMode ? "text-white" : "text-slate-900"
+                  }`}
+                >
                   {filtered.length}
                 </span>{" "}
                 Einträgen
@@ -1312,14 +1664,22 @@ export default function Zeiterfassungsverwaltung() {
                 <button
                   onClick={() => setPage(1)}
                   disabled={page === 1}
-                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-white transition"
+                  className={`px-2 py-1 rounded transition-colors duration-300 ${
+                    darkMode
+                      ? "bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white"
+                      : "bg-slate-300 hover:bg-slate-400 disabled:opacity-40 text-slate-700"
+                  }`}
                 >
                   «
                 </button>
                 <button
                   onClick={() => setPage((p) => Math.max(p - 1, 1))}
                   disabled={page === 1}
-                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-white transition"
+                  className={`px-2 py-1 rounded transition-colors duration-300 ${
+                    darkMode
+                      ? "bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white"
+                      : "bg-slate-300 hover:bg-slate-400 disabled:opacity-40 text-slate-700"
+                  }`}
                 >
                   ‹
                 </button>
@@ -1340,10 +1700,18 @@ export default function Zeiterfassungsverwaltung() {
                       <button
                         key={pageNum}
                         onClick={() => setPage(pageNum)}
-                        className={`px-3 py-1 rounded transition ${
+                        className={`px-3 py-1 rounded transition-colors duration-300 ${
                           page === pageNum
-                            ? "bg-red-600 text-white"
-                            : "bg-gray-700 hover:bg-gray-600 text-white"
+                            ? `${
+                                darkMode
+                                  ? "bg-slate-600 text-white"
+                                  : "bg-slate-500 text-white"
+                              }`
+                            : `${
+                                darkMode
+                                  ? "bg-slate-700 hover:bg-slate-600 text-white"
+                                  : "bg-slate-300 hover:bg-slate-400 text-slate-700"
+                              }`
                         }`}
                       >
                         {pageNum}
@@ -1358,14 +1726,22 @@ export default function Zeiterfassungsverwaltung() {
                     )
                   }
                   disabled={page >= Math.ceil(filtered.length / PER_PAGE)}
-                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-white transition"
+                  className={`px-2 py-1 rounded transition-colors duration-300 ${
+                    darkMode
+                      ? "bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white"
+                      : "bg-slate-300 hover:bg-slate-400 disabled:opacity-40 text-slate-700"
+                  }`}
                 >
                   ›
                 </button>
                 <button
                   onClick={() => setPage(Math.ceil(filtered.length / PER_PAGE))}
                   disabled={page >= Math.ceil(filtered.length / PER_PAGE)}
-                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-white transition"
+                  className={`px-2 py-1 rounded transition-colors duration-300 ${
+                    darkMode
+                      ? "bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white"
+                      : "bg-slate-300 hover:bg-slate-400 disabled:opacity-40 text-slate-700"
+                  }`}
                 >
                   »
                 </button>
@@ -1378,21 +1754,43 @@ export default function Zeiterfassungsverwaltung() {
       {/* Edit Modal */}
       {editModalOpen && editingRecord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-xl w-full max-w-md">
-            <div className="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-white">
+          <div
+            className={`border rounded-xl shadow-xl w-full max-w-md transition-colors duration-300 ${
+              darkMode
+                ? "bg-slate-800 border-slate-700"
+                : "bg-white border-slate-200"
+            }`}
+          >
+            <div
+              className={`px-6 py-4 border-b flex justify-between items-center transition-colors duration-300 ${
+                darkMode ? "border-slate-700" : "border-slate-200"
+              }`}
+            >
+              <h3
+                className={`text-lg font-bold transition-colors duration-300 ${
+                  darkMode ? "text-white" : "text-slate-900"
+                }`}
+              >
                 Eintrag bearbeiten
               </h3>
               <button
                 onClick={() => setEditModalOpen(false)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className={`transition-colors duration-300 ${
+                  darkMode
+                    ? "text-slate-400 hover:text-white"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
               >
                 <FiX className="h-6 w-6" />
               </button>
             </div>
             <div className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label
+                  className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                    darkMode ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
                   Typ
                 </label>
                 <select
@@ -1403,14 +1801,22 @@ export default function Zeiterfassungsverwaltung() {
                       type: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
+                  className={`w-full px-3 py-2 rounded-md border focus:outline-none transition-colors duration-300 ${
+                    darkMode
+                      ? "bg-slate-800 border-slate-700 text-white focus:border-slate-400"
+                      : "bg-white border-slate-300 text-slate-900 focus:border-slate-500"
+                  }`}
                 >
                   <option value="in">EIN</option>
                   <option value="out">AUS</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label
+                  className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                    darkMode ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
                   Datum & Uhrzeit
                 </label>
                 <DatePicker
@@ -1422,11 +1828,19 @@ export default function Zeiterfassungsverwaltung() {
                   timeFormat="HH:mm"
                   timeIntervals={5}
                   dateFormat="dd.MM.yyyy HH:mm"
-                  className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
+                  className={`w-full px-3 py-2 rounded-md border focus:outline-none transition-colors duration-300 ${
+                    darkMode
+                      ? "bg-slate-800 border-slate-700 text-white focus:border-slate-400"
+                      : "bg-white border-slate-300 text-slate-900 focus:border-slate-500"
+                  }`}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label
+                  className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                    darkMode ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
                   Methode
                 </label>
                 <select
@@ -1437,17 +1851,27 @@ export default function Zeiterfassungsverwaltung() {
                       method: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
+                  className={`w-full px-3 py-2 rounded-md border focus:outline-none transition-colors duration-300 ${
+                    darkMode
+                      ? "bg-slate-800 border-slate-700 text-white focus:border-slate-400"
+                      : "bg-white border-slate-300 text-slate-900 focus:border-slate-500"
+                  }`}
                 >
                   <option value="qr">QR</option>
                   <option value="manual">Manuell</option>
                 </select>
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-700 flex justify-end space-x-3 bg-gray-800/40 rounded-b-xl">
+            <div
+              className={`px-6 py-4 border-t flex justify-end space-x-3 rounded-b-xl transition-colors duration-300 ${
+                darkMode
+                  ? "bg-slate-800/40 border-slate-700"
+                  : "bg-slate-100/40 border-slate-200"
+              }`}
+            >
               <button
                 onClick={() => setEditModalOpen(false)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
+                className={`px-4 py-2 rounded-md transition-colors duration-300 ${buttonSecondary}`}
               >
                 Abbrechen
               </button>
@@ -1485,7 +1909,7 @@ export default function Zeiterfassungsverwaltung() {
                     setIsLoading(false);
                   }
                 }}
-                className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors"
+                className={`px-4 py-2 rounded-md text-white transition-colors duration-300 ${buttonPrimary}`}
               >
                 Speichern
               </button>
@@ -1497,29 +1921,61 @@ export default function Zeiterfassungsverwaltung() {
       {/* Justification Modal */}
       {justifyModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-xl w-full max-w-md">
-            <div className="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-white">Grund hinzufügen</h3>
+          <div
+            className={`border rounded-xl shadow-xl w-full max-w-md transition-colors duration-300 ${
+              darkMode
+                ? "bg-slate-800 border-slate-700"
+                : "bg-white border-slate-200"
+            }`}
+          >
+            <div
+              className={`px-6 py-4 border-b flex justify-between items-center transition-colors duration-300 ${
+                darkMode ? "border-slate-700" : "border-slate-200"
+              }`}
+            >
+              <h3
+                className={`text-lg font-bold transition-colors duration-300 ${
+                  darkMode ? "text-white" : "text-slate-900"
+                }`}
+              >
+                Grund hinzufügen
+              </h3>
               <button
                 onClick={() => setJustifyModalOpen(false)}
-                className="text-gray-400 hover:text-white"
+                className={`transition-colors duration-300 ${
+                  darkMode
+                    ? "text-slate-400 hover:text-white"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
               >
                 <FiX className="h-6 w-6" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm text-gray-300 mb-1">
+                <label
+                  className={`block text-sm mb-1 transition-colors duration-300 ${
+                    darkMode ? "text-slate-300" : "text-slate-600"
+                  }`}
+                >
                   Mitarbeiter
                 </label>
                 <input
                   value={justifyForm.name}
                   disabled
-                  className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-gray-400"
+                  className={`w-full px-3 py-2 rounded-md border transition-colors duration-300 ${
+                    darkMode
+                      ? "bg-slate-800 border-slate-700 text-slate-400"
+                      : "bg-slate-100 border-slate-300 text-slate-500"
+                  }`}
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-300 mb-1">
+                <label
+                  className={`block text-sm mb-1 transition-colors duration-300 ${
+                    darkMode ? "text-slate-300" : "text-slate-600"
+                  }`}
+                >
                   Datum
                 </label>
                 <input
@@ -1529,11 +1985,19 @@ export default function Zeiterfassungsverwaltung() {
                       : ""
                   }
                   disabled
-                  className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-gray-400"
+                  className={`w-full px-3 py-2 rounded-md border transition-colors duration-300 ${
+                    darkMode
+                      ? "bg-slate-800 border-slate-700 text-slate-400"
+                      : "bg-slate-100 border-slate-300 text-slate-500"
+                  }`}
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-300 mb-1">
+                <label
+                  className={`block text-sm mb-1 transition-colors duration-300 ${
+                    darkMode ? "text-slate-300" : "text-slate-600"
+                  }`}
+                >
                   Grund
                 </label>
                 <textarea
@@ -1542,15 +2006,25 @@ export default function Zeiterfassungsverwaltung() {
                   onChange={(e) =>
                     setJustifyForm((f) => ({ ...f, reason: e.target.value }))
                   }
-                  className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-red-500"
+                  className={`w-full px-3 py-2 rounded-md border focus:outline-none transition-colors duration-300 ${
+                    darkMode
+                      ? "bg-slate-800 border-slate-700 text-white focus:border-slate-400"
+                      : "bg-white border-slate-300 text-slate-900 focus:border-slate-500"
+                  }`}
                   placeholder="z.B. Arzttermin, Außendienst, Urlaub, etc."
                 />
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-700 bg-gray-800/40 flex justify-end gap-2 rounded-b-xl">
+            <div
+              className={`px-6 py-4 border-t flex justify-end gap-2 rounded-b-xl transition-colors duration-300 ${
+                darkMode
+                  ? "bg-slate-800/40 border-slate-700"
+                  : "bg-slate-100/40 border-slate-200"
+              }`}
+            >
               <button
                 onClick={() => setJustifyModalOpen(false)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition"
+                className={`px-4 py-2 rounded-md transition-colors duration-300 ${buttonSecondary}`}
               >
                 Abbrechen
               </button>
@@ -1593,7 +2067,7 @@ export default function Zeiterfassungsverwaltung() {
                     setIsLoading(false);
                   }
                 }}
-                className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition"
+                className={`px-4 py-2 rounded-md text-white transition-colors duration-300 ${buttonPrimary}`}
               >
                 Speichern
               </button>
@@ -1604,8 +2078,16 @@ export default function Zeiterfassungsverwaltung() {
 
       {/* Background Glow */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-60 h-60 bg-red-500/10 blur-3xl rounded-full" />
-        <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-purple-500/10 blur-3xl rounded-full" />
+        <div
+          className={`absolute top-0 left-1/3 w-60 h-60 blur-3xl rounded-full transition-colors duration-300 ${
+            darkMode ? "bg-slate-700/20" : "bg-slate-300/20"
+          }`}
+        />
+        <div
+          className={`absolute bottom-0 right-1/3 w-60 h-60 blur-3xl rounded-full transition-colors duration-300 ${
+            darkMode ? "bg-slate-600/20" : "bg-slate-400/20"
+          }`}
+        />
       </div>
     </div>
   );

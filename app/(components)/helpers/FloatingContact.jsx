@@ -21,118 +21,130 @@ export default function FloatingContact() {
   return (
     <>
       <div
-        className="fixed z-[9999] 
-    bottom-0 left-1/2 -translate-x-1/2 w-fit
-    md:top-1/2 md:right-0 md:left-auto md:translate-x-0 md:-translate-y-1/2 md:w-auto"
+        className="fixed z-[9999]
+        bottom-0 left-1/2 -translate-x-1/2 w-fit
+        md:top-1/2 md:right-0 md:left-auto md:translate-x-0 md:-translate-y-1/2 md:w-auto
+        print:hidden"
       >
         <div className="relative">
-          {/* Sidebar */}
+          {/* Compact floating rail */}
           <div
-            className="flex flex-row justify-center bg-gradient-to-br from-red-950 to-red-600 w-fit rounded-2xl
-              md:flex-col md:items-center md:rounded-l-2xl
-              text-white shadow-2xl overflow-hidden"
+            className="flex flex-row justify-center bg-slate-900/95 border border-slate-700/70
+            backdrop-blur-md w-fit rounded-2xl
+            md:flex-col md:items-center md:rounded-l-2xl
+            text-slate-100 shadow-2xl overflow-hidden"
           >
             {/* Toggle button */}
             <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="p-3 hover:bg-red-700 transition-colors duration-200 flex items-center justify-center"
+              onClick={() => setIsOpen((v) => !v)}
+              aria-label="Kontaktbereich öffnen"
+              className="p-2.5 hover:bg-slate-800/90 transition-colors duration-200 flex items-center justify-center"
             >
               <FiChevronLeft
-                size={20}
-                className={`${isOpen ? "rotate-180" : ""} transition-transform`}
+                size={18}
+                className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
               />
             </button>
-
             {/* Telefon */}
             <a
               href="tel:+4924619163780"
-              className="p-3 hover:bg-red-600 transition-colors duration-200"
+              className="p-2.5 hover:bg-slate-800/90 transition-colors duration-200 flex items-center justify-center"
               title="Anrufen"
             >
-              <FiPhone size={20} />
+              <FiPhone size={18} />
             </a>
-
-            {/* E-Mail */}
+            {/* E-Mail / Kontaktformular */}
             <button
               onClick={handleContactClick}
-              className="p-3 hover:bg-red-600 transition-colors duration-200"
-              title="E-Mail senden"
+              className="p-2.5 hover:bg-slate-800/90 transition-colors duration-200 flex items-center justify-center"
+              title="Kontaktformular"
             >
-              <FiMail size={20} />
+              <FiMail size={18} />
             </button>
-
             {/* WhatsApp */}
             <a
               href="https://wa.me/4915234205041"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-3 hover:bg-red-600 transition-colors duration-200"
+              className="p-2.5 hover:bg-slate-800/90 transition-colors duration-200 flex items-center justify-center"
               title="WhatsApp"
             >
-              <FiMessageCircle size={20} />
+              <FiMessageCircle size={18} />
             </a>
           </div>
 
           {/* Kontakt-Panel */}
           <div
-            className={`absolute bg-white shadow-2xl overflow-hidden transform transition-all duration-300 ease-out
-    left-1/2 -translate-x-1/2 bottom-full mb-1 w-80 mr-2
-    md:w-80 md:top-0 md:right-full  md:bottom-auto md:rounded-lg rounded-sm md:left-auto md:translate-x-0
-    ${
-      isOpen
-        ? "translate-y-0 md:translate-x-0 opacity-100 scale-100"
-        : "translate-y-4 md:translate-x-4 opacity-0 scale-95 pointer-events-none"
-    }`}
+            className={`absolute bg-white shadow-2xl overflow-hidden transform transition-all duration-250 ease-out
+            left-1/2 -translate-x-1/2 bottom-full mb-1 w-80
+            md:w-80 md:top-1/2 md:-translate-y-1/2 md:right-full md:bottom-auto md:rounded-xl rounded-md md:left-auto md:translate-x-0
+            ${
+              isOpen
+                ? "translate-y-0 md:translate-x-0 opacity-100 scale-100 pointer-events-auto"
+                : "translate-y-3 md:translate-x-3 opacity-0 scale-95 pointer-events-none"
+            }`}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-red-950 to-red-700 text-white p-2">
-              <h3 className="font-bold text-lg text-center">Kontakt</h3>
+            <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-slate-50 px-3 py-2.5 border-b border-slate-700/60">
+              <h3 className="font-medium text-sm tracking-wide text-center uppercase">
+                Kontakt
+              </h3>
             </div>
 
             {/* Inhalt */}
-            <div className="p-4 space-y-2">
-              <p className="text-gray-600 text-base">
-                <span className="pr-12"> </span>Wir sind jederzeit für Sie da.
+            <div className="p-4 space-y-3 text-sm text-slate-700">
+              <p className="  text-xs sm:text-base text-slate-600 text-center">
+                Wir sind gerne für Sie da
               </p>
-              <div className="border border-red-800"></div>
-              <div className="space-y-2 text-sm">
-                <p>
-                  <strong>E-Mail:</strong>{" "}
+              <div className=" bg-slate-200 border-b-2 "></div>
+
+              <div className="space-y-1.5">
+                <p className="flex flex-col gap-0.5">
+                  <span className="text-[12px] uppercase tracking-wide text-slate-500">
+                    E-Mail :
+                  </span>
                   <a
                     href="mailto:autogalerie.jülich@web.de"
-                    className="text-red-600 hover:text-red-800"
+                    className="text-slate-900 hover:text-slate-700 underline underline-offset-2 decoration-slate-400"
                   >
                     autogalerie.jülich@web.de
                   </a>
                 </p>
-                <p>
-                  <strong>Telefon:</strong>{" "}
+
+                <p className="flex flex-col gap-0.5">
+                  <span className="text-[12px] uppercase tracking-wide text-slate-500">
+                    Telefon :
+                  </span>
                   <a
                     href="tel:+4924619163780"
-                    className="text-red-600 hover:text-red-800"
+                    className="text-slate-900 hover:text-slate-700"
                   >
                     +49 (0)2461 9163780
                   </a>
                 </p>
-                <p>
-                  <strong>WhatsApp:</strong>{" "}
+
+                <p className="flex flex-col gap-0.5">
+                  <span className="text-[12px] uppercase tracking-wide text-slate-500">
+                    WhatsApp :
+                  </span>
                   <a
                     href="https://wa.me/4915234205041"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-red-600 hover:text-red-800"
+                    className="text-slate-900 hover:text-slate-700"
                   >
-                    App öffnen
+                    Chat öffnen
                   </a>
                 </p>
               </div>
 
-              <div className="flex justify-center">
+              <div className="pt-1 flex justify-center">
                 <button
                   onClick={handleContactClick}
-                  className="flex items-center gap-1 bg-gradient-to-r from-red-950 to-red-700 hover:from-red-600 hover:to-red-700 text-white py-2 px-4 text-sm rounded-xl font-semibold shadow-lg transition-all hover:scale-[1.02]"
+                  className="inline-flex items-center gap-1.5  bg-slate-900 text-slate-50 px-4 py-1.5 text-xs font-medium shadow-md hover:bg-slate-800 transition-all hover:shadow-lg hover:-translate-y-[1px]"
                 >
-                  Jetzt kontaktieren
+                  <FiMail size={14} />
+                  <span>Kontaktformular öffnen</span>
                 </button>
               </div>
             </div>

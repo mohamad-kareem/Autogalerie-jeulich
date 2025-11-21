@@ -3,7 +3,15 @@ import NavBar from "./(components)/Nav/NavBar";
 import SessionWrapper from "@/app/(components)/helpers/SessionWrapper";
 import { Toaster } from "react-hot-toast";
 import PageLogger from "@/app/(components)/PageLogger";
-import LayoutWrapper from "@/app/(components)/helpers/LayoutWrapper"; // 👈 new wrapper
+import LayoutWrapper from "@/app/(components)/helpers/LayoutWrapper";
+import { Playfair_Display } from "next/font/google";
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-playfair",
+});
+
 export const metadata = {
   title: "Autogalerie Jülich",
   description:
@@ -30,7 +38,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={playfair.variable}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0F4C81" />
@@ -46,12 +54,10 @@ export default function RootLayout({ children }) {
             },
           }}
         />
+
         <SessionWrapper>
           <NavBar />
-
-          {/* 👇 wrap children + floating widget logic here */}
           <LayoutWrapper>{children}</LayoutWrapper>
-
           <PageLogger />
         </SessionWrapper>
       </body>

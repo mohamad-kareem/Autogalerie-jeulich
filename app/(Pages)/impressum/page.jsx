@@ -25,7 +25,7 @@ export default function ImpressumPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-16 px-6 md:px-12 lg:px-20">
+    <main className="mt-10 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-16 px-6 md:px-12 lg:px-20">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-14 mt-5">
@@ -46,7 +46,7 @@ export default function ImpressumPage() {
               className="group relative bg-white rounded-2xl shadow-md hover:shadow-xl transition transform hover:-translate-y-1 border border-gray-200 p-8"
             >
               {/* Gradient accent bar */}
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-red-600 to-black rounded-t-2xl" />
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-slate-600 to-black rounded-t-2xl" />
 
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 {c.name}
@@ -63,7 +63,7 @@ export default function ImpressumPage() {
                   <span className="font-semibold">Tel.:</span>{" "}
                   <a
                     href={`tel:${c.phone.replace(/\s+/g, "")}`}
-                    className="text-red-700 hover:text-red-900 hover:underline"
+                    className="text-slate-700 hover:text-slate-900 hover:underline"
                   >
                     {c.phone}
                   </a>

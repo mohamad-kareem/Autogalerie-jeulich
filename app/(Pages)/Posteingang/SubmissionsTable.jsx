@@ -117,7 +117,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[300px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-slate-500"></div>
       </div>
     );
   }
@@ -165,7 +165,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
             >
               <div className="col-span-3">
                 <p className="font-medium text-gray-200 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-900/40 text-red-300 text-sm font-semibold shadow-sm border border-red-800/50">
+                  <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-slate-900/40 text-slate-300 text-sm font-semibold shadow-sm border border-slate-800/50">
                     {submission.name?.charAt(0).toUpperCase() || "A"}
                   </span>
 
@@ -177,14 +177,14 @@ export default function SubmissionsTable({ setUnreadCount }) {
                       title="Ungelesen"
                       aria-label="Ungelesen"
                     >
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600 shadow"></span>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-slate-600 shadow"></span>
                     </span>
                   )}
                 </p>
 
                 <div className="text-sm text-gray-400 mt-1 flex items-center gap-1">
-                  <FiMail className="text-red-400" size={14} />
+                  <FiMail className="text-slate-400" size={14} />
                   <span className="truncate">{submission.email || "—"}</span>
                 </div>
               </div>
@@ -196,7 +196,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
               <div className="col-span-3">
                 {submission.carName ? (
                   <div className="flex items-center gap-2">
-                    <FaCar className="text-red-400" />
+                    <FaCar className="text-slate-400" />
                     <div>
                       <p className="text-gray-300 truncate">
                         {truncateText(submission.carName, 3)}
@@ -209,7 +209,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
               </div>
               <div className="col-span-2">
                 <div className="text-sm text-gray-400 flex items-center gap-1">
-                  <FiCalendar className="text-red-400" size={14} />
+                  <FiCalendar className="text-slate-400" size={14} />
                   <span>{formatDate(submission.createdAt)}</span>
                 </div>
               </div>
@@ -220,7 +220,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
                     setSelectedSubmission(submission);
                     if (!submission.isRead) markAsRead(submission._id);
                   }}
-                  className="p-2 text-gray-400 hover:text-white hover:bg-red-600 rounded-md transition-colors duration-200 border border-gray-700 hover:border-red-500"
+                  className="p-2 text-gray-400 hover:text-white hover:bg-slate-600 rounded-md transition-colors duration-200 border border-gray-700 hover:border-slate-500"
                   title="Details anzeigen"
                 >
                   <FiEye />
@@ -245,7 +245,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-900/40 text-red-300 text-sm font-semibold shadow-sm border border-red-800/50">
+                  <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-slate-900/40 text-slate-300 text-sm font-semibold shadow-sm border border-slate-800/50">
                     {submission.name?.charAt(0).toUpperCase() || "A"}
                   </span>
 
@@ -254,7 +254,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
                       {submission.name || "—"}
                       {!submission.isRead && (
                         <span
-                          className="ml-2 inline-flex h-2 w-2 rounded-full bg-red-600 ring-2 ring-gray-900 shadow-sm"
+                          className="ml-2 inline-flex h-2 w-2 rounded-full bg-slate-600 ring-2 ring-gray-900 shadow-sm"
                           title="Ungelesen"
                           aria-label="Ungelesen"
                         ></span>
@@ -276,7 +276,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
                     setSelectedSubmission(submission);
                     if (!submission.isRead) markAsRead(submission._id);
                   }}
-                  className="p-2 text-gray-400 hover:text-red-400 rounded-md hover:bg-red-900/20 transition-colors border border-gray-700"
+                  className="p-2 text-gray-400 hover:text-slate-400 rounded-md hover:bg-slate-900/20 transition-colors border border-gray-700"
                   title="Details anzeigen"
                 >
                   <FiEye />
@@ -306,10 +306,10 @@ export default function SubmissionsTable({ setUnreadCount }) {
             </span>
 
             <div className="inline-block align-bottom bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full mx-4 border border-gray-800">
-              <div className="bg-gradient-to-r from-black to-red-900 px-6 py-3 border-b border-gray-800">
+              <div className="bg-gradient-to-r from-black to-slate-900 px-6 py-3 border-b border-gray-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="bg-red-900/40 inline-flex items-center justify-center h-10 w-10 rounded-full text-red-300 border border-red-800/50">
+                    <div className="bg-blue-900/40 inline-flex items-center justify-center h-10 w-10 rounded-full text-slate-300 border border-slate-800/50">
                       {selectedSubmission.name?.charAt(0).toUpperCase() || "A"}
                     </div>
                     <div>
@@ -324,7 +324,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
                   </div>
                   <button
                     onClick={() => setSelectedSubmission(null)}
-                    className="text-gray-400 hover:text-white transition-colors hover:bg-red-600/20 p-1 rounded-md"
+                    className="text-gray-400 hover:text-white transition-colors hover:bg-slate-600/20 p-1 rounded-md"
                   >
                     <FiX className="h-6 w-6" />
                   </button>
@@ -339,7 +339,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
                         Name
                       </p>
                       <p className="text-gray-200 font-medium flex items-center gap-2">
-                        <FiUser className="text-red-400" />
+                        <FiUser className="text-slate-400" />
                         {selectedSubmission.name || "—"}
                       </p>
                     </div>
@@ -349,12 +349,12 @@ export default function SubmissionsTable({ setUnreadCount }) {
                           Fahrzeug-Link
                         </p>
                         <p className="text-gray-200 font-medium flex items-center gap-2">
-                          <FiNavigation className="text-red-400" />
+                          <FiNavigation className="text-slate-400" />
                           <a
                             href={selectedSubmission.carLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-red-400 underline hover:text-red-300"
+                            className="text-slate-400 underline hover:text-slate-300"
                           >
                             Zum Fahrzeug
                           </a>
@@ -367,7 +367,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
                         E-Mail
                       </p>
                       <p className="text-gray-200 font-medium flex items-center gap-2">
-                        <FiMail className="text-red-400" />
+                        <FiMail className="text-slate-400" />
                         {selectedSubmission.email || "—"}
                       </p>
                     </div>
@@ -376,7 +376,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
                         Telefon
                       </p>
                       <p className="text-gray-200 font-medium flex items-center gap-2">
-                        <FiPhone className="text-red-400" />
+                        <FiPhone className="text-slate-400" />
                         {selectedSubmission.phone || "—"}
                       </p>
                     </div>
@@ -386,7 +386,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
                           Terminwunsch
                         </p>
                         <p className="text-gray-200 font-medium flex items-center gap-2">
-                          <FiCalendar className="text-red-400" />
+                          <FiCalendar className="text-slate-400" />
                           {formatDate(selectedSubmission.date)}
                         </p>
                       </div>
@@ -397,7 +397,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
                         Betreff
                       </p>
                       <p className="text-gray-200 font-medium flex items-center gap-2">
-                        <FiInfo className="text-red-400" />
+                        <FiInfo className="text-slate-400" />
                         {selectedSubmission.subject || "—"}
                       </p>
                     </div>
@@ -407,7 +407,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
                           Fahrzeug
                         </p>
                         <p className="text-gray-200 font-medium flex items-center gap-2">
-                          <FaCar className="text-red-400" />
+                          <FaCar className="text-slate-400" />
                           {selectedSubmission.carName}
                         </p>
                       </div>
@@ -416,7 +416,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
 
                   <div className="bg-gray-800/40 p-4 rounded-lg border border-gray-800">
                     <h4 className="text-lg font-semibold text-gray-200 mb-3 flex items-center">
-                      <FiMessageSquare className="mr-2 text-red-400" />
+                      <FiMessageSquare className="mr-2 text-slate-400" />
                       Nachricht
                     </h4>
                     <div className="bg-gray-900/60 p-4 rounded border border-gray-800">
@@ -437,7 +437,7 @@ export default function SubmissionsTable({ setUnreadCount }) {
                 </button>
                 <button
                   onClick={() => handleDeleteSubmission(selectedSubmission._id)}
-                  className="px-2 py-2 border text-xs  border-transparent rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none transition-colors"
+                  className="px-2 py-2 border text-xs  border-transparent rounded-lg shadow-sm text-white bg-slate-600 hover:bg-slate-700 focus:outline-none transition-colors"
                 >
                   Anfrage löschen
                 </button>

@@ -75,7 +75,7 @@ export default function RegistrationPage() {
       setPreviewImage(null);
     } catch (err) {
       setMessage({
-        text: err.message || "An error occurred during registration",
+        text: err.message || "An error occurslate during registration",
         type: "error",
       });
     } finally {
@@ -89,7 +89,7 @@ export default function RegistrationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-red-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
@@ -113,7 +113,7 @@ export default function RegistrationPage() {
                 className={`mb-6 p-3 rounded-md border text-sm ${
                   message.type === "success"
                     ? "bg-green-900/20 text-green-300 border-green-800/50"
-                    : "bg-red-900/20 text-red-300 border-red-800/50"
+                    : "bg-slate-900/20 text-slate-300 border-slate-800/50"
                 }`}
               >
                 {message.text}
@@ -144,7 +144,7 @@ export default function RegistrationPage() {
                   </div>
                   <div className="flex-1">
                     <label className="cursor-pointer">
-                      <span className="inline-flex items-center px-3 py-2 border border-gray-700 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-300 bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                      <span className="inline-flex items-center px-3 py-2 border border-gray-700 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-300 bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors">
                         {previewImage ? "ändern" : "hochladen"}
                       </span>
                       <input
@@ -159,7 +159,7 @@ export default function RegistrationPage() {
                       <button
                         type="button"
                         onClick={removeImage}
-                        className="ml-3 inline-flex items-center px-3 py-2 border border-gray-700 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-300 bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                        className="ml-3 inline-flex items-center px-3 py-2 border border-gray-700 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-300 bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
                       >
                         löschen
                       </button>
@@ -189,7 +189,7 @@ export default function RegistrationPage() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-red-500 focus:border-red-500 transition-colors"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-slate-500 focus:border-slate-500 transition-colors"
                     placeholder="Thomas Müller"
                   />
                 </div>
@@ -212,8 +212,8 @@ export default function RegistrationPage() {
                     type="email"
                     value={formData.email}
                     onChange={handleChange}
-                    required
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-red-500 focus:border-red-500 transition-colors"
+                    requislate
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-slate-500 focus:border-slate-500 transition-colors"
                     placeholder="admin@company.com"
                   />
                 </div>
@@ -236,9 +236,9 @@ export default function RegistrationPage() {
                     type="password"
                     value={formData.password}
                     onChange={handleChange}
-                    required
+                    requislate
                     minLength="8"
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-red-500 focus:border-red-500 transition-colors"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-slate-500 focus:border-slate-500 transition-colors"
                     placeholder="••••••••"
                   />
                 </div>
@@ -259,7 +259,7 @@ export default function RegistrationPage() {
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
-                  className="block w-full pl-3 pr-10 py-2 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-200 focus:outline-none focus:ring-red-500 focus:border-red-500 transition-colors"
+                  className="block w-full pl-3 pr-10 py-2 border border-gray-700 rounded-md shadow-sm bg-gray-800 text-gray-200 focus:outline-none focus:ring-slate-500 focus:border-slate-500 transition-colors"
                 >
                   <option value="admin" className="bg-gray-800">
                     Administrator
@@ -274,7 +274,7 @@ export default function RegistrationPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors ${
+                  className={`w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-slate-600 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors ${
                     isSubmitting ? "opacity-75 cursor-not-allowed" : ""
                   }`}
                 >
@@ -316,7 +316,7 @@ export default function RegistrationPage() {
 
       {/* Background Glow */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-60 h-60 bg-red-500/10 blur-3xl rounded-full" />
+        <div className="absolute top-0 left-1/3 w-60 h-60 bg-slate-500/10 blur-3xl rounded-full" />
         <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-purple-500/10 blur-3xl rounded-full" />
       </div>
     </div>

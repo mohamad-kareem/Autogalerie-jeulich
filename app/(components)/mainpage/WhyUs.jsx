@@ -32,16 +32,16 @@ export default function WhyUs() {
         className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10"
         ref={containerRef}
       >
-        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-center mb-12 text-white">
+        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl  font-playfair leading-tight text-center mb-12 text-white">
           So funktioniert der Autoankauf bei Autogalerie Jülich
         </h2>
 
         {/* Static Gray Line */}
         <div className="hidden md:block absolute top-[260px] bottom-[285px] left-1/2 transform -translate-x-1/2 w-[2px] bg-gray-300 z-0" />
 
-        {/* Dynamic Red Line */}
+        {/* Dynamic blue Line */}
         <div
-          className="hidden md:block absolute top-[260px] left-1/2 transform -translate-x-1/2 w-[2px] bg-red-600 z-10 transition-all duration-300"
+          className="hidden md:block absolute top-[260px] left-1/2 transform -translate-x-1/2 w-[2px] bg-blue-600 z-10 transition-all duration-300"
           style={{
             height: `calc(${scrollProgress} * (90% - 420px))`,
           }}
@@ -70,7 +70,7 @@ export default function WhyUs() {
                 </div>
 
                 {/* Text */}
-                <div className="bg-gradient-to-br from-black to-red-950 rounded-xl shadow-md p-6 sm:p-8 max-w-md w-full md:w-1/2 relative z-10 text-center md:text-left">
+                <div className="bg-gradient-to-br from-black to-blue-950 rounded-xl shadow-md p-6 sm:p-8 max-w-md w-full md:w-1/2 relative z-10 text-center md:text-left">
                   <h3 className="font-bold text-lg sm:text-xl mb-2 text-white">
                     {step.title}
                   </h3>
@@ -83,7 +83,7 @@ export default function WhyUs() {
                 <div
                   className={`hidden md:flex absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full border-4 items-center justify-center font-bold z-30 transition-all duration-300 ${
                     reached
-                      ? "bg-red-600 text-white border-red-600"
+                      ? "bg-blue-600 text-white border-blue-600"
                       : "bg-white text-gray-800 border-gray-300"
                   }`}
                 >
@@ -97,17 +97,25 @@ export default function WhyUs() {
         {/* CTA */}
         <div className="mt-8 text-center">
           <div className="flex justify-center mb-3">
-            <Link href="/gebrauchtwagen" passHref>
-              <Button className="px-6 py-2 text-sm">
-                Kostenlose Fahrzeugbewertung
-              </Button>
+            <Link
+              href="/gebrauchtwagen"
+              passHref
+              className="
+                inline-flex items-center justify-center 
+                rounded-full border border-blue-400 px-5 py-2.5 
+                text-sm md:text-base font-semibold text-white 
+                transition 
+                hover:border-white/40 hover:text-blue-200
+              "
+            >
+              Kostenlose Fahrzeugbewertung
             </Link>
           </div>
         </div>
       </div>
 
       {/* Glow */}
-      <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-red-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
       <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
     </section>
   );

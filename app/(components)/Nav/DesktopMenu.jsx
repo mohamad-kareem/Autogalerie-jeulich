@@ -1,141 +1,151 @@
 // components/DesktopMenu.jsx
 "use client";
-import { ChevronDown } from "lucide-react";
+
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { ChevronDown, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+const submenuVariants = {
+  hidden: {
+    opacity: 0,
+    y: 6,
+    scale: 0.98,
+    pointerEvents: "none",
+    transition: { duration: 0.15, ease: "easeOut" },
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    pointerEvents: "auto",
+    transition: {
+      duration: 0.15,
+      ease: "easeOut",
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -8 },
+  visible: { opacity: 1, x: 0 },
+};
 
 const DesktopMenu = ({ menu, scrolled }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [activeSubMenu, setActiveSubMenu] = useState(null);
+  const [open, setOpen] = useState(false);
+  const hasSubMenu = Array.isArray(menu?.subMenu) && menu.subMenu.length > 0;
 
-  const subMenuAnimation = {
-    hidden: {
-      opacity: 0,
-      y: 10,
-      transition: {
-        duration: 0.2,
-        ease: "easeOut",
-      },
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.2,
-        ease: "easeOut",
-        staggerChildren: 0.05,
-        when: "beforeChildren",
-      },
-    },
-  };
-
-  const itemAnimation = {
-    hidden: { opacity: 0, y: 5 },
-    visible: { opacity: 1, y: 0 },
-  };
-
-  const hasSubMenu = menu?.subMenu?.length > 0;
+  // Compact width classes
+  const widthClass =
+    menu.gridCols === 3
+      ? "w-[320px]"
+      : menu.gridCols === 2
+      ? "w-[280px]"
+      : "w-[220px]";
 
   return (
     <motion.li
       className="relative"
-      onMouseEnter={() => {
-        setIsHovered(true);
-        setActiveSubMenu(menu.name);
-      }}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        setActiveSubMenu(null);
-      }}
-      whileHover={{ scale: 1.02 }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
     >
+      {/* Top-level item */}
       <Link
         href={menu.href || "#"}
-        className={`flex items-center gap-1 px-4 py-3 transition-all duration-300 font-medium ${
-          scrolled ? "text-sm py-2" : "text-base py-3"
-        } text-white hover:text-red-600`}
+        className={`flex items-center gap-1 px-4 transition-all duration-250 font-medium group ${
+          scrolled
+            ? "py-3 text-sm text-slate-700 hover:text-slate-900"
+            : "py-4 text-base text-white hover:text-slate-200"
+        }`}
       >
-        {menu.name}
+        <span className="font-semibold tracking-wide relative">
+          {menu.name}
+          {/* Animated underline */}
+          <span
+            className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-current transition-all duration-300 group-hover:w-full ${
+              scrolled ? "bg-slate-900" : "bg-white"
+            }`}
+          />
+        </span>
         {hasSubMenu && (
           <ChevronDown
-            className={`w-4 h-4 ml-1 transition-transform duration-200 ${
-              isHovered ? "rotate-180" : ""
-            }`}
+            className={`h-3 w-3 transition-transform duration-300 ${
+              open ? "rotate-180" : ""
+            } ${scrolled ? "text-slate-500" : "text-slate-300"}`}
             aria-hidden="true"
           />
         )}
       </Link>
 
+      {/* Submenu */}
       {hasSubMenu && (
         <AnimatePresence>
-          {isHovered && activeSubMenu === menu.name && (
+          {open && (
             <motion.div
-              className={`absolute left-0 top-full pt-2 z-50 ${
-                menu.gridCols === 3
-                  ? "w-[720px]"
-                  : menu.gridCols === 2
-                  ? "w-[480px]"
-                  : "w-[200px]"
-              }`}
+              className={`absolute left-0 top-full z-40 pt-2 ${widthClass}`}
               initial="hidden"
               animate="visible"
               exit="hidden"
-              variants={subMenuAnimation}
+              variants={submenuVariants}
             >
-              {/* 🔴 Red separator line */}
-              <div className="h-1 bg-red-600 w-full rounded-t-md" />
+              {/* Compact Panel */}
+              <div className="rounded-lg border border-slate-200 bg-white/98 backdrop-blur-xl shadow-xl ring-1 ring-black/10 overflow-hidden">
+                {/* Header with menu name */}
+                <div className="px-4 py-3 bg-gradient-to-r from-slate-50 to-slate-100/80 border-b border-slate-200/60"></div>
 
-              <div className="bg-white rounded-b-lg shadow-xl border border-gray-100 overflow-hidden">
-                <div
-                  className={`grid p-4 gap-6 ${
-                    menu.gridCols === 3
-                      ? "grid-cols-3"
-                      : menu.gridCols === 2
-                      ? "grid-cols-2"
-                      : "grid-cols-1"
-                  }`}
-                >
-                  {menu.subMenu.map((sub, i) => (
+                {/* Compact items grid */}
+                <div className="p-2">
+                  {menu.subMenu.map((sub, index) => (
                     <motion.div
-                      key={i}
-                      variants={itemAnimation}
-                      whileHover={{ x: 2 }}
+                      key={sub.href || sub.name || index}
+                      variants={itemVariants}
+                      custom={index}
+                      initial="hidden"
+                      animate="visible"
+                      transition={{ duration: 0.2, delay: index * 0.02 }}
                     >
                       <Link
                         href={sub.href || "#"}
-                        className="block p-3 rounded-lg hover:bg-red-50 transition-colors duration-200"
+                        className="flex items-center gap-3 p-2 rounded-md transition-all duration-200 hover:bg-blue-50 group relative"
                       >
-                        <div className="flex items-start gap-3">
-                          {sub.icon && (
-                            <div className="flex-shrink-0 mt-1 text-red-600">
-                              {sub.icon}
-                            </div>
-                          )}
-                          <div>
-                            <h6 className="font-semibold text-gray-900">
+                        {/* Icon container */}
+                        {sub.icon && (
+                          <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-md bg-slate-100 text-slate-600 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors duration-200">
+                            {sub.icon}
+                          </div>
+                        )}
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <h6 className="text-sm font-medium text-slate-900 group-hover:text-blue-700 transition-colors duration-200 truncate">
                               {sub.name}
                             </h6>
-                            {sub.desc && (
-                              <p className="text-sm text-gray-500 mt-1">
-                                {sub.desc}
-                              </p>
-                            )}
+                            <ArrowRight className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200" />
                           </div>
+                          {sub.desc && (
+                            <p className="mt-0.5 text-xs text-slate-500 leading-tight line-clamp-2">
+                              {sub.desc}
+                            </p>
+                          )}
                         </div>
+
+                        {/* Hover accent line */}
+                        <div className="absolute left-0 top-1/2 w-1 h-6 bg-blue-500 rounded-r -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                       </Link>
                     </motion.div>
                   ))}
                 </div>
 
+                {/* Compact Footer */}
                 {menu.footer && (
-                  <div className="bg-gray-50 px-4 py-3 border-t border-gray-100">
+                  <div className="px-3 py-2 bg-slate-50/80 border-t border-slate-200/60">
                     <Link
                       href={menu.footer.href || "#"}
-                      className="text-sm font-medium text-red-600 hover:text-red-700 flex items-center gap-1"
+                      className="flex items-center justify-between p-2 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors duration-200 group"
                     >
-                      {menu.footer.text}
-                      <ChevronDown className="w-4 h-4 rotate-90" />
+                      <span>{menu.footer.text}</span>
+                      <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-1" />
                     </Link>
                   </div>
                 )}

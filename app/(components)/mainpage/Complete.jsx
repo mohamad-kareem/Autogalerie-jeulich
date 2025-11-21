@@ -11,7 +11,7 @@ import Reviews from "./CustomerReviews";
 import GridBackground from "../helpers/Grid";
 import RandomCarSlider from "./RandomCarSlider";
 import DiscountPopup from "./popup.jsx"; // Import the popup component
-import AdPromotion from "../helpers/AdPromotion";
+
 import OpelPremiumAd from "../helpers/Ad2";
 const Complete = () => {
   return (
@@ -20,7 +20,7 @@ const Complete = () => {
       <HeroSection />
 
       <OpelPremiumAd />
-      <AdPromotion />
+
       <LandingChoices />
       <RandomCarSlider />
       <Rating />

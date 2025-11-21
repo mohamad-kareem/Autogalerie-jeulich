@@ -9,7 +9,7 @@ export default async function CarPage({ params }) {
   if (!car) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <h1 className="text-3xl font-bold text-red-600">🚫 Car not found</h1>
+        <h1 className="text-3xl font-bold text-blue-600">🚫 Car not found</h1>
       </div>
     );
   }

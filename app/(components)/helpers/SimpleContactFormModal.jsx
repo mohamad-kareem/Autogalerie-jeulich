@@ -87,19 +87,19 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
         }`}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-red-900 to-red-700 text-white p-3 md:p-4 rounded-t-lg">
+        <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-slate-50 p-3 md:p-4 rounded-t-lg border-b border-slate-700/60">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm md:text-lg font-bold">
+              <h2 className="text-sm md:text-lg font-semibold">
                 Kontaktieren Sie uns
               </h2>
-              <p className="text-red-100 text-[10px] md:text-xs mt-0.5">
+              <p className="text-slate-200/80 text-[10px] md:text-xs mt-0.5">
                 Antwort innerhalb von 12h
               </p>
             </div>
             <button
               onClick={onClose}
-              className="text-white/80 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
+              className="text-slate-200/80 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
             >
               <FiX size={18} />
             </button>
@@ -114,7 +114,7 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
           {/* Name */}
           <div className="relative">
             <FiUser
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               size={14}
             />
             <input
@@ -124,14 +124,14 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
               required
               value={formData.name}
               onChange={handleChange}
-              className="w-full border border-gray-200 rounded pl-8 pr-2 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-red-500 focus:border-transparent"
+              className="w-full border border-slate-200 rounded pl-8 pr-2 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-slate-900 focus:border-slate-900/60"
             />
           </div>
 
           {/* Email */}
           <div className="relative">
             <FiMail
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               size={14}
             />
             <input
@@ -141,14 +141,14 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
               required
               value={formData.email}
               onChange={handleChange}
-              className="w-full border border-gray-200 rounded pl-8 pr-2 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-red-500 focus:border-transparent"
+              className="w-full border border-slate-200 rounded pl-8 pr-2 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-slate-900 focus:border-slate-900/60"
             />
           </div>
 
           {/* Phone */}
           <div className="relative">
             <FiPhone
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               size={14}
             />
             <input
@@ -157,14 +157,14 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
               placeholder="Telefon"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full border border-gray-200 rounded pl-8 pr-2 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-red-500 focus:border-transparent"
+              className="w-full border border-slate-200 rounded pl-8 pr-2 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-slate-900 focus:border-slate-900/60"
             />
           </div>
 
           {/* Subject */}
           <div className="relative">
             <FiFileText
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               size={14}
             />
             <select
@@ -172,7 +172,7 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
               required
               value={formData.subject}
               onChange={handleChange}
-              className="w-full border border-gray-200 rounded pl-8 pr-6 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-red-500 focus:border-transparent appearance-none bg-white"
+              className="w-full border border-slate-200 rounded pl-8 pr-6 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-slate-900 focus:border-slate-900/60 appearance-none bg-white"
             >
               <option value="">Betreff auswählen</option>
               <option value="Allgemeine Anfrage">Allgemeine Anfrage</option>
@@ -185,7 +185,7 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
             </select>
             <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
               <svg
-                className="w-3 h-3 text-gray-400"
+                className="w-3 h-3 text-slate-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -203,7 +203,7 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
           {/* Message */}
           <div className="relative">
             <FiMessageSquare
-              className="absolute left-3 top-3 text-gray-400"
+              className="absolute left-3 top-3 text-slate-400"
               size={14}
             />
             <textarea
@@ -213,7 +213,7 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
               value={formData.message}
               onChange={handleChange}
               rows={5}
-              className="w-full border border-gray-200 rounded pl-8 pr-2 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-red-500 focus:border-transparent resize-none"
+              className="w-full border border-slate-200 rounded pl-8 pr-2 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-slate-900 focus:border-slate-900/60 resize-none"
             />
           </div>
 
@@ -221,14 +221,14 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-700 text-white py-2 md:py-2.5 rounded font-medium flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow text-xs md:text-sm"
+            className="w-full bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-slate-50 py-2 md:py-2.5 rounded font-medium flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow text-xs md:text-sm"
           >
             <FiSend size={14} />
             {isSubmitting ? "Wird gesendet..." : "Senden"}
           </button>
 
           {/* Privacy */}
-          <p className="text-[10px] md:text-[11px] text-gray-500 text-center">
+          <p className="text-[10px] md:text-[11px] text-slate-500 text-center">
             Ihre Daten werden vertraulich behandelt.
           </p>
         </form>

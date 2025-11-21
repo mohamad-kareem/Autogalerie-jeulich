@@ -1,4 +1,11 @@
 /* app/globals.css */
+:root {
+  --font-playfair: "Playfair Display", serif;
+}
+
+.font-playfair {
+  font-family: var(--font-playfair);
+}
 @import "tailwindcss/preflight";
 
 @tailwind utilities;

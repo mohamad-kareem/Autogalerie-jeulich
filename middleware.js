@@ -58,5 +58,6 @@ export const config = {
     "/kaufvertrag/:id/:path*",
     "/Auto-scheins/:path*",
     "/Autoteil/:path*",
+    "/aufgabenboard/:path*",
   ],
 };

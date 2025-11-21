@@ -1,3 +1,4 @@
+// components/NavBar.jsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -6,17 +7,17 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import {
   User,
-  ChevronDown,
   Settings,
   Home,
   LogOut,
-  Mail,
   UserCog,
+  Mail,
+  Shield,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 
-import Logo from "../../(assets)/logo12.png";
+import Logo from "../../(assets)/logo1111.png";
 import DesktopMenu from "./DesktopMenu";
 import MobMenu from "./MobMenu";
 import { Menus } from "../../utils/NavData";
@@ -29,8 +30,6 @@ export default function NavBar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hydrated, setHydrated] = useState(false);
-
-  // Profile modal state
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [user, setUser] = useState(session?.user || null);
 
@@ -54,13 +53,13 @@ export default function NavBar() {
     "/Vehicles",
     "/medicine",
     "/Autoteil",
+    "/aufgabenboard",
   ];
 
   const isAdminRoute = adminRoutes.some((route) =>
     pathname?.toLowerCase().startsWith(route.toLowerCase())
   );
 
-  // Sync user with session
   useEffect(() => {
     if (session?.user) {
       setUser(session.user);
@@ -70,7 +69,7 @@ export default function NavBar() {
   useEffect(() => {
     setHydrated(true);
 
-    const handleScroll = () => setScrolled(window.scrollY > 10);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setOpen(false);
@@ -107,93 +106,190 @@ export default function NavBar() {
 
   const avatarUrl = user?.image || "";
 
-  // Enhanced floating dropdown menu
-  const FloatingMenu = (
+  // Floating user dropdown (used both on admin and normal routes)
+  const UserDropdown = (
     <div
-      className="fixed top-3 right-3 z-[9999] print:hidden"
+      className="fixed top-3 right-3 sm:top-4 sm:right-4 z-[9999] print:hidden"
       ref={dropdownRef}
     >
       <div className="relative">
-        {/* Avatar Button */}
+        {/* Avatar button */}
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-2 p-0.5 rounded-full bg-gradient-to-br from-red-950 to-gray-950 backdrop-blur-md border border-gray-700 hover:border-red-400/50 shadow-lg hover:shadow-red-500/10 transition-all duration-300"
+          className={`
+            flex h-10 w-10 items-center justify-center rounded-full border-[1.5px] shadow-lg 
+            backdrop-blur-md transition-all
+            ${
+              open
+                ? "border-blue-500 bg-white/95 ring-2 ring-blue-200"
+                : "border-white/70 bg-slate-100/90 hover:border-blue-400 hover:bg-white"
+            }
+          `}
+          aria-label="Benutzermenü öffnen"
         >
           {avatarUrl ? (
-            <Image
-              src={avatarUrl}
-              alt="User Avatar"
-              width={32}
-              height={32}
-              className="rounded-full object-cover w-8 h-8 ring-2 ring-red-900"
-            />
+            <div className="relative">
+              <Image
+                src={avatarUrl}
+                alt="User Avatar"
+                width={36}
+                height={36}
+                className="h-9 w-9 rounded-full object-cover"
+              />
+              {/* Online indicator */}
+              <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-[1.5px] border-white bg-green-500 shadow-sm" />
+            </div>
           ) : (
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-800 to-gray-900 flex items-center justify-center">
-              <User className="text-white w-4 h-4" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-slate-700 to-slate-900 text-white">
+              <User className="h-4 w-4" />
             </div>
           )}
-          <ChevronDown
-            className={`w-4 h-4 text-gray-300 transition-transform duration-300 mr-1 ${
-              open ? "rotate-180" : ""
-            }`}
-          />
         </motion.button>
 
-        {/* Enhanced Dropdown */}
+        {/* Dropdown panel */}
         <AnimatePresence>
           {open && (
             <motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              initial={{ opacity: 0, y: 10, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="absolute right-0 mt-0.5 w-42 sm:w-50 bg-gradient-to-br from-red-950 to-gray-950 backdrop-blur-xl shadow-xl rounded-xl py-2 z-50 border border-gray-700/50 overflow-hidden"
+              exit={{ opacity: 0, y: 10, scale: 0.97 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className="
+        absolute right-0 mt-3 w-[290px] sm:w-[320px]
+        rounded-2xl 
+        border border-slate-700/70
+        bg-slate-900/95 
+        shadow-2xl shadow-black/50
+        backdrop-blur-xl
+        overflow-hidden
+      "
             >
-              {/* User info header */}
-              <div className="px-4 py-3 border-b border-gray-800">
-                <p className="text-sm font-medium text-white truncate">
-                  {user?.name || "User"}
-                </p>
+              {/* HEADER */}
+              <div className="bg-gradient-to-r from-slate-950 to-slate-900 px-4 py-4 text-white">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full border border-white/20 bg-white/10 overflow-hidden flex items-center justify-center">
+                    {avatarUrl ? (
+                      <Image
+                        src={avatarUrl}
+                        alt="User Avatar"
+                        width={48}
+                        height={48}
+                        className="h-12 w-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-6 w-6 text-white" />
+                    )}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-semibold text-white truncate">
+                      {user?.name}
+                    </h3>
+
+                    <p className="text-xs text-slate-300 truncate mt-1 flex items-center">
+                      <Mail className="w-3 h-3 mr-1" /> {user?.email}
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="py-1.5">
+              {/* NAV ITEMS */}
+              <div className="py-2 bg-slate-900/90">
+                <p className="px-4 pb-1 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+                  Navigation
+                </p>
+
+                {/* Admin Dashboard */}
                 <Link
                   href="/AdminDashboard"
-                  className="flex items-center px-4 py-2.5 text-sm text-gray-300 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 group"
                   onClick={() => setOpen(false)}
+                  className="
+      flex items-center px-4 py-2.5 text-sm text-slate-200
+      hover:bg-slate-800 hover:text-blue-400
+      transition-colors group
+    "
                 >
-                  <Settings className="w-4 h-4 mr-3 text-gray-400 group-hover:text-red-400 transition-colors" />
-                  Dashboard
+                  <div
+                    className="
+        w-8 h-8 flex items-center justify-center rounded-lg
+        bg-blue-900/40 group-hover:bg-blue-900/60
+      "
+                  >
+                    <Settings className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <span className="ml-3">Admin Dashboard</span>
                 </Link>
+
+                {/* Homepage */}
                 <Link
                   href="/"
-                  className="flex items-center px-4 py-2.5 text-sm text-gray-300 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 group"
                   onClick={() => setOpen(false)}
+                  className="
+      flex items-center px-4 py-2.5 text-sm text-slate-200
+      hover:bg-slate-800 hover:text-emerald-400
+      transition-colors group
+    "
                 >
-                  <Home className="w-4 h-4 mr-3 text-gray-400 group-hover:text-red-400 transition-colors" />
-                  Homepage
+                  <div
+                    className="
+        w-8 h-8 flex items-center justify-center rounded-lg
+        bg-emerald-900/40 group-hover:bg-emerald-900/60
+      "
+                  >
+                    <Home className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <span className="ml-3">Zur Homepage</span>
                 </Link>
+
+                {/* Profil bearbeiten — same style as links */}
                 <button
                   onClick={() => {
                     setOpen(false);
                     setShowProfileModal(true);
                   }}
-                  className="flex w-full items-center px-4 py-2.5 text-sm text-gray-300 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 group"
+                  className="
+      w-full flex items-center px-4 py-2.5 text-sm text-slate-200
+      hover:bg-slate-800 hover:text-indigo-400
+      transition-colors group
+    "
                 >
-                  <UserCog className="w-4 h-4 mr-3 text-gray-400 group-hover:text-red-400 transition-colors" />
-                  Edit Profile
+                  <div
+                    className="
+        w-8 h-8 flex items-center justify-center rounded-lg
+        bg-indigo-900/40 group-hover:bg-indigo-900/60
+      "
+                  >
+                    <UserCog className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <span className="ml-3">Profil bearbeiten</span>
                 </button>
               </div>
 
-              <div className="px-4 py-2 border-t border-gray-800">
+              {/* LOGOUT */}
+              <div className="border-t border-slate-800 bg-slate-900/90 px-3 py-3">
                 <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className="flex items-center w-full px-2  text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-md transition-all duration-200 group"
+                  onClick={() => {
+                    setOpen(false);
+                    signOut({ callbackUrl: "/" });
+                  }}
+                  className="
+            flex w-full items-center justify-center gap-2
+            px-1 py-1 rounded-md
+            border border-blue-500/40 
+            bg-blue-900/40 text-blue-300
+            hover:bg-blue-900/60 hover:text-blue-200
+            transition-all
+            shadow-sm shadow-black/40
+          "
                 >
-                  <LogOut className="w-4 h-4 mr-3" />
-                  Sign Out
+                  <LogOut className="w-4 h-4" />
+                  Abmelden
                 </button>
+
+                <p className="mt-2 text-[11px] text-center text-slate-500">
+                  Autogalerie Jülich System
+                </p>
               </div>
             </motion.div>
           )}
@@ -215,59 +311,68 @@ export default function NavBar() {
       )}
     </div>
   );
+
+  // On admin routes, only show floating dropdown (no full navbar)
   if (session?.user && isAdminRoute) {
-    return <>{FloatingMenu}</>;
+    return <>{UserDropdown}</>;
   }
+
   return (
     <header
-      className={`print:hidden fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+      className={`print:hidden fixed inset-x-0 top-0 z-40 transition-all duration-500 ${
         scrolled
-          ? "h-14 shadow-md bg-gradient-to-br from-black to-red-950 backdrop-blur-sm"
-          : "h-16 bg-gradient-to-br from-black/60 to-red-950"
+          ? "h-16 shadow-2xl bg-gradient-to-b from-slate-950/95 to-slate-900/90 backdrop-blur-xl border-b border-slate-800/70"
+          : "h-20 bg-gradient-to-b from-slate-950/95 to-slate-900/85 backdrop-blur-md"
       }`}
     >
-      <nav className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto h-full flex items-center justify-between px-2 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
-        {/* Logo */}
-        <Link href="/" className="flex items-center flex-shrink-0 print:hidden">
-          <Image
-            src={Logo}
-            alt="Logo"
-            priority
-            className={`object-contain w-15 h-15 sm:w-[85px] sm:h-[110px] transition-transform duration-300 ${
-              scrolled ? "scale-70" : "scale-100"
-            }`}
-          />
-          {/*   <span
-            className={`ml-2 font-semibold whitespace-nowrap transition-all duration-300 text-white text-[10px] sm:text-base ${
-              scrolled ? "sm:text-sm" : "sm:text-base"
+      <nav className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto h-full flex items-center justify-between px-4 sm:px-6 lg:px-8">
+        {/* Logo + Title */}
+        <Link
+          href="/"
+          className="flex items-center flex-shrink-0 gap-2 sm:gap-3 print:hidden"
+        >
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            transition={{ type: "spring", stiffness: 300, damping: 18 }}
+          >
+            <Image
+              src={Logo}
+              alt="Autogalerie Jülich"
+              priority
+              className={`object-contain transition-all duration-500 ${
+                scrolled
+                  ? "w-10 h-10 sm:w-11 sm:h-11"
+                  : "w-12 h-12 sm:w-14 sm:h-14"
+              }`}
+            />
+          </motion.div>
+          <span
+            className={`hidden sm:inline font-playfair tracking-[0.3em] uppercase transition-all duration-500 ${
+              scrolled
+                ? "text-[10px] sm:text-xs text-slate-100"
+                : "text-[11px] sm:text-sm text-slate-50"
             }`}
           >
             Autogalerie Jülich
-          </span>*/}
+          </span>
         </Link>
 
-        {/* Right Side */}
-        <div className="flex items-center space-x-2 sm:space-x-4">
-          {/* Desktop Menu */}
-          <ul className="hidden lg:flex items-center space-x-2 xl:space-x-4">
+        {/* Desktop Navigation */}
+        <div className="hidden lg:flex items-center space-x-1">
+          <ul className="flex items-center space-x-1">
             {Menus.map((menu) => (
-              <DesktopMenu menu={menu} key={menu.name} scrolled={scrolled} />
+              <DesktopMenu key={menu.name} menu={menu} scrolled={scrolled} />
             ))}
           </ul>
-
-          {/* Mobile Menu */}
-          <div className="lg:hidden">
-            <MobMenu
-              Menus={Menus}
-              isAdmin={false}
-              avatarUrl={avatarUrl}
-              onSignOut={() => signOut({ callbackUrl: "/" })}
-            />
-          </div>
-
-          {/* ✅ Floating menu always if logged in */}
-          {session?.user && <div className="ml-2">{FloatingMenu}</div>}
         </div>
+
+        {/* Mobile Menu */}
+        <div className="lg:hidden">
+          <MobMenu Menus={Menus} />
+        </div>
+
+        {/* Floating user dropdown (top-right) */}
+        {session?.user && UserDropdown}
       </nav>
     </header>
   );

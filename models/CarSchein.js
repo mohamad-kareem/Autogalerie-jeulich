@@ -1,3 +1,4 @@
+// models/CarSchein.js
 import mongoose from "mongoose";
 
 const CarScheinSchema = new mongoose.Schema(
@@ -6,9 +7,21 @@ const CarScheinSchema = new mongoose.Schema(
     finNumber: { type: String, unique: true },
     imageUrl: { type: String },
     publicId: { type: String },
-    assignedTo: { type: String, default: "" },
     notes: { type: [String], default: [] },
     owner: { type: String, default: "" },
+
+    // Schlüssel-Felder
+    keyNumber: { type: String, default: "" }, // z.B. "99"
+    keyCount: { type: Number, default: 2 }, // 1 oder 2
+    keyColor: { type: String, default: "#000000" }, // Farbcodierung
+    keySold: { type: Boolean, default: false }, // Fahrzeug verkauft?
+    keyNote: { type: String, default: "" }, // Notiz zum Schlüssel
+
+    // Tankstatus
+    fuelNeeded: { type: Boolean, default: false }, // Tank leer / muss aufgefüllt werden?
+
+    // 🔹 Nur für Dashboard (ob Karte ausgeblendet ist)
+    dashboardHidden: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

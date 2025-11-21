@@ -41,7 +41,6 @@ const ContactForm = ({ car, onSuccess }) => {
     setIsSubmitting(true);
 
     try {
-      // Prepare submission data
       const submissionData = {
         ...formData,
         carId: car._id,
@@ -83,7 +82,6 @@ const ContactForm = ({ car, onSuccess }) => {
         );
       }
 
-      // Success case
       toast.success("Ihre Anfrage wurde erfolgreich übermittelt!");
 
       // Reset form
@@ -96,10 +94,8 @@ const ContactForm = ({ car, onSuccess }) => {
         date: "",
       });
 
-      // Call success callback if provided
       if (onSuccess) onSuccess();
     } catch (error) {
-      // Error handling
       console.error("Submission error:", error);
 
       if (error.message.includes("gespeichert")) {
@@ -122,53 +118,67 @@ const ContactForm = ({ car, onSuccess }) => {
       {/* Hidden car ID field */}
       <input type="hidden" name="car" value={car._id} />
 
-      {/* Name field */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Name*
-        </label>
-        <input
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 text-sm"
-        />
+      {/* Name + Email */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+            Name*
+          </label>
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+            className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+            E-Mail*
+          </label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
       </div>
 
-      {/* Email field */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          E-Mail*
-        </label>
-        <input
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 text-sm"
-        />
+      {/* Phone + Date */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+            Telefon
+          </label>
+          <input
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+            Wunschdatum &amp; Uhrzeit
+          </label>
+          <input
+            type="datetime-local"
+            name="date"
+            value={formData.date}
+            onChange={handleChange}
+            className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
       </div>
 
-      {/* Phone field */}
+      {/* Subject */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Telefon
-        </label>
-        <input
-          type="tel"
-          name="phone"
-          value={formData.phone}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 text-sm"
-        />
-      </div>
-
-      {/* Subject dropdown */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
           Betreff*
         </label>
         <select
@@ -176,7 +186,7 @@ const ContactForm = ({ car, onSuccess }) => {
           value={formData.subject}
           onChange={handleChange}
           required
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 text-sm"
+          className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
         >
           <option value="">Bitte wählen</option>
           <option value="Allgemeine Anfrage">Allgemeine Anfrage</option>
@@ -187,23 +197,9 @@ const ContactForm = ({ car, onSuccess }) => {
         </select>
       </div>
 
-      {/* Date/time field */}
+      {/* Message */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Wunschdatum & Uhrzeit
-        </label>
-        <input
-          type="datetime-local"
-          name="date"
-          value={formData.date}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 text-sm"
-        />
-      </div>
-
-      {/* Message textarea */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
           Nachricht*
         </label>
         <textarea
@@ -212,8 +208,8 @@ const ContactForm = ({ car, onSuccess }) => {
           value={formData.message}
           onChange={handleChange}
           required
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-red-500 focus:border-red-500 text-sm"
-        ></textarea>
+          className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-vertical"
+        />
       </div>
 
       {/* Submit button */}
@@ -221,7 +217,7 @@ const ContactForm = ({ car, onSuccess }) => {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-red-600 hover:bg-red-700 text-white py-2.5 rounded font-medium flex items-center justify-center gap-2 text-base"
+          className="w-full bg-gradient-to-r from-slate-600 to-slate-700 hover:from-blue-700 hover:to-blue-800 text-white py-2.5 rounded-md font-medium flex items-center justify-center gap-2 text-sm md:text-base transition-colors disabled:opacity-70"
         >
           <FiSend className="w-5 h-5" />
           {isSubmitting ? "Wird gesendet..." : "Nachricht senden"}
@@ -229,7 +225,7 @@ const ContactForm = ({ car, onSuccess }) => {
       </div>
 
       {/* Form footer */}
-      <p className="text-xs text-gray-500">
+      <p className="text-[11px] md:text-xs text-gray-500">
         * Pflichtfelder. Wir werden Ihre Daten nur zur Bearbeitung Ihrer Anfrage
         verwenden.
       </p>

@@ -6,7 +6,7 @@ import { FiArrowLeft } from "react-icons/fi";
 const ImageSlider = ({
   images = [],
   car = {},
-  height = "h-96",
+  height = "h-80 sm:h-96",
   width = "w-full",
 }) => {
   const [activeImage, setActiveImage] = useState(0);
@@ -14,178 +14,188 @@ const ImageSlider = ({
 
   // Normalize image URLs
   const imageUrls = images.map((img) =>
-    typeof img === "string" ? img : img.ref
+    typeof img === "string" ? img : img?.ref
   );
 
-  const altText = `${car.make || ""} ${car.model || ""}`.trim();
+  const altText = `${car.make || ""} ${car.model || ""}`.trim() || "Fahrzeug";
+
+  const hasMultiple = imageUrls.length > 1;
+
+  const goPrev = (setter) => {
+    setter((prev) => (prev === 0 ? imageUrls.length - 1 : prev - 1));
+  };
+
+  const goNext = (setter) => {
+    setter((prev) => (prev === imageUrls.length - 1 ? 0 : prev + 1));
+  };
 
   return (
     <>
       {/* Main Viewer */}
-      <div className="relative bg-white rounded-xl border border-gray-200 overflow-hidden group hover:shadow-lg transition-shadow duration-300">
-        <button
-          className="absolute top-4 right-4 z-10 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-lg shadow-md transition-all opacity-100 lg:opacity-0 group-hover:opacity-100"
-          onClick={() => setFullscreenImage(activeImage)}
-          aria-label="Vollbild"
-        >
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+      <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/95 shadow-sm shadow-black/40 group">
+        {/* Fullscreen Button */}
+        {imageUrls.length > 0 && (
+          <button
+            className="absolute right-3 top-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 bg-slate-900/90 text-slate-100 shadow-md transition-all hover:border-sky-500 hover:bg-slate-900 hover:text-white opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
+            onClick={() => setFullscreenImage(activeImage)}
+            aria-label="Vollbild"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
-            />
-          </svg>
-        </button>
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.7}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5-5-5m5 5v-4m0 4h-4"
+              />
+            </svg>
+          </button>
+        )}
 
+        {/* Main Image */}
         <div
-          className={`relative ${height} ${width} transition-opacity duration-300`}
+          className={`relative ${height} ${width} bg-slate-950 transition-opacity duration-300`}
         >
           <Image
             src={imageUrls[activeImage] || "/default-car.jpg"}
             alt={altText}
             fill
-            className="object-contain  transition-transform duration-500 ease-in-out group-hover:scale-[1.02]"
+            className="object-contain bg-gradient-to-b from-slate-900 via-slate-950 to-black transition-transform duration-500 ease-out group-hover:scale-[1.02]"
             priority
             quality={90}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 900px"
             unoptimized
           />
         </div>
 
-        {imageUrls.length > 1 && (
+        {/* Navigation Arrows */}
+        {hasMultiple && (
           <>
             <button
-              onClick={() =>
-                setActiveImage((prev) =>
-                  prev === 0 ? imageUrls.length - 1 : prev - 1
-                )
-              }
-              className="absolute left-1 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-red-500 text-gray-800 p-2 md:p-3 rounded-full shadow-md transition-all opacity-100 lg:opacity-0 group-hover:opacity-100 hover:scale-110"
-              aria-label="Prev"
+              onClick={() => goPrev(setActiveImage)}
+              className="absolute left-2 top-1/2 z-20 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 bg-slate-900/90 text-slate-100 shadow-md transition-all hover:border-sky-500 hover:bg-slate-900 hover:text-white opacity-100 lg:opacity-0 lg:group-hover:opacity-100 hover:scale-105"
+              aria-label="Vorheriges Bild"
             >
-              <FiArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
+              <FiArrowLeft className="h-4 w-4" />
             </button>
 
             <button
-              onClick={() =>
-                setActiveImage((prev) =>
-                  prev === imageUrls.length - 1 ? 0 : prev + 1
-                )
-              }
-              className="absolute right-1 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-red-500 text-gray-800 p-2 md:p-3 rounded-full shadow-md transition-all opacity-100 lg:opacity-0 group-hover:opacity-100 hover:scale-110"
-              aria-label="Next"
+              onClick={() => goNext(setActiveImage)}
+              className="absolute right-2 top-1/2 z-20 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 bg-slate-900/90 text-slate-100 shadow-md transition-all hover:border-sky-500 hover:bg-slate-900 hover:text-white opacity-100 lg:opacity-0 lg:group-hover:opacity-100 hover:scale-105"
+              aria-label="Nächstes Bild"
             >
-              <FiArrowLeft className="w-4 h-4 md:w-5 md:h-5 rotate-180" />
+              <FiArrowLeft className="h-4 w-4 rotate-180" />
             </button>
 
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 text-gray-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
+            {/* Counter */}
+            <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center justify-center rounded-full bg-slate-900/90 px-3 py-1 text-[11px] font-medium text-slate-100 shadow-sm ring-1 ring-slate-700">
               {activeImage + 1} / {imageUrls.length}
             </div>
 
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
+            {/* Progress bar */}
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-800">
               <div
-                className="h-full bg-red-200 transition-all duration-300"
+                className="h-full bg-sky-500 transition-all duration-300"
                 style={{
                   width: `${((activeImage + 1) / imageUrls.length) * 100}%`,
                 }}
-              ></div>
+              />
             </div>
           </>
         )}
       </div>
 
       {/* Thumbnails */}
-      {imageUrls.length > 1 && (
+      {hasMultiple && (
         <div className="relative mt-3">
-          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-gray-50 to-transparent z-10 pointer-events-none"></div>
-          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-50 to-transparent z-10 pointer-events-none"></div>
+          {/* Gradient edges */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-slate-950 via-slate-950 to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-slate-950 via-slate-950 to-transparent" />
 
-          <div className="flex space-x-3 overflow-x-auto py-2 px-1 scrollbar-hide -mx-1">
-            {imageUrls.map((img, index) => (
-              <button
-                key={index}
-                onClick={() => setActiveImage(index)}
-                className={`relative flex-shrink-0 w-20 h-20 bg-white rounded-lg border overflow-hidden transition-all duration-200 ease-in-out ${
-                  activeImage === index
-                    ? "ring-2 ring-red-500 border-transparent scale-105"
-                    : "border-gray-200 hover:border-gray-300 hover:scale-105"
-                }`}
-              >
-                <Image
-                  src={img}
-                  alt={`${altText} Bild ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="80px"
-                />
-                {activeImage === index && (
-                  <div className="absolute inset-0 bg-black/20"></div>
-                )}
-              </button>
-            ))}
+          <div className="flex -mx-1 space-x-2 overflow-x-auto px-1 py-2 scrollbar-hide">
+            {imageUrls.map((img, index) => {
+              const isActive = activeImage === index;
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setActiveImage(index)}
+                  className={`relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-xl border text-left transition-all duration-200 ${
+                    isActive
+                      ? "border-sky-500 ring-2 ring-sky-500/70 scale-[1.03]"
+                      : "border-slate-800 hover:border-sky-500/60 hover:scale-[1.02]"
+                  }`}
+                  aria-label={`Bild ${index + 1} anzeigen`}
+                >
+                  <Image
+                    src={img || "/default-car.jpg"}
+                    alt={`${altText} Bild ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="80px"
+                  />
+                  {isActive && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
       {/* Fullscreen Modal */}
       {fullscreenImage !== null && (
-        <div className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4">
-          <div className="relative w-full h-full flex items-center justify-center">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-3 sm:p-4">
+          <div className="relative flex h-full w-full max-w-6xl items-center justify-center">
+            {/* Close */}
             <button
               onClick={() => setFullscreenImage(null)}
-              className="absolute top-15 right-4 bg-red-950  text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-all"
-              aria-label="Close"
+              className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-900/90 text-slate-100 shadow-md transition-all hover:bg-slate-800 hover:text-white"
+              aria-label="Schließen"
             >
               <svg
                 className="h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
+                strokeWidth={1.7}
                 stroke="currentColor"
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
                   d="M6 18L18 6M6 6l12 12"
                 />
               </svg>
             </button>
 
-            {imageUrls.length > 1 && (
+            {/* FS nav arrows */}
+            {hasMultiple && (
               <>
                 <button
-                  onClick={() =>
-                    setFullscreenImage((prev) =>
-                      prev === 0 ? imageUrls.length - 1 : prev - 1
-                    )
-                  }
-                  className="absolute left-0 sm:left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 md:p-3 rounded-full hover:bg-white/10 transition-all z-50"
-                  aria-label="Prev"
+                  onClick={() => goPrev(setFullscreenImage)}
+                  className="absolute left-2 top-1/2 z-50 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-900/80 text-slate-100 shadow-md transition-all hover:bg-slate-800 hover:text-white sm:left-4"
+                  aria-label="Vorheriges Bild"
                 >
-                  <FiArrowLeft className="w-6 h-6 md:w-8 md:h-8 bg-red-950 rounded-lg" />
+                  <FiArrowLeft className="h-5 w-5" />
                 </button>
 
                 <button
-                  onClick={() =>
-                    setFullscreenImage((prev) =>
-                      prev === imageUrls.length - 1 ? 0 : prev + 1
-                    )
-                  }
-                  className="absolute right-0 sm:right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 md:p-3 rounded-full hover:bg-white/10 transition-all z-50"
-                  aria-label="Next"
+                  onClick={() => goNext(setFullscreenImage)}
+                  className="absolute right-2 top-1/2 z-50 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-900/80 text-slate-100 shadow-md transition-all hover:bg-slate-800 hover:text-white sm:right-4"
+                  aria-label="Nächstes Bild"
                 >
-                  <FiArrowLeft className="w-6 h-6 md:w-8 md:h-8 rotate-180 bg-red-950 rounded-lg" />
+                  <FiArrowLeft className="h-5 w-5 rotate-180" />
                 </button>
               </>
             )}
 
-            <div className="relative w-[90vw] h-[90vh] max-w-6xl pointer-events-none">
+            {/* Fullscreen image */}
+            <div className="pointer-events-none relative h-[80vh] w-[95vw] max-w-5xl">
               <Image
                 src={imageUrls[fullscreenImage] || "/default-car.jpg"}
                 alt={`${altText} (Fullscreen)`}
@@ -195,8 +205,9 @@ const ImageSlider = ({
               />
             </div>
 
-            {imageUrls.length > 1 && (
-              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/50 text-white px-4 py-2 rounded-full text-sm font-medium">
+            {/* Counter */}
+            {hasMultiple && (
+              <div className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-1.5 text-xs font-medium text-slate-50 shadow-md">
                 {fullscreenImage + 1} / {imageUrls.length}
               </div>
             )}
