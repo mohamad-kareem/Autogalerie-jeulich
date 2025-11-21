@@ -30,13 +30,14 @@ export default function Hero() {
       <div className="relative z-10 w-full">
         <div
           className="
-            mx-auto flex w-full max-w-7xl flex-col 
-            px-4 py-16 
-            sm:px-6 
-            lg:px-8 
-            2xl:px-0
-            gap-8
-          "
+    mx-auto flex w-full max-w-7xl flex-col 
+    px-4 
+    pt-8 pb-16           /* mobile: text moves UP */
+    sm:pt-12 sm:pb-16    /* tablet */
+    lg:pt-16 lg:pb-20    /* desktop */
+    2xl:px-0
+    gap-8
+  "
         >
           {/* Badge */}
           <div className="flex justify-center sm:justify-start">
