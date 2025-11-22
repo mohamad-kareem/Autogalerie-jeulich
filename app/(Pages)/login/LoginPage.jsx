@@ -41,19 +41,19 @@ export default function LoginPage({ callbackUrl }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-950 to-red-950 relative overflow-hidden">
-      {/* Background Glow */}
-      <div className="absolute top-0 left-1/3 w-60 h-60 bg-red-500/10 blur-3xl rounded-full" />
-      <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-purple-500/10 blur-3xl rounded-full" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-700 to-slate-900 relative overflow-hidden">
+      {/* Background Glow (blue / slate like navbar dropdown) */}
+      <div className="absolute top-0 left-1/3 w-60 h-60 bg-blue-500/10 blur-3xl rounded-full" />
+      <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-sky-400/10 blur-3xl rounded-full" />
 
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-xl shadow-xl overflow-hidden">
+      <div className="w-full max-w-md relative z-10 px-4 sm:px-0">
+        <div className="bg-slate-800 backdrop-blur-xl border border-slate-800/80 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
           <div className="p-8">
             {/* Logo / Avatar */}
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-red-800 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="flex justify-center mb-1">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg border border-slate-600/70 bg-gradient-to-br from-slate-800 to-slate-900">
                 <svg
-                  className="w-8 h-8 text-white"
+                  className="w-8 h-8 text-slate-100"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -67,16 +67,16 @@ export default function LoginPage({ callbackUrl }) {
             </div>
 
             {/* Title */}
-            <h1 className="text-2xl font-bold text-center text-white mb-2">
+            <h1 className="text-2xl font-bold text-center text-slate-50 mb-2 tracking-wide">
               Admin Portal
             </h1>
-            <p className="text-center text-gray-400 mb-8 text-sm">
+            <p className="text-center text-slate-400 mb-8 text-sm">
               Bitte melden Sie sich mit Ihren Zugangsdaten an
             </p>
 
             {/* Error Message */}
             {error && (
-              <div className="mb-6 p-3 bg-red-900/40 text-red-400 border border-red-700 rounded-md text-sm flex items-center">
+              <div className="mb-6 p-3 bg-red-900/40 text-red-300 border border-red-700/80 rounded-md text-sm flex items-center">
                 <svg
                   className="w-5 h-5 mr-2"
                   fill="none"
@@ -100,13 +100,13 @@ export default function LoginPage({ callbackUrl }) {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm font-medium text-gray-300 mb-1"
+                  className="block text-sm font-medium text-slate-200 mb-1"
                 >
                   E-Mail-Adresse
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiMail className="text-gray-500" />
+                    <FiMail className="text-slate-500" />
                   </div>
                   <input
                     id="email"
@@ -116,7 +116,7 @@ export default function LoginPage({ callbackUrl }) {
                     value={credentials.email}
                     onChange={handleChange}
                     required
-                    className="block w-full pl-10 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="block w-full pl-10 pr-3 py-2 bg-slate-900/80 border border-slate-700 rounded-md text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="admin@firma.de"
                   />
                 </div>
@@ -127,20 +127,20 @@ export default function LoginPage({ callbackUrl }) {
                 <div className="flex justify-between items-center mb-1">
                   <label
                     htmlFor="password"
-                    className="block text-sm font-medium text-gray-300"
+                    className="block text-sm font-medium text-slate-200"
                   >
                     Passwort
                   </label>
                   <Link
                     href="/forgotpassword"
-                    className="text-sm text-red-500 hover:text-red-400"
+                    className="text-sm text-blue-400 hover:text-blue-300"
                   >
                     Passwort vergessen?
                   </Link>
                 </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiLock className="text-gray-500" />
+                    <FiLock className="text-slate-500" />
                   </div>
                   <input
                     id="password"
@@ -151,7 +151,7 @@ export default function LoginPage({ callbackUrl }) {
                     onChange={handleChange}
                     required
                     minLength="8"
-                    className="block w-full pl-10 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="block w-full pl-10 pr-3 py-2 bg-slate-900/80 border border-slate-700 rounded-md text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="••••••••"
                   />
                 </div>
@@ -159,17 +159,17 @@ export default function LoginPage({ callbackUrl }) {
 
               {/* Submit Button */}
               <div>
-                <Button
+                <button
                   type="submit"
                   disabled={isLoading}
-                  className={`w-full flex justify-center items-center py-2 px-4 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition ${
+                  className={`w-full flex justify-center items-center py-2.5 px-4 rounded-md text-sm font-medium text-slate-50 bg-slate-600 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-slate-900 transition ${
                     isLoading ? "opacity-75 cursor-not-allowed" : ""
                   }`}
                 >
                   {isLoading ? (
                     <>
                       <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-slate-50"
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -195,7 +195,7 @@ export default function LoginPage({ callbackUrl }) {
                       Fortsetzen <FiArrowRight className="ml-2" />
                     </>
                   )}
-                </Button>
+                </button>
               </div>
             </form>
           </div>

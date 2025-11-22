@@ -305,6 +305,32 @@ const ImageSlider = ({ images = [], car = {}, isMobile = false }) => {
 
   const sliderHeight = isMobile ? "h-64" : "h-80 lg:h-96";
 
+  // Close fullscreen when clicking on backdrop
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      setFullscreenImage(null);
+    }
+  };
+
+  // Close fullscreen with Escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        setFullscreenImage(null);
+      }
+    };
+
+    if (fullscreenImage !== null) {
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden"; // Prevent background scrolling
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "unset";
+    };
+  }, [fullscreenImage]);
+
   return (
     <>
       {/* MAIN SLIDER */}
@@ -425,22 +451,25 @@ const ImageSlider = ({ images = [], car = {}, isMobile = false }) => {
         </div>
       )}
 
-      {/* FULLSCREEN MODAL */}
+      {/* FULLSCREEN MODAL - FIXED */}
       {fullscreenImage !== null && hasImages && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-2 sm:p-4">
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-2 sm:p-4"
+          onClick={handleBackdropClick}
+        >
           <div className="relative flex h-full w-full max-w-6xl items-center justify-center">
-            {/* CLOSE BUTTON */}
+            {/* CLOSE BUTTON - IMPROVED */}
             <button
               type="button"
               onClick={() => setFullscreenImage(null)}
-              className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-900/90 text-slate-100 shadow-md transition-all hover:bg-slate-800 hover:text-white"
+              className="absolute right-3 top-3 z-50 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white shadow-lg transition-all hover:bg-black hover:text-white sm:right-4 sm:top-4"
               aria-label="Schließen"
             >
               <svg
-                className="h-5 w-5"
+                className="h-6 w-6"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth={1.7}
+                strokeWidth={2}
                 stroke="currentColor"
               >
                 <path
@@ -456,8 +485,11 @@ const ImageSlider = ({ images = [], car = {}, isMobile = false }) => {
               <>
                 <button
                   type="button"
-                  onClick={() => goPrev(setFullscreenImage)}
-                  className="absolute left-2 top-1/2 z-50 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-900/80 text-slate-100 shadow-md transition-all hover:bg-slate-800 hover:text-white sm:left-4"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goPrev(setFullscreenImage);
+                  }}
+                  className="absolute left-2 top-1/2 z-50 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white shadow-lg transition-all hover:bg-black hover:text-white sm:left-4"
                   aria-label="Vorheriges Bild"
                 >
                   <FiArrowLeft className="h-5 w-5" />
@@ -465,8 +497,11 @@ const ImageSlider = ({ images = [], car = {}, isMobile = false }) => {
 
                 <button
                   type="button"
-                  onClick={() => goNext(setFullscreenImage)}
-                  className="absolute right-2 top-1/2 z-50 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-900/80 text-slate-100 shadow-md transition-all hover:bg-slate-800 hover:text-white sm:right-4"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goNext(setFullscreenImage);
+                  }}
+                  className="absolute right-2 top-1/2 z-50 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white shadow-lg transition-all hover:bg-black hover:text-white sm:right-4"
                   aria-label="Nächstes Bild"
                 >
                   <FiArrowLeft className="h-5 w-5 rotate-180" />
@@ -474,20 +509,24 @@ const ImageSlider = ({ images = [], car = {}, isMobile = false }) => {
               </>
             )}
 
-            {/* FULLSCREEN IMAGE */}
-            <div className="pointer-events-none relative h-[70vh] w-[96vw] max-w-5xl sm:h-[80vh]">
+            {/* FULLSCREEN IMAGE - CLICK TO CLOSE */}
+            <div
+              className="pointer-events-auto relative h-[70vh] w-[96vw] max-w-5xl sm:h-[80vh] cursor-zoom-out"
+              onClick={() => setFullscreenImage(null)}
+            >
               <Image
                 src={imageUrls[fullscreenImage] || "/default-car.jpg"}
                 alt={`${altText} (Fullscreen)`}
                 fill
                 className="object-contain"
                 quality={100}
+                priority
               />
             </div>
 
             {/* COUNTER IN FS */}
             {hasMultiple && (
-              <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-1.5 text-xs font-medium text-slate-50 shadow-md">
+              <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-sm font-medium text-white shadow-lg">
                 {fullscreenImage + 1} / {imageUrls.length}
               </div>
             )}
