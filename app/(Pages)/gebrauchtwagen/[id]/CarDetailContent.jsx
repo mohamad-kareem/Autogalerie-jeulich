@@ -290,7 +290,13 @@ function CarDetailContent({ car }) {
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      const width =
+        window.innerWidth ||
+        document.documentElement.clientWidth ||
+        document.body.clientWidth;
+
+      // Force mobile if smaller than 900px (Android browsers bug fix)
+      setIsMobile(width <= 900);
     };
 
     checkMobile();
