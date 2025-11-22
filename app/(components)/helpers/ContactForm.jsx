@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { FiSend } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 
-const ContactForm = ({ car, onSuccess }) => {
+const ContactForm = ({ car, onSuccess, isMobile = false }) => {
   // Helper function to format registration date
   const formatRegistration = (value) => {
     if (!value || value.length !== 6) return "EZ unbekannt";
@@ -113,80 +113,88 @@ const ContactForm = ({ car, onSuccess }) => {
     }
   };
 
+  // Shared styles
+  const labelClass = `block ${
+    isMobile ? "text-[11px]" : "text-xs"
+  } font-medium text-gray-700 mb-1`;
+  const fieldBase =
+    "w-full rounded-md border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500";
+  const fieldPadding = isMobile ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-sm";
+  const fieldClass = `${fieldBase} ${fieldPadding}`;
+
+  const buttonSize = isMobile ? "py-1.5 text-xs" : "py-2 text-sm";
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      className={`mx-auto ${isMobile ? "space-y-2 max-w-xs" : "space-y-3"}`}
+    >
       {/* Hidden car ID field */}
       <input type="hidden" name="car" value={car._id} />
 
-      {/* Name + Email */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Name + Email - side by side on desktop, stacked on mobile */}
+      <div
+        className={`grid grid-cols-1 ${
+          isMobile ? "gap-1.5" : "md:grid-cols-2 md:gap-3 gap-2"
+        }`}
+      >
         <div>
-          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
-            Name*
-          </label>
+          <label className={labelClass}>Name*</label>
           <input
             type="text"
             name="name"
             value={formData.name}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            className={fieldClass}
           />
         </div>
         <div>
-          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
-            E-Mail*
-          </label>
+          <label className={labelClass}>E-Mail*</label>
           <input
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            className={fieldClass}
           />
         </div>
       </div>
 
       {/* Phone + Date */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className={isMobile ? "space-y-1.5" : "space-y-2"}>
         <div>
-          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
-            Telefon
-          </label>
+          <label className={labelClass}>Telefon</label>
           <input
             type="tel"
             name="phone"
             value={formData.phone}
             onChange={handleChange}
-            className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            className={fieldClass}
           />
         </div>
         <div>
-          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
-            Wunschdatum &amp; Uhrzeit
-          </label>
+          <label className={labelClass}>Wunschdatum & Uhrzeit</label>
           <input
             type="datetime-local"
             name="date"
             value={formData.date}
             onChange={handleChange}
-            className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            className={fieldClass}
           />
         </div>
       </div>
 
       {/* Subject */}
       <div>
-        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
-          Betreff*
-        </label>
+        <label className={labelClass}>Betreff*</label>
         <select
           name="subject"
           value={formData.subject}
           onChange={handleChange}
           required
-          className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          className={fieldClass}
         >
           <option value="">Bitte wählen</option>
           <option value="Allgemeine Anfrage">Allgemeine Anfrage</option>
@@ -199,16 +207,16 @@ const ContactForm = ({ car, onSuccess }) => {
 
       {/* Message */}
       <div>
-        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
-          Nachricht*
-        </label>
+        <label className={labelClass}>Nachricht*</label>
         <textarea
           name="message"
-          rows="4"
+          rows={isMobile ? 3 : 4}
           value={formData.message}
           onChange={handleChange}
           required
-          className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-vertical"
+          className={`${fieldBase} ${
+            isMobile ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-sm"
+          } resize-vertical`}
         />
       </div>
 
@@ -217,15 +225,19 @@ const ContactForm = ({ car, onSuccess }) => {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-gradient-to-r from-slate-600 to-slate-700 hover:from-blue-700 hover:to-blue-800 text-white py-2.5 rounded-md font-medium flex items-center justify-center gap-2 text-sm md:text-base transition-colors disabled:opacity-70"
+          className={`w-full bg-gradient-to-r from-slate-600 to-slate-700 hover:from-blue-700 hover:to-blue-800 text-white ${buttonSize} rounded-md font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70`}
         >
-          <FiSend className="w-5 h-5" />
+          <FiSend className={isMobile ? "w-3.5 h-3.5" : "w-4 h-4"} />
           {isSubmitting ? "Wird gesendet..." : "Nachricht senden"}
         </button>
       </div>
 
       {/* Form footer */}
-      <p className="text-[11px] md:text-xs text-gray-500">
+      <p
+        className={`${
+          isMobile ? "text-[9px]" : "text-[10px]"
+        } text-gray-500 leading-tight mt-1`}
+      >
         * Pflichtfelder. Wir werden Ihre Daten nur zur Bearbeitung Ihrer Anfrage
         verwenden.
       </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import ContactForm from "@/app/(components)/helpers/ContactForm";
 import {
@@ -134,7 +134,7 @@ const prettifyValue = (category, value) => {
   );
 };
 
-function renderDescription(description) {
+function renderDescription(description, isMobile = false) {
   if (!description) return null;
 
   const cleaned = description
@@ -151,6 +151,8 @@ function renderDescription(description) {
     .map((line) => line.trim())
     .filter(Boolean);
 
+  const textSize = isMobile ? "text-xs" : "text-xs sm:text-sm md:text-base";
+
   return lines.map((line, index) => {
     if (
       /^Mail\s*:|^WhatsApp\s*:|^WIR BIETEN|^Finanzierung|^Inzahlungnahme|^Zulassungsservice|^Auslieferungsservice/i.test(
@@ -160,7 +162,9 @@ function renderDescription(description) {
       return (
         <h4
           key={index}
-          className="mt-4 mb-1 font-semibold text-xs sm:text-sm md:text-base text-slate-50 break-words whitespace-pre-line"
+          className={`mt-4 mb-1 font-semibold text-slate-50 break-words whitespace-pre-line ${
+            isMobile ? "text-xs" : "text-xs sm:text-sm md:text-base"
+          }`}
         >
           {line}
         </h4>
@@ -172,7 +176,7 @@ function renderDescription(description) {
       return (
         <p
           key={index}
-          className="mb-2 text-xs sm:text-sm md:text-base text-slate-200 break-words whitespace-pre-line"
+          className={`mb-2 text-slate-200 break-words whitespace-pre-line ${textSize}`}
         >
           <span className="font-semibold text-slate-50">{label.trim()}:</span>{" "}
           {rest.join(":").trim()}
@@ -184,7 +188,7 @@ function renderDescription(description) {
       return (
         <li
           key={index}
-          className="ml-4 list-disc text-xs sm:text-sm md:text-base text-slate-200 break-words whitespace-pre-line"
+          className={`ml-4 list-disc text-slate-200 break-words whitespace-pre-line ${textSize}`}
         >
           {line}
         </li>
@@ -194,7 +198,9 @@ function renderDescription(description) {
     return (
       <p
         key={index}
-        className="mb-2 text-sm md:text-base text-slate-200 leading-relaxed"
+        className={`mb-2 text-slate-200 leading-relaxed ${
+          isMobile ? "text-xs" : "text-sm md:text-base"
+        }`}
       >
         {line}
       </p>
@@ -202,7 +208,7 @@ function renderDescription(description) {
   });
 }
 
-const SpecCard = ({ icon, title, items }) => {
+const SpecCard = ({ icon, title, items, isMobile = false }) => {
   const visibleItems =
     items?.filter(
       (item) =>
@@ -213,6 +219,36 @@ const SpecCard = ({ icon, title, items }) => {
     ) || [];
 
   if (visibleItems.length === 0) return null;
+
+  if (isMobile) {
+    return (
+      <div className="rounded-xl border border-slate-800 bg-slate-950/95 p-3 shadow-sm">
+        <div className="mb-2 flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400">
+            {icon}
+          </div>
+          <h3 className="text-xs font-semibold text-slate-50">{title}</h3>
+        </div>
+        <div className="space-y-1.5">
+          {visibleItems.map((item, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between gap-2 border-b border-slate-800/70 pb-1 text-xs last:border-0 last:pb-0"
+            >
+              <span className="text-slate-400 flex-shrink-0">{item.label}</span>
+              <span className="flex items-center gap-1 font-medium text-slate-50 text-right flex-shrink-0">
+                {item.value === "Ja" ? (
+                  <BsCheck2 className="h-3 w-3 text-white" />
+                ) : (
+                  item.value || "-"
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-950/95 p-4 sm:p-5 shadow-sm shadow-black/40">
@@ -250,9 +286,21 @@ const SpecCard = ({ icon, title, items }) => {
 function CarDetailContent({ car }) {
   const [showContactForm, setShowContactForm] = useState(false);
   const [activeTab, setActiveTab] = useState("übersicht");
+  const [isMobile, setIsMobile] = useState(false);
 
-  const baseBtn =
-    "inline-flex h-9 items-center justify-center rounded-md px-3 text-[11px] sm:text-xs font-medium transition-colors";
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  const baseBtn = isMobile
+    ? "inline-flex h-8 items-center justify-center rounded-lg px-3 text-xs font-medium transition-colors"
+    : "inline-flex h-9 items-center justify-center rounded-md px-3 text-[11px] sm:text-xs font-medium transition-colors";
 
   const formatPrice = (priceObj) => {
     if (!priceObj?.consumerPriceGross) return "-";
@@ -269,93 +317,120 @@ function CarDetailContent({ car }) {
   const ausstattungCategories = [
     {
       title: "Komfort",
-      icon: <MdAir className="h-4 w-4" />,
+      icon: <MdAir className={isMobile ? "h-3 w-3" : "h-4 w-4"} />,
       features: [
         {
-          label: "Klimaanlage",
+          label: isMobile ? "Klimaanlage" : "Klimaanlage",
           value: prettifyValue("climatisation", car.climatisation),
         },
         {
-          label: "Regensensor",
+          label: isMobile ? "Regensensor" : "Regensensor",
           value: car.automaticRainSensor ? "Ja" : "Nein",
         },
-        { label: "Keyless Entry", value: car.keylessEntry ? "Ja" : "Nein" },
         {
-          label: "Elektrische Fensterheber",
+          label: isMobile ? "Keyless" : "Keyless Entry",
+          value: car.keylessEntry ? "Ja" : "Nein",
+        },
+        {
+          label: isMobile ? "Elekt. Fenster" : "Elektrische Fensterheber",
           value: car.electricWindows ? "Ja" : "Nein",
         },
         {
-          label: "Elektrische Heckklappe",
+          label: isMobile ? "Elekt. Heckklappe" : "Elektrische Heckklappe",
           value: car.electricTailgate ? "Ja" : "Nein",
         },
-        {
-          label: "Elektrische Außenspiegel",
-          value: car.electricExteriorMirrors ? "Ja" : "Nein",
-        },
-        {
-          label: "Anklappbare Spiegel",
-          value: car.foldingExteriorMirrors ? "Ja" : "Nein",
-        },
-        {
-          label: "Beheizbare Frontscheibe",
-          value: car.heatedWindshield ? "Ja" : "Nein",
-        },
-        {
-          label: "Zentralverriegelung",
-          value: car.centralLocking ? "Ja" : "Nein",
-        },
-        {
-          label: "Multifunktionslenkrad",
-          value: car.multifunctionalWheel ? "Ja" : "Nein",
-        },
+        ...(isMobile
+          ? []
+          : [
+              {
+                label: "Elektrische Außenspiegel",
+                value: car.electricExteriorMirrors ? "Ja" : "Nein",
+              },
+              {
+                label: "Anklappbare Spiegel",
+                value: car.foldingExteriorMirrors ? "Ja" : "Nein",
+              },
+              {
+                label: "Beheizbare Frontscheibe",
+                value: car.heatedWindshield ? "Ja" : "Nein",
+              },
+              {
+                label: "Zentralverriegelung",
+                value: car.centralLocking ? "Ja" : "Nein",
+              },
+              {
+                label: "Multifunktionslenkrad",
+                value: car.multifunctionalWheel ? "Ja" : "Nein",
+              },
+            ]),
       ],
     },
     {
       title: "Unterhaltung",
-      icon: <FaMusic className="h-4 w-4" />,
+      icon: <FaMusic className={isMobile ? "h-3 w-3" : "h-4 w-4"} />,
       features: [
         {
-          label: "Navigationssystem",
+          label: isMobile ? "Navigation" : "Navigationssystem",
           value: car.navigationSystem ? "Ja" : "Nein",
         },
         { label: "Bluetooth", value: car.redtooth ? "Ja" : "Nein" },
         { label: "Touchscreen", value: car.touchscreen ? "Ja" : "Nein" },
-        { label: "Sprachsteuerung", value: car.voiceControl ? "Ja" : "Nein" },
         {
-          label: "Wireless Charging",
+          label: isMobile ? "Sprachsteuerung" : "Sprachsteuerung",
+          value: car.voiceControl ? "Ja" : "Nein",
+        },
+        {
+          label: isMobile ? "Wireless Charging" : "Wireless Charging",
           value: car.wirelessCharging ? "Ja" : "Nein",
         },
-        { label: "USB", value: car.usb ? "Ja" : "Nein" },
-        { label: "CD-Player", value: car.cdPlayer ? "Ja" : "Nein" },
-        {
-          label: "Freisprecheinrichtung",
-          value: car.handsFreePhoneSystem ? "Ja" : "Nein",
-        },
-        { label: "Radio", value: car.radio?.join(", ") || "-" },
-        {
-          label: "Bordcomputer",
-          value: car.onBoardComputer ? "Ja" : "Nein",
-        },
+        ...(isMobile
+          ? []
+          : [
+              { label: "USB", value: car.usb ? "Ja" : "Nein" },
+              { label: "CD-Player", value: car.cdPlayer ? "Ja" : "Nein" },
+              {
+                label: "Freisprecheinrichtung",
+                value: car.handsFreePhoneSystem ? "Ja" : "Nein",
+              },
+              { label: "Radio", value: car.radio?.join(", ") || "-" },
+              {
+                label: "Bordcomputer",
+                value: car.onBoardComputer ? "Ja" : "Nein",
+              },
+            ]),
       ],
     },
     {
-      title: "Sitzausstattung",
-      icon: <FaChair className="h-4 w-4" />,
+      title: isMobile ? "Sitze" : "Sitzausstattung",
+      icon: <FaChair className={isMobile ? "h-3 w-3" : "h-4 w-4"} />,
       features: [
-        { label: "Ledersitze", value: car.leatherSeats ? "Ja" : "Nein" },
-        { label: "Sportsitze", value: car.sportSeats ? "Ja" : "Nein" },
         {
-          label: "Elektrische Sitzverstellung",
+          label: isMobile ? "Leder" : "Ledersitze",
+          value: car.leatherSeats ? "Ja" : "Nein",
+        },
+        {
+          label: isMobile ? "Sportsitze" : "Sportsitze",
+          value: car.sportSeats ? "Ja" : "Nein",
+        },
+        {
+          label: isMobile ? "Elekt. Sitze" : "Elektrische Sitzverstellung",
           value: car.electricAdjustableSeats ? "Ja" : "Nein",
         },
         {
-          label: "Sitzheizung",
+          label: isMobile ? "Sitzheizung" : "Sitzheizung",
           value: car.electricHeatedSeats ? "Ja" : "Nein",
         },
-        { label: "Sitzkühlung", value: car.seatCooling ? "Ja" : "Nein" },
-        { label: "Sitzmemory", value: car.memorySeats ? "Ja" : "Nein" },
-        { label: "Armlehne", value: car.armRest ? "Ja" : "Nein" },
-        { label: "Massagefunktion", value: car.seatMassage ? "Ja" : "Nein" },
+        ...(isMobile
+          ? []
+          : [
+              { label: "Sitzkühlung", value: car.seatCooling ? "Ja" : "Nein" },
+              { label: "Sitzmemory", value: car.memorySeats ? "Ja" : "Nein" },
+              { label: "Armlehne", value: car.armRest ? "Ja" : "Nein" },
+              {
+                label: "Massagefunktion",
+                value: car.seatMassage ? "Ja" : "Nein",
+              },
+            ]),
       ],
     },
   ];
@@ -363,123 +438,624 @@ function CarDetailContent({ car }) {
   const featuresCategories = [
     {
       title: "Sicherheit",
-      icon: <FaShieldAlt className="h-4 w-4" />,
+      icon: <FaShieldAlt className={isMobile ? "h-3 w-3" : "h-4 w-4"} />,
       features: [
         { label: "Airbags", value: prettifyValue("airbag", car.airbag) },
         { label: "ABS", value: car.abs ? "Ja" : "Nein" },
         { label: "ESP", value: car.esp ? "Ja" : "Nein" },
         {
-          label: "Spurhalteassistent",
+          label: isMobile ? "Spurhalteassist." : "Spurhalteassistent",
           value: car.laneDepartureWarning ? "Ja" : "Nein",
         },
         {
-          label: "Reifendruckkontrolle",
+          label: isMobile ? "Reifendruck" : "Reifendruckkontrolle",
           value: car.tirePressureMonitoring ? "Ja" : "Nein",
         },
-        {
-          label: "Kollisionswarnung",
-          value: car.collisionAvoidance ? "Ja" : "Nein",
-        },
-        { label: "Alarmanlage", value: car.alarmSystem ? "Ja" : "Nein" },
-        { label: "Wegfahrsperre", value: car.immobilizer ? "Ja" : "Nein" },
-        { label: "Isofix", value: car.isofix ? "Ja" : "Nein" },
-        {
-          label: "Notrufsystem",
-          value: car.emergencyCallSystem ? "Ja" : "Nein",
-        },
+        ...(isMobile
+          ? []
+          : [
+              {
+                label: "Kollisionswarnung",
+                value: car.collisionAvoidance ? "Ja" : "Nein",
+              },
+              { label: "Alarmanlage", value: car.alarmSystem ? "Ja" : "Nein" },
+              {
+                label: "Wegfahrsperre",
+                value: car.immobilizer ? "Ja" : "Nein",
+              },
+              { label: "Isofix", value: car.isofix ? "Ja" : "Nein" },
+              {
+                label: "Notrufsystem",
+                value: car.emergencyCallSystem ? "Ja" : "Nein",
+              },
+            ]),
       ],
     },
     {
       title: "Licht",
-      icon: <FaLightbulb className="h-4 w-4" />,
+      icon: <FaLightbulb className={isMobile ? "h-3 w-3" : "h-4 w-4"} />,
       features: [
         {
-          label: "Scheinwerferwaschanlage",
-          value: car.headlightWasherSystem ? "Ja" : "Nein",
-        },
-        {
-          label: "Nebelscheinwerfer",
+          label: isMobile ? "Nebelscheinwerfer" : "Nebelscheinwerfer",
           value: car.frontFogLights ? "Ja" : "Nein",
         },
-        { label: "Lichtsensor", value: car.lightSensor ? "Ja" : "Nein" },
         {
-          label: "Fernlichtassistent",
+          label: isMobile ? "Lichtsensor" : "Lichtsensor",
+          value: car.lightSensor ? "Ja" : "Nein",
+        },
+        {
+          label: isMobile ? "Fernlichtassist." : "Fernlichtassistent",
           value: car.highBeamAssist ? "Ja" : "Nein",
         },
         {
-          label: "Blendfreies Fernlicht",
-          value: car.glareFreeHighBeam ? "Ja" : "Nein",
-        },
-        {
-          label: "Kurvenlicht",
+          label: isMobile ? "Kurvenlicht" : "Kurvenlicht",
           value: prettifyValue("bendingLightsType", car.bendingLightsType),
         },
+        ...(isMobile
+          ? []
+          : [
+              {
+                label: "Scheinwerferwaschanlage",
+                value: car.headlightWasherSystem ? "Ja" : "Nein",
+              },
+              {
+                label: "Blendfreies Fernlicht",
+                value: car.glareFreeHighBeam ? "Ja" : "Nein",
+              },
+            ]),
       ],
     },
     {
       title: "Parken",
-      icon: <FaParking className="h-4 w-4" />,
+      icon: <FaParking className={isMobile ? "h-3 w-3" : "h-4 w-4"} />,
       features: [
         {
-          label: "Parkassistent",
+          label: isMobile ? "Parkassistent" : "Parkassistent",
           value: prettifyValue("parkingAssistants", car.parkingAssistants),
         },
         {
-          label: "360° Kamera",
+          label: isMobile ? "360° Kamera" : "360° Kamera",
           value: car.parkingAssistants?.includes("CAM_360_DEGREES")
             ? "Ja"
             : "Nein",
         },
+        ...(isMobile
+          ? []
+          : [
+              {
+                label: "Frontsensoren",
+                value: car.parkingAssistants?.includes("FRONT_SENSORS")
+                  ? "Ja"
+                  : "Nein",
+              },
+              {
+                label: "Hecksensoren",
+                value: car.parkingAssistants?.includes("REAR_SENSORS")
+                  ? "Ja"
+                  : "Nein",
+              },
+            ]),
         {
-          label: "Frontsensoren",
-          value: car.parkingAssistants?.includes("FRONT_SENSORS")
-            ? "Ja"
-            : "Nein",
+          label: isMobile ? "Einparkhilfe" : "Einparkhilfe",
+          value: car.parkingAssist ? "Ja" : "Nein",
         },
-        {
-          label: "Hecksensoren",
-          value: car.parkingAssistants?.includes("REAR_SENSORS")
-            ? "Ja"
-            : "Nein",
-        },
-        { label: "Einparkhilfe", value: car.parkingAssist ? "Ja" : "Nein" },
       ],
     },
   ];
 
   const highlightSpecs = [
     {
-      icon: <FaTachometerAlt className="h-4 w-4 text-sky-100" />,
-      label: "Kilometerstand",
+      icon: (
+        <FaTachometerAlt
+          className={isMobile ? "h-3 w-3 text-sky-100" : "h-4 w-4 text-sky-100"}
+        />
+      ),
+      label: isMobile ? "Kilometer" : "Kilometerstand",
       value: car.mileage ? `${car.mileage.toLocaleString("de-DE")} km` : "-",
     },
     {
-      icon: <FaCar className="h-4 w-4 text-sky-100" />,
+      icon: (
+        <FaCar
+          className={isMobile ? "h-3 w-3 text-sky-100" : "h-4 w-4 text-sky-100"}
+        />
+      ),
       label: "Erstzulassung",
       value: formatDate(car.firstRegistration),
     },
     {
-      icon: <FaGasPump className="h-4 w-4 text-sky-100" />,
+      icon: (
+        <FaGasPump
+          className={isMobile ? "h-3 w-3 text-sky-100" : "h-4 w-4 text-sky-100"}
+        />
+      ),
       label: "Kraftstoff",
       value: prettifyValue("fuel", car.fuel),
     },
     {
-      icon: <GiGearStick className="h-4 w-4 text-sky-100" />,
+      icon: (
+        <GiGearStick
+          className={isMobile ? "h-3 w-3 text-sky-100" : "h-4 w-4 text-sky-100"}
+        />
+      ),
       label: "Getriebe",
       value: prettifyValue("gearbox", car.gearbox),
     },
     {
-      icon: <GiCarDoor className="h-4 w-4 text-sky-100" />,
+      icon: (
+        <GiCarDoor
+          className={isMobile ? "h-3 w-3 text-sky-100" : "h-4 w-4 text-sky-100"}
+        />
+      ),
       label: "Türen",
       value: prettifyValue("doors", car.doors),
     },
     {
-      icon: <FaChair className="h-4 w-4 text-sky-100" />,
+      icon: (
+        <FaChair
+          className={isMobile ? "h-3 w-3 text-sky-100" : "h-4 w-4 text-sky-100"}
+        />
+      ),
       label: "Sitze",
       value: car.seats || "-",
     },
   ];
 
+  if (isMobile) {
+    return (
+      <div className="relative min-h-screen bg-slate-950 text-slate-50 overflow-x-hidden">
+        <main className="relative z-10 mx-auto w-full max-w-[1500px] px-3 pb-8 pt-4">
+          {/* HERO */}
+          <section className="mb-4">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-1 text-xs">
+                {car.condition && (
+                  <span className="rounded-full bg-sky-600/10 px-2 py-1 font-medium text-sky-300 ring-1 ring-sky-500/40">
+                    {car.condition}
+                  </span>
+                )}
+                {car.category && (
+                  <span className="rounded-full bg-slate-900/80 px-2 py-1 text-slate-300 ring-1 ring-slate-700/70">
+                    {prettifyValue("category", car.category)}
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <h1 className="text-xl font-semibold tracking-tight text-white">
+                  {car.make} {car.model}
+                </h1>
+                {car.modelDescription && (
+                  <p className="mt-1 text-xs text-slate-300 line-clamp-2">
+                    {car.modelDescription}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {highlightSpecs.map((spec, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/80 p-2 text-xs shadow-sm"
+                  >
+                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-sky-500/10">
+                      {spec.icon}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] text-slate-400">
+                        {spec.label}
+                      </div>
+                      <div className="truncate text-[11px] font-medium text-slate-50">
+                        {(spec.value || "-")
+                          .toString()
+                          .replace(/_/g, " ")
+                          .toLowerCase()
+                          .replace(/^\w/, (c) => c.toUpperCase())}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* PRICE & CTA MOBILE */}
+          <section className="mb-4">
+            <div className="rounded-xl border border-sky-700/60 bg-slate-950/95 p-3 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-slate-400">
+                    Gesamtpreis
+                  </div>
+                  <div className="text-lg font-semibold text-white">
+                    {formatPrice(car.price)}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowContactForm(true)}
+                  className={`${baseBtn} bg-sky-600 text-white hover:bg-sky-500 text-xs`}
+                >
+                  Probefahrt anfragen
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* IMAGES */}
+          <section className="mb-4">
+            <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950/95 shadow-sm">
+              {car.images?.length > 0 ? (
+                <ImageSlider
+                  images={car.images.map((img) => img.ref)}
+                  car={{ make: car.make, model: car.model }}
+                  isMobile={isMobile}
+                />
+              ) : (
+                <div className="flex aspect-video items-center justify-center text-slate-500 text-sm">
+                  Keine Bilder
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* MAIN CONTENT */}
+          <section className="space-y-4">
+            {/* TABS */}
+            <div className="rounded-xl border border-slate-800 bg-slate-950/95 shadow-sm">
+              <div className="border-b border-slate-800">
+                <nav className="flex -mb-px overflow-x-auto text-xs scrollbar-hide">
+                  {[
+                    ["übersicht", "Übersicht"],
+                    ["ausstattung", "Ausstattung"],
+                    ["features", "Features"],
+                    ["technik", "Technik"],
+                    ...(car.description
+                      ? [["beschreibung", "Beschreibung"]]
+                      : []),
+                  ].map(([key, label]) => (
+                    <button
+                      key={key}
+                      onClick={() => setActiveTab(key)}
+                      className={`whitespace-nowrap border-b-2 px-3 py-2 font-medium transition-colors ${
+                        activeTab === key
+                          ? "border-sky-500 text-sky-300"
+                          : "border-transparent text-slate-400 hover:border-slate-600 hover:text-slate-100"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+
+              <div className="p-3">
+                {/* TAB: ÜBERSICHT */}
+                {activeTab === "übersicht" && (
+                  <div>
+                    <h2 className="mb-3 text-sm font-semibold text-white">
+                      Fahrzeugübersicht
+                    </h2>
+                    <div className="grid gap-3">
+                      <SpecCard
+                        icon={<FaCar className="h-3 w-3" />}
+                        title="Allgemein"
+                        items={[
+                          { label: "VIN", value: car.vin },
+                          {
+                            label: "Klasse",
+                            value: prettifyValue("category", car.category),
+                          },
+                          { label: "Zustand", value: car.condition },
+                          {
+                            label: "EZ",
+                            value: formatDate(car.firstRegistration),
+                          },
+                          {
+                            label: "TÜV",
+                            value:
+                              typeof car.newHuAu === "string"
+                                ? car.newHuAu.toLowerCase().includes("neu")
+                                  ? "neu"
+                                  : `bis ${car.newHuAu}`
+                                : "-",
+                          },
+                        ]}
+                        isMobile={isMobile}
+                      />
+
+                      <SpecCard
+                        icon={<BsSpeedometer2 className="h-3 w-3" />}
+                        title="Technik"
+                        items={[
+                          {
+                            label: "Leistung",
+                            value: car.power ? `${car.power} kW` : "-",
+                          },
+                          {
+                            label: "Hubraum",
+                            value: car.cubicCapacity
+                              ? `${(car.cubicCapacity / 1000).toLocaleString(
+                                  "de-DE",
+                                  {
+                                    minimumFractionDigits: 1,
+                                    maximumFractionDigits: 1,
+                                  }
+                                )} l`
+                              : "-",
+                          },
+                          {
+                            label: "Kraftstoff",
+                            value: prettifyValue("fuel", car.fuel),
+                          },
+                          {
+                            label: "Getriebe",
+                            value: prettifyValue("gearbox", car.gearbox),
+                          },
+                        ]}
+                        isMobile={isMobile}
+                      />
+
+                      <SpecCard
+                        icon={<IoMdColorPalette className="h-3 w-3" />}
+                        title="Außen"
+                        items={[
+                          {
+                            label: "Farbe",
+                            value: prettifyValue("color", car.exteriorColor),
+                          },
+                          {
+                            label: "Metallic",
+                            value: car.metallic ? "Ja" : "Nein",
+                          },
+                          {
+                            label: "Alufelgen",
+                            value: car.alloyWheels ? "Ja" : "Nein",
+                          },
+                        ]}
+                        isMobile={isMobile}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB: AUSSTATTUNG */}
+                {activeTab === "ausstattung" && (
+                  <div>
+                    <h2 className="mb-3 text-sm font-semibold text-white">
+                      Ausstattung
+                    </h2>
+                    <div className="grid gap-3">
+                      {ausstattungCategories.map((cat, idx) => (
+                        <SpecCard
+                          key={idx}
+                          icon={cat.icon}
+                          title={cat.title}
+                          items={cat.features}
+                          isMobile={isMobile}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB: FEATURES */}
+                {activeTab === "features" && (
+                  <div>
+                    <h2 className="mb-3 text-sm font-semibold text-white">
+                      Features & Sicherheit
+                    </h2>
+                    <div className="grid gap-3">
+                      {featuresCategories.map((cat, idx) => (
+                        <SpecCard
+                          key={idx}
+                          icon={cat.icon}
+                          title={cat.title}
+                          items={cat.features}
+                          isMobile={isMobile}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB: TECHNIK */}
+                {activeTab === "technik" && (
+                  <div>
+                    <h2 className="mb-3 text-sm font-semibold text-white">
+                      Technische Daten
+                    </h2>
+                    <div className="grid gap-3">
+                      <SpecCard
+                        icon={<GiSteeringWheel className="h-3 w-3" />}
+                        title="Motor & Antrieb"
+                        items={[
+                          {
+                            label: "Leistung",
+                            value: car.power ? `${car.power} kW` : "-",
+                          },
+                          {
+                            label: "Hubraum",
+                            value: car.cubicCapacity
+                              ? `${(car.cubicCapacity / 1000).toLocaleString(
+                                  "de-DE",
+                                  {
+                                    minimumFractionDigits: 1,
+                                    maximumFractionDigits: 1,
+                                  }
+                                )} l`
+                              : "-",
+                          },
+                          {
+                            label: "Kraftstoff",
+                            value: prettifyValue("fuel", car.fuel),
+                          },
+                          {
+                            label: "Getriebe",
+                            value: prettifyValue("gearbox", car.gearbox),
+                          },
+                          {
+                            label: "Antrieb",
+                            value: prettifyValue("driveType", car.driveType),
+                          },
+                        ]}
+                        isMobile={isMobile}
+                      />
+
+                      <SpecCard
+                        icon={<RiTempColdLine className="h-3 w-3" />}
+                        title="Verbrauch"
+                        items={[
+                          {
+                            label: "Verbrauch",
+                            value: car.consumptions?.fuel?.combined
+                              ? `${car.consumptions.fuel.combined} L/100km`
+                              : "-",
+                          },
+                          {
+                            label: "CO₂",
+                            value: car.emissions?.combined?.co2
+                              ? `${car.emissions.combined.co2} g/km`
+                              : "-",
+                          },
+                          {
+                            label: "Schadstoffkl.",
+                            value: car.emissionClass,
+                          },
+                        ]}
+                        isMobile={isMobile}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB: BESCHREIBUNG */}
+                {activeTab === "beschreibung" && car.description && (
+                  <div>
+                    <h2 className="mb-3 text-sm font-semibold text-white">
+                      Beschreibung
+                    </h2>
+                    <div className="max-h-[50vh] space-y-1 overflow-y-auto pr-1 text-xs">
+                      {renderDescription(car.description, isMobile)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* SIDEBAR CONTENT - MOBILE */}
+            <div className="space-y-3">
+              {/* HIGHLIGHTS */}
+              <div className="rounded-xl border border-slate-800 bg-slate-950/95 p-3 shadow-sm">
+                <div className="mb-2 flex items-center gap-2">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400">
+                    <FaSun className="h-3 w-3" />
+                  </div>
+                  <h3 className="text-xs font-semibold text-white">
+                    Highlights
+                  </h3>
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  {[
+                    car.panoramicGlassRoof && "Panoramadach",
+                    car.navigationSystem && "Navigation",
+                    car.leatherSteeringWheel && "Lederlenkrad",
+                    car.electricAdjustableSeats && "Elekt. Sitze",
+                    car.keylessEntry && "Keyless Entry",
+                    car.headUpDisplay && "Head-Up-Display",
+                    car.summerTires && "Sommerreifen",
+                    car.winterTires && "Winterreifen",
+                    car.fullServiceHistory && "Scheckheft",
+                  ]
+                    .filter(Boolean)
+                    .slice(0, 6)
+                    .map((highlight, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div className="flex h-4 w-4 items-center justify-center rounded-full bg-sky-500/10">
+                          <BsCheck2 className="h-2 w-2 text-sky-400" />
+                        </div>
+                        <span className="text-slate-200">{highlight}</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+              {/* CONTACT CTA */}
+              <div className="rounded-xl border border-slate-800 bg-slate-950/95 p-3 shadow-sm">
+                <button
+                  onClick={() => setShowContactForm(true)}
+                  className={`${baseBtn} w-full bg-sky-600 text-white hover:bg-sky-500 text-xs`}
+                >
+                  Probefahrt vereinbaren
+                </button>
+                <p className="mt-2 text-[10px] text-slate-400 text-center">
+                  Unser Team meldet sich schnellstmöglich bei Ihnen.
+                </p>
+              </div>
+              {/* FINANCE CALCULATOR */}
+              <div className="rounded-xl border border-slate-800 bg-slate-950/95 p-3 shadow-sm">
+                <FinanceCalculatorAdvanced
+                  price={car.price?.consumerPriceGross || 0}
+                  isMobile={isMobile}
+                />
+              </div>
+            </div>
+          </section>
+        </main>
+
+        {/* CONTACT FORM MODAL */}
+        {showContactForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2">
+            <div className="w-full max-w-full max-h-[95vh] overflow-y-auto rounded-xl bg-white shadow-2xl border border-gray-200">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-slate-700 to-slate-800 px-3 py-2 rounded-t-xl flex items-center justify-between">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-bold text-white truncate">
+                    Probefahrt anfragen
+                  </h3>
+                  <p className="text-red-100 text-xs mt-0.5 truncate">
+                    {car.make} {car.model}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowContactForm(false)}
+                  className="ml-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white/80 hover:bg-white/20 hover:text-white transition-colors flex-shrink-0"
+                  aria-label="Close"
+                >
+                  <svg
+                    className="h-3 w-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-3">
+                <div className="space-y-3">
+                  {/* Form */}
+                  <div className="border border-gray-200 rounded-lg p-2 bg-white">
+                    <ContactForm
+                      car={car}
+                      onSuccess={() => setShowContactForm(false)}
+                      isMobile={isMobile}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // DESKTOP VIEW (original code)
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-50">
       <main className="relative z-10 mx-auto w-full max-w-[1500px] px-4 pb-16 pt-24 sm:px-6 lg:px-8">
@@ -538,19 +1114,53 @@ function CarDetailContent({ car }) {
             </div>
 
             {/* PRICE CARD */}
-            <div className="w-full max-w-xs rounded-2xl border border-sky-700/60 bg-slate-950/95 p-4 shadow-lg shadow-black/50 sm:p-5">
-              <div className="text-xs uppercase tracking-wide text-slate-400">
-                Gesamtpreis
+            <div className="w-full mr-6 max-w-sm rounded-2xl border border-sky-700/60 bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 p-4 sm:p-5 shadow-xl shadow-black/50">
+              {/* Top: Price + badges */}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                    Gesamtpreis
+                  </p>
+                  <p className="mt-1 text-2xl sm:text-3xl font-semibold text-white">
+                    {formatPrice(car.price)}
+                  </p>
+                </div>
+
+                <div className="flex flex-col items-end gap-1">
+                  <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                    Sofort verfügbar
+                  </span>
+                </div>
               </div>
-              <div className="mt-1 text-2xl font-semibold text-white sm:text-3xl">
-                {formatPrice(car.price)}
+
+              {/* Benefits */}
+              <div className="mt-4 space-y-1.5 text-[11px] sm:text-xs text-slate-300">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-sky-500/10 text-sky-400">
+                    <BsCheck2 className="h-3 w-3" />
+                  </span>
+                  <span>Individuelle Finanzierung möglich</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-sky-500/10 text-sky-400">
+                    <BsCheck2 className="h-3 w-3" />
+                  </span>
+                  <span>Inzahlungnahme Ihres Fahrzeugs möglich</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-sky-500/10 text-sky-400">
+                    <BsCheck2 className="h-3 w-3" />
+                  </span>
+                  <span>
+                    Transparenter Kaufvertrag – keine versteckten Kosten
+                  </span>
+                </div>
               </div>
-              <div className="mt-2 text-[11px] text-slate-400">
-                keine versteckten Kosten
-              </div>
+
+              {/* CTA */}
               <button
                 onClick={() => setShowContactForm(true)}
-                className={`${baseBtn} mt-4 w-full bg-sky-600 text-white hover:bg-sky-500`}
+                className={`${baseBtn} mt-5 w-full cursor-pointer bg-sky-600 text-white hover:bg-sky-500`}
               >
                 Probefahrt anfragen
               </button>
@@ -1017,78 +1627,10 @@ function CarDetailContent({ car }) {
             </div>
 
             {/* Content: car summary + form */}
-            <div className="p-4 md:p-6">
+            <div className="p-4 md:p-2  ">
               <div className="grid grid-cols-1 md:grid-cols-[1.1fr,1.5fr] gap-4 md:gap-6 items-start">
-                {/* Car summary (left) */}
-                <div className="space-y-3 md:space-y-4 border border-gray-200 rounded-xl p-3 md:p-4 bg-gray-50/70">
-                  <div className="flex items-center gap-3">
-                    <div className="relative h-14 w-14 md:h-20 md:w-20 overflow-hidden rounded-lg border border-gray-200 flex-shrink-0">
-                      <Image
-                        src={car.images?.[0]?.ref || "/default-car.jpg"}
-                        alt={`${car.make} ${car.model}`}
-                        fill
-                        className="object-cover"
-                        sizes="80px"
-                        unoptimized
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="font-semibold text-gray-900 text-sm md:text-base truncate">
-                        {car.make} {car.model}
-                      </h4>
-                      <p className="text-xs md:text-sm text-gray-500 line-clamp-2">
-                        {car.modelDescription}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-xs md:text-sm">
-                    <div className="space-y-1">
-                      <p className="text-gray-500">Preis</p>
-                      <p className="font-semibold text-slate-600">
-                        {car.price?.consumerPriceGross?.toLocaleString(
-                          "de-DE",
-                          {
-                            style: "currency",
-                            currency: car.price?.currency || "EUR",
-                            maximumFractionDigits: 0,
-                          }
-                        )}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-gray-500">Kilometerstand</p>
-                      <p className="font-medium text-gray-800">
-                        {car.mileage?.toLocaleString("de-DE")} km
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-gray-500">Erstzulassung</p>
-                      <p className="font-medium text-gray-800">
-                        {car.firstRegistration
-                          ? `${car.firstRegistration.slice(
-                              4,
-                              6
-                            )}/${car.firstRegistration.slice(0, 4)}`
-                          : "EZ unbekannt"}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-gray-500">Kraftstoff</p>
-                      <p className="font-medium text-gray-800">
-                        {car.fuel || "-"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <p className="text-[11px] md:text-xs text-gray-500">
-                    Ihre Anfrage wird direkt an unser Verkaufsteam
-                    weitergeleitet.
-                  </p>
-                </div>
-
                 {/* Form (right) */}
-                <div className="border border-gray-200 rounded-xl p-3 md:p-4 bg-white">
+                <div className=" rounded-xl p-3 md:p-4 bg-white">
                   <ContactForm
                     car={car}
                     onSuccess={() => setShowContactForm(false)}
