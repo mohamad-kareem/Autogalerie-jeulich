@@ -609,7 +609,7 @@ function CarDetailContent({ car }) {
   if (isMobile) {
     return (
       <div className="relative min-h-screen bg-slate-950 text-slate-50 overflow-x-hidden">
-        <main className="relative z-10 mx-auto w-full max-w-[1500px] px-3 pb-8 pt-4">
+        <main className="relative z-10 mx-auto w-full max-w-full sm:max-w-[1500px] px-3 pb-8 pt-4">
           {/* HERO */}
           <section className="mb-4">
             <div className="flex flex-col gap-4">
