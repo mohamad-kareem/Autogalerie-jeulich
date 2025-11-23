@@ -19,13 +19,13 @@ import Link from "next/link";
 
 const PublicAddCarPage = () => {
   return (
-    <main className="bg-gradient-to-br from-black/95 to-red-950">
+    <main className="bg-gradient-to-br from-slate-900 to-slate-950">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-black to-red-950 py-16 md:py-28 px-4 sm:px-6 lg:px-8 text-white overflow-hidden">
-        <div className="max-w-7xl mx-auto text-center relative z-10 space-y-6">
+      <section className="relative bg-gradient-to-br from-black/30  to-slate-800 py-16 md:py-28 px-4 sm:px-6 lg:px-8 text-white overflow-hidden">
+        <div className="max-w-7xl mx-auto text-center relative z-10 space-y-6 mt-10">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight tracking-tight">
             Verkaufen Sie Ihr Auto <br className="hidden sm:block" />
-            <span className="text-red-600">mühelos</span>
+            <span className="text-slate-600">mühelos</span>
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl max-w-3xl mx-auto text-gray-300 font-light leading-relaxed">
             Erhalten Sie innerhalb von Minuten ein wettbewerbsfähiges,
@@ -48,8 +48,8 @@ const PublicAddCarPage = () => {
           <div className="lg:col-span-1 space-y-6 md:space-y-8">
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
               <h2 className="text-2xl font-bold mb-6 flex items-center text-gray-900">
-                <FiInfo className="mr-3 text-red-600" />
-                <span className="bg-gradient-to-br from-black to-red-950 bg-clip-text text-transparent">
+                <FiInfo className="mr-3 text-slate-600" />
+                <span className="bg-gradient-to-br from-black to-slate-950 bg-clip-text text-transparent">
                   Warum uns wählen?
                 </span>
               </h2>
@@ -74,7 +74,7 @@ const PublicAddCarPage = () => {
                 ].map((item, index) => (
                   <li key={index} className="flex items-start">
                     <div className="flex-shrink-0 mt-1">
-                      <div className="h-2.5 w-2.5 bg-gradient-to-r from-red-500 to-red-700 rounded-full"></div>
+                      <div className="h-2.5 w-2.5 bg-gradient-to-r from-slate-500 to-slate-700 rounded-full"></div>
                     </div>
                     <div className="ml-4">
                       <p className="text-gray-900 font-medium">{item.title}</p>
@@ -89,8 +89,8 @@ const PublicAddCarPage = () => {
 
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
               <h2 className="text-2xl font-bold mb-6 flex items-center text-gray-900">
-                <FiUpload className="mr-3 text-red-600" />
-                <span className="bg-gradient-to-br from-black to-red-950 bg-clip-text text-transparent">
+                <FiUpload className="mr-3 text-slate-600" />
+                <span className="bg-gradient-to-br from-black to-slate-950 bg-clip-text text-transparent">
                   Benötigte Dokumente
                 </span>
               </h2>
@@ -107,7 +107,7 @@ const PublicAddCarPage = () => {
                 ].map((item, index) => (
                   <li key={index} className="flex items-center">
                     <div className="flex-shrink-0">
-                      <div className="h-2 w-2 bg-gradient-to-r from-red-500 to-red-700 rounded-full"></div>
+                      <div className="h-2 w-2 bg-gradient-to-r from-slate-500 to-slate-700 rounded-full"></div>
                     </div>
                     <p className="ml-3 text-gray-700">{item}</p>
                   </li>
@@ -115,7 +115,7 @@ const PublicAddCarPage = () => {
               </ul>
             </div>
 
-            <div className="bg-gradient-to-br from-black to-red-950 p-8 rounded-2xl border border-gray-200 shadow-lg">
+            <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-8 rounded-2xl border border-gray-200 shadow-lg">
               <div className="flex items-start mb-6">
                 <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm">
                   <FiMail className="text-white text-xl" />
@@ -124,7 +124,7 @@ const PublicAddCarPage = () => {
                   <h3 className="text-lg font-semibold text-white">
                     E-Mail an unser Team
                   </h3>
-                  <p className="text-red-200 hover:text-white transition-colors">
+                  <p className="text-slate-200 hover:text-white transition-colors">
                     autogalerie.jülich@web.de
                   </p>
                 </div>
@@ -137,7 +137,7 @@ const PublicAddCarPage = () => {
                   <h3 className="text-lg font-semibold text-white">
                     Direkte Linie
                   </h3>
-                  <p className="text-red-200 hover:text-white transition-colors">
+                  <p className="text-slate-200 hover:text-white transition-colors">
                     +49 (0)2461 9163780
                   </p>
                 </div>
@@ -155,7 +155,7 @@ const PublicAddCarPage = () => {
           {/* Right Side - Form */}
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 transition-all duration-300 hover:shadow-2xl">
-              <div className="bg-gradient-to-br from-black to-red-950 px-8 py-6">
+              <div className="bg-gradient-to-br from-slate-900 to-slate-950 px-8 py-6">
                 <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight pb-1">
                   Fahrzeugbewertungsanfrage
                 </h2>
@@ -171,7 +171,7 @@ const PublicAddCarPage = () => {
 
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
               <h3 className="text-2xl font-bold mb-8 text-gray-900 flex items-center">
-                <FiTrendingUp className="mr-3 text-red-600" />
+                <FiTrendingUp className="mr-3 text-slate-600" />
                 Unser effizienter Prozess
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -193,8 +193,8 @@ const PublicAddCarPage = () => {
                   },
                 ].map((item, index) => (
                   <div key={index} className="group">
-                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 hover:border-red-300 transition-all duration-300 h-full group-hover:shadow-md">
-                      <div className="text-red-600 font-bold text-3xl mb-4">
+                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 hover:border-slate-300 transition-all duration-300 h-full group-hover:shadow-md">
+                      <div className="text-slate-600 font-bold text-3xl mb-4">
                         {item.step}
                       </div>
                       <h4 className="font-semibold text-gray-900 mb-2 text-lg">
@@ -227,22 +227,24 @@ const PublicAddCarPage = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
               {
-                icon: <FiAward className="text-3xl mb-3 text-red-600" />,
+                icon: <FiAward className="text-3xl mb-3 text-slate-600" />,
                 value: "500+",
                 label: "Fahrzeuge erworben",
               },
               {
-                icon: <FiCheckCircle className="text-3xl mb-3 text-red-600" />,
+                icon: (
+                  <FiCheckCircle className="text-3xl mb-3 text-slate-600" />
+                ),
                 value: "98%",
                 label: "Zufriedenheitsrate",
               },
               {
-                icon: <FiClock className="text-3xl mb-3 text-red-600" />,
+                icon: <FiClock className="text-3xl mb-3 text-slate-600" />,
                 value: "24h",
                 label: "Durchschn. Antwortzeit",
               },
               {
-                icon: <FiFileText className="text-3xl mb-3 text-red-600" />,
+                icon: <FiFileText className="text-3xl mb-3 text-slate-600" />,
                 value: "€0",
                 label: "Versteckte Gebühren",
               },

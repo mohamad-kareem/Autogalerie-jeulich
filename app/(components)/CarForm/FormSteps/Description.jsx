@@ -67,7 +67,7 @@ const Description = ({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="bg-gradient-to-r from-red-50 via-white to-red-50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-50 via-white to-slate-50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="p-6">
           <h2 className="text-sm sm:text-2xl font-bold text-gray-900">
             Beschreibung & Bilder
@@ -107,7 +107,7 @@ const Description = ({
         </h3>
         <div
           {...getRootProps()}
-          className="border-2 border-dashed border-gray-300 rounded-xl p-4 sm:p-6 text-center cursor-pointer hover:border-red-500 transition-colors bg-gray-50"
+          className="border-2 border-dashed border-gray-300 rounded-xl p-4 sm:p-6 text-center cursor-pointer hover:border-slate-500 transition-colors bg-gray-50"
         >
           <input {...getInputProps()} />
           <div className="space-y-2 sm:space-y-3">
@@ -135,7 +135,7 @@ const Description = ({
                 <button
                   type="button"
                   onClick={() => handleRemoveImage(index)}
-                  className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-white rounded-full p-0.5 sm:p-1 shadow-md hover:bg-red-50 text-red-600 transition-colors"
+                  className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-white rounded-full p-0.5 sm:p-1 shadow-md hover:bg-slate-50 text-slate-600 transition-colors"
                 >
                   <FiX className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
@@ -149,7 +149,7 @@ const Description = ({
         <Button
           onClick={prevStep}
           bgColor="bg-black"
-          hoverColor="hover:bg-red-950"
+          hoverColor="hover:bg-slate-950"
           icon="FiArrowLeft"
           size="small"
         >

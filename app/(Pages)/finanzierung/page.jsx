@@ -24,9 +24,9 @@ export default function FinanzierungPage() {
           content="Individuelle Fahrzeugfinanzierung - maßgeschneiderte Lösungen für Ihren Autokauf"
         />
       </Head>
-      <div className="min-h-screen bg-gray-100 overflow-x-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-950 overflow-x-hidden">
         {/* Hero Section with Gradient */}
-        <section className="relative bg-gradient-to-r from-black to-red-950 text-white py-24 sm:py-32 text-center overflow-hidden">
+        <section className="relative bg-gradient-to-br from-black/30  to-slate-800 text-white py-24 sm:py-32 text-center overflow-hidden">
           <div className="absolute inset-0 bg-[url('/pattern.png')] bg-cover opacity-10" />
           <div className="relative z-10 px-4 sm:px-6 max-w-5xl mx-auto">
             <div className="flex flex-col items-center mb-6 sm:mb-8">
@@ -37,10 +37,10 @@ export default function FinanzierungPage() {
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-serif font-bold leading-tight mb-6">
                 Individuelle Fahrzeugfinanzierung
               </h1>
-              <div className="w-24 h-1.5 bg-red-900 mx-auto mb-8" />
+              <div className="w-24 h-1.5 bg-slate-900 mx-auto mb-8" />
               <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
                 Maßgeschneiderte Lösungen in Zusammenarbeit mit führenden
-                Kreditinstituten
+                Kslateitinstituten
               </p>
             </div>
           </div>
@@ -55,7 +55,7 @@ export default function FinanzierungPage() {
                   <h2 className="text-2xl sm:text-4xl font-serif font-bold text-gray-900 mb-4">
                     Unser Finanzierungsprozess
                   </h2>
-                  <div className="w-16 h-1 bg-red-900 mb-6" />
+                  <div className="w-16 h-1 bg-slate-900 mb-6" />
                   <p className="text-gray-600">
                     Einfach, transparent und kundenorientiert - von der ersten
                     Beratung bis zur Zusage
@@ -86,12 +86,12 @@ export default function FinanzierungPage() {
                       number: "4",
                       title: "Finanzierungsbestätigung",
                       description:
-                        "Nach positiver Prüfung erhalten Sie die Zusage Ihres Kreditinstituts.",
+                        "Nach positiver Prüfung erhalten Sie die Zusage Ihres Kslateitinstituts.",
                     },
                   ].map((step) => (
                     <div key={step.number} className="flex items-start">
                       <div className="flex-shrink-0 mr-6">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-900 to-black text-white flex items-center justify-center font-serif text-xl">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-900 to-slate-950 text-white flex items-center justify-center font-serif text-xl">
                           {step.number}
                         </div>
                       </div>
@@ -120,13 +120,13 @@ export default function FinanzierungPage() {
         </section>
 
         {/* Benefits Section */}
-        <section className="py-16 sm:py-20 bg-gradient-to-br from-gray-900 to-red-900 text-white">
+        <section className="py-16 sm:py-20 bg-gradient-to-br from-gray-900 to-slate-900 text-white">
           <div className="px-4 sm:px-6 max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-4">
                 Unsere Finanzierungsvorteile
               </h2>
-              <div className="w-16 h-1 bg-red-400 mx-auto mb-6" />
+              <div className="w-16 h-1 bg-slate-400 mx-auto mb-6" />
               <p className="text-gray-300 max-w-3xl mx-auto text-lg">
                 Warum Sie Ihre Finanzierung über uns abschließen sollten
               </p>
@@ -138,7 +138,7 @@ export default function FinanzierungPage() {
                   icon: <FaUniversity className="text-xl" />,
                   title: "Bankenunabhängig",
                   description:
-                    "Wir arbeiten mit allen Kreditinstituten für die besten Konditionen",
+                    "Wir arbeiten mit allen Kslateitinstituten für die besten Konditionen",
                 },
                 {
                   icon: <FaInfoCircle className="text-xl" />,
@@ -193,17 +193,17 @@ export default function FinanzierungPage() {
               <h2 className="text-2xl sm:text-4xl font-serif font-bold text-gray-900 mb-4">
                 Ihr Weg zur optimalen Finanzierung
               </h2>
-              <div className="w-16 h-1 bg-red-900 mx-auto mb-6" />
+              <div className="w-16 h-1 bg-slate-900 mx-auto mb-6" />
               <p className="text-gray-600 max-w-3xl mx-auto text-lg">
-                Wir vermitteln zwischen Ihnen und Ihrem Kreditinstitut für
+                Wir vermitteln zwischen Ihnen und Ihrem Kslateitinstitut für
                 attraktive Konditionen
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-lg p-8 border border-gray-200 transform transition-all hover:-translate-y-2 hover:shadow-xl">
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                  <FaHandshake className="text-red-600 text-xl" />
+                <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
+                  <FaHandshake className="text-slate-600 text-xl" />
                 </div>
                 <h3 className="text-xl font-semibold mb-3">
                   Persönliche Beratung
@@ -215,8 +215,8 @@ export default function FinanzierungPage() {
               </div>
 
               <div className="bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-lg p-8 border border-gray-200 transform transition-all hover:-translate-y-2 hover:shadow-xl">
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                  <FaChartLine className="text-red-600 text-xl" />
+                <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
+                  <FaChartLine className="text-slate-600 text-xl" />
                 </div>
                 <h3 className="text-xl font-semibold mb-3">
                   Transparente Konditionen
@@ -228,8 +228,8 @@ export default function FinanzierungPage() {
               </div>
 
               <div className="bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-lg p-8 border border-gray-200 transform transition-all hover:-translate-y-2 hover:shadow-xl">
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                  <FaShieldAlt className="text-red-600 text-xl" />
+                <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
+                  <FaShieldAlt className="text-slate-600 text-xl" />
                 </div>
                 <h3 className="text-xl font-semibold mb-3">
                   Diskrete Abwicklung

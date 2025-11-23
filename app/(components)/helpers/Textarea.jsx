@@ -12,7 +12,7 @@ const Textarea = ({ label, rows = 4, ...props }) => {
       )}
       <textarea
         rows={rows}
-        className="block w-full rounded-md border-gray-900 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm"
+        className="block w-full rounded-md border-gray-900 shadow-sm focus:border-slate-500 focus:ring-slate-500 sm:text-sm"
         {...props}
       />
     </div>

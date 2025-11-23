@@ -30,7 +30,7 @@ const ContactInfo = ({
   return (
     <div className="space-y-6">
       {/* Header Card with contained content */}
-      <div className="bg-gradient-to-r from-red-50 via-white to-red-50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-50 via-white to-slate-50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="p-6">
           <h2 className="text-sm sm:text-2xl font-bold text-gray-900">
             Kontaktinformationen
@@ -49,7 +49,7 @@ const ContactInfo = ({
           value={formData.fullName}
           onChange={handleChange}
           error={errors.fullName}
-          required
+          requislate
         />
 
         <Input
@@ -59,7 +59,7 @@ const ContactInfo = ({
           value={formData.email}
           onChange={handleChange}
           error={errors.email}
-          required
+          requislate
         />
 
         <Input
@@ -69,7 +69,7 @@ const ContactInfo = ({
           value={formData.phone}
           onChange={handleChange}
           error={errors.phone}
-          required
+          requislate
         />
       </div>
 

@@ -121,7 +121,7 @@ const AdminCarForm = () => {
           {/* Progress line */}
           <div className="absolute top-1/2 left-0 right-0 h-1.5 bg-gray-200 rounded-full -z-10 transform -translate-y-1/2">
             <div
-              className="h-full bg-gradient-to-r from-red-600 to-red-500 rounded-full transition-all duration-500 ease-in-out"
+              className="h-full bg-gradient-to-r from-slate-600 to-slate-500 rounded-full transition-all duration-500 ease-in-out"
               style={{
                 width: `${((step - 1) / (steps.length - 1)) * 100}%`,
               }}
@@ -143,7 +143,7 @@ const AdminCarForm = () => {
                     step > index + 1
                       ? "bg-green-500 text-white shadow-md hover:bg-green-600"
                       : step === index + 1
-                      ? "bg-gradient-to-br from-red-600 to-red-500 text-white shadow-lg"
+                      ? "bg-gradient-to-br from-slate-600 to-slate-500 text-white shadow-lg"
                       : "bg-white border-2 border-gray-300 text-gray-500 hover:border-gray-400"
                   } ${step > index + 1 ? "cursor-pointer" : "cursor-default"}`}
                 >

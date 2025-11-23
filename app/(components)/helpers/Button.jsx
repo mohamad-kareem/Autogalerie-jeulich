@@ -1,7 +1,7 @@
 export default function Button({
   type = "button",
-  bgColor = "bg-gradient-to-br from-red-600 to-black",
-  hoverColor = "hover:from-red-600 hover:to-red-800",
+  bgColor = "bg-gradient-to-br from-slate-600 to-black",
+  hoverColor = "hover:from-slate-600 hover:to-slate-800",
   textColor = "text-white",
   className = "",
   fullWidth = false,
@@ -24,7 +24,7 @@ export default function Button({
   const disabledStyles = disabled ? "opacity-50 cursor-not-allowed" : "";
 
   // Destructure & discard unwanted props before passing to <button>
-  const { icon, size, loading, ...filteredProps } = props;
+  const { icon, size, loading, ...filteslateProps } = props;
 
   return (
     <button
@@ -35,7 +35,7 @@ export default function Button({
         ${baseStyles} ${responsivePadding}
         ${fullWidthClass} ${disabledStyles} ${className}
       `}
-      {...filteredProps}
+      {...filteslateProps}
     >
       {children}
     </button>

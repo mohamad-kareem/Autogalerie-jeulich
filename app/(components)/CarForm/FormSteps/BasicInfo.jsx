@@ -23,7 +23,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
     <div className="space-y-8">
       {/* Header Section */}
 
-      <div className="bg-gradient-to-r from-red-50 via-white to-red-50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-50 via-white to-slate-50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="p-6">
           <h2 className="text-sm sm:text-2xl font-bold text-gray-900">
             Grundinformationen
@@ -41,7 +41,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
             name="make"
             value={formData.make}
             onChange={handleChange}
-            required
+            requislate
             error={errors.make}
           />
 
@@ -50,7 +50,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
             name="vin"
             value={formData.vin}
             onChange={handleChange}
-            required
+            requislate
             error={errors.vin}
           />
 
@@ -59,7 +59,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
             name="model"
             value={formData.model}
             onChange={handleChange}
-            required
+            requislate
             error={errors.model}
           />
 
@@ -69,7 +69,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
             name="price"
             value={formData.price}
             onChange={handleChange}
-            required
+            requislate
             error={errors.price}
           />
         </div>
@@ -81,7 +81,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
             value={formData.registration}
             onChange={handleChange}
             placeholder="MM/YYYY"
-            required
+            requislate
             error={errors.registration}
           />
 
@@ -91,7 +91,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
             name="kilometers"
             value={formData.kilometers}
             onChange={handleChange}
-            required
+            requislate
             error={errors.kilometers}
           />
 
@@ -101,7 +101,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
             name="hp"
             value={formData.hp}
             onChange={handleChange}
-            required
+            requislate
             error={errors.hp}
           />
 
@@ -111,7 +111,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
             value={formData.fuel}
             onChange={handleChange}
             options={fuelOptions}
-            required
+            requislate
             error={errors.fuel}
           />
         </div>
@@ -124,7 +124,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
             value={formData.condition}
             onChange={handleChange}
             options={conditionOptions}
-            required
+            requislate
             error={errors.condition}
           />
 
@@ -134,7 +134,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
             value={formData.status}
             onChange={handleChange}
             options={statusOptions}
-            required
+            requislate
             error={errors.status}
           />
         </div>
@@ -168,7 +168,7 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
             value={formData.category}
             onChange={handleChange}
             options={categoryOptions}
-            required
+            requislate
             error={errors.category}
           />
         </div>

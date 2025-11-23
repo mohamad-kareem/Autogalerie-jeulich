@@ -8,13 +8,13 @@ const transmissions = ["Alle", "Automatik", "Schaltgetriebe"];
 const fuels = ["Alle", "Benzin", "Diesel", "Hybrid", "Elektro"];
 
 const inputClasses =
-  "w-full rounded-md border border-gray-200 bg-white focus:border-red-400 focus:ring-1 focus:ring-red-200 px-2 py-1.5 text-sm placeholder-gray-400";
+  "w-full rounded-md border border-gray-200 bg-white focus:border-slate-400 focus:ring-1 focus:ring-slate-200 px-2 py-1.5 text-sm placeholder-gray-400";
 
 const labelClasses =
   "block text-xs font-semibold text-gray-700 mb-1 tracking-wide";
 
 const selectClasses =
-  "w-full rounded-md border border-gray-200 bg-white focus:border-red-400 focus:ring-1 focus:ring-red-200 px-2 py-1.5 text-sm";
+  "w-full rounded-md border border-gray-200 bg-white focus:border-slate-400 focus:ring-1 focus:ring-slate-200 px-2 py-1.5 text-sm";
 
 const sectionClasses = "space-y-3";
 
@@ -169,7 +169,7 @@ const Filter = ({ filters, onChange, onSubmit, onReset }) => {
       <div className="flex gap-2 pt-1">
         <button
           type="submit"
-          className="flex-1 py-1.5 px-2 rounded-lg bg-black hover:hover:bg-gradient-to-br from-red-600 to-black active:bg-red-800 text-white font-semibold text-xs shadow-sm flex items-center justify-center gap-1 transition"
+          className="flex-1 py-1.5 px-2 rounded-lg bg-black hover:hover:bg-gradient-to-br from-slate-600 to-black active:bg-slate-800 text-white font-semibold text-xs shadow-sm flex items-center justify-center gap-1 transition"
         >
           <FiSearch className="w-4 h-4" />
           anzeigen
@@ -177,7 +177,7 @@ const Filter = ({ filters, onChange, onSubmit, onReset }) => {
         <button
           type="button"
           onClick={onReset}
-          className="flex-1 py-1.5 px-2 rounded-lg bg-white border border-gray-200 hover:hover:bg-gradient-to-br from-red-600 to-black/20 text-gray-700 font-medium text-xs shadow-sm flex items-center justify-center gap-1 transition"
+          className="flex-1 py-1.5 px-2 rounded-lg bg-white border border-gray-200 hover:hover:bg-gradient-to-br from-slate-600 to-black/20 text-gray-700 font-medium text-xs shadow-sm flex items-center justify-center gap-1 transition"
         >
           <FiRefreshCw className="w-4 h-4" />
           Zurücksetzen

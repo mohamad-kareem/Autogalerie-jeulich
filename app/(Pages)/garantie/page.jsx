@@ -43,7 +43,7 @@ export default function GarantiePage() {
       </Head>
       <div className="min-h-screen bg-gray-100 overflow-x-hidden">
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-r from-black to-red-950 text-white py-20 sm:py-28 lg:py-32 text-center mb-12 overflow-hidden">
+        <section className="relative bg-gradient-to-br from-slate-800 to-slate-950 text-white py-20 sm:py-28 lg:py-32 text-center mb-12 overflow-hidden">
           <div className="absolute inset-0 bg-[url('/pattern.png')] bg-cover opacity-10" />
           <div className="relative z-10 px-4 sm:px-6 max-w-5xl mx-auto">
             <div className="flex flex-col items-center mb-6 sm:mb-8">
@@ -54,7 +54,7 @@ export default function GarantiePage() {
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-serif font-bold leading-tight mb-6">
                 Unser Garantie-Versprechen
               </h1>
-              <div className="w-24 h-1.5 bg-red-900 mx-auto mb-8" />
+              <div className="w-24 h-1.5 bg-slate-700 mx-auto mb-8" />
               <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
                 Jedes Fahrzeug wird mit einer individuellen{" "}
                 <span className="font-semibold text-white">
@@ -71,19 +71,19 @@ export default function GarantiePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                icon: <FiDollarSign className="h-8 w-8 text-red-600" />,
+                icon: <FiDollarSign className="h-8 w-8 text-slate-700" />,
                 title: "Kostenschutz",
                 desc: "Volle Absicherung bei Reparaturen",
-                bg: "bg-gradient-to-br from-white to-red-50",
+                bg: "bg-gradient-to-br from-white to-slate-70",
               },
               {
-                icon: <FiGlobe className="h-8 w-8 text-red-600" />,
+                icon: <FiGlobe className="h-8 w-8 text-slate-700" />,
                 title: "Europaweit",
                 desc: "Gültig in über 5.000 Partnerwerkstätten",
                 bg: "bg-gradient-to-br from-white to-blue-50",
               },
               {
-                icon: <FiTrendingUp className="h-8 w-8 text-red-600" />,
+                icon: <FiTrendingUp className="h-8 w-8 text-slate-700" />,
                 title: "Wertsteigerung",
                 desc: "Erhöht den Wiederverkaufswert",
                 bg: "bg-gradient-to-br from-white to-green-50",
@@ -118,14 +118,14 @@ export default function GarantiePage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 max-w-6xl mx-auto mb-20">
           {/* Protection Benefits */}
           <div className="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-gray-900 to-red-900 p-6">
+            <div className="bg-gradient-to-r from-gray-900 to-slate-700 p-6">
               <div className="flex items-center">
                 <FiCheckCircle className="h-8 w-8 text-white mr-4" />
                 <h2 className="text-2xl font-bold text-white">
                   Ihr CarGarantie® Schutz
                 </h2>
               </div>
-              <p className="text-red-200 mt-2">
+              <p className="text-white mt-2">
                 Individuelle Pakete für jeden Bedarf
               </p>
             </div>
@@ -245,7 +245,7 @@ export default function GarantiePage() {
 
         {/* Conditions */}
         <div className="px-4 max-w-6xl mx-auto mb-20">
-          <div className="bg-gradient-to-br from-gray-900 to-red-900 text-white rounded-xl p-8">
+          <div className="bg-gradient-to-br from-gray-900 to-slate-700 text-white rounded-xl p-8">
             <div className="flex justify-between items-start mb-6">
               <h3 className="text-2xl font-bold">CarGarantie® Leistungen</h3>
             </div>
@@ -272,7 +272,7 @@ export default function GarantiePage() {
                     "24-Stunden-Pannenhilfe inklusive - weltweit gültig für die Vertragslaufzeit.",
                 },
               ].map((item, idx) => (
-                <div key={idx} className="border-l-2 border-red-400 pl-5">
+                <div key={idx} className="border-l-2 border-slate-700 pl-5">
                   <h4 className="font-semibold text-lg mb-2">{item.title}</h4>
                   <p className="text-gray-300">{item.content}</p>
                 </div>

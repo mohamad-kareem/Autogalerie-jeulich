@@ -17,12 +17,12 @@ const Input = ({
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-1">
           {label}
-          {required && <span className="text-red-500">*</span>}
+          {required && <span className="text-slate-500">*</span>}
         </label>
       )}
       {type === "select" ? (
         <select
-          className={`w-full p-2 border rounded-md border-black focus:outline-none focus:border-red-600 ${className}`}
+          className={`w-full p-2 border rounded-md border-black focus:outline-none focus:border-slate-600 ${className}`}
           value={value}
           onChange={onChange}
           required={required}
@@ -37,7 +37,7 @@ const Input = ({
       ) : (
         <input
           type={type}
-          className={`w-full p-2 border rounded-md border-black focus:outline-none focus:border-red-600 ${className}`}
+          className={`w-full p-2 border rounded-md border-black focus:outline-none focus:border-slate-600 ${className}`}
           value={value}
           onChange={onChange}
           required={required}

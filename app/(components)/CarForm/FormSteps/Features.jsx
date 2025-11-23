@@ -44,7 +44,7 @@ const Features = ({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="bg-gradient-to-r from-red-50 via-white to-red-50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-50 via-white to-slate-50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="p-6">
           <h2 className="text-sm sm:text-2xl font-bold text-gray-900">
             Ausstattung
@@ -101,7 +101,7 @@ const Features = ({
               <button
                 type="button"
                 onClick={() => removeFeature(index)}
-                className="p-1 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="p-1 sm:p-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
               >
                 <FiX className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
@@ -110,7 +110,7 @@ const Features = ({
           <button
             type="button"
             onClick={() => addFeatureField("features")}
-            className="mt-1 sm:mt-2 flex items-center gap-1 sm:gap-2 text-red-600 hover:text-red-700 text-xs sm:text-sm font-medium"
+            className="mt-1 sm:mt-2 flex items-center gap-1 sm:gap-2 text-slate-600 hover:text-slate-700 text-xs sm:text-sm font-medium"
           >
             <FiPlus className="w-3 h-3 sm:w-4 sm:h-4" />
             Ausstattung hinzufügen
@@ -139,7 +139,7 @@ const Features = ({
               <button
                 type="button"
                 onClick={() => removeFeature(index, "specialFeatures")}
-                className="p-1 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="p-1 sm:p-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
               >
                 <FiX className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
@@ -148,7 +148,7 @@ const Features = ({
           <button
             type="button"
             onClick={() => addFeatureField("specialFeatures")}
-            className="mt-1 sm:mt-2 flex items-center gap-1 sm:gap-2 text-red-600 hover:text-red-700 text-xs sm:text-sm font-medium"
+            className="mt-1 sm:mt-2 flex items-center gap-1 sm:gap-2 text-slate-600 hover:text-slate-700 text-xs sm:text-sm font-medium"
           >
             <FiPlus className="w-3 h-3 sm:w-4 sm:h-4" />
             Sonderausstattung hinzufügen
@@ -161,7 +161,7 @@ const Features = ({
           onClick={prevStep}
           icon="FiArrowLeft"
           bgColor="bg-black"
-          hoverColor="hover:bg-red-950"
+          hoverColor="hover:bg-slate-950"
           size="small"
         >
           Zurück

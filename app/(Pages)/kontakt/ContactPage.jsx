@@ -124,7 +124,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                       value={formData.firstName}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition"
                       placeholder="Ihr Vorname"
                     />
                   </div>
@@ -138,7 +138,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                       value={formData.lastName}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition"
                       placeholder="Ihr Nachname"
                     />
                   </div>
@@ -155,7 +155,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                       value={formData.email}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition"
                       placeholder="ihre@email.de"
                     />
                   </div>
@@ -168,7 +168,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition"
                       placeholder="+49 ..."
                     />
                   </div>
@@ -183,7 +183,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                     value={formData.subject}
                     onChange={handleChange}
                     required
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition"
                   >
                     <option value="">Bitte wählen</option>
                     <option value="Allgemeine Anfrage">
@@ -210,7 +210,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                       name="date"
                       value={formData.date}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition"
                     />
                   </div>
                 )}
@@ -225,7 +225,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                     value={formData.message}
                     onChange={handleChange}
                     required
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 transition resize-none"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition resize-none"
                     placeholder="Wie können wir Ihnen helfen?"
                   />
                 </div>
@@ -237,13 +237,13 @@ export default function ContactPage({ carId, carName, carLink }) {
                     checked={formData.privacy}
                     onChange={handleChange}
                     required
-                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-slate-600 focus:ring-slate-500"
                   />
                   <label className="text-xs text-gray-700 leading-relaxed">
                     Ich akzeptiere die{" "}
                     <a
                       href="/Datenschutz"
-                      className="text-red-600 hover:text-red-800 font-medium underline"
+                      className="text-slate-600 hover:text-slate-800 font-medium underline"
                     >
                       Datenschutzerklärung
                     </a>
@@ -257,7 +257,7 @@ export default function ContactPage({ carId, carName, carLink }) {
                   className={`w-full py-3 text-sm font-semibold rounded transition-colors ${
                     status === "loading"
                       ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-red-600 hover:bg-red-700 text-white"
+                      : "bg-slate-600 hover:bg-slate-700 text-white"
                   }`}
                 >
                   {status === "loading"
@@ -309,7 +309,7 @@ export default function ContactPage({ carId, carName, carLink }) {
               {/* Email */}
               <a
                 href="mailto:autogalerie.jülich@web.de"
-                className="flex items-center justify-center space-x-2 py-2.5 px-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors shadow-sm text-sm sm:text-base"
+                className="flex items-center justify-center space-x-2 py-2.5 px-3 bg-slate-500 hover:bg-slate-600 text-white rounded-lg transition-colors shadow-sm text-sm sm:text-base"
               >
                 <svg
                   className="w-4 h-4 sm:w-5 sm:h-5"

@@ -22,7 +22,7 @@ const Appearance = ({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="bg-gradient-to-r from-red-50 via-white to-red-50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-50 via-white to-slate-50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="p-6">
           <h2 className="text-sm sm:text-2xl font-bold text-gray-900">
             Farbe & Design
@@ -83,7 +83,7 @@ const Appearance = ({
         <Button
           onClick={prevStep}
           bgColor="bg-black"
-          hoverColor="hover:bg-red-950"
+          hoverColor="hover:bg-slate-950"
           icon="FiArrowLeft"
           size="small"
         >
