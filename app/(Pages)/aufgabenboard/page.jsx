@@ -13,6 +13,30 @@ import {
   FiGrid,
 } from "react-icons/fi";
 
+// Color options for tasks
+const COLOR_OPTIONS = [
+  { id: "default", name: "Standard", class: "bg-gray-800" },
+  { id: "blue", name: "Blau", class: "bg-blue-900/80 " },
+  { id: "green", name: "Grün", class: "bg-green-900/80 " },
+  { id: "red", name: "Rot", class: "bg-red-900/80 " },
+  {
+    id: "yellow",
+    name: "Gelb",
+    class: "bg-yellow-900/80 ",
+  },
+  {
+    id: "purple",
+    name: "Lila",
+    class: "bg-purple-900/80 ",
+  },
+  { id: "pink", name: "Pink", class: "bg-pink-900/80 " },
+  {
+    id: "indigo",
+    name: "Indigo",
+    class: "bg-indigo-900/80 ",
+  },
+];
+
 // Completely empty board – just the structure
 const EMPTY_BOARD = {
   columns: {},
@@ -27,6 +51,7 @@ export default function AufgabenboardPage() {
   // inline add-card state
   const [activeAddColumn, setActiveAddColumn] = useState(null);
   const [newCardText, setNewCardText] = useState("");
+  const [newCardColor, setNewCardColor] = useState("default");
 
   // add-list state
   const [isAddingList, setIsAddingList] = useState(false);
@@ -35,6 +60,7 @@ export default function AufgabenboardPage() {
   // edit-task modal
   const [editTaskId, setEditTaskId] = useState(null);
   const [editText, setEditText] = useState("");
+  const [editColor, setEditColor] = useState("default");
 
   // which task is currently hovered (for checkbox behavior)
   const [hoveredTaskId, setHoveredTaskId] = useState(null);
@@ -53,9 +79,10 @@ export default function AufgabenboardPage() {
         const json = await res.json();
         const loaded = json.board || EMPTY_BOARD;
 
-        // safety: ensure done exists
+        // safety: ensure done exists and color exists
         Object.values(loaded.tasks || {}).forEach((task) => {
           if (typeof task.done === "undefined") task.done = false;
+          if (typeof task.color === "undefined") task.color = "default";
         });
 
         setBoard(loaded);
@@ -91,6 +118,13 @@ export default function AufgabenboardPage() {
       saveBoardToServer(next); // fire-and-forget save
       return next;
     });
+  };
+
+  // Get color classes for task
+  const getTaskColorClasses = (colorId) => {
+    const colorOption =
+      COLOR_OPTIONS.find((opt) => opt.id === colorId) || COLOR_OPTIONS[0];
+    return colorOption.class;
   };
 
   // ─────────────────────
@@ -161,11 +195,13 @@ export default function AufgabenboardPage() {
   const openAddCard = (columnId) => {
     setActiveAddColumn(columnId);
     setNewCardText("");
+    setNewCardColor("default");
   };
 
   const cancelAddCard = () => {
     setActiveAddColumn(null);
     setNewCardText("");
+    setNewCardColor("default");
   };
 
   const handleCreateCard = (columnId) => {
@@ -176,6 +212,7 @@ export default function AufgabenboardPage() {
       id,
       title: newCardText.trim(),
       done: false,
+      color: newCardColor,
     };
 
     updateBoard((prev) => {
@@ -201,6 +238,7 @@ export default function AufgabenboardPage() {
     });
 
     setNewCardText("");
+    setNewCardColor("default");
     setActiveAddColumn(null);
   };
 
@@ -222,11 +260,13 @@ export default function AufgabenboardPage() {
   const openEditTask = (task) => {
     setEditTaskId(task.id);
     setEditText(task.title);
+    setEditColor(task.color || "default");
   };
 
   const closeEditTask = () => {
     setEditTaskId(null);
     setEditText("");
+    setEditColor("default");
   };
 
   const handleSaveEditTask = (e) => {
@@ -237,7 +277,11 @@ export default function AufgabenboardPage() {
     updateBoard((prev) => {
       const task = prev.tasks[editTaskId];
       if (!task) return prev;
-      const updatedTask = { ...task, title: editText.trim() };
+      const updatedTask = {
+        ...task,
+        title: editText.trim(),
+        color: editColor,
+      };
       return {
         ...prev,
         tasks: {
@@ -437,11 +481,15 @@ export default function AufgabenboardPage() {
                                       prev === task.id ? null : prev
                                     )
                                   }
-                                  className={`group rounded-md bg-gray-800 px-2.5 py-2 text-xs sm:text-sm text-slate-50 shadow-sm transition-all ${
+                                  className={`group rounded-md px-2.5 py-2 text-xs sm:text-sm text-slate-50 shadow-sm transition-all  ${
                                     snapshot.isDragging
                                       ? "ring-2 ring-amber-400/80"
-                                      : "hover:bg-slate-800/90"
-                                  } ${task.done ? "opacity-75" : ""}`}
+                                      : "hover:brightness-110"
+                                  } ${
+                                    task.done ? "opacity-75" : ""
+                                  } ${getTaskColorClasses(
+                                    task.color || "default"
+                                  )}`}
                                 >
                                   <div className="flex items-start gap-2">
                                     {/* Done checkbox – only rendered when hovered or done */}
@@ -521,6 +569,26 @@ export default function AufgabenboardPage() {
                                 className="w-full rounded-md border border-amber-500/40 bg-slate-950/80 px-2 py-1.5 text-xs text-amber-50 outline-none placeholder:text-amber-200/50 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50"
                                 placeholder="Neue Karte eingeben…"
                               />
+
+                              {/* Color selection for new card */}
+                              <div className="flex flex-wrap gap-1">
+                                {COLOR_OPTIONS.map((color) => (
+                                  <button
+                                    key={color.id}
+                                    type="button"
+                                    onClick={() => setNewCardColor(color.id)}
+                                    className={`h-6 w-6 rounded-full border-2 transition-all ${
+                                      color.class.split(" ")[0]
+                                    } ${
+                                      newCardColor === color.id
+                                        ? "border-amber-400 ring-2 ring-amber-200"
+                                        : "border-transparent hover:scale-110"
+                                    }`}
+                                    title={color.name}
+                                  />
+                                ))}
+                              </div>
+
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
@@ -621,9 +689,12 @@ export default function AufgabenboardPage() {
               </div>
               <form
                 onSubmit={handleSaveEditTask}
-                className="px-4 py-3 space-y-3"
+                className="px-4 py-3 space-y-4"
               >
                 <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-2">
+                    Kartentext
+                  </label>
                   <textarea
                     rows={4}
                     value={editText}
@@ -632,7 +703,32 @@ export default function AufgabenboardPage() {
                     placeholder="Kartentext bearbeiten…"
                   />
                 </div>
-                <div className="flex items-center justify-between gap-2 pb-3">
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-2">
+                    Farbe auswählen
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {COLOR_OPTIONS.map((color) => (
+                      <button
+                        key={color.id}
+                        type="button"
+                        onClick={() => setEditColor(color.id)}
+                        className={`flex items-center justify-center h-8 px-3 rounded-md text-xs font-medium transition-all ${
+                          color.class
+                        } ${
+                          editColor === color.id
+                            ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-slate-950"
+                            : "opacity-80 hover:opacity-100 hover:scale-105"
+                        }`}
+                      >
+                        {color.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-2">
                   <button
                     type="button"
                     onClick={handleDeleteTask}

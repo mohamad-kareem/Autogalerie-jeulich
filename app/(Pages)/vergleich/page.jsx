@@ -28,21 +28,15 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import GridBackground from "@/app/(components)/helpers/Grid";
-import Button from "@/app/(components)/helpers/Button";
+
 const ComparePage = () => {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("specs");
-  const [isScrolled, setIsScrolled] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  // Base button style matching usedCarsPage
+  const baseBtn =
+    "inline-flex h-9 items-center justify-center px-3 text-[11px] sm:text-xs font-medium rounded-md cursor-pointer transition-colors";
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -114,17 +108,17 @@ const ComparePage = () => {
 
   const renderComparisonRow = (title, icon, key, formatter = (val) => val) => {
     return (
-      <div className="grid grid-cols-12 gap-4 py-3 px-4 hover:bg-white/5 transition-colors border-b border-white/20">
-        <div className="col-span-12 md:col-span-3 flex items-center text-gray-300 gap-2">
+      <div className="grid grid-cols-12 gap-4 py-3 px-4 hover:bg-slate-900/50 transition-colors border-b border-slate-800">
+        <div className="col-span-12 md:col-span-3 flex items-center text-slate-300 gap-2">
           {icon &&
-            React.cloneElement(icon, { className: "h-4 w-4 text-red-500" })}
-          <span>{title}</span>
+            React.cloneElement(icon, { className: "h-4 w-4 text-sky-400" })}
+          <span className="text-sm">{title}</span>
         </div>
         {cars.map((car) => (
           <div
             key={`${car._id}-${key}`}
             className={`col-span-6 md:col-span-3 text-center ${
-              allValuesEqual(key) ? "text-gray-300" : "text-white font-medium"
+              allValuesEqual(key) ? "text-slate-300" : "text-white font-medium"
             }`}
           >
             {car[key] ? formatter(car[key]) : "-"}
@@ -136,11 +130,11 @@ const ComparePage = () => {
 
   const renderFeatureRow = (title, icon, key) => {
     return (
-      <div className="grid grid-cols-12 gap-4 py-3 px-4 hover:bg-white/5 transition-colors border-b border-white/20">
-        <div className="col-span-12 md:col-span-3 flex items-center text-gray-300 gap-2">
+      <div className="grid grid-cols-12 gap-4 py-3 px-4 hover:bg-slate-900/50 transition-colors border-b border-slate-800">
+        <div className="col-span-12 md:col-span-3 flex items-center text-slate-300 gap-2">
           {icon &&
-            React.cloneElement(icon, { className: "h-4 w-4 text-red-500" })}
-          <span>{title}</span>
+            React.cloneElement(icon, { className: "h-4 w-4 text-sky-400" })}
+          <span className="text-sm">{title}</span>
         </div>
         {cars.map((car) => (
           <div
@@ -148,7 +142,7 @@ const ComparePage = () => {
             className="col-span-6 md:col-span-3 flex justify-center"
           >
             {car[key] ? (
-              <Check className="h-5 w-5 text-green-400" />
+              <Check className="h-5 w-5 text-emerald-400" />
             ) : (
               <X className="h-5 w-5 text-red-400/80" />
             )}
@@ -160,13 +154,12 @@ const ComparePage = () => {
 
   if (loading) {
     return (
-      <div className="relative min-h-screen bg-black">
-        <GridBackground />
+      <div className="relative min-h-screen bg-slate-950">
         <div className="relative z-10 min-h-screen flex items-center justify-center">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"
+            className="rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"
           ></motion.div>
         </div>
       </div>
@@ -175,31 +168,30 @@ const ComparePage = () => {
 
   if (cars.length < 2) {
     return (
-      <div className="relative min-h-screen bg-black">
-        <GridBackground />
+      <div className="relative min-h-screen bg-slate-950">
         <div className="relative z-10 min-h-screen flex flex-col items-center justify-center text-center p-6">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="bg-black/70 backdrop-blur-sm p-8 rounded-xl shadow-lg max-w-md w-full border border-white/20"
+            className="bg-slate-900/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg max-w-md w-full border border-slate-800"
           >
             <div className="flex justify-center mb-4">
-              <Scale className="h-12 w-12 text-red-500" />
+              <Scale className="h-12 w-12 text-sky-400" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">
+            <h1 className="text-2xl font-semibold text-white mb-2">
               Vergleich nicht möglich
             </h1>
-            <p className="text-gray-300 mb-6">
+            <p className="text-slate-300 mb-6">
               {cars.length === 0
                 ? "Sie haben keine Fahrzeuge zum Vergleich ausgewählt."
-                : "Sie müssen mindestens 2 Fahrzeuge zum Vergleich auswählen."}
+                : "Sie müssen mindestens 2 Fahrzeuge zum Vergleich ausgewählt haben."}
             </p>
             <Link
               href="/gebrauchtwagen"
-              className="inline-flex items-center justify-center bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium gap-2 transition-colors"
+              className={`${baseBtn} bg-sky-600 text-white hover:bg-sky-500`}
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-4 w-4" />
               Zurück zur Fahrzeugliste
             </Link>
           </motion.div>
@@ -209,40 +201,36 @@ const ComparePage = () => {
   }
 
   return (
-    <div className="relative min-h-screen bg-black pt-20  ">
-      <GridBackground />
-
-      {/* Sticky header */}
-      <header
-        className={`relative z-20  top-0 transition-all duration-300 ${
-          isScrolled
-            ? "bg-black/90 backdrop-blur-sm py-2 shadow-lg"
-            : "bg-transparent py-4"
-        }`}
-      >
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center">
+    <div className="relative min-h-screen bg-slate-950 text-slate-50 pt-20">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-40 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md py-4">
+        <div className="mx-auto w-full max-w-[1500px] px-4">
+          <div className="flex items-center justify-between">
             <Link
               href="/gebrauchtwagen"
-              className="flex items-center gap-2 text-red-500 hover:text-red-400 transition-colors"
+              className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
             >
               <ChevronLeft className="h-5 w-5" />
-              <span className="font-medium">Zurück</span>
+              <span className="text-sm font-medium">Zurück</span>
             </Link>
+
             <div className="flex items-center gap-2">
-              <Scale className="h-6 w-6 text-red-500" />
-              <h1 className="text-xl font-bold text-white">
+              <Scale className="h-6 w-6 text-sky-400" />
+              <h1 className="text-xl font-semibold text-white">
                 Fahrzeugvergleich
               </h1>
             </div>
-            <div className="w-8"></div>
+
+            <div className="text-sm text-slate-400">
+              {cars.length} von 3 Fahrzeugen
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="relative z-10 px-4 py-6">
-        <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1750px] mx-auto">
-          {/* Comparison cards - mobile view */}
+      <main className="relative z-10 px-4 py-8">
+        <div className="mx-auto w-full max-w-[1500px]">
+          {/* Mobile Cards */}
           <div className="md:hidden mb-6 space-y-4">
             {cars.map((car) => (
               <motion.div
@@ -250,115 +238,119 @@ const ComparePage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="bg-black/70 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-white/20"
+                className="bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-slate-800"
               >
                 <div className="relative">
-                  <div className="aspect-video bg-gray-900/50">
+                  <div className="aspect-video bg-slate-800/50">
                     {car.images?.[0]?.ref ? (
                       <img
                         src={car.images[0].ref}
                         alt={`${car.make} ${car.model}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover p-4"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-600">
+                      <div className="w-full h-full flex items-center justify-center text-slate-600">
                         <CarFront className="h-12 w-12" />
                       </div>
                     )}
                   </div>
                   <button
                     onClick={() => removeCar(car._id)}
-                    className="absolute top-2 right-2 bg-black/70 hover:bg-black p-2 rounded-full shadow-sm  border border-white/20"
+                    className="absolute top-3 right-3 bg-slate-900/80 hover:bg-slate-800 p-2 rounded-full border border-slate-700"
                   >
-                    <X className="h-4 w-4 text-gray-300 hover:text-red-500" />
+                    <X className="h-4 w-4 text-slate-300 hover:text-red-400" />
                   </button>
                 </div>
                 <div className="p-4">
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start mb-3">
                     <div>
-                      <h3 className="text-lg font-bold text-white">
+                      <h3 className="text-lg font-semibold text-white">
                         {car.make} {car.model}
                       </h3>
                       {car.modelDescription && (
-                        <p className="text-sm text-gray-300">
+                        <p className="text-sm text-slate-300">
                           {car.modelDescription}
                         </p>
                       )}
                     </div>
-                    <div className="text-lg font-bold text-red-500">
+                    <div className="text-lg font-semibold text-sky-400">
                       {formatPrice(car.price?.consumerPriceGross)}
                     </div>
                   </div>
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-gray-300">
-                    <div>
-                      <p className="text-gray-400">Kilometerstand</p>
-                      <p>{car.mileage?.toLocaleString("de-DE")} km</p>
+                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-300 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Gauge className="h-4 w-4 text-slate-400" />
+                      <span>{car.mileage?.toLocaleString("de-DE")} km</span>
                     </div>
-                    <div>
-                      <p className="text-gray-400">Erstzulassung</p>
-                      <p>{formatDate(car.firstRegistration)}</p>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-slate-400" />
+                      <span>{formatDate(car.firstRegistration)}</span>
                     </div>
-                    <div>
-                      <p className="text-gray-400">Leistung</p>
-                      <p>{car.power} PS</p>
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-slate-400" />
+                      <span>{car.power} PS</span>
                     </div>
-                    <div>
-                      <p className="text-gray-400">Kraftstoff</p>
-                      <p>{car.fuel}</p>
+                    <div className="flex items-center gap-2">
+                      <Fuel className="h-4 w-4 text-slate-400" />
+                      <span>{car.fuel}</span>
                     </div>
                   </div>
                   <Link
                     href={`/gebrauchtwagen/${car._id}`}
-                    className="mt-4 w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                    className={`${baseBtn} w-full bg-sky-600 text-white hover:bg-sky-500`}
                   >
-                    Details <ArrowRight className="h-4 w-4" />
+                    Details anzeigen
+                    <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
               </motion.div>
             ))}
           </div>
 
-          {/* Desktop comparison table */}
-          <div className="hidden md:block bg-black/70 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden mb-8 border border-white/20">
-            <div className="grid grid-cols-12 gap-0 border-b border-white/20">
-              <div className="col-span-3 p-4 bg-black/30">
-                <h2 className="font-semibold text-gray-300">Spezifikationen</h2>
+          {/* Desktop Comparison Table */}
+          <div className="hidden md:block bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden mb-8 border border-slate-800">
+            {/* Header Row */}
+            <div className="grid grid-cols-12 gap-0 border-b border-slate-800">
+              <div className="col-span-3 p-6 bg-slate-900/50">
+                <h2 className="font-semibold text-slate-300 text-lg">
+                  Spezifikationen
+                </h2>
               </div>
               {cars.map((car) => (
                 <div
                   key={car._id}
-                  className="col-span-3 p-4 relative group border-l border-white/20"
+                  className="col-span-3 p-6 relative group border-l border-slate-800"
                 >
                   <button
                     onClick={() => removeCar(car._id)}
-                    className="absolute top-2 right-2 bg-white hover:bg-red-600 p-1 rounded-full transition-colors"
+                    className="absolute top-4 right-4 bg-slate-800 hover:bg-red-600 p-1.5 rounded-full transition-colors border border-slate-700"
                   >
-                    <X className="h-4 w-4 text-black" />
+                    <X className="h-4 w-4 text-slate-300" />
                   </button>
 
                   <div className="flex flex-col items-center">
-                    <div className="w-full aspect-[4/3] bg-gray-900/50 rounded-lg overflow-hidden mb-3">
+                    <div className="w-full aspect-[4/3] bg-slate-800/50 rounded-xl overflow-hidden mb-4">
                       {car.images?.[0]?.ref ? (
                         <img
                           src={car.images[0].ref}
                           alt={`${car.make} ${car.model}`}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover p-4 hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-600">
+                        <div className="w-full h-full flex items-center justify-center text-slate-600">
                           <CarFront className="h-12 w-12" />
                         </div>
                       )}
                     </div>
-                    <h3 className="text-lg font-bold text-white text-center">
+                    <h3 className="text-lg font-semibold text-white text-center mb-1">
                       {car.make} {car.model}
                     </h3>
                     {car.modelDescription && (
-                      <p className="text-sm text-gray-300 text-center line-clamp-1">
+                      <p className="text-sm text-slate-300 text-center line-clamp-1 mb-2">
                         {car.modelDescription}
                       </p>
                     )}
-                    <div className="mt-2 text-lg font-bold text-red-500">
+                    <div className="text-lg font-semibold text-sky-400">
                       {formatPrice(car.price?.consumerPriceGross)}
                     </div>
                   </div>
@@ -366,15 +358,15 @@ const ComparePage = () => {
               ))}
             </div>
 
-            {/* Tab navigation */}
-            <div className="border-b border-white/20">
-              <nav className="flex overflow-x-auto">
+            {/* Tab Navigation */}
+            <div className="border-b border-slate-800">
+              <nav className="flex overflow-x-auto px-4">
                 <button
                   onClick={() => setActiveTab("specs")}
-                  className={`px-4 py-3 font-medium text-sm flex items-center gap-2 ${
+                  className={`px-4 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors ${
                     activeTab === "specs"
-                      ? "text-red-500 border-b-2 border-red-500"
-                      : "text-gray-400 hover:text-white"
+                      ? "text-sky-400 border-sky-400"
+                      : "text-slate-400 border-transparent hover:text-slate-300"
                   }`}
                 >
                   <Settings className="h-4 w-4" />
@@ -382,10 +374,10 @@ const ComparePage = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab("features")}
-                  className={`px-4 py-3 font-medium text-sm flex items-center gap-2 ${
+                  className={`px-4 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors ${
                     activeTab === "features"
-                      ? "text-red-500 border-b-2 border-red-500"
-                      : "text-gray-400 hover:text-white"
+                      ? "text-sky-400 border-sky-400"
+                      : "text-slate-400 border-transparent hover:text-slate-300"
                   }`}
                 >
                   <Star className="h-4 w-4" />
@@ -393,10 +385,10 @@ const ComparePage = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab("safety")}
-                  className={`px-4 py-3 font-medium text-sm flex items-center gap-2 ${
+                  className={`px-4 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors ${
                     activeTab === "safety"
-                      ? "text-red-500 border-b-2 border-red-500"
-                      : "text-gray-400 hover:text-white"
+                      ? "text-sky-400 border-sky-400"
+                      : "text-slate-400 border-transparent hover:text-slate-300"
                   }`}
                 >
                   <ShieldCheck className="h-4 w-4" />
@@ -405,7 +397,7 @@ const ComparePage = () => {
               </nav>
             </div>
 
-            {/* Tab content */}
+            {/* Tab Content */}
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -465,23 +457,6 @@ const ComparePage = () => {
                         `${val?.replace(/_/g, " ").toLowerCase()} / ${
                           cars.find((c) => c.doors === val)?.seats
                         }`
-                    )}
-                    {renderComparisonRow("Farbe", null, "exteriorColor")}
-                    {renderComparisonRow(
-                      "Hubraum",
-                      null,
-                      "cubicCapacity",
-                      (val) => `${val} ccm`
-                    )}
-                    {renderComparisonRow("Antriebsart", null, "driveType")}
-                    {renderComparisonRow(
-                      "Verbrauch (komb.)",
-                      <Fuel className="h-4 w-4" />,
-                      "consumptions",
-                      (val) =>
-                        val?.fuel?.combined
-                          ? `${val.fuel.combined} L/100km`
-                          : "-"
                     )}
                   </div>
                 )}
@@ -560,12 +535,14 @@ const ComparePage = () => {
             </AnimatePresence>
           </div>
 
-          {/* Summary section */}
-          <div className="bg-black/70 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-white/20">
-            <div className="p-6 border-b border-white/20">
-              <h3 className="text-lg font-bold text-white">Zusammenfassung</h3>
+          {/* Summary Section */}
+          <div className="bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-slate-800">
+            <div className="p-6 border-b border-slate-800">
+              <h3 className="text-lg font-semibold text-white">
+                Zusammenfassung
+              </h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-white/20">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-800">
               {cars.map((car) => (
                 <div
                   key={`summary-${car._id}`}
@@ -574,47 +551,49 @@ const ComparePage = () => {
                   <div>
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h4 className="font-bold text-lg text-white">
+                        <h4 className="font-semibold text-lg text-white">
                           {car.make} {car.model}
                         </h4>
                         {car.modelDescription && (
-                          <p className="text-sm text-gray-300">
+                          <p className="text-sm text-slate-300">
                             {car.modelDescription}
                           </p>
                         )}
                       </div>
-                      <div className="text-xl font-bold text-red-500">
+                      <div className="text-lg font-semibold text-sky-400">
                         {formatPrice(car.price?.consumerPriceGross)}
                       </div>
                     </div>
 
-                    <div className="space-y-3 mb-6 text-gray-300">
+                    <div className="space-y-3 mb-6 text-slate-300">
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Kilometerstand:</span>
+                        <span className="text-slate-400">Kilometerstand:</span>
                         <span className="font-medium">
                           {car.mileage?.toLocaleString("de-DE")} km
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Erstzulassung:</span>
+                        <span className="text-slate-400">Erstzulassung:</span>
                         <span className="font-medium">
                           {formatDate(car.firstRegistration)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Leistung:</span>
+                        <span className="text-slate-400">Leistung:</span>
                         <span className="font-medium">{car.power} PS</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Kraftstoff:</span>
+                        <span className="text-slate-400">Kraftstoff:</span>
                         <span className="font-medium">{car.fuel}</span>
                       </div>
                     </div>
                   </div>
                   <Link href={`/gebrauchtwagen/${car._id}`}>
-                    <Button>
+                    <button
+                      className={`${baseBtn} w-full bg-sky-600 text-white hover:bg-sky-500`}
+                    >
                       Fahrzeugdetails <ArrowRight className="h-4 w-4" />
-                    </Button>
+                    </button>
                   </Link>
                 </div>
               ))}

@@ -261,7 +261,7 @@ const DashboardContent = ({
     },
     {
       href: "/schlussel",
-      icon: <FiKey className="text-blue-400" />,
+      icon: <FiKey className="text-slate-400" />,
       label: "Schlüssel",
       badge: null,
     },
@@ -348,8 +348,8 @@ const DashboardContent = ({
             active
               ? `${
                   darkMode
-                    ? "bg-blue-900/50 text-blue-100 border-r-2 border-blue-400"
-                    : "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                    ? "bg-slate-900/50 text-slate-100 border-r-2 border-slate-400"
+                    : "bg-slate-50 text-slate-700 border-r-2 border-slate-600"
                 }`
               : `${
                   darkMode
@@ -374,8 +374,8 @@ const DashboardContent = ({
                 active
                   ? `${
                       darkMode
-                        ? "bg-blue-700 text-blue-100"
-                        : "bg-blue-100 text-blue-700"
+                        ? "bg-slate-700 text-slate-100"
+                        : "bg-slate-100 text-slate-700"
                     }`
                   : "bg-red-500 text-white"
               }`}
@@ -455,7 +455,7 @@ const DashboardContent = ({
               </>
             ) : (
               <>
-                <FiMoon className="text-lg text-blue-400" />
+                <FiMoon className="text-lg text-slate-400" />
                 <span className="font-medium text-sm">Dunkel</span>
               </>
             )}
@@ -463,7 +463,7 @@ const DashboardContent = ({
           <div
             className={`w-12 h-6 flex items-center rounded-full p-1 transition-all duration-300 ${
               darkMode
-                ? "bg-blue-600 justify-end"
+                ? "bg-slate-600 justify-end"
                 : "bg-slate-400 justify-start"
             }`}
           >
@@ -628,7 +628,7 @@ const DashboardContent = ({
           </header>
 
           {/* Main content - Mobile optimized */}
-          <main className="flex-1 px-6 sm:px-4 py-3 sm:py-4 space-y-4 sm:space-y-6">
+          <main className="flex-1 px-6 sm:px-6 py-3 sm:py-4 space-y-4 sm:space-y-6">
             {/* Verkauft-Karten - Mobile responsive grid */}
             {visibleSoldScheins.length > 0 ? (
               <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
@@ -642,7 +642,7 @@ const DashboardContent = ({
                     }`}
                   >
                     {/* Status bar */}
-                    <div className="h-1 bg-blue-500" />
+                    <div className="h-1 bg-slate-500" />
 
                     {/* Header - Mobile optimized */}
                     <div
@@ -751,10 +751,10 @@ const DashboardContent = ({
                       </span>
                       <Link
                         href="/Auto-scheins"
-                        className={`text-[12px] sm:text-xs font-medium hover:text-blue-300 ${
+                        className={`text-[12px] sm:text-xs font-medium hover:text-slate-300 ${
                           darkMode
-                            ? "text-blue-400"
-                            : "text-blue-600 hover:text-blue-700"
+                            ? "text-slate-400"
+                            : "text-slate-600 hover:text-slate-700"
                         }`}
                       >
                         Details
@@ -797,7 +797,7 @@ const DashboardContent = ({
             {upcomingAppointments.length > 0 && (
               <section className="mt-4 sm:mt-6">
                 <div className="mb-2 sm:mb-3 flex items-center gap-2 sm:gap-3">
-                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
+                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-gradient-to-br from-slate-500 to-slate-600">
                     <FiClock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                   </div>
                   <div>
@@ -822,10 +822,10 @@ const DashboardContent = ({
 
                 {/* Single compact card - Mobile optimized */}
                 <div
-                  className={`border rounded-lg hover:border-blue-500 transition-all duration-200 w-full max-w-sm ${
+                  className={`border rounded-lg hover:border-slate-500 transition-all duration-200 w-full max-w-sm ${
                     darkMode
-                      ? "bg-gray-800 border-blue-700"
-                      : "bg-white border-blue-200 hover:border-blue-300"
+                      ? "bg-gray-800 border-slate-700"
+                      : "bg-white border-slate-200 hover:border-slate-300"
                   }`}
                 >
                   <div className="p-2 sm:p-3">
@@ -836,7 +836,7 @@ const DashboardContent = ({
                           className="flex items-start gap-2 sm:gap-3"
                         >
                           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-                            <div className="flex-shrink-0 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400 rounded-full mt-1 sm:mt-1.5" />
+                            <div className="flex-shrink-0 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-slate-400 rounded-full mt-1 sm:mt-1.5" />
                             <div className="min-w-0 flex-1">
                               <p
                                 className={`text-xs sm:text-sm font-medium truncate ${
@@ -847,7 +847,7 @@ const DashboardContent = ({
                               </p>
                               <p
                                 className={`text-[10px] sm:text-xs font-medium ${
-                                  darkMode ? "text-blue-400" : "text-blue-600"
+                                  darkMode ? "text-slate-400" : "text-slate-600"
                                 }`}
                               >
                                 {formatAppointmentDateTime(appt.date)}

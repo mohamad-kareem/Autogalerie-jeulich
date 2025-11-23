@@ -18,7 +18,7 @@ export default function Rating() {
   }, [inView]);
 
   return (
-    <section className="relative w-full py-16 px-4 sm:px-6 lg:px-16 overflow-hidden bg-black">
+    <section className="relative w-full py-16 px-4 sm:px-6 lg:px-16 overflow-hidden bg-slate-950">
       {/* Background elements */}
 
       <motion.div
@@ -67,7 +67,7 @@ export default function Rating() {
                   />
                 ))}
               </div>
-              <span className="text-sm font-medium">5.0/5.0</span>
+              <span className="text-sm font-medium">4.9/5.0</span>
             </div>
           </div>
         </div>
@@ -79,7 +79,7 @@ export default function Rating() {
           transition={{ type: "spring", stiffness: 300 }}
         >
           <div className="relative p-1 bg-gradient-to-br from-blue-400 to-blue-900 rounded-3xl shadow-2xl w-full max-w-xs">
-            <div className="bg-black p-3 sm:p-4 rounded-2xl">
+            <div className="bg-slate-950 p-3 sm:p-4 rounded-2xl">
               <Image
                 src={Rate}
                 alt="Kundenbewertung"

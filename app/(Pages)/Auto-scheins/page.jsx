@@ -15,6 +15,8 @@ import {
   FiUser,
   FiChevronDown,
   FiCheck,
+  FiSun,
+  FiMoon,
 } from "react-icons/fi";
 
 const LIMIT = 20;
@@ -26,12 +28,43 @@ export default function CarScheinPage() {
 
   const [scheins, setScheins] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [selectedOwners, setSelectedOwners] = useState([]);
   const [showOwnerFilter, setShowOwnerFilter] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+
+  // Initialize dark mode
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+
+    const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
+    setDarkMode(isDark);
+
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+
+    if (newDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -95,12 +128,43 @@ export default function CarScheinPage() {
     return nameMatch && dateMatch && ownerMatch;
   });
 
+  // Theme classes
+  const bgClass = darkMode ? "bg-gray-900" : "bg-gray-50";
+  const cardBg = darkMode ? "bg-gray-800" : "bg-white";
+  const borderColor = darkMode ? "border-gray-700" : "border-gray-200";
+  const textPrimary = darkMode ? "text-white" : "text-gray-900";
+  const textSecondary = darkMode ? "text-gray-300" : "text-gray-600";
+  const inputBg = darkMode
+    ? "bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500";
+
   return (
-    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
+    <div
+      className={`min-h-screen transition-colors duration-300 ${bgClass} p-2 sm:p-4`}
+    >
       <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
         {/* Header */}
-        <header className="mb-3 sm:mb-4">
-          <h1 className="text-lg sm:text-xl font-bold text-gray-900">
+        <header className="mb-3 sm:mb-4 flex items-center gap-4">
+          <button
+            onClick={toggleDarkMode}
+            className={`p-2 rounded-lg transition-colors duration-300 ${
+              darkMode
+                ? "bg-gray-800 hover:bg-gray-700"
+                : "bg-gray-200 hover:bg-gray-300"
+            }`}
+            title={
+              darkMode ? "Zu Hellmodus wechseln" : "Zu Dunkelmodus wechseln"
+            }
+          >
+            {darkMode ? (
+              <FiSun className="h-4 w-4 text-yellow-400" />
+            ) : (
+              <FiMoon className="h-4 w-4 text-gray-600" />
+            )}
+          </button>
+          <h1
+            className={`text-lg sm:text-xl font-bold transition-colors duration-300 ${textPrimary}`}
+          >
             Fahrzeugschein-Verwaltung
           </h1>
         </header>
@@ -117,6 +181,7 @@ export default function CarScheinPage() {
           setShowOwnerFilter={setShowOwnerFilter}
           owners={OWNERS}
           onOpenUpload={() => setShowUploadModal(true)}
+          darkMode={darkMode}
         />
 
         {/* Table */}
@@ -125,6 +190,7 @@ export default function CarScheinPage() {
           loading={loading}
           onUpdateSchein={handleUpdateSchein}
           onDeleteSchein={handleDeleteSchein}
+          darkMode={darkMode}
         />
 
         {/* Upload Modal */}
@@ -133,6 +199,7 @@ export default function CarScheinPage() {
             mode="create"
             onClose={() => setShowUploadModal(false)}
             onSuccess={handleNewSchein}
+            darkMode={darkMode}
           />
         )}
       </div>
@@ -152,17 +219,39 @@ function FilterSection({
   setShowOwnerFilter,
   owners,
   onOpenUpload,
+  darkMode,
 }) {
+  const cardBg = darkMode ? "bg-gray-800" : "bg-white";
+  const borderColor = darkMode ? "border-gray-700" : "border-gray-200";
+  const inputBg = darkMode
+    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500";
+  const buttonBg = darkMode
+    ? "bg-gray-700 hover:bg-gray-600 text-white"
+    : "bg-gray-600 hover:bg-gray-700 text-white";
+  const filterButtonBg = darkMode
+    ? "bg-gray-700 border-gray-600 text-gray-300"
+    : "bg-gray-50 border-gray-300 text-gray-600";
+  const iconColor = darkMode ? "text-gray-400" : "text-gray-500";
+
   return (
-    <div className="mb-3 rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+    <div
+      className={`mb-3 rounded-lg border transition-colors duration-300 ${borderColor} ${cardBg} p-2 shadow-sm`}
+    >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         {/* LEFT: Smaller Search */}
         <div className="relative w-full sm:max-w-xs">
-          <FiSearch className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+          <FiSearch
+            className={`pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-sm transition-colors duration-300 ${iconColor}`}
+          />
           <input
             type="text"
             placeholder="Fahrzeug suchen..."
-            className="w-full rounded-md border border-gray-300 pl-8 pr-2 py-1.5 h-8 text-xs sm:text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-200"
+            className={`w-full rounded-md border pl-8 pr-2 py-1.5 h-8 text-xs sm:text-sm focus:outline-none focus:ring-1 transition-colors duration-300 ${inputBg} ${
+              darkMode
+                ? "focus:border-gray-400 focus:ring-gray-400"
+                : "focus:border-blue-500 focus:ring-blue-200"
+            }`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -171,13 +260,19 @@ function FilterSection({
         {/* RIGHT: Filters + Upload Button */}
         <div className="flex w-full sm:w-auto items-center justify-end gap-1 sm:gap-2">
           {/* Date Filter */}
-          <div className="flex items-center gap-1 rounded-md border border-gray-300 bg-gray-50 px-2 py-1 text-xs">
-            <FiCalendar className="text-gray-500 text-xs" />
+          <div
+            className={`flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors duration-300 ${filterButtonBg}`}
+          >
+            <FiCalendar
+              className={`text-xs transition-colors duration-300 ${iconColor}`}
+            />
             <input
               type="date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="bg-transparent text-xs focus:outline-none"
+              className={`bg-transparent text-xs focus:outline-none transition-colors duration-300 ${
+                darkMode ? "text-gray-300" : "text-gray-600"
+              }`}
             />
           </div>
 
@@ -186,30 +281,46 @@ function FilterSection({
             <button
               type="button"
               onClick={() => setShowOwnerFilter(!showOwnerFilter)}
-              className="flex items-center gap-1 rounded-md border border-gray-300 bg-gray-50 px-2 py-1 text-xs"
+              className={`flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors duration-300 ${filterButtonBg}`}
             >
-              <FiUser className="text-gray-500 text-xs" />
+              <FiUser
+                className={`text-xs transition-colors duration-300 ${iconColor}`}
+              />
               <span>Besitzer</span>
               <FiChevronDown
-                className={`text-gray-400 transition-transform ${
+                className={`transition-transform transition-colors duration-300 ${iconColor} ${
                   showOwnerFilter ? "rotate-180" : ""
                 }`}
               />
             </button>
 
             {showOwnerFilter && (
-              <div className="absolute right-0 z-20 mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg py-1">
+              <div
+                className={`absolute right-0 z-20 mt-1 w-32 border rounded-md shadow-lg py-1 transition-colors duration-300 ${
+                  darkMode
+                    ? "bg-gray-800 border-gray-700"
+                    : "bg-white border-gray-200"
+                }`}
+              >
                 {owners.map((owner) => (
                   <button
                     key={owner}
                     type="button"
-                    className="w-full px-3 py-1 text-left text-xs hover:bg-gray-50 flex items-center"
+                    className={`w-full px-3 py-1 text-left text-xs hover:bg-gray-50 flex items-center transition-colors duration-300 ${
+                      darkMode
+                        ? "hover:bg-gray-700 text-gray-300"
+                        : "hover:bg-gray-50 text-gray-600"
+                    }`}
                     onClick={() => toggleOwner(owner)}
                   >
                     {selectedOwners.includes(owner) ? (
                       <FiCheck className="text-blue-500 mr-2" />
                     ) : (
-                      <div className="w-3 h-3 mr-2 border border-gray-300 rounded" />
+                      <div
+                        className={`w-3 h-3 mr-2 border rounded transition-colors duration-300 ${
+                          darkMode ? "border-gray-600" : "border-gray-300"
+                        }`}
+                      />
                     )}
                     <span>{owner}</span>
                   </button>
@@ -222,7 +333,7 @@ function FilterSection({
           <button
             type="button"
             onClick={onOpenUpload}
-            className="inline-flex items-center gap-1 rounded-md bg-slate-600 px-2.5 py-1.5 text-xs sm:text-sm font-medium text-white shadow-sm transition hover:bg-slate-900"
+            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs sm:text-sm font-medium text-white shadow-sm transition ${buttonBg}`}
           >
             <FiPlus className="text-sm" />
             <span className="hidden xs:inline">Schein hochladen</span>

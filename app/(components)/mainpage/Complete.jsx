@@ -18,16 +18,17 @@ const Complete = () => {
     <main className="relative bg-black text-white">
       {/*  Grid SVG in the background */}
       <HeroSection />
-
+      <Rating />
+      <Reviews />
       <OpelPremiumAd />
 
       <LandingChoices />
       <RandomCarSlider />
-      <Rating />
+
       <LandingSlide />
       <WhyUs />
       <SellCarYourWay />
-      <Reviews />
+
       <Footbar />
     </main>
   );

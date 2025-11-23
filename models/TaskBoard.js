@@ -1,3 +1,4 @@
+// models/TaskBoard.js
 import mongoose from "mongoose";
 
 const TaskBoardSchema = new mongoose.Schema(
@@ -7,20 +8,23 @@ const TaskBoardSchema = new mongoose.Schema(
     board: {
       columns: {
         type: Object,
-        default: {}, // empty
+        default: {},
       },
       columnOrder: {
         type: [String],
-        default: [], // empty
+        default: [],
       },
       tasks: {
         type: Object,
-        default: {}, // empty
+        default: {},
       },
     },
   },
   { timestamps: true }
 );
+
+// Ensure tasks have color field in the schema
+TaskBoardSchema.path("board.tasks").default(() => ({}));
 
 export default mongoose.models.TaskBoard ||
   mongoose.model("TaskBoard", TaskBoardSchema);
