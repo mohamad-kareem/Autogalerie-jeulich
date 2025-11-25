@@ -196,7 +196,7 @@ export default function UsedCarsPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-slate-50">
+    <div className="relative min-h-screen bg-slate-950 text-slate-50 pt-18">
       {/* FIXED COMPARISON BAR */}
       {comparisonMode && (
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-800 bg-slate-950/95 backdrop-blur-md">
@@ -260,21 +260,21 @@ export default function UsedCarsPage() {
       )}
 
       {/* MAIN CONTENT */}
-      <div className="mx-auto w-full max-w-[1500px] px-4 pb-20 pt-25 sm:px-6 lg:px-8">
-        {/* PAGE HEADER */}
-        <header className="mb-6 sm:mb-12">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <CarFront className="h-6 w-6 text-sky-400 sm:h-9 sm:w-9" />
+      <div className="mx-auto w-full max-w-[1500px] px-4 pb-20 pt-6 sm:px-6 lg:px-8">
+        {/* PAGE HEADER: title left, buttons right on same line */}
+        <header className="mb-4 sm:mb-6 lg:mb-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Left: title */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div>
                 <h1 className="text-base font-semibold text-white sm:text-3xl lg:text-4xl">
-                  Gebrauchtwagenübersicht
+                  Unsere Fahrzeuge
                 </h1>
               </div>
             </div>
 
-            {/* header actions */}
-            <div className="flex w-full flex-wrap items-center justify-start gap-2 pt-1 text-[11px] sm:w-auto sm:justify-end sm:text-xs">
+            {/* Right: header actions (ALWAYS same line together ab sm) */}
+            <div className="flex flex-wrap items-center justify-start gap-2 text-[11px] sm:justify-end sm:text-xs">
               <button
                 onClick={syncCars}
                 disabled={syncing}
@@ -307,8 +307,8 @@ export default function UsedCarsPage() {
           </div>
         </header>
 
-        {/* SEARCH + FILTER */}
-        <section className="mb-5 rounded-2xl border border-slate-800 bg-slate-950/80 p-3 shadow-sm shadow-black/30 sm:p-4">
+        {/* SEARCH + FILTER: neatly aligned below header in a card */}
+        <section className="mb-5  bg-slate-950/80 pt-1 pb-2 shadow-sm shadow-black/30 sm:mb-6 ">
           <SearchAndFilter
             cars={cars}
             loading={loading}
@@ -365,7 +365,7 @@ export default function UsedCarsPage() {
                 <div className="flex h-full flex-col rounded-2xl bg-slate-950">
                   {/* IMAGE / BADGES */}
                   <div className="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-slate-900">
-                    {/* VERKAUFT ribbon (your design) */}
+                    {/* VERKAUFT ribbon */}
                     {car.sold && (
                       <div className="absolute top-0 right-0 z-30 animate-fade-in">
                         <div className="relative">
@@ -522,7 +522,7 @@ export default function UsedCarsPage() {
                       )}
                     </div>
 
-                    {/* ACTIONS – NOW ALL SAME WIDTH (flex-1) */}
+                    {/* ACTIONS */}
                     <div className="mt-auto space-y-2 pt-1">
                       {/* Row 1: Details + Compare */}
                       <div className="flex items-center gap-2">
@@ -531,7 +531,7 @@ export default function UsedCarsPage() {
                           className={`${baseBtn} flex-1 bg-sky-600 text-white hover:bg-sky-500`}
                         >
                           Details anzeigen
-                          <ChevronRight className=" h-4 w-4" />
+                          <ChevronRight className="h-4 w-4" />
                         </Link>
 
                         {!comparisonMode && (

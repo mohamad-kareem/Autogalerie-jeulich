@@ -23,7 +23,7 @@ export default function FloatingContact() {
       <div
         className="fixed z-[9999]
         bottom-0 left-1/2 -translate-x-1/2 w-fit
-        md:top-1/2 md:right-0 md:left-auto md:translate-x-0 md:-translate-y-1/2 md:w-auto
+        md:top-3/5 md:right-0 md:left-auto md:translate-x-0 md:-translate-y-1/2 md:w-auto
         print:hidden"
       >
         <div className="relative">

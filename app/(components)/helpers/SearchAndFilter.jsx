@@ -91,76 +91,50 @@ export default function SearchAndFilter({
 
   return (
     <div className="w-full space-y-2 sm:space-y-3">
-      {/* TOP BAR: search + small filter toggle */}
-      <div className="flex flex-col gap-2 sm:gap-3 md:flex-row md:items-center md:justify-between">
+      {/* TOP BAR: search + filter side by side (mobile-first) */}
+      <div className="flex w-full items-center justify-between gap-2 sm:gap-3">
         {/* Search input */}
-        <div className="relative w-full md:max-w-xl">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 sm:pl-3">
+        <div className="relative min-w-0 flex-1 md:flex-none md:w-full md:max-w-md lg:max-w-lg xl:max-w-xl">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2">
             <Search className="h-4 w-4 text-slate-500" />
           </div>
           <input
             type="text"
             placeholder="Marke, Modell oder Stichwort suchen..."
-            className="w-full rounded-lg border border-slate-700 bg-slate-950/80 pl-8 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:py-2 sm:text-sm"
+            className="w-full rounded-lg border border-slate-700 bg-slate-950/90 pl-7 pr-3 py-1.5 text-[11px] text-slate-100 placeholder-slate-500 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:py-2 sm:text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             disabled={loading}
           />
         </div>
 
-        {/* Right side: quick info + toggle button */}
-        <div className="flex w-full flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-end sm:gap-2 md:w-auto">
-          {/* Small summary text */}
-          <div className="text-[10px] text-slate-400 sm:text-[11px]">
-            Aktive Filter:&nbsp;
-            <span className="text-slate-200">
-              {filters.make ? "Marke" : ""}
-              {filters.fuelType
-                ? filters.make
-                  ? ", Kraftstoff"
-                  : "Kraftstoff"
-                : ""}
-              {filters.transmission
-                ? filters.make || filters.fuelType
-                  ? ", Getriebe"
-                  : "Getriebe"
-                : ""}
-              {!filters.make && !filters.fuelType && !filters.transmission
-                ? "keine"
-                : ""}
-            </span>
-          </div>
-
-          {/* Toggle button */}
-          <div className="flex justify-end sm:justify-start">
-            <button
-              type="button"
-              onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-700 bg-slate-950/80 px-2.5 text-[11px] font-medium text-slate-100 shadow-sm transition-colors hover:border-sky-500 hover:text-sky-100 sm:h-9 sm:px-3 sm:text-xs"
-            >
-              <Filter className="h-3.5 w-3.5" />
-              <span>Filter {showFilters ? "schließen" : "öffnen"}</span>
-              {showFilters ? (
-                <ChevronUp className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5" />
-              )}
-            </button>
-          </div>
-        </div>
+        {/* Filter toggle button */}
+        <button
+          type="button"
+          onClick={() => setShowFilters(!showFilters)}
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-700 bg-slate-950/90 px-2.5 py-1.5 text-[11px] font-medium text-slate-100 shadow-sm transition-colors hover:border-sky-500 hover:text-sky-100 sm:px-3 sm:py-2 sm:text-xs"
+        >
+          <Filter className="h-3.5 w-3.5" />
+          {/* Text only on desktop */}
+          <span className="hidden md:inline">
+            {showFilters ? "Filter zu" : "Filter"}
+          </span>
+          {showFilters ? (
+            <ChevronUp className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" />
+          )}
+        </button>
       </div>
 
       {/* ADVANCED FILTERS */}
       {showFilters && (
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/90 p-3 shadow-sm shadow-black/40 sm:p-4">
+        <div className="rounded-2xl border border-slate-800 bg-slate-950/95 p-3 shadow-sm shadow-black/40 sm:p-4">
           {/* Header */}
           <div className="mb-3 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 sm:text-[11px]">
                 Erweiterte Filter
-              </p>
-              <p className="text-[10px] text-slate-500 sm:text-xs">
-                Verfeinern Sie Ihre Suche nach Antrieb, Preis und Baujahr.
               </p>
             </div>
             <button
@@ -188,7 +162,7 @@ export default function SearchAndFilter({
                     onChange={(e) =>
                       setFilters((prev) => ({ ...prev, make: e.target.value }))
                     }
-                    className="w-full cursor-pointer rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 pr-7 text-xs text-slate-100 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:px-3 sm:py-2 sm:text-sm"
+                    className="w-full cursor-pointer rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 pr-7 text-[11px] text-slate-100 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:px-3 sm:py-2 sm:text-sm"
                   >
                     <option value="">Alle Marken</option>
                     {filterOptions.makes.map(({ value, label }) => (
@@ -216,7 +190,7 @@ export default function SearchAndFilter({
                         fuelType: e.target.value,
                       }))
                     }
-                    className="w-full cursor-pointer rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 pr-7 text-xs text-slate-100 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:px-3 sm:py-2 sm:text-sm"
+                    className="w-full cursor-pointer rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 pr-7 text-[11px] text-slate-100 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:px-3 sm:py-2 sm:text-sm"
                   >
                     <option value="">Alle Kraftstoffe</option>
                     {filterOptions.fuelTypes.map(({ value, label }) => (
@@ -244,7 +218,7 @@ export default function SearchAndFilter({
                         transmission: e.target.value,
                       }))
                     }
-                    className="w-full cursor-pointer rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 pr-7 text-xs text-slate-100 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:px-3 sm:py-2 sm:text-sm"
+                    className="w-full cursor-pointer rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 pr-7 text-[11px] text-slate-100 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:px-3 sm:py-2 sm:text-sm"
                   >
                     <option value="">Alle Getriebe</option>
                     {filterOptions.transmissions.map(({ value, label }) => (
@@ -277,7 +251,7 @@ export default function SearchAndFilter({
                         minPrice: parseInt(e.target.value) || 0,
                       }))
                     }
-                    className="w-1/2 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:px-3 sm:py-2 sm:text-sm"
+                    className="w-1/2 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-[11px] text-slate-100 placeholder-slate-500 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:px-3 sm:py-2 sm:text-sm"
                   />
                   <input
                     type="number"
@@ -290,7 +264,7 @@ export default function SearchAndFilter({
                           parseInt(e.target.value) || filterOptions.maxPrice,
                       }))
                     }
-                    className="w-1/2 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:px-3 sm:py-2 sm:text-sm"
+                    className="w-1/2 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-[11px] text-slate-100 placeholder-slate-500 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:px-3 sm:py-2 sm:text-sm"
                   />
                 </div>
                 <p className="mt-1 text-[10px] text-slate-500 sm:text-[11px]">
@@ -317,7 +291,7 @@ export default function SearchAndFilter({
                         minYear: parseInt(e.target.value) || 1990,
                       }))
                     }
-                    className="w-1/2 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:px-3 sm:py-2 sm:text-sm"
+                    className="w-1/2 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-[11px] text-slate-100 placeholder-slate-500 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:px-3 sm:py-2 sm:text-sm"
                   />
                   <input
                     type="number"
@@ -332,7 +306,7 @@ export default function SearchAndFilter({
                           parseInt(e.target.value) || new Date().getFullYear(),
                       }))
                     }
-                    className="w-1/2 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:px-3 sm:py-2 sm:text-sm"
+                    className="w-1/2 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-[11px] text-slate-100 placeholder-slate-500 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 sm:px-3 sm:py-2 sm:text-sm"
                   />
                 </div>
               </div>
