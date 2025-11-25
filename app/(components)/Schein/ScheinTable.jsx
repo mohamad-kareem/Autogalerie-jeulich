@@ -12,6 +12,9 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiKey,
+  FiRotateCcw,
+  FiRotateCw,
+  FiDownload,
 } from "react-icons/fi";
 import ScheinForm from "./ScheinForm";
 
@@ -29,6 +32,8 @@ export default function ScheinTable({
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedSchein, setSelectedSchein] = useState(null);
   const [modalImageUrl, setModalImageUrl] = useState("");
+  const [imageRotation, setImageRotation] = useState(0); // NEW: rotation state
+
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [keyForm, setKeyForm] = useState({
     keyNumber: "",
@@ -349,19 +354,18 @@ export default function ScheinTable({
           }
 
           /* FOOTER */
-     .footer {
-  margin-top: 22px;
-  padding-top: 10px;
-  border-top: 1px solid #e5e7eb;
-  font-size: 11px;
-  color: #6b7280;
-}
+          .footer {
+            margin-top: 22px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 11px;
+            color: #6b7280;
+          }
 
-.footer span {
-  display: block;
-  max-width: 100%;
-}
-
+          .footer span {
+            display: block;
+            max-width: 100%;
+          }
 
           @media print {
             body {
@@ -390,23 +394,21 @@ export default function ScheinTable({
               </div>
             </div>
             <div class="header-meta">
-            
               <div>${esc(createdAtText)}</div>
               <div>FIN: ${esc(finNumber || "–")}</div>
             </div>
           </header>
 
           <!-- TITLE -->
-        <section class="title-block">
-  <h1 class="doc-title">
-    ${esc(carName || "Unbekanntes Fahrzeug")}
-    ${keyNumber ? ` (${esc(keyNumber)})` : ""}
-  </h1>
-  <p class="doc-subtitle">
-    Dokumentation der Fahrzeugdaten für Wartung und Reparatur.
-  </p>
-</section>
-
+          <section class="title-block">
+            <h1 class="doc-title">
+              ${esc(carName || "Unbekanntes Fahrzeug")}
+              ${keyNumber ? ` (${esc(keyNumber)})` : ""}
+            </h1>
+            <p class="doc-subtitle">
+              Dokumentation der Fahrzeugdaten für Wartung und Reparatur.
+            </p>
+          </section>
 
           <!-- IMAGE (optional, hell) -->
           ${imageHtml}
@@ -454,7 +456,6 @@ export default function ScheinTable({
 
           <!-- FOOTER -->
           <footer class="footer">
-           
             <span>Dieses Dokument ist ausschließlich für den internen Gebrauch bestimmt und nicht zur Weitergabe an Dritte vorgesehen.</span>
           </footer>
         </div>
@@ -483,12 +484,15 @@ export default function ScheinTable({
     }
   };
 
-  const openImagePreview = (url) => {
-    if (!url) {
+  // UPDATED: gets the whole schein, not only url
+  const openImagePreview = (schein) => {
+    if (!schein?.imageUrl) {
       toast.error("Kein Bild verfügbar für diesen Schein.");
       return;
     }
-    setModalImageUrl(url);
+    setSelectedSchein(schein);
+    setModalImageUrl(schein.imageUrl);
+    setImageRotation(0); // reset rotation every time we open
     setShowPreviewModal(true);
   };
 
@@ -577,6 +581,18 @@ export default function ScheinTable({
     } catch (err) {
       console.error(err);
       toast.error("Fehler beim Speichern der Schlüssel-Daten");
+    }
+  };
+
+  const handleDownloadCurrentImage = () => {
+    if (!modalImageUrl) return;
+
+    try {
+      // Opens the image in a NEW TAB without touching your current page
+      window.open(modalImageUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      console.error(err);
+      toast.error("Bild konnte nicht geöffnet werden.");
     }
   };
 
@@ -769,7 +785,7 @@ export default function ScheinTable({
                         </button>
 
                         <button
-                          onClick={() => openImagePreview(schein.imageUrl)}
+                          onClick={() => openImagePreview(schein)} // UPDATED
                           className={`rounded p-1 transition-colors duration-300 ${
                             darkMode
                               ? "text-gray-400 hover:bg-gray-700 hover:text-white"
@@ -825,7 +841,7 @@ export default function ScheinTable({
                 className={`inline-flex items-center rounded border px-2 py-1 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-300 ${
                   darkMode
                     ? "border-gray-600 hover:bg-gray-700 text-gray-400"
-                    : "border-gray-300 hover:bg-white text-gray-600"
+                    : "border-gray-300 hover:bg:white text-gray-600"
                 }`}
               >
                 <FiChevronLeft className="mr-1" size={12} />
@@ -840,7 +856,7 @@ export default function ScheinTable({
                 className={`inline-flex items-center rounded border px-2 py-1 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-300 ${
                   darkMode
                     ? "border-gray-600 hover:bg-gray-700 text-gray-400"
-                    : "border-gray-400 hover:bg-white text-gray-600"
+                    : "border-gray-400 hover:bg:white text-gray-600"
                 }`}
               >
                 <FiChevronRight className="ml-1" size={12} />
@@ -1118,24 +1134,59 @@ export default function ScheinTable({
         />
       )}
 
-      {/* Image Preview Modal */}
+      {/* Image Preview Modal – with rotation + download */}
       {showPreviewModal && (
         <div className="fixed inset-0 bg-gray-700/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full">
-            <div className="p-2 border-b flex justify-between items-center">
-              <span className="text-sm font-medium">Schein Vorschau</span>
-              <button
-                onClick={() => setShowPreviewModal(false)}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <FiX size={16} />
-              </button>
+          <div className="bg-white rounded-lg max-w-4xl w-full shadow-xl">
+            <div className="p-2 border-b flex justify-between items-center gap-2">
+              <span className="text-sm font-medium truncate">
+                Schein Vorschau
+                {selectedSchein?.carName ? ` · ${selectedSchein.carName}` : ""}
+              </span>
+              <div className="flex items-center gap-1">
+                {/* Rotate left */}
+                <button
+                  onClick={() => setImageRotation((r) => (r - 90 + 360) % 360)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
+                  title="Nach links drehen"
+                >
+                  <FiRotateCcw size={16} />
+                </button>
+                {/* Rotate right */}
+                <button
+                  onClick={() => setImageRotation((r) => (r + 90) % 360)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
+                  title="Nach rechts drehen"
+                >
+                  <FiRotateCw size={16} />
+                </button>
+                {/* Download */}
+                <button
+                  onClick={handleDownloadCurrentImage}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
+                  title="Bild herunterladen"
+                >
+                  <FiDownload size={16} />
+                </button>
+                {/* Close */}
+                <button
+                  onClick={() => setShowPreviewModal(false)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100"
+                  title="Schließen"
+                >
+                  <FiX size={16} />
+                </button>
+              </div>
             </div>
-            <div className="p-4">
+            <div className="p-4 flex items-center justify-center">
               <img
                 src={modalImageUrl}
                 alt="Vorschau"
-                className="w-full max-h-[70vh] object-contain"
+                className="max-w-full max-h-[70vh] object-contain"
+                style={{
+                  transform: `rotate(${imageRotation}deg)`,
+                  transition: "transform 150ms ease-in-out",
+                }}
               />
             </div>
           </div>
