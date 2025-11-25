@@ -66,10 +66,402 @@ export default function ScheinTable({
   const hoverBg = darkMode ? "hover:bg-gray-700" : "hover:bg-blue-50";
 
   const handlePrintImage = (doc) => {
-    // ... (keep the existing print logic, it's fine as is)
-    const { imageUrl, carName, owner, notes = [], createdAt, finNumber } = doc;
-    const printWindow = window.open("", "_blank", "width=800,height=1000");
-    // ... rest of print logic
+    if (!doc) return;
+
+    const {
+      imageUrl,
+      carName,
+      owner,
+      notes = [],
+      createdAt,
+      finNumber,
+      keyNumber,
+    } = doc;
+
+    const printWindow = window.open("", "_blank", "width=900,height=1200");
+    if (!printWindow) {
+      toast.error("Popup wurde vom Browser blockiert.");
+      return;
+    }
+
+    // Helper to escape HTML
+    const esc = (s = "") =>
+      String(s || "").replace(
+        /[&<>"']/g,
+        (c) =>
+          ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;",
+          }[c])
+      );
+
+    // Safe date
+    let createdAtText = "—";
+    if (createdAt) {
+      const d = new Date(createdAt);
+      if (!isNaN(d.getTime())) {
+        createdAtText = d.toLocaleDateString();
+      }
+    }
+
+    // Aufgaben / Hinweise
+    const notesHtml =
+      Array.isArray(notes) && notes.length > 0
+        ? `<ul class="task-list">
+           ${notes.map((n) => `<li>${esc(n)}</li>`).join("")}
+         </ul>`
+        : `<p class="muted">Keine Aufgaben hinterlegt.</p>`;
+
+    // Optional image block – hell, neutral
+    const imageHtml = imageUrl
+      ? `
+      <section class="image-section">
+        <div class="image-frame">
+          <img src="${esc(imageUrl)}" alt="Fahrzeugschein" />
+        </div>
+      </section>
+    `
+      : "";
+
+    // Write HTML
+    printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="de">
+      <head>
+        <meta charset="UTF-8" />
+        <title>${esc(carName || "Fahrzeugschein")}</title>
+        <style>
+          @page {
+            size: A4;
+            margin: 0;
+          }
+
+          * {
+            box-sizing: border-box;
+          }
+
+          html, body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f3f4f6;
+            color: #111827;
+          }
+
+          body {
+            padding: 18mm;
+          }
+
+          .page {
+            background: #ffffff;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20mm 18mm 16mm;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+          }
+
+          /* HEADER / BRANDING */
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid #e5e7eb;
+          }
+
+          .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+
+          .brand-text-main {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #111827;
+          }
+
+          .brand-text-sub {
+            font-size: 12px;
+            color: #6b7280;
+          }
+
+          .header-meta {
+            text-align: right;
+            font-size: 12px;
+            color: #4b5563;
+          }
+
+          .header-meta strong {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 2px;
+          }
+
+          /* TITLE AREA */
+          .title-block {
+            margin-bottom: 16px;
+          }
+
+          .doc-title {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            color: #111827;
+            margin: 0 0 6px 0;
+          }
+
+          .doc-subtitle {
+            font-size: 14px;
+            color: #4b5563;
+            margin: 0;
+          }
+
+          .meta-line {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #374151;
+          }
+
+          .meta-line span + span::before {
+            content: "•";
+            margin: 0 6px;
+            color: #9ca3af;
+          }
+
+          /* IMAGE – hell, neutral */
+          .image-section {
+            margin-top: 14px;
+            margin-bottom: 20px;
+          }
+
+          .image-frame {
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
+          }
+
+          .image-frame img {
+            max-width: 100%;
+            max-height: 380px;
+            object-fit: contain;
+            border-radius: 6px;
+            background: #f9fafb;
+          }
+
+          /* VEHICLE DATA CARD */
+          .card {
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+            padding: 14px 16px;
+            margin-bottom: 18px;
+          }
+
+          .card-title {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #6b7280;
+            margin-bottom: 10px;
+            font-weight: 600;
+          }
+
+          .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 24px;
+          }
+
+          .data-item-label {
+            font-size: 12px;
+            color: #6b7280;
+          }
+
+          .data-item-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+          }
+
+          /* TASKS / NOTES */
+          .tasks-card {
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+            padding: 14px 16px;
+            margin-top: 6px;
+          }
+
+          .tasks-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+          }
+
+          .tasks-title {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-weight: 600;
+            color: #4b5563;
+          }
+
+          .tasks-count {
+            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #3730a3;
+            border: 1px solid #c7d2fe;
+          }
+
+          .task-list {
+            margin: 4px 0 0;
+            padding-left: 20px;
+          }
+
+          .task-list li {
+            font-size: 14px;
+            line-height: 1.45;
+            color: #111827;
+            margin-bottom: 6px;
+            font-weight: 500;
+          }
+
+          .muted {
+            font-size: 13px;
+            color: #9ca3af;
+            margin-top: 2px;
+          }
+
+          /* FOOTER */
+          .footer {
+            margin-top: 22px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            font-size: 11px;
+            color: #6b7280;
+          }
+
+          .footer span {
+            max-width: 48%;
+          }
+
+          @media print {
+            body {
+              padding: 0;
+              background: #ffffff;
+            }
+            .page {
+              border-radius: 0;
+              border: none;
+              box-shadow: none;
+              margin: 0;
+              max-width: none;
+              width: 100%;
+            }
+          }
+        </style>
+      </head>
+      <body onload="window.print(); window.onafterprint = () => window.close();">
+        <div class="page">
+          <!-- HEADER -->
+          <header class="header">
+            <div class="brand">
+              <div>
+                <div class="brand-text-main">AUTOGALERIE JÜLICH</div>
+                <div class="brand-text-sub">Werkstatt- und Instandhaltungsdokumentation</div>
+              </div>
+            </div>
+            <div class="header-meta">
+            
+              <div>${esc(createdAtText)}</div>
+              <div>FIN: ${esc(finNumber || "–")}</div>
+            </div>
+          </header>
+
+          <!-- TITLE -->
+          <section class="title-block">
+            <h1 class="doc-title">${esc(carName || "Unbekanntes Fahrzeug")}</h1>
+            <p class="doc-subtitle">
+              Dokumentation der Fahrzeugdaten für Wartung und Reparatur.
+            </p>
+        
+          </section>
+
+          <!-- IMAGE (optional, hell) -->
+          ${imageHtml}
+
+          <!-- VEHICLE DATA -->
+          <section class="card">
+            <div class="card-title">Fahrzeugdaten</div>
+            <div class="data-grid">
+              <div>
+                <div class="data-item-label">FIN-Nummer</div>
+                <div class="data-item-value">${esc(finNumber || "–")}</div>
+              </div>
+
+              <div>
+                <div class="data-item-label">Schlüsselnummer</div>
+                <div class="data-item-value">${esc(keyNumber || "—")}</div>
+              </div>
+
+              <div>
+                <div class="data-item-label">Besitzer / Händler</div>
+                <div class="data-item-value">${esc(owner || "–")}</div>
+              </div>
+
+              <div>
+                <div class="data-item-label">Erfasst am</div>
+                <div class="data-item-value">${esc(createdAtText)}</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- TASKS / NOTES -->
+          <section class="tasks-card">
+            <div class="tasks-header">
+              <div class="tasks-title">Aufgaben / Hinweise</div>
+              ${
+                Array.isArray(notes) && notes.length > 0
+                  ? `<span class="tasks-count">${notes.length} Eintrag${
+                      notes.length === 1 ? "" : "e"
+                    }</span>`
+                  : ""
+              }
+            </div>
+            ${notesHtml}
+          </section>
+
+          <!-- FOOTER -->
+          <footer class="footer">
+           
+            <span>Dieses Dokument ist ausschließlich für den internen Gebrauch bestimmt und nicht zur Weitergabe an Dritte vorgesehen.</span>
+          </footer>
+        </div>
+      </body>
+    </html>
+  `);
+
+    printWindow.document.close();
+    printWindow.focus();
   };
 
   const handleDelete = async (id, publicId) => {
