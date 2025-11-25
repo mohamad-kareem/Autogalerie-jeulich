@@ -1,3 +1,4 @@
+// app/(components)/Dashboard.jsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -9,7 +10,10 @@ export default function Dashboard() {
   const { data: session, status } = useSession();
   const [user, setUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // ⚠️ Name bleibt "soldScheins", aber Inhalt = ALLE sichtbaren Scheine
   const [soldScheins, setSoldScheins] = useState([]);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,10 +44,11 @@ export default function Dashboard() {
           const scheinsData = await scheinsRes.json();
           const docs = scheinsData.docs || [];
 
-          // 🔹 WICHTIG: nur verkaufte + nicht ausgeblendete Scheine
-          const sold = docs.filter((s) => s.keySold && !s.dashboardHidden);
+          // 🔹 WICHTIG: alle Scheine, die NICHT fürs Dashboard ausgeblendet sind
+          // (verkauft + nicht verkauft, aber sichtbar)
+          const visibleForDashboard = docs.filter((s) => !s.dashboardHidden);
 
-          setSoldScheins(sold);
+          setSoldScheins(visibleForDashboard);
         }
       } catch (error) {
         console.error(error);
@@ -87,7 +92,7 @@ export default function Dashboard() {
     <DashboardContent
       user={user}
       unreadCount={unreadCount}
-      soldScheins={soldScheins}
+      soldScheins={soldScheins} // ➜ enthält jetzt ALLE sichtbaren Scheine
       onDismissSchein={handleDismissSchein}
     />
   );

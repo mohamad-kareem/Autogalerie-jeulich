@@ -1005,7 +1005,7 @@ export default function ScheinTable({
                   >
                     {selectedSchein.fuelNeeded
                       ? "Benzin/Diesel auffüllen (Tank leer)"
-                      : "Tank ok"}
+                      : "Tank gefüllt"}
                   </div>
                 </div>
               </div>

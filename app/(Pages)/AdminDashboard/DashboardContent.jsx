@@ -115,8 +115,6 @@ function parseAppointmentFromTitle(title) {
 
   date.setHours(hours, minutes, 0, 0);
 
-  // 4) WENN der Termin nur über Wochentag definiert ist
-  //    und die Uhrzeit HEUTE schon vorbei ist → nächste Woche
   if (fromWeekday && date <= now) {
     date.setDate(date.getDate() + 7);
   }
@@ -127,11 +125,6 @@ function parseAppointmentFromTitle(title) {
   };
 }
 
-/**
- * Sucht in der Board-Struktur nach einer Spalte,
- * deren Titel "termin" enthält (z.B. "Kunden Termine"),
- * parst die Tasks und filtert alle Termine in den nächsten 48 Stunden.
- */
 function extractUpcomingAppointments(board) {
   if (!board || !board.columns || !board.tasks) return [];
 
@@ -181,7 +174,7 @@ function extractUpcomingAppointments(board) {
 const DashboardContent = ({
   user,
   unreadCount,
-  soldScheins,
+  soldScheins, // enthält jetzt ALLE Scheine fürs Dashboard (nicht nur "sold")
   onDismissSchein,
 }) => {
   const pathname = usePathname();
@@ -207,10 +200,12 @@ const DashboardContent = ({
     }
   }, []);
 
+  // whenever parent updates list
   useEffect(() => {
     setVisibleScheins(soldScheins || []);
   }, [soldScheins]);
 
+  // Load upcoming appointments from taskboard
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
@@ -474,15 +469,28 @@ const DashboardContent = ({
     </div>
   );
 
-  const visibleSoldScheins = useMemo(
-    () => visibleScheins || [],
+  /* ─────────────────────────────────────────
+     Dashboard data derived from visibleScheins
+     ───────────────────────────────────────── */
+
+  // All cars visible on dashboard (already in visibleScheins)
+  // Sold-only list for cards
+  const soldOnlyScheins = useMemo(
+    () =>
+      (visibleScheins || []).filter(
+        (schein) => schein.keySold === true && schein.dashboardHidden !== true
+      ),
     [visibleScheins]
   );
 
+  // All cars with empty tank (sold OR not sold), but not hidden
   const fuelAlertScheins = useMemo(
     () =>
-      (visibleSoldScheins || []).filter((schein) => schein.fuelNeeded === true),
-    [visibleSoldScheins]
+      (visibleScheins || []).filter(
+        (schein) =>
+          schein.fuelNeeded === true && schein.dashboardHidden !== true
+      ),
+    [visibleScheins]
   );
 
   const formatSoldDate = (schein) => {
@@ -511,6 +519,7 @@ const DashboardContent = ({
   };
 
   const handleDismissSchein = async (id) => {
+    // lokal aus Dashboard entfernen
     setVisibleScheins((prev) => prev.filter((s) => s._id !== id));
 
     try {
@@ -594,6 +603,7 @@ const DashboardContent = ({
               >
                 <FiMenu className="h-4 w-4" />
               </button>
+
               {/* Fuel alert - Mobile optimized */}
               <div className="flex items-center">
                 {fuelAlertScheins.length > 0 && (
@@ -630,9 +640,9 @@ const DashboardContent = ({
           {/* Main content - Mobile optimized */}
           <main className="flex-1 px-6 sm:px-6 py-3 sm:py-4 space-y-4 sm:space-y-6">
             {/* Verkauft-Karten - Mobile responsive grid */}
-            {visibleSoldScheins.length > 0 ? (
+            {soldOnlyScheins.length > 0 ? (
               <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
-                {visibleSoldScheins.map((schein) => (
+                {soldOnlyScheins.map((schein) => (
                   <div
                     key={schein._id}
                     className={`group relative border hover:shadow-lg transition-all duration-200 ${
@@ -830,7 +840,7 @@ const DashboardContent = ({
                 >
                   <div className="p-2 sm:p-3">
                     <div className="space-y-2 sm:space-y-3">
-                      {upcomingAppointments.map((appt, index) => (
+                      {upcomingAppointments.map((appt) => (
                         <div
                           key={appt.id}
                           className="flex items-start gap-2 sm:gap-3"
