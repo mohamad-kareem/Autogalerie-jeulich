@@ -349,20 +349,19 @@ export default function ScheinTable({
           }
 
           /* FOOTER */
-          .footer {
-            margin-top: 22px;
-            padding-top: 10px;
-            border-top: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: space-between;
-            gap: 18px;
-            font-size: 11px;
-            color: #6b7280;
-          }
+     .footer {
+  margin-top: 22px;
+  padding-top: 10px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 11px;
+  color: #6b7280;
+}
 
-          .footer span {
-            max-width: 48%;
-          }
+.footer span {
+  display: block;
+  max-width: 100%;
+}
+
 
           @media print {
             body {
@@ -398,13 +397,16 @@ export default function ScheinTable({
           </header>
 
           <!-- TITLE -->
-          <section class="title-block">
-            <h1 class="doc-title">${esc(carName || "Unbekanntes Fahrzeug")}</h1>
-            <p class="doc-subtitle">
-              Dokumentation der Fahrzeugdaten für Wartung und Reparatur.
-            </p>
-        
-          </section>
+        <section class="title-block">
+  <h1 class="doc-title">
+    ${esc(carName || "Unbekanntes Fahrzeug")}
+    ${keyNumber ? ` (${esc(keyNumber)})` : ""}
+  </h1>
+  <p class="doc-subtitle">
+    Dokumentation der Fahrzeugdaten für Wartung und Reparatur.
+  </p>
+</section>
+
 
           <!-- IMAGE (optional, hell) -->
           ${imageHtml}
