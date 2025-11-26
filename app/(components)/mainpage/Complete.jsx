@@ -11,7 +11,7 @@ import Reviews from "./CustomerReviews";
 import GridBackground from "../helpers/Grid";
 import RandomCarSlider from "./RandomCarSlider";
 import DiscountPopup from "./popup.jsx"; // Import the popup component
-
+import ConsentBanner from "../helpers/ConsentBanner"; // adjust path if needed
 import OpelPremiumAd from "../helpers/Ad2";
 const Complete = () => {
   return (
@@ -21,15 +21,13 @@ const Complete = () => {
       <Rating />
       <Reviews />
       <OpelPremiumAd />
-
       <LandingChoices />
       <RandomCarSlider />
-
       <LandingSlide />
       <WhyUs />
       <SellCarYourWay />
-
       <Footbar />
+      <ConsentBanner />
     </main>
   );
 };
