@@ -1,3 +1,4 @@
+// app/(components)/ScheinTable.jsx
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -32,7 +33,7 @@ export default function ScheinTable({
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedSchein, setSelectedSchein] = useState(null);
   const [modalImageUrl, setModalImageUrl] = useState("");
-  const [imageRotation, setImageRotation] = useState(0); // NEW: rotation state
+  const [imageRotation, setImageRotation] = useState(0);
 
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [keyForm, setKeyForm] = useState({
@@ -43,11 +44,13 @@ export default function ScheinTable({
     keyNote: "",
     fuelNeeded: false,
   });
+
   const [currentPage, setCurrentPage] = useState(1);
 
   const totalItems = scheins?.length || 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
 
+  // keep current page in range when list shrinks
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages || 1);
@@ -62,11 +65,9 @@ export default function ScheinTable({
   }, [scheins, currentPage]);
 
   // Theme classes
-  const bgClass = darkMode ? "bg-gray-900" : "bg-gray-50";
   const cardBg = darkMode ? "bg-gray-800" : "bg-white";
   const borderColor = darkMode ? "border-gray-700" : "border-gray-200";
   const textPrimary = darkMode ? "text-white" : "text-gray-900";
-  const textSecondary = darkMode ? "text-gray-300" : "text-gray-600";
   const textMuted = darkMode ? "text-gray-400" : "text-gray-500";
   const hoverBg = darkMode ? "hover:bg-gray-700" : "hover:bg-blue-50";
 
@@ -89,7 +90,6 @@ export default function ScheinTable({
       return;
     }
 
-    // Helper to escape HTML
     const esc = (s = "") =>
       String(s || "").replace(
         /[&<>"']/g,
@@ -103,7 +103,6 @@ export default function ScheinTable({
           }[c])
       );
 
-    // Safe date
     let createdAtText = "—";
     if (createdAt) {
       const d = new Date(createdAt);
@@ -112,356 +111,318 @@ export default function ScheinTable({
       }
     }
 
-    // Aufgaben / Hinweise
     const notesHtml =
       Array.isArray(notes) && notes.length > 0
         ? `<ul class="task-list">
-           ${notes.map((n) => `<li>${esc(n)}</li>`).join("")}
-         </ul>`
+             ${notes.map((n) => `<li>${esc(n)}</li>`).join("")}
+           </ul>`
         : `<p class="muted">Keine Aufgaben hinterlegt.</p>`;
 
-    // Optional image block – hell, neutral
     const imageHtml = imageUrl
       ? `
-      <section class="image-section">
-        <div class="image-frame">
-          <img src="${esc(imageUrl)}" alt="Fahrzeugschein" />
-        </div>
-      </section>
-    `
+        <section class="image-section">
+          <div class="image-frame">
+            <img src="${esc(imageUrl)}" alt="Fahrzeugschein" />
+          </div>
+        </section>
+      `
       : "";
 
-    // Write HTML
     printWindow.document.write(`
-    <!DOCTYPE html>
-    <html lang="de">
-      <head>
-        <meta charset="UTF-8" />
-        <title>${esc(carName || "Fahrzeugschein")}</title>
-        <style>
-          @page {
-            size: A4;
-            margin: 0;
-          }
-
-          * {
-            box-sizing: border-box;
-          }
-
-          html, body {
-            margin: 0;
-            padding: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #f3f4f6;
-            color: #111827;
-          }
-
-          body {
-            padding: 18mm;
-          }
-
-          .page {
-            background: #ffffff;
-            max-width: 210mm;
-            margin: 0 auto;
-            padding: 20mm 18mm 16mm;
-            border-radius: 12px;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
-          }
-
-          /* HEADER / BRANDING */
-          .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 12px;
-            margin-bottom: 18px;
-            border-bottom: 1px solid #e5e7eb;
-          }
-
-          .brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-          }
-
-          .brand-text-main {
-            font-size: 16px;
-            font-weight: 700;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: #111827;
-          }
-
-          .brand-text-sub {
-            font-size: 12px;
-            color: #6b7280;
-          }
-
-          .header-meta {
-            text-align: right;
-            font-size: 12px;
-            color: #4b5563;
-          }
-
-          .header-meta strong {
-            display: block;
-            font-size: 13px;
-            font-weight: 700;
-            color: #111827;
-            margin-bottom: 2px;
-          }
-
-          /* TITLE AREA */
-          .title-block {
-            margin-bottom: 16px;
-          }
-
-          .doc-title {
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: 0.02em;
-            color: #111827;
-            margin: 0 0 6px 0;
-          }
-
-          .doc-subtitle {
-            font-size: 14px;
-            color: #4b5563;
-            margin: 0;
-          }
-
-          .meta-line {
-            margin-top: 8px;
-            font-size: 13px;
-            color: #374151;
-          }
-
-          .meta-line span + span::before {
-            content: "•";
-            margin: 0 6px;
-            color: #9ca3af;
-          }
-
-          /* IMAGE – hell, neutral */
-          .image-section {
-            margin-top: 14px;
-            margin-bottom: 20px;
-          }
-
-          .image-frame {
-            border-radius: 10px;
-            border: 1px solid #e5e7eb;
-            background: #f9fafb;
-            padding: 10px;
-            text-align: center;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
-          }
-
-          .image-frame img {
-            max-width: 100%;
-            max-height: 380px;
-            object-fit: contain;
-            border-radius: 6px;
-            background: #f9fafb;
-          }
-
-          /* VEHICLE DATA CARD */
-          .card {
-            border-radius: 10px;
-            border: 1px solid #e5e7eb;
-            background: #f9fafb;
-            padding: 14px 16px;
-            margin-bottom: 18px;
-          }
-
-          .card-title {
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: #6b7280;
-            margin-bottom: 10px;
-            font-weight: 600;
-          }
-
-          .data-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px 24px;
-          }
-
-          .data-item-label {
-            font-size: 12px;
-            color: #6b7280;
-          }
-
-          .data-item-value {
-            font-size: 14px;
-            font-weight: 600;
-            color: #111827;
-          }
-
-          /* TASKS / NOTES */
-          .tasks-card {
-            border-radius: 10px;
-            border: 1px solid #e5e7eb;
-            padding: 14px 16px;
-            margin-top: 6px;
-          }
-
-          .tasks-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-          }
-
-          .tasks-title {
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            font-weight: 600;
-            color: #4b5563;
-          }
-
-          .tasks-count {
-            font-size: 12px;
-            padding: 3px 10px;
-            border-radius: 999px;
-            background: #eef2ff;
-            color: #3730a3;
-            border: 1px solid #c7d2fe;
-          }
-
-          .task-list {
-            margin: 4px 0 0;
-            padding-left: 20px;
-          }
-
-          .task-list li {
-            font-size: 14px;
-            line-height: 1.45;
-            color: #111827;
-            margin-bottom: 6px;
-            font-weight: 500;
-          }
-
-          .muted {
-            font-size: 13px;
-            color: #9ca3af;
-            margin-top: 2px;
-          }
-
-          /* FOOTER */
-          .footer {
-            margin-top: 22px;
-            padding-top: 10px;
-            border-top: 1px solid #e5e7eb;
-            font-size: 11px;
-            color: #6b7280;
-          }
-
-          .footer span {
-            display: block;
-            max-width: 100%;
-          }
-
-          @media print {
-            body {
-              padding: 0;
-              background: #ffffff;
-            }
-            .page {
-              border-radius: 0;
-              border: none;
-              box-shadow: none;
+      <!DOCTYPE html>
+      <html lang="de">
+        <head>
+          <meta charset="UTF-8" />
+          <title>${esc(carName || "Fahrzeugschein")}</title>
+          <style>
+            @page {
+              size: A4;
               margin: 0;
-              max-width: none;
-              width: 100%;
             }
-          }
-        </style>
-      </head>
-      <body onload="window.print(); window.onafterprint = () => window.close();">
-        <div class="page">
-          <!-- HEADER -->
-          <header class="header">
-            <div class="brand">
-              <div>
-                <div class="brand-text-main">AUTOGALERIE JÜLICH</div>
-                <div class="brand-text-sub">Werkstatt- und Instandhaltungsdokumentation</div>
-              </div>
-            </div>
-            <div class="header-meta">
-              <div>${esc(createdAtText)}</div>
-              <div>FIN: ${esc(finNumber || "–")}</div>
-            </div>
-          </header>
 
-          <!-- TITLE -->
-          <section class="title-block">
-            <h1 class="doc-title">
-              ${esc(carName || "Unbekanntes Fahrzeug")}
-              ${keyNumber ? ` (${esc(keyNumber)})` : ""}
-            </h1>
-            <p class="doc-subtitle">
-              Dokumentation der Fahrzeugdaten für Wartung und Reparatur.
-            </p>
-          </section>
+            * {
+              box-sizing: border-box;
+            }
 
-          <!-- IMAGE (optional, hell) -->
-          ${imageHtml}
+            html, body {
+              margin: 0;
+              padding: 0;
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+              background: #f3f4f6;
+              color: #111827;
+            }
 
-          <!-- VEHICLE DATA -->
-          <section class="card">
-            <div class="card-title">Fahrzeugdaten</div>
-            <div class="data-grid">
-              <div>
-                <div class="data-item-label">FIN-Nummer</div>
-                <div class="data-item-value">${esc(finNumber || "–")}</div>
-              </div>
+            body {
+              padding: 18mm;
+            }
 
-              <div>
-                <div class="data-item-label">Schlüsselnummer</div>
-                <div class="data-item-value">${esc(keyNumber || "—")}</div>
-              </div>
+            .page {
+              background: #ffffff;
+              max-width: 210mm;
+              margin: 0 auto;
+              padding: 20mm 18mm 16mm;
+              border-radius: 12px;
+              border: 1px solid #e5e7eb;
+              box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+            }
 
-              <div>
-                <div class="data-item-label">Besitzer / Händler</div>
-                <div class="data-item-value">${esc(owner || "–")}</div>
-              </div>
+            .header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding-bottom: 12px;
+              margin-bottom: 18px;
+              border-bottom: 1px solid #e5e7eb;
+            }
 
-              <div>
-                <div class="data-item-label">Erfasst am</div>
-                <div class="data-item-value">${esc(createdAtText)}</div>
-              </div>
-            </div>
-          </section>
+            .brand {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+            }
 
-          <!-- TASKS / NOTES -->
-          <section class="tasks-card">
-            <div class="tasks-header">
-              <div class="tasks-title">Aufgaben / Hinweise</div>
-              ${
-                Array.isArray(notes) && notes.length > 0
-                  ? `<span class="tasks-count">${notes.length} Eintrag${
-                      notes.length === 1 ? "" : "e"
-                    }</span>`
-                  : ""
+            .brand-text-main {
+              font-size: 16px;
+              font-weight: 700;
+              letter-spacing: 0.18em;
+              text-transform: uppercase;
+              color: #111827;
+            }
+
+            .brand-text-sub {
+              font-size: 12px;
+              color: #6b7280;
+            }
+
+            .header-meta {
+              text-align: right;
+              font-size: 12px;
+              color: #4b5563;
+            }
+
+            .title-block {
+              margin-bottom: 16px;
+            }
+
+            .doc-title {
+              font-size: 24px;
+              font-weight: 800;
+              letter-spacing: 0.02em;
+              color: #111827;
+              margin: 0 0 6px 0;
+            }
+
+            .doc-subtitle {
+              font-size: 14px;
+              color: #4b5563;
+              margin: 0;
+            }
+
+            .image-section {
+              margin-top: 14px;
+              margin-bottom: 20px;
+            }
+
+            .image-frame {
+              border-radius: 10px;
+              border: 1px solid #e5e7eb;
+              background: #f9fafb;
+              padding: 10px;
+              text-align: center;
+              box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
+            }
+
+            .image-frame img {
+              max-width: 100%;
+              max-height: 380px;
+              object-fit: contain;
+              border-radius: 6px;
+              background: #f9fafb;
+            }
+
+            .card {
+              border-radius: 10px;
+              border: 1px solid #e5e7eb;
+              background: #f9fafb;
+              padding: 14px 16px;
+              margin-bottom: 18px;
+            }
+
+            .card-title {
+              font-size: 13px;
+              text-transform: uppercase;
+              letter-spacing: 0.12em;
+              color: #6b7280;
+              margin-bottom: 10px;
+              font-weight: 600;
+            }
+
+            .data-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 10px 24px;
+            }
+
+            .data-item-label {
+              font-size: 12px;
+              color: #6b7280;
+            }
+
+            .data-item-value {
+              font-size: 14px;
+              font-weight: 600;
+              color: #111827;
+            }
+
+            .tasks-card {
+              border-radius: 10px;
+              border: 1px solid #e5e7eb;
+              padding: 14px 16px;
+              margin-top: 6px;
+            }
+
+            .tasks-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 8px;
+            }
+
+            .tasks-title {
+              font-size: 13px;
+              text-transform: uppercase;
+              letter-spacing: 0.12em;
+              font-weight: 600;
+              color: #4b5563;
+            }
+
+            .tasks-count {
+              font-size: 12px;
+              padding: 3px 10px;
+              border-radius: 999px;
+              background: #eef2ff;
+              color: #3730a3;
+              border: 1px solid #c7d2fe;
+            }
+
+            .task-list {
+              margin: 4px 0 0;
+              padding-left: 20px;
+            }
+
+            .task-list li {
+              font-size: 14px;
+              line-height: 1.45;
+              color: #111827;
+              margin-bottom: 6px;
+              font-weight: 500;
+            }
+
+            .muted {
+              font-size: 13px;
+              color: #9ca3af;
+              margin-top: 2px;
+            }
+
+            .footer {
+              margin-top: 22px;
+              padding-top: 10px;
+              border-top: 1px solid #e5e7eb;
+              font-size: 11px;
+              color: #6b7280;
+            }
+
+            .footer span {
+              display: block;
+              max-width: 100%;
+            }
+
+            @media print {
+              body {
+                padding: 0;
+                background: #ffffff;
               }
-            </div>
-            ${notesHtml}
-          </section>
+              .page {
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+                margin: 0;
+                max-width: none;
+                width: 100%;
+              }
+            }
+          </style>
+        </head>
+        <body onload="window.print(); window.onafterprint = () => window.close();">
+          <div class="page">
+            <header class="header">
+              <div class="brand">
+                <div>
+                  <div class="brand-text-main">AUTOGALERIE JÜLICH</div>
+                  <div class="brand-text-sub">Werkstatt- und Instandhaltungsdokumentation</div>
+                </div>
+              </div>
+              <div class="header-meta">
+                <div>${esc(createdAtText)}</div>
+                <div>FIN: ${esc(finNumber || "–")}</div>
+              </div>
+            </header>
 
-          <!-- FOOTER -->
-          <footer class="footer">
-            <span>Dieses Dokument ist ausschließlich für den internen Gebrauch bestimmt und nicht zur Weitergabe an Dritte vorgesehen.</span>
-          </footer>
-        </div>
-      </body>
-    </html>
-  `);
+            <section class="title-block">
+              <h1 class="doc-title">
+                ${esc(carName || "Unbekanntes Fahrzeug")}
+                ${keyNumber ? ` (${esc(keyNumber)})` : ""}
+              </h1>
+              <p class="doc-subtitle">
+                Dokumentation der Fahrzeugdaten für Wartung und Reparatur.
+              </p>
+            </section>
+
+            ${imageHtml}
+
+            <section class="card">
+              <div class="card-title">Fahrzeugdaten</div>
+              <div class="data-grid">
+                <div>
+                  <div class="data-item-label">FIN-Nummer</div>
+                  <div class="data-item-value">${esc(finNumber || "–")}</div>
+                </div>
+                <div>
+                  <div class="data-item-label">Schlüsselnummer</div>
+                  <div class="data-item-value">${esc(keyNumber || "—")}</div>
+                </div>
+                <div>
+                  <div class="data-item-label">Besitzer / Händler</div>
+                  <div class="data-item-value">${esc(owner || "–")}</div>
+                </div>
+                <div>
+                  <div class="data-item-label">Erfasst am</div>
+                  <div class="data-item-value">${esc(createdAtText)}</div>
+                </div>
+              </div>
+            </section>
+
+            <section class="tasks-card">
+              <div class="tasks-header">
+                <div class="tasks-title">Aufgaben / Hinweise</div>
+                ${
+                  Array.isArray(notes) && notes.length > 0
+                    ? `<span class="tasks-count">${notes.length} Eintrag${
+                        notes.length === 1 ? "" : "e"
+                      }</span>`
+                    : ""
+                }
+              </div>
+              ${notesHtml}
+            </section>
+
+            <footer class="footer">
+              <span>Dieses Dokument ist ausschließlich für den internen Gebrauch bestimmt und nicht zur Weitergabe an Dritte vorgesehen.</span>
+            </footer>
+          </div>
+        </body>
+      </html>
+    `);
 
     printWindow.document.close();
     printWindow.focus();
@@ -470,11 +431,15 @@ export default function ScheinTable({
   const handleDelete = async (id, publicId) => {
     if (!confirm("Möchten Sie diesen Schein wirklich löschen?")) return;
     try {
-      await fetch("/api/delete-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ publicId }),
-      });
+      // Bild nur löschen, wenn es wirklich existiert
+      if (publicId) {
+        await fetch("/api/delete-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ publicId }),
+        });
+      }
+
       await fetch(`/api/carschein?id=${id}`, { method: "DELETE" });
       onDeleteSchein(id);
       toast.success("Schein erfolgreich gelöscht");
@@ -484,7 +449,6 @@ export default function ScheinTable({
     }
   };
 
-  // UPDATED: gets the whole schein, not only url
   const openImagePreview = (schein) => {
     if (!schein?.imageUrl) {
       toast.error("Kein Bild verfügbar für diesen Schein.");
@@ -492,7 +456,7 @@ export default function ScheinTable({
     }
     setSelectedSchein(schein);
     setModalImageUrl(schein.imageUrl);
-    setImageRotation(0); // reset rotation every time we open
+    setImageRotation(0);
     setShowPreviewModal(true);
   };
 
@@ -557,8 +521,8 @@ export default function ScheinTable({
           carName: selectedSchein.carName,
           owner: selectedSchein.owner,
           notes: selectedSchein.notes || [],
-          imageUrl: selectedSchein.imageUrl,
-          publicId: selectedSchein.publicId,
+          imageUrl: selectedSchein.imageUrl ?? null,
+          publicId: selectedSchein.publicId ?? null,
           keyNumber: keyForm.keyNumber.trim(),
           keyCount: keyForm.keyCount,
           keyColor: keyForm.keyColor,
@@ -588,7 +552,7 @@ export default function ScheinTable({
     if (!modalImageUrl) return;
 
     try {
-      // Opens the image in a NEW TAB without touching your current page
+      // Öffnet Bild im NEUEN TAB, ohne die aktuelle Seite zu ersetzen
       window.open(modalImageUrl, "_blank", "noopener,noreferrer");
     } catch (err) {
       console.error(err);
@@ -598,7 +562,7 @@ export default function ScheinTable({
 
   return (
     <>
-      {/* Table */}
+      {/* Table Wrapper */}
       <div
         className={`rounded-lg border transition-colors duration-300 ${borderColor} ${cardBg} shadow-sm`}
       >
@@ -785,7 +749,7 @@ export default function ScheinTable({
                         </button>
 
                         <button
-                          onClick={() => openImagePreview(schein)} // UPDATED
+                          onClick={() => openImagePreview(schein)}
                           className={`rounded p-1 transition-colors duration-300 ${
                             darkMode
                               ? "text-gray-400 hover:bg-gray-700 hover:text-white"
@@ -876,7 +840,6 @@ export default function ScheinTable({
                 : "bg-white border-gray-200"
             }`}
           >
-            {/* Header */}
             <div
               className={`flex items-center justify-between border-b px-5 py-3 transition-colors duration-300 ${
                 darkMode ? "border-gray-700" : "border-gray-200"
@@ -911,9 +874,7 @@ export default function ScheinTable({
               </button>
             </div>
 
-            {/* Body */}
             <div className="px-5 py-4 space-y-4 text-xs">
-              {/* Meta-Infos */}
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
                   <div
@@ -1028,7 +989,6 @@ export default function ScheinTable({
                 </div>
               </div>
 
-              {/* Aufgaben */}
               <div
                 className={`pt-2 border-t transition-colors duration-300 ${
                   darkMode ? "border-gray-700" : "border-gray-100"
@@ -1094,7 +1054,6 @@ export default function ScheinTable({
               </div>
             </div>
 
-            {/* Footer */}
             <div
               className={`flex items-center justify-end gap-2 border-t px-5 py-3 transition-colors duration-300 ${
                 darkMode ? "border-gray-700" : "border-gray-200"
@@ -1134,7 +1093,7 @@ export default function ScheinTable({
         />
       )}
 
-      {/* Image Preview Modal – with rotation + download */}
+      {/* Image Preview Modal */}
       {showPreviewModal && (
         <div className="fixed inset-0 bg-gray-700/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-4xl w-full shadow-xl">
@@ -1144,7 +1103,6 @@ export default function ScheinTable({
                 {selectedSchein?.carName ? ` · ${selectedSchein.carName}` : ""}
               </span>
               <div className="flex items-center gap-1">
-                {/* Rotate left */}
                 <button
                   onClick={() => setImageRotation((r) => (r - 90 + 360) % 360)}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
@@ -1152,7 +1110,6 @@ export default function ScheinTable({
                 >
                   <FiRotateCcw size={16} />
                 </button>
-                {/* Rotate right */}
                 <button
                   onClick={() => setImageRotation((r) => (r + 90) % 360)}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
@@ -1160,7 +1117,6 @@ export default function ScheinTable({
                 >
                   <FiRotateCw size={16} />
                 </button>
-                {/* Download */}
                 <button
                   onClick={handleDownloadCurrentImage}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
@@ -1168,7 +1124,6 @@ export default function ScheinTable({
                 >
                   <FiDownload size={16} />
                 </button>
-                {/* Close */}
                 <button
                   onClick={() => setShowPreviewModal(false)}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100"
@@ -1203,7 +1158,6 @@ export default function ScheinTable({
                 : "bg-white border-gray-200"
             }`}
           >
-            {/* Header */}
             <div
               className={`flex items-center justify-between border-b px-5 py-3 transition-colors duration-300 ${
                 darkMode ? "border-gray-700" : "border-gray-200"
@@ -1238,7 +1192,6 @@ export default function ScheinTable({
               </button>
             </div>
 
-            {/* Body */}
             <div className="px-5 py-4 space-y-4 text-xs">
               <div>
                 <label
@@ -1371,7 +1324,6 @@ export default function ScheinTable({
               </label>
             </div>
 
-            {/* Footer */}
             <div
               className={`flex items-center justify-end gap-2 border-t px-5 py-3 transition-colors duration-300 ${
                 darkMode ? "border-gray-700" : "border-gray-200"

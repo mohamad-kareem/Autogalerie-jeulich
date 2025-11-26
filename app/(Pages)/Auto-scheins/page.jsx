@@ -19,7 +19,7 @@ import {
   FiMoon,
 } from "react-icons/fi";
 
-const LIMIT = 20;
+const LIMIT = 100;
 const OWNERS = ["Karim", "Alawie"];
 
 export default function CarScheinPage() {

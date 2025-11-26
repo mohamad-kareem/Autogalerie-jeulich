@@ -36,10 +36,11 @@ export async function POST(req) {
       // Tankstatus
       fuelNeeded,
 
-      // optional: initialer Dashboard-Status
+      // optional: Dashboard-Status
       dashboardHidden,
     } = await req.json();
 
+    // FIN muss nicht vorhanden sein, aber wenn sie gesetzt ist, prüfen wir auf Duplikate
     if (finNumber) {
       const existing = await CarSchein.findOne({ finNumber });
       if (existing) {
@@ -50,7 +51,7 @@ export async function POST(req) {
       }
     }
 
-    // Notes normalisieren
+    // Notes normalisieren (Array oder Zeilenstring)
     const notesArr = Array.isArray(notes)
       ? notes
       : (notes || "")
@@ -60,11 +61,11 @@ export async function POST(req) {
 
     const doc = await CarSchein.create({
       carName,
-      finNumber,
+      finNumber: finNumber || "",
       owner,
       notes: notesArr,
-      imageUrl,
-      publicId,
+      imageUrl: imageUrl || null,
+      publicId: publicId || null,
 
       keyNumber: keyNumber ?? "",
       keyCount:
@@ -89,7 +90,7 @@ export async function POST(req) {
 
 // -----------------------
 // GET  /api/carschein
-// (optional: pagination)
+// (optional pagination)
 // -----------------------
 export async function GET(req) {
   try {
@@ -150,6 +151,7 @@ export async function DELETE(req) {
       });
     }
 
+    // Bild wird im Frontend via /api/delete-image entfernt – hier nur DB
     await CarSchein.findByIdAndDelete(id);
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
@@ -178,6 +180,7 @@ export async function PUT(req) {
     const {
       id,
       carName,
+      finNumber,
       owner,
       notes,
       imageUrl,
@@ -194,7 +197,7 @@ export async function PUT(req) {
       // Tankstatus
       fuelNeeded,
 
-      // 🔹 Dashboard-Status
+      // Dashboard-Status
       dashboardHidden,
     } = body;
 
@@ -204,8 +207,8 @@ export async function PUT(req) {
       });
     }
 
-    // Optional: altes Bild löschen, wenn publicId sich ändert
-    if (publicId && oldPublicId && publicId !== oldPublicId) {
+    // Optional: altes Bild löschen, wenn sich publicId ändert
+    if (oldPublicId && oldPublicId !== publicId) {
       try {
         await cloudinary.uploader.destroy(oldPublicId);
       } catch (err) {
@@ -213,16 +216,20 @@ export async function PUT(req) {
       }
     }
 
-    // Felder selektiv aufbauen, damit nichts mit undefined überschrieben wird
     const updateFields = {};
 
     if (typeof carName !== "undefined") updateFields.carName = carName;
+    if (typeof finNumber !== "undefined")
+      updateFields.finNumber = finNumber || "";
     if (typeof owner !== "undefined") updateFields.owner = owner;
     if (typeof notes !== "undefined") updateFields.notes = notes;
 
-    if (imageUrl && publicId) {
-      updateFields.imageUrl = imageUrl;
-      updateFields.publicId = publicId;
+    // Bild optional & auch löschbar
+    if (typeof imageUrl !== "undefined") {
+      updateFields.imageUrl = imageUrl || null;
+    }
+    if (typeof publicId !== "undefined") {
+      updateFields.publicId = publicId || null;
     }
 
     // Key-Felder
@@ -237,7 +244,7 @@ export async function PUT(req) {
       updateFields.fuelNeeded = !!fuelNeeded;
     }
 
-    // 🔹 Nur für Dashboard
+    // Dashboard-Status
     if (typeof dashboardHidden !== "undefined") {
       updateFields.dashboardHidden = !!dashboardHidden;
     }
