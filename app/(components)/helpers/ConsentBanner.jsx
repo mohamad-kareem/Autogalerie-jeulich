@@ -1,4 +1,4 @@
-"use client";
+/*"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -62,7 +62,7 @@ export default function ConsentBanner() {
     >
       <div className="mx-auto max-w-screen-2xl px-4 sm:px-8 py-4">
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          {/* Left: Text */}
+          
           <div className="flex items-start gap-3">
             <div className="mt-1 hidden sm:flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white">
               <ShieldCheck className="h-4 w-4" />
@@ -87,7 +87,7 @@ export default function ConsentBanner() {
             </div>
           </div>
 
-          {/* Right: Buttons */}
+         
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mt-1 sm:mt-0 w-full sm:w-auto">
             <button
               type="button"
@@ -126,3 +126,4 @@ export default function ConsentBanner() {
     </div>
   );
 }
+/* }/**/

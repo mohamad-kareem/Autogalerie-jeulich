@@ -27,7 +27,6 @@ const Complete = () => {
       <WhyUs />
       <SellCarYourWay />
       <Footbar />
-      <ConsentBanner />
     </main>
   );
 };
