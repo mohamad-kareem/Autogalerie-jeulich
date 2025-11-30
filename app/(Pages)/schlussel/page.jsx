@@ -1,10 +1,18 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Image from "next/image";
-import { FiSearch, FiX, FiFilter } from "react-icons/fi";
+import {
+  FiSearch,
+  FiX,
+  FiFilter,
+  FiCamera,
+  FiSun,
+  FiMoon,
+} from "react-icons/fi";
+import { MdSell, MdInventory } from "react-icons/md";
 import toast from "react-hot-toast";
-import WaitingLounge from "@/app/(components)/helpers/WaitingLounge"; // Adjust path as needed
+import WaitingLounge from "@/app/(components)/helpers/WaitingLounge";
 
 const carBrands = [
   { name: "BMW", logo: "/logos/bmw.png" },
@@ -55,31 +63,64 @@ const brandSynonyms = {
 };
 
 export default function KeysPage() {
-  const [cars, setCars] = useState([]);
+  // Scheine (keys)
+  const [scheins, setScheins] = useState([]);
+  // Fahrzeugdaten (mit Bildern)
+  const [carList, setCarList] = useState([]);
+
   const [filterBrand, setFilterBrand] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showSoldOnly, setShowSoldOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isIdle, setIsIdle] = useState(false);
+  const [selectedSchein, setSelectedSchein] = useState(null);
+  const [darkMode, setDarkMode] = useState(false);
 
   const tableRef = useRef(null);
   const brandsRef = useRef(null);
   const idleTimerRef = useRef(null);
 
-  // Idle detection
+  // Initialize dark mode
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+
+    const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
+    setDarkMode(isDark);
+
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+
+    if (newDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
+
+  // ---------- Idle detection → WaitingLounge ----------
   useEffect(() => {
     const resetIdleTimer = () => {
-      if (idleTimerRef.current) {
-        clearTimeout(idleTimerRef.current);
-      }
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       setIsIdle(false);
 
       idleTimerRef.current = setTimeout(() => {
         setIsIdle(true);
-      }, 10000); // 10 seconds
+      }, 10000); // 10 Sekunden
     };
 
-    // Events that reset the idle timer
     const events = [
       "mousedown",
       "mousemove",
@@ -93,51 +134,54 @@ export default function KeysPage() {
       document.addEventListener(event, resetIdleTimer);
     });
 
-    // Initial timer
     resetIdleTimer();
 
     return () => {
-      if (idleTimerRef.current) {
-        clearTimeout(idleTimerRef.current);
-      }
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       events.forEach((event) => {
         document.removeEventListener(event, resetIdleTimer);
       });
     };
   }, []);
 
-  // Load all Scheine (keys) from /api/carschein
+  // ---------- Daten laden ----------
   useEffect(() => {
-    const fetchCars = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("/api/carschein?limit=500");
-        const data = await response.json();
 
-        if (!response.ok) {
-          throw new Error(data.error || "Fehler beim Laden der Scheine");
+        const [scheinRes, carsRes] = await Promise.all([
+          fetch("/api/carschein?limit=500"),
+          fetch("/api/cars"),
+        ]);
+
+        const scheinData = await scheinRes.json();
+        const carsData = await carsRes.json();
+
+        if (!scheinRes.ok) {
+          throw new Error(scheinData.error || "Fehler beim Laden der Scheine");
+        }
+        if (!Array.isArray(carsData)) {
+          throw new Error("Fehler beim Laden der Fahrzeugdaten");
         }
 
-        setCars(Array.isArray(data.docs) ? data.docs : []);
+        setScheins(Array.isArray(scheinData.docs) ? scheinData.docs : []);
+        setCarList(carsData);
       } catch (error) {
-        console.error("Fehler beim Laden der Autos:", error);
-        toast.error("Fehler beim Laden der Schlüssel-Liste");
+        console.error("Fehler beim Laden:", error);
+        toast.error("Fehler beim Laden der Schlüssel- und Fahrzeugliste");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchCars();
+    fetchData();
   }, []);
 
-  // Brand filter auto reset after 60s
+  // Auto Reset Brand-Filter nach 60s
   useEffect(() => {
     if (!filterBrand) return;
-
-    const timeout = setTimeout(() => {
-      setFilterBrand("");
-    }, 60000);
-
+    const timeout = setTimeout(() => setFilterBrand(""), 60000);
     return () => clearTimeout(timeout);
   }, [filterBrand]);
 
@@ -152,7 +196,7 @@ export default function KeysPage() {
     }, 100);
   };
 
-  const handleFilter = (brand) => {
+  const handleFilterBrand = (brand) => {
     setFilterBrand(brand);
     setSearchTerm("");
     scrollToTable();
@@ -162,50 +206,747 @@ export default function KeysPage() {
     setFilterBrand("");
     setSearchTerm("");
     setShowSoldOnly(false);
+    setSelectedSchein(null);
 
     if (brandsRef.current) {
       brandsRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
 
-  // Filter logic
-  const filteredCars = cars.filter((car) => {
-    const name = (car.carName ?? "").toLowerCase();
-    const key = (car.keyNumber ?? "").toLowerCase();
-    const note = (car.keyNote ?? "").toLowerCase();
+  // ---------- Filter-Logik ----------
+  const filteredScheins = useMemo(
+    () =>
+      scheins.filter((car) => {
+        const name = (car.carName ?? "").toLowerCase();
+        const key = (car.keyNumber ?? "").toLowerCase();
+        const note = (car.keyNote ?? "").toLowerCase();
 
-    if (filterBrand) {
-      const aliases = brandSynonyms[filterBrand] || [filterBrand];
-      const matchesBrand = aliases.some((alias) =>
-        name.includes(alias.toLowerCase())
+        if (filterBrand) {
+          const aliases = brandSynonyms[filterBrand] || [filterBrand];
+          const matchesBrand = aliases.some((alias) =>
+            name.includes(alias.toLowerCase())
+          );
+          if (!matchesBrand) return false;
+        }
+
+        if (searchTerm) {
+          const term = searchTerm.toLowerCase();
+          const matchesSearch =
+            name.includes(term) || key.includes(term) || note.includes(term);
+          if (!matchesSearch) return false;
+        }
+
+        if (showSoldOnly && !car.keySold) return false;
+
+        return true;
+      }),
+    [scheins, filterBrand, searchTerm, showSoldOnly]
+  );
+
+  // Wenn der ausgewählte Schein weggefiltert wird → Auswahl zurücksetzen
+  useEffect(() => {
+    if (
+      selectedSchein &&
+      !filteredScheins.some((s) => s._id === selectedSchein._id)
+    ) {
+      setSelectedSchein(null);
+    }
+  }, [filteredScheins, selectedSchein]);
+
+  // ---------- Passendes Auto + Bild finden ----------
+  const matchedCar = useMemo(() => {
+    if (!selectedSchein || carList.length === 0) return null;
+
+    // 1) FIN-Match
+    if (selectedSchein.finNumber) {
+      const fin = selectedSchein.finNumber.toString().trim().toLowerCase();
+      const carByFin = carList.find((c) => {
+        const carFin = (c.finNumber || c.vin || c.vinNumber || "")
+          .toString()
+          .toLowerCase();
+        return carFin && carFin === fin;
+      });
+      if (carByFin) return carByFin;
+    }
+
+    // 2) Fallback: Name
+    const carNameLower = (selectedSchein.carName || "").toLowerCase();
+    const carByName = carList.find((c) => {
+      const label = `${c.make || ""} ${c.model || ""}`.trim().toLowerCase();
+      if (!label) return false;
+      return (
+        carNameLower === label ||
+        carNameLower.includes(label) ||
+        label.includes(carNameLower)
       );
-      if (!matchesBrand) return false;
+    });
+
+    return carByName || null;
+  }, [selectedSchein, carList]);
+
+  const previewImageSrc = useMemo(() => {
+    if (!matchedCar) return null;
+    if (Array.isArray(matchedCar.images) && matchedCar.images.length > 0) {
+      const first = matchedCar.images[0];
+      return first?.ref || first?.url || null;
     }
+    return null;
+  }, [matchedCar]);
 
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      const matchesSearch =
-        name.includes(term) || key.includes(term) || note.includes(term);
-      if (!matchesSearch) return false;
-    }
+  // Theme classes
+  const bgClass = darkMode ? "bg-slate-900" : "bg-slate-100/80";
+  const cardBg = darkMode ? "bg-slate-800" : "bg-white/95";
+  const borderColor = darkMode ? "border-slate-700" : "border-slate-200";
+  const textPrimary = darkMode ? "text-white" : "text-slate-900";
+  const textSecondary = darkMode ? "text-slate-300" : "text-slate-600";
+  const textMuted = darkMode ? "text-slate-400" : "text-slate-500";
+  const hoverBg = darkMode ? "hover:bg-slate-700" : "hover:bg-slate-50";
 
-    if (showSoldOnly && !car.keySold) return false;
+  const inputBg = darkMode
+    ? "bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-sky-500 focus:ring-sky-500"
+    : "bg-white border-slate-300 text-slate-900 placeholder-slate-500 focus:border-sky-500 focus:ring-sky-500";
 
-    return true;
-  });
+  // ---------- Modern Vehicle Preview Component ----------
+  const VehiclePreview = () => {
+    const isSold = selectedSchein?.keySold;
+    const hasImage = !!previewImageSrc;
 
-  // Show waiting lounge when idle
-  if (isIdle) {
-    return <WaitingLounge />;
-  }
+    const previewCardBg = darkMode ? "bg-slate-800" : "bg-white/95";
+    const previewBorder = darkMode ? "border-slate-700" : "border-slate-200";
+    const previewHeaderBg = darkMode
+      ? "bg-gradient-to-r from-slate-700 to-slate-700/80 border-slate-600"
+      : "bg-gradient-to-r from-slate-50 to-slate-100/80 border-slate-200";
+    const previewContentBg = darkMode
+      ? "bg-gradient-to-br from-slate-700 to-slate-800 border-slate-600"
+      : "bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200";
+
+    return (
+      <aside
+        className={`hidden lg:block self-start rounded-2xl border shadow-lg overflow-hidden transition-colors duration-300 ${previewCardBg} ${previewBorder} ${
+          darkMode ? "shadow-slate-900/80" : "shadow-slate-200/80"
+        }`}
+      >
+        {/* Header */}
+        <div
+          className={`border-b px-4 py-3 transition-colors duration-300 ${previewHeaderBg}`}
+        >
+          <h3
+            className={`text-sm font-semibold flex items-center gap-2 transition-colors duration-300 ${textPrimary}`}
+          >
+            <FiCamera className="w-4 h-4" />
+            Fahrzeugvorschau
+          </h3>
+          <p
+            className={`mt-0.5 text-[11px] transition-colors duration-300 ${textMuted}`}
+          >
+            {selectedSchein?.carName || "Ausgewähltes Fahrzeug"}
+          </p>
+        </div>
+
+        {/* Preview Content */}
+        <div className="p-4">
+          <div
+            className={`relative w-full overflow-hidden rounded-xl border bg-gradient-to-br shadow-sm transition-all duration-300 ${
+              isSold
+                ? darkMode
+                  ? "border-rose-700 from-rose-900/50 to-rose-800/30"
+                  : "border-rose-200 from-rose-50/50 to-rose-100/30"
+                : hasImage
+                ? darkMode
+                  ? "border-slate-600 from-slate-700 to-slate-800"
+                  : "border-slate-200 from-slate-50 to-slate-100"
+                : darkMode
+                ? "border-blue-700 from-blue-900/50 to-blue-800/30"
+                : "border-blue-200 from-blue-50/50 to-blue-100/30"
+            }`}
+          >
+            {/* Status Badge */}
+            {(isSold || !hasImage) && (
+              <div
+                className={`absolute top-3 right-3 z-10 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur-sm ${
+                  isSold
+                    ? darkMode
+                      ? "bg-rose-600/90 text-white"
+                      : "bg-rose-500/90 text-white"
+                    : darkMode
+                    ? "bg-blue-600/90 text-white"
+                    : "bg-blue-500/90 text-white"
+                }`}
+              >
+                {isSold ? (
+                  <span className="flex items-center gap-1">
+                    <MdSell className="w-3 h-3" />
+                    Verkauft
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    <MdInventory className="w-3 h-3" />
+                    Verfügbar
+                  </span>
+                )}
+              </div>
+            )}
+
+            <div className="relative aspect-[4/3] w-full">
+              {hasImage ? (
+                <>
+                  {isSold && (
+                    <div
+                      className={`absolute inset-0 z-10 rounded-xl ${
+                        darkMode ? "bg-rose-900/20" : "bg-rose-500/10"
+                      }`}
+                    />
+                  )}
+                  <Image
+                    src={previewImageSrc}
+                    alt={
+                      matchedCar
+                        ? `${matchedCar.make || ""} ${matchedCar.model || ""}`
+                        : selectedSchein.carName || "Fahrzeugbild"
+                    }
+                    fill
+                    className={`object-cover transition-all duration-500 ${
+                      isSold ? "grayscale-[40%] brightness-95" : ""
+                    }`}
+                    unoptimized
+                  />
+                </>
+              ) : (
+                <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center">
+                  {/* Modern Illustration Container */}
+                  <div
+                    className={`relative mb-4 rounded-2xl p-6 ${
+                      isSold
+                        ? darkMode
+                          ? "bg-gradient-to-br from-rose-900/30 to-rose-800/20"
+                          : "bg-gradient-to-br from-rose-100/80 to-rose-200/50"
+                        : darkMode
+                        ? "bg-gradient-to-br from-blue-900/30 to-blue-800/20"
+                        : "bg-gradient-to-br from-blue-100/80 to-blue-200/50"
+                    }`}
+                  >
+                    {isSold ? (
+                      <div className="flex flex-col items-center">
+                        <div className="relative">
+                          <FiCamera
+                            className={`w-12 h-12 mb-2 ${
+                              darkMode ? "text-rose-400" : "text-rose-400"
+                            }`}
+                          />
+                        </div>
+                        <div
+                          className={`w-16 h-1 rounded-full mt-2 ${
+                            darkMode ? "bg-rose-500" : "bg-rose-300"
+                          }`}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <FiCamera
+                          className={`w-12 h-12 mb-2 ${
+                            darkMode ? "text-blue-400" : "text-blue-400"
+                          }`}
+                        />
+                        <div
+                          className={`w-16 h-1 rounded-full mt-2 ${
+                            darkMode ? "bg-blue-500" : "bg-blue-300"
+                          }`}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Text Content */}
+                  <h4
+                    className={`text-sm font-semibold mb-2 ${
+                      isSold
+                        ? darkMode
+                          ? "text-rose-300"
+                          : "text-rose-700"
+                        : darkMode
+                        ? "text-blue-300"
+                        : "text-blue-700"
+                    }`}
+                  >
+                    {isSold ? "Fahrzeug verkauft" : "Kein Bild verfügbar"}
+                  </h4>
+                  <p
+                    className={`text-xs max-w-xs leading-relaxed ${
+                      darkMode ? "text-slate-400" : "text-slate-600"
+                    }`}
+                  >
+                    {isSold
+                      ? "Dieses Fahrzeug wurde bereits verkauft und ist nicht mehr verfügbar."
+                      : "Für dieses Fahrzeug ist aktuell kein Bild in der Datenbank hinterlegt."}
+                  </p>
+
+                  {/* Additional Info */}
+                  {selectedSchein?.keyNote && (
+                    <div
+                      className={`mt-4 p-3 rounded-lg border ${
+                        darkMode
+                          ? "bg-slate-700/80 border-slate-600"
+                          : "bg-slate-50/80 border-slate-200/60"
+                      }`}
+                    >
+                      <p
+                        className={`text-xs font-medium ${
+                          darkMode ? "text-slate-300" : "text-slate-700"
+                        }`}
+                      >
+                        Notiz:
+                      </p>
+                      <p
+                        className={`text-xs mt-1 ${
+                          darkMode ? "text-slate-400" : "text-slate-600"
+                        }`}
+                      >
+                        {selectedSchein.keyNote}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Vehicle Info Overlay for images */}
+            {hasImage && (
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                <div className="text-white">
+                  <h4 className="text-sm font-semibold truncate">
+                    {matchedCar?.make} {matchedCar?.model}
+                  </h4>
+                  {selectedSchein?.keyNote && (
+                    <p className="text-xs text-white/80 truncate mt-1">
+                      {selectedSchein.keyNote}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Key Information */}
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div
+              className={`rounded-lg p-3 border transition-colors duration-300 ${
+                darkMode
+                  ? "bg-slate-700/80 border-slate-600"
+                  : "bg-slate-50/80 border-slate-200/60"
+              }`}
+            >
+              <p
+                className={`text-[10px] font-medium uppercase tracking-wide transition-colors duration-300 ${
+                  darkMode ? "text-slate-400" : "text-slate-500"
+                }`}
+              >
+                Schlüssel Nr.
+              </p>
+              <p
+                className={`text-sm font-semibold font-mono mt-1 transition-colors duration-300 ${
+                  darkMode ? "text-white" : "text-slate-900"
+                }`}
+              >
+                {selectedSchein?.keyNumber || "–"}
+              </p>
+            </div>
+            <div
+              className={`rounded-lg p-3 border transition-colors duration-300 ${
+                darkMode
+                  ? "bg-slate-700/80 border-slate-600"
+                  : "bg-slate-50/80 border-slate-200/60"
+              }`}
+            >
+              <p
+                className={`text-[10px] font-medium uppercase tracking-wide transition-colors duration-300 ${
+                  darkMode ? "text-slate-400" : "text-slate-500"
+                }`}
+              >
+                Anzahl
+              </p>
+              <p
+                className={`text-sm font-semibold mt-1 transition-colors duration-300 ${
+                  darkMode ? "text-white" : "text-slate-900"
+                }`}
+              >
+                {selectedSchein?.keyCount ?? 2}
+              </p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    );
+  };
+
+  // ---------- WaitingLounge ----------
+  if (isIdle) return <WaitingLounge />;
+
+  // ---------- Table-Komponente (wird 1x definiert, 2x benutzt) ----------
+  const tableSection = (
+    <section
+      ref={tableRef}
+      className={`overflow-hidden rounded-2xl border shadow-lg transition-colors duration-300 ${cardBg} ${borderColor} ${
+        darkMode ? "shadow-slate-900/80" : "shadow-slate-200/60"
+      }`}
+    >
+      {/* Header / Controls */}
+      <header
+        className={`border-b px-3 py-2 sm:px-4 sm:py-3 transition-colors duration-300 ${
+          darkMode
+            ? "border-slate-700 bg-slate-700/80"
+            : "border-slate-200 bg-slate-50/80"
+        }`}
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Title + Count + Dark Mode Toggle */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h3
+              className={`text-sm font-semibold tracking-tight transition-colors duration-300 ${textPrimary}`}
+            >
+              Fahrzeugschlüssel
+            </h3>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors duration-300 ${
+                darkMode
+                  ? "bg-blue-900/50 text-blue-200"
+                  : "bg-blue-100 text-blue-700"
+              }`}
+            >
+              {filteredScheins.length}
+            </span>
+            {showSoldOnly && (
+              <span
+                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors duration-300 ${
+                  darkMode
+                    ? "border-amber-700 bg-amber-900/50 text-amber-200"
+                    : "border-amber-200 bg-amber-50 text-amber-700"
+                }`}
+              >
+                Nur verkaufte
+              </span>
+            )}
+
+            {/* <button
+              onClick={toggleDarkMode}
+              className={`p-1.5 rounded-lg transition-colors duration-300 ${
+                darkMode
+                  ? "bg-slate-700 hover:bg-slate-600 text-slate-300"
+                  : "bg-slate-200 hover:bg-slate-300 text-slate-600"
+              }`}
+              title={
+                darkMode ? "Zu Hellmodus wechseln" : "Zu Dunkelmodus wechseln"
+              }
+            >
+              {darkMode ? (
+                <FiSun className="h-3.5 w-3.5" />
+              ) : (
+                <FiMoon className="h-3.5 w-3.5" />
+              )}
+            </button>*/}
+          </div>
+
+          {/* Search / Filter / Reset */}
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            {/* Search */}
+            <div className="relative w-52 sm:w-64">
+              <FiSearch
+                className={`pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors duration-300 ${
+                  darkMode ? "text-slate-400" : "text-slate-400"
+                }`}
+              />
+              <input
+                type="text"
+                placeholder="Fahrzeug, Schlüssel oder Notiz suchen…"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={`w-full rounded-lg border py-1.5 pl-8 pr-8 text-xs outline-none transition focus:ring-1 sm:text-sm ${inputBg}`}
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 transition-colors duration-300 ${
+                    darkMode
+                      ? "text-slate-400 hover:text-slate-300"
+                      : "text-slate-400 hover:text-slate-600"
+                  }`}
+                >
+                  <FiX className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Sold Filter (icon) */}
+            <button
+              onClick={() => setShowSoldOnly((prev) => !prev)}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg border text-xs transition-colors ${
+                showSoldOnly
+                  ? darkMode
+                    ? "border-sky-500 bg-sky-900/50 text-sky-300"
+                    : "border-sky-500 bg-sky-50 text-sky-700"
+                  : darkMode
+                  ? "border-slate-600 bg-slate-700 text-slate-400 hover:bg-slate-600"
+                  : "border-slate-300 bg-white text-slate-500 hover:bg-slate-50"
+              }`}
+              title="Nur verkaufte Fahrzeuge anzeigen"
+            >
+              <FiFilter className="h-4 w-4" />
+            </button>
+
+            {/* Reset */}
+            {(filterBrand || searchTerm || showSoldOnly) && (
+              <button
+                onClick={resetFilters}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+                  darkMode
+                    ? "border-slate-600 bg-slate-700 text-slate-400 hover:bg-slate-600"
+                    : "border-slate-300 bg-white text-slate-500 hover:bg-slate-50"
+                }`}
+                title="Alle Filter zurücksetzen"
+              >
+                <FiX className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Table */}
+      <div className="w-full overflow-x-auto">
+        <table className="min-w-full text-xs sm:text-sm">
+          <thead
+            className={`border-b transition-colors duration-300 ${
+              darkMode
+                ? "border-slate-700 bg-slate-700/80"
+                : "border-slate-200 bg-slate-100/80"
+            }`}
+          >
+            <tr>
+              <th
+                className={`px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide sm:px-4 sm:py-3 sm:text-xs transition-colors duration-300 ${textMuted}`}
+              >
+                Fahrzeug
+              </th>
+              <th
+                className={`w-24 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide sm:px-4 sm:py-3 sm:text-xs transition-colors duration-300 ${textMuted}`}
+              >
+                Schl.Nr.
+              </th>
+              <th
+                className={`w-20 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide sm:px-4 sm:py-3 sm:text-xs transition-colors duration-300 ${textMuted}`}
+              >
+                Anzahl
+              </th>
+              <th
+                className={`hidden w-32 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide sm:table-cell sm:px-4 sm:py-3 sm:text-xs transition-colors duration-300 ${textMuted}`}
+              >
+                Status
+              </th>
+            </tr>
+          </thead>
+
+          <tbody
+            className={`divide-y transition-colors duration-300 ${
+              darkMode
+                ? "divide-slate-700 bg-slate-800"
+                : "divide-slate-200 bg-white"
+            }`}
+          >
+            {isLoading ? (
+              Array.from({ length: 8 }).map((_, idx) => (
+                <tr key={idx} className="animate-pulse">
+                  <td className="px-3 py-3 sm:px-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`h-6 w-6 rounded-full transition-colors duration-300 ${
+                          darkMode ? "bg-slate-700" : "bg-slate-200"
+                        }`}
+                      />
+                      <div className="space-y-1">
+                        <div
+                          className={`h-3 w-28 rounded sm:h-4 sm:w-40 transition-colors duration-300 ${
+                            darkMode ? "bg-slate-700" : "bg-slate-200"
+                          }`}
+                        />
+                        <div
+                          className={`h-2.5 w-20 rounded sm:w-28 transition-colors duration-300 ${
+                            darkMode ? "bg-slate-700" : "bg-slate-200"
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-center sm:px-4">
+                    <div
+                      className={`mx-auto h-5 w-14 rounded sm:h-6 sm:w-16 transition-colors duration-300 ${
+                        darkMode ? "bg-slate-700" : "bg-slate-200"
+                      }`}
+                    />
+                  </td>
+                  <td className="px-3 py-3 text-center sm:px-4">
+                    <div
+                      className={`mx-auto h-4 w-8 rounded transition-colors duration-300 ${
+                        darkMode ? "bg-slate-700" : "bg-slate-200"
+                      }`}
+                    />
+                  </td>
+                  <td className="hidden px-3 py-3 text-center sm:table-cell sm:px-4">
+                    <div
+                      className={`mx-auto h-5 w-20 rounded sm:h-6 transition-colors duration-300 ${
+                        darkMode ? "bg-slate-700" : "bg-slate-200"
+                      }`}
+                    />
+                  </td>
+                </tr>
+              ))
+            ) : filteredScheins.length > 0 ? (
+              filteredScheins.map((car) => (
+                <tr
+                  key={car._id}
+                  onClick={() => setSelectedSchein(car)}
+                  className={`cursor-pointer transition-all duration-200 ${
+                    selectedSchein?._id === car._id
+                      ? darkMode
+                        ? "bg-sky-900/30 border-l-4 border-l-sky-500 shadow-sm"
+                        : "bg-sky-50 border-l-4 border-l-sky-500 shadow-sm"
+                      : `${hoverBg}`
+                  }`}
+                >
+                  {/* Fahrzeug + Note */}
+                  <td className="px-3 py-2.5 sm:px-4 sm:py-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      {car.keyColor && (
+                        <span
+                          className="inline-block h-4 w-4 rounded-full border shadow-sm sm:h-5 sm:w-5"
+                          style={{ backgroundColor: car.keyColor }}
+                          title={`Farbe: ${car.keyColor}`}
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div
+                          className={`truncate text-xs font-semibold sm:text-sm ${
+                            car.keySold
+                              ? `line-through ${
+                                  darkMode ? "text-slate-500" : "text-slate-400"
+                                }`
+                              : textPrimary
+                          }`}
+                          title={car.carName}
+                        >
+                          {car.carName}
+                        </div>
+                        {car.keyNote && (
+                          <div
+                            className={`mt-0.5 truncate text-[11px] sm:text-xs transition-colors duration-300 ${
+                              darkMode ? "text-slate-400" : "text-slate-500"
+                            }`}
+                            title={car.keyNote}
+                          >
+                            {car.keyNote}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Schlüsselnummer */}
+                  <td className="px-3 py-2.5 text-center sm:px-4 sm:py-3">
+                    <span
+                      className={`inline-flex min-w-[3.5rem] items-center justify-center rounded-md border px-2 py-1 text-xs font-semibold font-mono sm:min-w-[4rem] sm:px-2.5 sm:py-1.5 sm:text-sm transition-colors duration-300 ${
+                        darkMode
+                          ? "border-sky-800 bg-sky-900/50 text-slate-200"
+                          : "border-sky-100 bg-sky-50 text-slate-800"
+                      }`}
+                    >
+                      {car.keyNumber || "–"}
+                    </span>
+                  </td>
+
+                  {/* Anzahl */}
+                  <td className="px-3 py-2.5 text-center sm:px-4 sm:py-3">
+                    <span
+                      className={`text-xs font-semibold sm:text-sm transition-colors duration-300 ${textPrimary}`}
+                    >
+                      {car.keyCount ?? 2}
+                    </span>
+                  </td>
+
+                  {/* Status */}
+                  <td className="hidden px-3 py-2.5 text-center sm:table-cell sm:px-4 sm:py-3">
+                    <span
+                      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold sm:px-3 sm:py-1.5 sm:text-xs transition-colors duration-300 ${
+                        car.keySold
+                          ? darkMode
+                            ? "border-rose-700 bg-rose-900/50 text-rose-300"
+                            : "border-rose-200 bg-rose-50 text-rose-700"
+                          : darkMode
+                          ? "border-emerald-700 bg-emerald-900/50 text-emerald-300"
+                          : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                      }`}
+                    >
+                      {car.keySold ? "Verkauft" : "Verfügbar"}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={4} className="px-4 py-8 text-center">
+                  <div className="flex flex-col items-center justify-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`mb-3 h-10 w-10 sm:h-12 sm:w-12 transition-colors duration-300 ${
+                        darkMode ? "text-slate-600" : "text-slate-400"
+                      }`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1}
+                        d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <p
+                      className={`mb-1 text-sm font-medium transition-colors duration-300 ${
+                        darkMode ? "text-slate-400" : "text-slate-500"
+                      }`}
+                    >
+                      Keine Fahrzeuge gefunden
+                    </p>
+                    <p
+                      className={`max-w-xs text-[11px] sm:text-xs transition-colors duration-300 ${
+                        darkMode ? "text-slate-500" : "text-slate-400"
+                      }`}
+                    >
+                      {filterBrand || searchTerm || showSoldOnly
+                        ? "Passen Sie Ihre Filterkriterien an."
+                        : "Es sind noch keine Schlüssel-Daten hinterlegt."}
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
 
   return (
-    <div className="min-h-screen bg-slate-50 px-2 py-4 sm:px-3 md:px-4">
+    <div
+      className={`min-h-screen px-2 py-4 sm:px-3 md:px-4 transition-colors duration-300 ${bgClass}`}
+    >
       <div className="mx-auto mt-4 w-full max-w-[1200px] lg:max-w-[1400px]">
-        {/* Brand Logos Section */}
+        {/* Marken-Filter oben */}
         <section ref={brandsRef} className="mb-5 sm:mb-6">
-          <div className="mb-3 ">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-700 sm:text-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h3
+              className={`text-xs font-semibold uppercase tracking-wide transition-colors duration-300 ${
+                darkMode ? "text-slate-300" : "text-slate-700"
+              }`}
+            >
               Markenfilter
             </h3>
           </div>
@@ -214,11 +955,15 @@ export default function KeysPage() {
             {carBrands.map((brand) => (
               <button
                 key={brand.name}
-                onClick={() => handleFilter(brand.name)}
-                className={`flex flex-col items-center rounded-lg p-2 text-center text-xs font-medium transition-all duration-200 ${
+                onClick={() => handleFilterBrand(brand.name)}
+                className={`flex flex-col items-center rounded-xl border p-2 text-center text-xs font-medium transition-all duration-150 ${
                   filterBrand === brand.name
-                    ? "border-2 border-blue-500 bg-blue-50 shadow-sm"
-                    : "border border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                    ? darkMode
+                      ? "border-sky-500 bg-sky-900/50 shadow-sm shadow-sky-900/50"
+                      : "border-sky-500 bg-sky-50 shadow-sm shadow-sky-100"
+                    : darkMode
+                    ? "border-slate-600 bg-slate-800 hover:border-slate-500 hover:shadow-sm"
+                    : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
                 }`}
               >
                 <div className="mb-1.5 flex h-12 w-16 items-center justify-center sm:h-14 sm:w-20">
@@ -231,7 +976,11 @@ export default function KeysPage() {
                     className="h-full w-full object-contain"
                   />
                 </div>
-                <span className="w-full truncate text-[11px] text-slate-700 sm:text-xs">
+                <span
+                  className={`w-full truncate text-[11px] sm:text-xs transition-colors duration-300 ${
+                    darkMode ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
                   {brand.name}
                 </span>
               </button>
@@ -239,225 +988,27 @@ export default function KeysPage() {
           </div>
         </section>
 
-        {/* Table Card */}
-        <section
-          ref={tableRef}
-          className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-        >
-          <header className="border-b border-slate-200 bg-slate-50 px-3 py-2 sm:px-4 sm:py-2.5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              {/* Left: Title & count */}
-              <div className="hidden sm:flex flex-wrap items-center gap-2 sm:gap-3">
-                <h3 className="text-sm font-semibold text-slate-800">
-                  Fahrzeugschlüssel :
-                </h3>
+        {/* Layout:
+            - kein selectedSchein → nur Tabelle (volle Breite)
+            - selectedSchein → Tabelle + Bild (nur ab lg)
+        */}
+        {!selectedSchein ? (
+          tableSection
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1.3fr)]">
+            {tableSection}
 
-                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                  {filteredCars.length}
-                </span>
-
-                {showSoldOnly && (
-                  <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700">
-                    Nur verkaufte
-                  </span>
-                )}
-              </div>
-
-              {/* Right: compact search + tiny filter + tiny reset */}
-              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                {/* Search input */}
-                <div className="relative w-50 ">
-                  <FiSearch className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Suchen..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 bg-white py-1 pl-8 pr-8 text-xs text-slate-800 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
-                  />
-                  {searchTerm && (
-                    <button
-                      onClick={() => setSearchTerm("")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
-                    >
-                      <FiX className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Super compact "Nur verkauft" filter: icon only */}
-                <button
-                  onClick={() => setShowSoldOnly((prev) => !prev)}
-                  className={`flex h-8 w-8 items-center justify-center rounded-lg border text-xs transition-colors ${
-                    showSoldOnly
-                      ? "border-blue-500 bg-blue-100 text-blue-700"
-                      : "border-slate-300 bg-white text-slate-500 hover:bg-slate-50"
-                  }`}
-                  title="Nur verkaufte Fahrzeuge anzeigen"
-                >
-                  <FiFilter className="h-4 w-4" />
-                </button>
-
-                {/* Tiny reset button for brand/search if needed */}
-                {(filterBrand || searchTerm) && (
-                  <button
-                    onClick={resetFilters}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-colors hover:bg-slate-50"
-                    title="Filter löschen"
-                  >
-                    <FiX className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </header>
-
-          <div className="w-full overflow-x-auto">
-            <table className="min-w-full text-xs sm:text-sm">
-              <thead className="border-b border-slate-200 bg-slate-100">
-                <tr>
-                  <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-600 sm:px-4 sm:py-3 sm:text-xs">
-                    Fahrzeug
-                  </th>
-                  <th className="w-24 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-600 sm:px-4 sm:py-3 sm:text-xs">
-                    Schl.Nr.
-                  </th>
-                  <th className="w-20 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-600 sm:px-4 sm:py-3 sm:text-xs">
-                    Anzahl
-                  </th>
-                  <th className="hidden sm:table-cell w-28 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-600 sm:px-4 sm:py-3 sm:text-xs">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-slate-200">
-                {isLoading ? (
-                  Array.from({ length: 8 }).map((_, idx) => (
-                    <tr key={idx} className="animate-pulse">
-                      <td className="px-3 py-3 sm:px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-5 w-5 rounded-full bg-slate-200" />
-                          <div className="space-y-1">
-                            <div className="h-3 w-28 rounded bg-slate-200 sm:h-4 sm:w-32" />
-                            <div className="h-2.5 w-20 rounded bg-slate-200 sm:w-24" />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 text-center sm:px-4">
-                        <div className="mx-auto h-5 w-14 rounded bg-slate-200 sm:h-6 sm:w-16" />
-                      </td>
-                      <td className="px-3 py-3 text-center sm:px-4">
-                        <div className="mx-auto h-4 w-8 rounded bg-slate-200" />
-                      </td>
-                      <td className="px-3 py-3 text-center sm:px-4">
-                        <div className="mx-auto h-5 w-20 rounded bg-slate-200 sm:h-6" />
-                      </td>
-                    </tr>
-                  ))
-                ) : filteredCars.length > 0 ? (
-                  filteredCars.map((car) => (
-                    <tr
-                      key={car._id}
-                      className="transition-colors hover:bg-slate-50"
-                    >
-                      <td className="px-3 py-2.5 sm:px-4 sm:py-3">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          {car.keyColor && (
-                            <span
-                              className="inline-block h-4 w-4 rounded-full border border-slate-300 shadow-sm sm:h-5 sm:w-5"
-                              style={{ backgroundColor: car.keyColor }}
-                              title={`Farbe: ${car.keyColor}`}
-                            />
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <div
-                              className={`truncate text-xs font-semibold sm:text-sm ${
-                                car.keySold
-                                  ? "line-through text-slate-400"
-                                  : "text-slate-900"
-                              }`}
-                              title={car.carName}
-                            >
-                              {car.carName}
-                            </div>
-                            {car.keyNote && (
-                              <div
-                                className="mt-0.5 truncate text-[11px] text-slate-500 sm:text-xs"
-                                title={car.keyNote}
-                              >
-                                {car.keyNote}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-3 py-2.5 text-center sm:px-4 sm:py-3">
-                        <span className="inline-flex min-w-[3.5rem] items-center justify-center rounded-md border border-blue-100 bg-blue-50 px-2 py-1 text-xs font-semibold text-slate-700 font-mono sm:min-w-[4rem] sm:px-2.5 sm:py-1.5 sm:text-sm">
-                          {car.keyNumber || "–"}
-                        </span>
-                      </td>
-
-                      <td className="px-3 py-2.5 text-center sm:px-4 sm:py-3">
-                        <span className="text-xs font-semibold text-slate-700 sm:text-sm">
-                          {car.keyCount ?? 2}
-                        </span>
-                      </td>
-
-                      <td className="hidden sm:table-cell px-3 py-2.5 text-center sm:px-4 sm:py-3">
-                        <span
-                          className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold sm:px-3 sm:py-1.5 sm:text-xs ${
-                            car.keySold
-                              ? "border-red-200 bg-red-50 text-red-700"
-                              : "border-green-200 bg-green-50 text-green-700"
-                          }`}
-                        >
-                          {car.keySold ? "Verkauft" : "Verfügbar"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="px-4 py-8 text-center text-slate-400"
-                    >
-                      <div className="flex flex-col items-center justify-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="mb-3 h-10 w-10 sm:h-12 sm:w-12"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1}
-                            d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        <p className="mb-1 text-sm font-medium text-slate-500">
-                          Keine Fahrzeuge gefunden
-                        </p>
-                        <p className="max-w-xs text-[11px] text-slate-400 sm:text-xs">
-                          {filterBrand || searchTerm || showSoldOnly
-                            ? "Versuchen Sie, Ihre Filterkriterien zu ändern."
-                            : "Es sind noch keine Schlüssel-Daten hinterlegt."}
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+            {/* Modern Vehicle Preview Component */}
+            <VehiclePreview />
           </div>
-        </section>
+        )}
 
-        <p className="mt-4 text-center text-[11px] text-slate-400 sm:text-xs">
-          Automatische Filterrücksetzung nach 60 Sekunden Inaktivität
+        <p
+          className={`mt-4 text-center text-[11px] sm:text-xs transition-colors duration-300 ${
+            darkMode ? "text-slate-500" : "text-slate-400"
+          }`}
+        >
+          Automatische Filterrücksetzung nach 60 Sekunden Inaktivität.
         </p>
       </div>
     </div>
