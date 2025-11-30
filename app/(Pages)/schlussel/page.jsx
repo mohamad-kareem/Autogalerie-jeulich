@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { FiSearch, FiX, FiFilter } from "react-icons/fi";
 import toast from "react-hot-toast";
+import WaitingLounge from "@/app/(components)/helpers/WaitingLounge"; // Adjust path as needed
 
 const carBrands = [
   { name: "BMW", logo: "/logos/bmw.png" },
@@ -59,9 +60,51 @@ export default function KeysPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showSoldOnly, setShowSoldOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isIdle, setIsIdle] = useState(false);
 
   const tableRef = useRef(null);
   const brandsRef = useRef(null);
+  const idleTimerRef = useRef(null);
+
+  // Idle detection
+  useEffect(() => {
+    const resetIdleTimer = () => {
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+      }
+      setIsIdle(false);
+
+      idleTimerRef.current = setTimeout(() => {
+        setIsIdle(true);
+      }, 10000); // 10 seconds
+    };
+
+    // Events that reset the idle timer
+    const events = [
+      "mousedown",
+      "mousemove",
+      "keypress",
+      "scroll",
+      "touchstart",
+      "click",
+    ];
+
+    events.forEach((event) => {
+      document.addEventListener(event, resetIdleTimer);
+    });
+
+    // Initial timer
+    resetIdleTimer();
+
+    return () => {
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+      }
+      events.forEach((event) => {
+        document.removeEventListener(event, resetIdleTimer);
+      });
+    };
+  }, []);
 
   // Load all Scheine (keys) from /api/carschein
   useEffect(() => {
@@ -150,6 +193,11 @@ export default function KeysPage() {
 
     return true;
   });
+
+  // Show waiting lounge when idle
+  if (isIdle) {
+    return <WaitingLounge />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 px-2 py-4 sm:px-3 md:px-4">
