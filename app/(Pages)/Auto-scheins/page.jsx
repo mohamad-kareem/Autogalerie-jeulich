@@ -11,7 +11,6 @@ import ScheinTable from "@/app/(components)/Schein/ScheinTable";
 import {
   FiPlus,
   FiSearch,
-  FiCalendar,
   FiUser,
   FiChevronDown,
   FiCheck,
@@ -31,7 +30,6 @@ export default function CarScheinPage() {
   const [darkMode, setDarkMode] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
   const [selectedOwners, setSelectedOwners] = useState([]);
   const [showOwnerFilter, setShowOwnerFilter] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -114,29 +112,24 @@ export default function CarScheinPage() {
   };
 
   const filteredScheins = scheins.filter((schein) => {
-    const nameMatch = schein.carName
-      ?.toLowerCase()
-      .includes(searchQuery.toLowerCase());
+    const query = searchQuery.toLowerCase().trim();
 
-    const dateMatch = dateFilter
-      ? new Date(schein.createdAt).toISOString().slice(0, 10) === dateFilter
-      : true;
+    const searchMatch =
+      !query ||
+      [
+        schein.carName,
+        schein.finNumber, // VIN/FIN search
+      ].some((field) => field?.toString().toLowerCase().includes(query));
 
     const ownerMatch =
       selectedOwners.length === 0 || selectedOwners.includes(schein.owner);
 
-    return nameMatch && dateMatch && ownerMatch;
+    return searchMatch && ownerMatch;
   });
 
   // Theme classes
   const bgClass = darkMode ? "bg-gray-900" : "bg-gray-50";
-  const cardBg = darkMode ? "bg-gray-800" : "bg-white";
-  const borderColor = darkMode ? "border-gray-700" : "border-gray-200";
   const textPrimary = darkMode ? "text-white" : "text-gray-900";
-  const textSecondary = darkMode ? "text-gray-300" : "text-gray-600";
-  const inputBg = darkMode
-    ? "bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500";
 
   return (
     <div
@@ -173,8 +166,6 @@ export default function CarScheinPage() {
         <FilterSection
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          dateFilter={dateFilter}
-          setDateFilter={setDateFilter}
           selectedOwners={selectedOwners}
           toggleOwner={toggleOwner}
           showOwnerFilter={showOwnerFilter}
@@ -211,8 +202,6 @@ export default function CarScheinPage() {
 function FilterSection({
   searchQuery,
   setSearchQuery,
-  dateFilter,
-  setDateFilter,
   selectedOwners,
   toggleOwner,
   showOwnerFilter,
@@ -239,14 +228,14 @@ function FilterSection({
       className={`mb-3 rounded-lg border transition-colors duration-300 ${borderColor} ${cardBg} p-2 shadow-sm`}
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        {/* LEFT: Smaller Search */}
+        {/* LEFT: Search (car name + FIN) */}
         <div className="relative w-full sm:max-w-xs">
           <FiSearch
             className={`pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-sm transition-colors duration-300 ${iconColor}`}
           />
           <input
             type="text"
-            placeholder="Fahrzeug suchen..."
+            placeholder="Nach Fahrzeug oder FIN suchen..."
             className={`w-full rounded-md border pl-8 pr-2 py-1.5 h-8 text-xs sm:text-sm focus:outline-none focus:ring-1 transition-colors duration-300 ${inputBg} ${
               darkMode
                 ? "focus:border-gray-400 focus:ring-gray-400"
@@ -257,25 +246,8 @@ function FilterSection({
           />
         </div>
 
-        {/* RIGHT: Filters + Upload Button */}
+        {/* RIGHT: Owner Filter + Upload Button */}
         <div className="flex w-full sm:w-auto items-center justify-end gap-1 sm:gap-2">
-          {/* Date Filter */}
-          <div
-            className={`flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors duration-300 ${filterButtonBg}`}
-          >
-            <FiCalendar
-              className={`text-xs transition-colors duration-300 ${iconColor}`}
-            />
-            <input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className={`bg-transparent text-xs focus:outline-none transition-colors duration-300 ${
-                darkMode ? "text-gray-300" : "text-gray-600"
-              }`}
-            />
-          </div>
-
           {/* Owner Filter */}
           <div className="relative">
             <button
@@ -306,7 +278,7 @@ function FilterSection({
                   <button
                     key={owner}
                     type="button"
-                    className={`w-full px-3 py-1 text-left text-xs hover:bg-gray-50 flex items-center transition-colors duration-300 ${
+                    className={`w-full px-3 py-1 text-left text-xs flex items-center transition-colors duration-300 ${
                       darkMode
                         ? "hover:bg-gray-700 text-gray-300"
                         : "hover:bg-gray-50 text-gray-600"

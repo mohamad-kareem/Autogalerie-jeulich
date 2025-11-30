@@ -33,7 +33,7 @@ export default function ScheinTable({
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedSchein, setSelectedSchein] = useState(null);
   const [modalImageUrl, setModalImageUrl] = useState("");
-  const [imageRotation, setImageRotation] = useState(0);
+  const [imageRotation, setImageRotation] = useState(270); // -90°
 
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [keyForm, setKeyForm] = useState({
@@ -84,51 +84,62 @@ export default function ScheinTable({
       keyNumber,
     } = doc;
 
-    const printWindow = window.open("", "_blank", "width=900,height=1200");
-    if (!printWindow) {
-      toast.error("Popup wurde vom Browser blockiert.");
-      return;
-    }
+    // current print date (for the header)
+    const printDate = new Date().toLocaleDateString("de-DE");
 
-    const esc = (s = "") =>
-      String(s || "").replace(
-        /[&<>"']/g,
-        (c) =>
-          ({
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#039;",
-          }[c])
-      );
-
-    let createdAtText = "—";
-    if (createdAt) {
-      const d = new Date(createdAt);
-      if (!isNaN(d.getTime())) {
-        createdAtText = d.toLocaleDateString();
+    // Small helper that actually opens the window & prints
+    const doPrint = (finalImageUrl) => {
+      const printWindow = window.open("", "_blank", "width=900,height=1200");
+      if (!printWindow) {
+        toast.error("Popup wurde vom Browser blockiert.");
+        return;
       }
-    }
 
-    const notesHtml =
-      Array.isArray(notes) && notes.length > 0
-        ? `<ul class="task-list">
+      // Escape helper
+      const esc = (s = "") =>
+        String(s || "").replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#039;",
+            }[c])
+        );
+
+      // Date formatting for "Erfasst am"
+      let createdAtText = "—";
+      if (createdAt) {
+        const d = new Date(createdAt);
+        if (!isNaN(d.getTime())) {
+          createdAtText = d.toLocaleDateString();
+        }
+      }
+
+      // Notes / tasks HTML
+      const notesHtml =
+        Array.isArray(notes) && notes.length > 0
+          ? `<ul class="task-list">
              ${notes.map((n) => `<li>${esc(n)}</li>`).join("")}
            </ul>`
-        : `<p class="muted">Keine Aufgaben hinterlegt.</p>`;
+          : `<p class="muted">Keine Aufgaben hinterlegt.</p>`;
 
-    const imageHtml = imageUrl
-      ? `
-        <section class="image-section">
+      // Image section (uses the already-rotated bitmap)
+      const imageHtml = finalImageUrl
+        ? `
+        <section class="section section-image">
+          <h2 class="section-title">Bilddokumentation</h2>
           <div class="image-frame">
-            <img src="${esc(imageUrl)}" alt="Fahrzeugschein" />
+            <img src="${esc(finalImageUrl)}" alt="Fahrzeugschein" />
           </div>
         </section>
       `
-      : "";
+        : "";
 
-    printWindow.document.write(`
+      // FULL HTML
+      printWindow.document.write(`
       <!DOCTYPE html>
       <html lang="de">
         <head>
@@ -160,12 +171,13 @@ export default function ScheinTable({
               background: #ffffff;
               max-width: 210mm;
               margin: 0 auto;
-              padding: 20mm 18mm 16mm;
-              border-radius: 12px;
+              padding: 18mm 18mm 14mm;
+              border-radius: 10px;
               border: 1px solid #e5e7eb;
-              box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+              box-shadow: 0 16px 40px rgba(15, 23, 42, 0.10);
             }
 
+            /* HEADER */
             .header {
               display: flex;
               justify-content: space-between;
@@ -177,8 +189,8 @@ export default function ScheinTable({
 
             .brand {
               display: flex;
-              align-items: center;
-              gap: 10px;
+              flex-direction: column;
+              gap: 4px;
             }
 
             .brand-text-main {
@@ -198,143 +210,147 @@ export default function ScheinTable({
               text-align: right;
               font-size: 12px;
               color: #4b5563;
+              line-height: 1.4;
             }
 
+            .header-meta span {
+              display: block;
+            }
+
+            .header-meta-label {
+              color: #9ca3af;
+              font-size: 10px;
+              text-transform: uppercase;
+              letter-spacing: 0.14em;
+            }
+
+            /* TITLE */
             .title-block {
-              margin-bottom: 16px;
+              margin-bottom: 18px;
             }
 
             .doc-title {
               font-size: 24px;
               font-weight: 800;
-              letter-spacing: 0.02em;
               color: #111827;
-              margin: 0 0 6px 0;
+              margin: 0 0 4px 0;
+              letter-spacing: 0.01em;
             }
 
             .doc-subtitle {
               font-size: 14px;
-              color: #4b5563;
+              color: #6b7280;
               margin: 0;
             }
 
-            .image-section {
-              margin-top: 14px;
-              margin-bottom: 20px;
+            /* SECTIONS */
+            .section {
+              margin-bottom: 16px;
             }
 
-            .image-frame {
-              border-radius: 10px;
-              border: 1px solid #e5e7eb;
-              background: #f9fafb;
-              padding: 10px;
-              text-align: center;
-              box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
-            }
-
-            .image-frame img {
-              max-width: 100%;
-              max-height: 380px;
-              object-fit: contain;
-              border-radius: 6px;
-              background: #f9fafb;
-            }
-
-            .card {
-              border-radius: 10px;
-              border: 1px solid #e5e7eb;
-              background: #f9fafb;
-              padding: 14px 16px;
-              margin-bottom: 18px;
-            }
-
-            .card-title {
-              font-size: 13px;
-              text-transform: uppercase;
-              letter-spacing: 0.12em;
-              color: #6b7280;
-              margin-bottom: 10px;
-              font-weight: 600;
-            }
-
-            .data-grid {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 10px 24px;
-            }
-
-            .data-item-label {
+            .section-title {
               font-size: 12px;
-              color: #6b7280;
-            }
-
-            .data-item-value {
-              font-size: 14px;
               font-weight: 600;
-              color: #111827;
+              letter-spacing: 0.14em;
+              text-transform: uppercase;
+              color: #6b7280;
+              margin-bottom: 8px;
             }
 
-            .tasks-card {
-              border-radius: 10px;
+            /* VEHICLE DATA */
+            .card {
+              border-radius: 8px;
               border: 1px solid #e5e7eb;
-              padding: 14px 16px;
-              margin-top: 6px;
+              background: #f9fafb;
+              padding: 14px;
+            }
+
+            .data-table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 12px;
+            }
+
+            .data-label {
+              width: 35%;
+              padding: 6px 8px;
+              color: #6b7280;
+              font-weight: 500;
+              border-bottom: 1px solid #e5e7eb;
+            }
+
+            .data-value {
+              padding: 6px 8px;
+              color: #111827;
+              font-weight: 600;
+              border-bottom: 1px solid #e5e7eb;
+            }
+
+            .data-table tr:last-child .data-label,
+            .data-table tr:last-child .data-value {
+              border-bottom: none;
+            }
+
+            /* TASKS / NOTES */
+            .tasks-card {
+              border-radius: 8px;
+              border: 1px solid #e5e7eb;
+              padding: 12px;
+              background: #ffffff;
             }
 
             .tasks-header {
               display: flex;
               justify-content: space-between;
               align-items: center;
-              margin-bottom: 8px;
+              margin-bottom: 6px;
             }
 
             .tasks-title {
-              font-size: 13px;
-              text-transform: uppercase;
-              letter-spacing: 0.12em;
+              font-size: 12px;
               font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.14em;
               color: #4b5563;
             }
 
             .tasks-count {
-              font-size: 12px;
-              padding: 3px 10px;
+              font-size: 11px;
+              padding: 2px 10px;
               border-radius: 999px;
-              background: #eef2ff;
-              color: #3730a3;
-              border: 1px solid #c7d2fe;
+              background: #eff6ff;
+              color: #1d4ed8;
+              border: 1px solid #bfdbfe;
             }
 
             .task-list {
-              margin: 4px 0 0;
-              padding-left: 20px;
+              padding-left: 18px;
+              margin: 0;
             }
 
             .task-list li {
-              font-size: 14px;
-              line-height: 1.45;
+              font-size: 13px;
               color: #111827;
-              margin-bottom: 6px;
-              font-weight: 500;
+              margin-bottom: 4px;
             }
 
             .muted {
-              font-size: 13px;
+              font-size: 12px;
               color: #9ca3af;
-              margin-top: 2px;
             }
 
-            .footer {
-              margin-top: 22px;
-              padding-top: 10px;
-              border-top: 1px solid #e5e7eb;
-              font-size: 11px;
-              color: #6b7280;
+            /* IMAGE FRAME (no CSS rotation, uses rotated bitmap) */
+            .image-frame {
+          
+              padding: 10px;
+              background: #f9fafb;
+              text-align: center;
             }
 
-            .footer span {
-              display: block;
+            .image-frame img {
               max-width: 100%;
+              max-height: 520px;
+              object-fit: contain;
             }
 
             @media print {
@@ -349,83 +365,141 @@ export default function ScheinTable({
                 margin: 0;
                 max-width: none;
                 width: 100%;
+                padding: 14mm 16mm 12mm;
               }
+              .image-frame img {
+                max-height: 650px;
+              }
+            }
+
+            /* FOOTER */
+            .footer {
+              margin-top: 20px;
+              padding-top: 10px;
+              border-top: 1px solid #e5e7eb;
+              font-size: 11px;
+              color: #6b7280;
             }
           </style>
         </head>
+
         <body onload="window.print(); window.onafterprint = () => window.close();">
           <div class="page">
+
+            <!-- HEADER -->
             <header class="header">
               <div class="brand">
-                <div>
-                  <div class="brand-text-main">AUTOGALERIE JÜLICH</div>
-                  <div class="brand-text-sub">Werkstatt- und Instandhaltungsdokumentation</div>
-                </div>
+                <div class="brand-text-main">AUTOGALERIE JÜLICH</div>
               </div>
               <div class="header-meta">
-                <div>${esc(createdAtText)}</div>
-                <div>FIN: ${esc(finNumber || "–")}</div>
+                <span>${esc(printDate)}</span>
               </div>
             </header>
 
+            <!-- TITLE -->
             <section class="title-block">
               <h1 class="doc-title">
                 ${esc(carName || "Unbekanntes Fahrzeug")}
                 ${keyNumber ? ` (${esc(keyNumber)})` : ""}
               </h1>
-              <p class="doc-subtitle">
-                Dokumentation der Fahrzeugdaten für Wartung und Reparatur.
-              </p>
             </section>
 
+            <!-- VEHICLE DATA -->
+            <section class="section">
+              <h2 class="section-title">Fahrzeugdaten</h2>
+              <div class="card">
+                <table class="data-table">
+                  <tr>
+                    <td class="data-label">FIN-Nummer</td>
+                    <td class="data-value">${esc(finNumber || "—")}</td>
+                  </tr>
+                  <tr>
+                    <td class="data-label">Schlüsselnummer</td>
+                    <td class="data-value">${esc(keyNumber || "—")}</td>
+                  </tr>
+                  <tr>
+                    <td class="data-label">Besitzer / Händler</td>
+                    <td class="data-value">${esc(owner || "—")}</td>
+                  </tr>
+                  <tr>
+                    <td class="data-label">Erfasst am</td>
+                    <td class="data-value">${esc(createdAtText)}</td>
+                  </tr>
+                </table>
+              </div>
+            </section>
+
+            <!-- TASKS / NOTES -->
+            <section class="section">
+              <h2 class="section-title">Aufgaben / Hinweise</h2>
+              <div class="tasks-card">
+                <div class="tasks-header">
+                  <div class="tasks-title">Liste</div>
+                  ${
+                    notes.length > 0
+                      ? `<span class="tasks-count">${notes.length} Eintrag${
+                          notes.length === 1 ? "" : "e"
+                        }</span>`
+                      : ""
+                  }
+                </div>
+                ${notesHtml}
+              </div>
+            </section>
+
+            <!-- IMAGE AT THE END -->
             ${imageHtml}
 
-            <section class="card">
-              <div class="card-title">Fahrzeugdaten</div>
-              <div class="data-grid">
-                <div>
-                  <div class="data-item-label">FIN-Nummer</div>
-                  <div class="data-item-value">${esc(finNumber || "–")}</div>
-                </div>
-                <div>
-                  <div class="data-item-label">Schlüsselnummer</div>
-                  <div class="data-item-value">${esc(keyNumber || "—")}</div>
-                </div>
-                <div>
-                  <div class="data-item-label">Besitzer / Händler</div>
-                  <div class="data-item-value">${esc(owner || "–")}</div>
-                </div>
-                <div>
-                  <div class="data-item-label">Erfasst am</div>
-                  <div class="data-item-value">${esc(createdAtText)}</div>
-                </div>
-              </div>
-            </section>
-
-            <section class="tasks-card">
-              <div class="tasks-header">
-                <div class="tasks-title">Aufgaben / Hinweise</div>
-                ${
-                  Array.isArray(notes) && notes.length > 0
-                    ? `<span class="tasks-count">${notes.length} Eintrag${
-                        notes.length === 1 ? "" : "e"
-                      }</span>`
-                    : ""
-                }
-              </div>
-              ${notesHtml}
-            </section>
-
+            <!-- FOOTER -->
             <footer class="footer">
-              <span>Dieses Dokument ist ausschließlich für den internen Gebrauch bestimmt und nicht zur Weitergabe an Dritte vorgesehen.</span>
+              Dieses Dokument ist ausschließlich für den internen Gebrauch bestimmt
+              und nicht zur Weitergabe an Dritte vorgesehen.
             </footer>
+
           </div>
         </body>
       </html>
     `);
 
-    printWindow.document.close();
-    printWindow.focus();
+      printWindow.document.close();
+      printWindow.focus();
+    };
+
+    // If there is an image → rotate it on a canvas first
+    if (imageUrl) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          // swap width/height for 90° rotation
+          canvas.width = img.height;
+          canvas.height = img.width;
+
+          const ctx = canvas.getContext("2d");
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate(-Math.PI / 2); // -90°
+          ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+          const rotatedUrl = canvas.toDataURL("image/jpeg", 0.95);
+          doPrint(rotatedUrl);
+        } catch (err) {
+          console.error("Rotation failed, printing original image:", err);
+          doPrint(imageUrl);
+        }
+      };
+
+      img.onerror = () => {
+        console.error("Image load failed, printing original image");
+        doPrint(imageUrl);
+      };
+
+      img.src = imageUrl;
+    } else {
+      // No image → just print the rest
+      doPrint(null);
+    }
   };
 
   const handleDelete = async (id, publicId) => {
@@ -456,7 +530,7 @@ export default function ScheinTable({
     }
     setSelectedSchein(schein);
     setModalImageUrl(schein.imageUrl);
-    setImageRotation(0);
+    setImageRotation(270);
     setShowPreviewModal(true);
   };
 
