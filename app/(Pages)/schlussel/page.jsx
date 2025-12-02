@@ -79,8 +79,9 @@ export default function KeysPage() {
   const tableRef = useRef(null);
   const brandsRef = useRef(null);
   const idleTimerRef = useRef(null);
+  const previewRef = useRef(null); // 👈 für Scroll zur Vorschau
 
-  // Initialize dark mode
+  // ---------- Dark mode initialisieren ----------
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const systemPrefersDark = window.matchMedia(
@@ -178,7 +179,7 @@ export default function KeysPage() {
     fetchData();
   }, []);
 
-  // Auto Reset Brand-Filter nach 60s
+  // ---------- Auto Reset Brand-Filter nach 60s ----------
   useEffect(() => {
     if (!filterBrand) return;
     const timeout = setTimeout(() => setFilterBrand(""), 60000);
@@ -253,35 +254,29 @@ export default function KeysPage() {
     }
   }, [filteredScheins, selectedSchein]);
 
-  // ---------- Passendes Auto + Bild finden ----------
+  // Helper: FIN normalisieren (nur Buchstaben/Zahlen, lowercase)
+  const normalizeFin = (val) =>
+    (val || "")
+      .toString()
+      .replace(/[^a-z0-9]/gi, "")
+      .toLowerCase();
+
+  // ---------- Passendes Auto + Bild NUR über FIN finden ----------
   const matchedCar = useMemo(() => {
     if (!selectedSchein || carList.length === 0) return null;
 
-    // 1) FIN-Match
-    if (selectedSchein.finNumber) {
-      const fin = selectedSchein.finNumber.toString().trim().toLowerCase();
-      const carByFin = carList.find((c) => {
-        const carFin = (c.finNumber || c.vin || c.vinNumber || "")
-          .toString()
-          .toLowerCase();
-        return carFin && carFin === fin;
-      });
-      if (carByFin) return carByFin;
-    }
+    const fin = normalizeFin(selectedSchein.finNumber);
 
-    // 2) Fallback: Name
-    const carNameLower = (selectedSchein.carName || "").toLowerCase();
-    const carByName = carList.find((c) => {
-      const label = `${c.make || ""} ${c.model || ""}`.trim().toLowerCase();
-      if (!label) return false;
-      return (
-        carNameLower === label ||
-        carNameLower.includes(label) ||
-        label.includes(carNameLower)
-      );
+    // keine FIN → kein Bild
+    if (!fin) return null;
+
+    // Suche nur über FIN/VIN
+    const carByFin = carList.find((c) => {
+      const carFin = normalizeFin(c.finNumber || c.vin || c.vinNumber);
+      return carFin && carFin === fin;
     });
 
-    return carByName || null;
+    return carByFin || null;
   }, [selectedSchein, carList]);
 
   const previewImageSrc = useMemo(() => {
@@ -293,7 +288,7 @@ export default function KeysPage() {
     return null;
   }, [matchedCar]);
 
-  // Theme classes
+  // ---------- Theme classes ----------
   const bgClass = darkMode ? "bg-slate-900" : "bg-slate-100/80";
   const cardBg = darkMode ? "bg-slate-800" : "bg-white/95";
   const borderColor = darkMode ? "border-slate-700" : "border-slate-200";
@@ -316,13 +311,13 @@ export default function KeysPage() {
     const previewHeaderBg = darkMode
       ? "bg-gradient-to-r from-slate-700 to-slate-700/80 border-slate-600"
       : "bg-gradient-to-r from-slate-50 to-slate-100/80 border-slate-200";
-    const previewContentBg = darkMode
-      ? "bg-gradient-to-br from-slate-700 to-slate-800 border-slate-600"
-      : "bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200";
+
+    if (!selectedSchein) return null;
 
     return (
       <aside
-        className={`hidden lg:block self-start rounded-2xl border shadow-lg overflow-hidden transition-colors duration-300 ${previewCardBg} ${previewBorder} ${
+        ref={previewRef}
+        className={`mt-4 lg:mt-0 self-start rounded-2xl border shadow-lg overflow-hidden transition-colors duration-300 ${previewCardBg} ${previewBorder} ${
           darkMode ? "shadow-slate-900/80" : "shadow-slate-200/80"
         }`}
       >
@@ -347,11 +342,7 @@ export default function KeysPage() {
         <div className="p-4">
           <div
             className={`relative w-full overflow-hidden rounded-xl border bg-gradient-to-br shadow-sm transition-all duration-300 ${
-              isSold
-                ? darkMode
-                  ? "border-rose-700 from-rose-900/50 to-rose-800/30"
-                  : "border-rose-200 from-rose-50/50 to-rose-100/30"
-                : hasImage
+              hasImage
                 ? darkMode
                   ? "border-slate-600 from-slate-700 to-slate-800"
                   : "border-slate-200 from-slate-50 to-slate-100"
@@ -360,49 +351,42 @@ export default function KeysPage() {
                 : "border-blue-200 from-blue-50/50 to-blue-100/30"
             }`}
           >
-            {/* Status Badge */}
-            {(isSold || !hasImage) && (
+            {/* VERKAUFT ribbon (für verkaufte Fahrzeuge) */}
+            {isSold && (
+              <div className="absolute top-0 right-0 z-30 animate-fade-in">
+                <div className="relative">
+                  <div className="absolute top-6 right-[-44px] transform rotate-45 bg-gradient-to-br from-red-700 via-red-600 to-red-800 text-white text-[11px] sm:text-[13px] font-extrabold px-10 sm:px-12 py-1 shadow-xl ring-1 ring-white/80 drop-shadow-sm backdrop-blur-md tracking-widest rounded-sm">
+                    VERKAUFT
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Kleines Status-Badge NUR wenn nicht verkauft & kein Bild */}
+            {!isSold && !hasImage && (
               <div
                 className={`absolute top-3 right-3 z-10 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur-sm ${
-                  isSold
-                    ? darkMode
-                      ? "bg-rose-600/90 text-white"
-                      : "bg-rose-500/90 text-white"
-                    : darkMode
+                  darkMode
                     ? "bg-blue-600/90 text-white"
                     : "bg-blue-500/90 text-white"
                 }`}
               >
-                {isSold ? (
-                  <span className="flex items-center gap-1">
-                    <MdSell className="w-3 h-3" />
-                    Verkauft
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1">
-                    <MdInventory className="w-3 h-3" />
-                    Verfügbar
-                  </span>
-                )}
+                <span className="flex items-center gap-1">
+                  <MdInventory className="w-3 h-3" />
+                  Verfügbar
+                </span>
               </div>
             )}
 
             <div className="relative aspect-[4/3] w-full">
               {hasImage ? (
                 <>
-                  {isSold && (
-                    <div
-                      className={`absolute inset-0 z-10 rounded-xl ${
-                        darkMode ? "bg-rose-900/20" : "bg-rose-500/10"
-                      }`}
-                    />
-                  )}
                   <Image
                     src={previewImageSrc}
                     alt={
                       matchedCar
                         ? `${matchedCar.make || ""} ${matchedCar.model || ""}`
-                        : selectedSchein.carName || "Fahrzeugbild"
+                        : selectedSchein?.carName || "Fahrzeugbild"
                     }
                     fill
                     className={`object-cover transition-all duration-500 ${
@@ -413,12 +397,12 @@ export default function KeysPage() {
                 </>
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center">
-                  {/* Modern Illustration Container */}
+                  {/* Illustration */}
                   <div
                     className={`relative mb-4 rounded-2xl p-6 ${
                       isSold
                         ? darkMode
-                          ? "bg-gradient-to-br from-rose-900/30 to-rose-800/20"
+                          ? "bg-gradient-to-br from-blue-900/30 to-blue-800/20"
                           : "bg-gradient-to-br from-rose-100/80 to-rose-200/50"
                         : darkMode
                         ? "bg-gradient-to-br from-blue-900/30 to-blue-800/20"
@@ -427,13 +411,11 @@ export default function KeysPage() {
                   >
                     {isSold ? (
                       <div className="flex flex-col items-center">
-                        <div className="relative">
-                          <FiCamera
-                            className={`w-12 h-12 mb-2 ${
-                              darkMode ? "text-rose-400" : "text-rose-400"
-                            }`}
-                          />
-                        </div>
+                        <FiCamera
+                          className={`w-12 h-12 mb-2 ${
+                            darkMode ? "text-rose-400" : "text-rose-400"
+                          }`}
+                        />
                         <div
                           className={`w-16 h-1 rounded-full mt-2 ${
                             darkMode ? "bg-rose-500" : "bg-rose-300"
@@ -509,7 +491,7 @@ export default function KeysPage() {
               )}
             </div>
 
-            {/* Vehicle Info Overlay for images */}
+            {/* Vehicle Info Overlay für Bilder */}
             {hasImage && (
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
                 <div className="text-white">
@@ -626,7 +608,9 @@ export default function KeysPage() {
               </span>
             )}
 
-            {/* <button
+            {/* Optional Dark Mode Toggle */}
+            {/*
+            <button
               onClick={toggleDarkMode}
               className={`p-1.5 rounded-lg transition-colors duration-300 ${
                 darkMode
@@ -642,7 +626,8 @@ export default function KeysPage() {
               ) : (
                 <FiMoon className="h-3.5 w-3.5" />
               )}
-            </button>*/}
+            </button>
+            */}
           </div>
 
           {/* Search / Filter / Reset */}
@@ -737,7 +722,7 @@ export default function KeysPage() {
                 Anzahl
               </th>
               <th
-                className={`hidden w-32 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide sm:table-cell sm:px-4 sm:py-3 sm:text-xs transition-colors duration-300 ${textMuted}`}
+                className={`hidden w-32 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide sm:table-cell sm:px-4 sm:py-3 sm:text-xs transition-colors	duration-300 ${textMuted}`}
               >
                 Status
               </th>
@@ -791,7 +776,7 @@ export default function KeysPage() {
                   </td>
                   <td className="hidden px-3 py-3 text-center sm:table-cell sm:px-4">
                     <div
-                      className={`mx-auto h-5 w-20 rounded sm:h-6 transition-colors duration-300 ${
+                      className={`mx-auto h-5 w-20 rounded sm:h-6 transition-colors	duration-300 ${
                         darkMode ? "bg-slate-700" : "bg-slate-200"
                       }`}
                     />
@@ -802,7 +787,18 @@ export default function KeysPage() {
               filteredScheins.map((car) => (
                 <tr
                   key={car._id}
-                  onClick={() => setSelectedSchein(car)}
+                  onClick={() => {
+                    setSelectedSchein(car);
+                    // Scroll zur Vorschau – auch auf Mobile
+                    setTimeout(() => {
+                      if (previewRef.current) {
+                        previewRef.current.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
+                      }
+                    }, 80);
+                  }}
                   className={`cursor-pointer transition-all duration-200 ${
                     selectedSchein?._id === car._id
                       ? darkMode
@@ -990,15 +986,13 @@ export default function KeysPage() {
 
         {/* Layout:
             - kein selectedSchein → nur Tabelle (volle Breite)
-            - selectedSchein → Tabelle + Bild (nur ab lg)
+            - selectedSchein → Tabelle + Vorschau (stacked on mobile, side-by-side on lg)
         */}
         {!selectedSchein ? (
           tableSection
         ) : (
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1.3fr)]">
+          <div className="grid gap-4 items-start lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1.3fr)]">
             {tableSection}
-
-            {/* Modern Vehicle Preview Component */}
             <VehiclePreview />
           </div>
         )}

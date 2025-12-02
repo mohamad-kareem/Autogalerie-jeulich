@@ -22,6 +22,9 @@ import {
   FiAlertTriangle,
   FiSun,
   FiMoon,
+  FiCheck,
+  FiCheckSquare,
+  FiSquare,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -49,14 +52,6 @@ function getNextWeekdayDate(targetIndex) {
   return d;
 }
 
-/**
- * Versucht aus einem Task-Titel wie
- * "Samstag 15 Uhr Focus silber (407)"
- * ein konkretes Datum zu bauen.
- * - erkennt Wochentage (Montag, Dienstag, ...)
- * - erkennt Zeiten wie "15 Uhr", "15:30 Uhr"
- * - optional dd.mm. oder dd.mm.yyyy
- */
 function parseAppointmentFromTitle(title) {
   if (!title) return null;
   const lower = title.toLowerCase().trim();
@@ -67,7 +62,6 @@ function parseAppointmentFromTitle(title) {
   let date = null;
   let fromWeekday = false;
 
-  // 1) Datum im Format dd.mm. oder dd.mm.yyyy
   const dateMatch = lower.match(/(\d{1,2})\.(\d{1,2})(?:\.(\d{2,4}))?/);
   if (dateMatch) {
     const day = parseInt(dateMatch[1], 10);
@@ -81,16 +75,14 @@ function parseAppointmentFromTitle(title) {
 
     date = new Date(year, month, day);
   } else {
-    // 2) Wochentag (Montag, Dienstag, ...)
     for (let i = 0; i < WEEKDAYS.length; i++) {
       if (lower.includes(WEEKDAYS[i])) {
-        const todayIndex = now.getDay(); // 0 = Sonntag ... 6 = Samstag
+        const todayIndex = now.getDay();
         const targetIndex = i;
 
         const d = new Date(now);
         let diff = (targetIndex - todayIndex + 7) % 7;
 
-        // vorerst Datum = heute bzw. nächster gleicher Wochentag
         d.setDate(now.getDate() + diff);
         date = d;
         fromWeekday = true;
@@ -101,7 +93,6 @@ function parseAppointmentFromTitle(title) {
 
   if (!date) return null;
 
-  // 3) Uhrzeit, z.B. "15 Uhr", "15:30 Uhr", "8:00 Uhr"
   const timeMatch = lower.match(/(\d{1,2})\s*[:\.]?\s*(\d{2})?\s*uhr/);
   let hours = 10;
   let minutes = 0;
@@ -131,7 +122,6 @@ function extractUpcomingAppointments(board) {
   const columns = board.columns;
   const tasks = board.tasks;
 
-  // Spalte mit "termin" im Titel finden
   const terminsColumn = Object.values(columns).find(
     (col) =>
       typeof col?.title === "string" &&
@@ -162,7 +152,6 @@ function extractUpcomingAppointments(board) {
     }
   });
 
-  // nach Datum sortieren
   appointments.sort((a, b) => a.date.getTime() - b.date.getTime());
   return appointments;
 }
@@ -174,7 +163,7 @@ function extractUpcomingAppointments(board) {
 const DashboardContent = ({
   user,
   unreadCount,
-  soldScheins, // enthält jetzt ALLE Scheine fürs Dashboard (nicht nur "sold")
+  soldScheins,
   onDismissSchein,
 }) => {
   const pathname = usePathname();
@@ -182,6 +171,12 @@ const DashboardContent = ({
   const [visibleScheins, setVisibleScheins] = useState(soldScheins || []);
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
+
+  // NEW: Task modal states
+  const [showTasksModal, setShowTasksModal] = useState(false);
+  const [selectedScheinTasks, setSelectedScheinTasks] = useState(null);
+  const [taskCheckboxes, setTaskCheckboxes] = useState({});
+  const [savingTasks, setSavingTasks] = useState(false);
 
   // Initialize dark mode
   useEffect(() => {
@@ -235,6 +230,100 @@ const DashboardContent = ({
       document.documentElement.classList.remove("dark");
       localStorage.setItem("theme", "light");
     }
+  };
+
+  // NEW: Open tasks modal
+  const openTasksModal = (schein) => {
+    setSelectedScheinTasks(schein);
+
+    // Initialize checkboxes based on completedTasks
+    const initialCheckboxes = {};
+    if (Array.isArray(schein.notes)) {
+      schein.notes.forEach((note, index) => {
+        // Check if this task is in completedTasks array
+        const isCompleted = schein.completedTasks?.includes(note) || false;
+        initialCheckboxes[index] = isCompleted;
+      });
+    }
+    setTaskCheckboxes(initialCheckboxes);
+    setShowTasksModal(true);
+  };
+
+  // NEW: Handle checkbox change
+  const handleTaskCheckboxChange = (index) => {
+    setTaskCheckboxes((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
+
+  // NEW: Save completed tasks
+  const handleSaveTasks = async () => {
+    if (!selectedScheinTasks?._id) return;
+
+    setSavingTasks(true);
+    try {
+      // Get all completed tasks (checked checkboxes)
+      const completedTasks = [];
+      if (Array.isArray(selectedScheinTasks.notes)) {
+        selectedScheinTasks.notes.forEach((note, index) => {
+          if (taskCheckboxes[index] === true) {
+            completedTasks.push(note);
+          }
+        });
+      }
+
+      // Update the schein with completed tasks
+      const res = await fetch("/api/carschein", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedScheinTasks._id,
+          completedTasks: completedTasks,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to save tasks");
+
+      // Update local state
+      const updatedSchein = await res.json();
+
+      // Update in visibleScheins
+      setVisibleScheins((prev) =>
+        prev.map((s) =>
+          s._id === updatedSchein._id
+            ? { ...s, completedTasks: updatedSchein.completedTasks }
+            : s
+        )
+      );
+
+      // Update parent if needed
+      if (onDismissSchein) {
+        // Notify parent of update (you might want to add a new callback for this)
+      }
+
+      setShowTasksModal(false);
+
+      // Show success message
+      const completedCount = completedTasks.length;
+      const totalCount = selectedScheinTasks.notes?.length || 0;
+
+      // You could add a toast here
+      console.log(`${completedCount}/${totalCount} Aufgaben gespeichert`);
+    } catch (err) {
+      console.error("Fehler beim Speichern der Aufgaben:", err);
+      alert("Fehler beim Speichern der Aufgaben");
+    } finally {
+      setSavingTasks(false);
+    }
+  };
+
+  // NEW: Get active (incomplete) tasks count
+  const getActiveTasksCount = (schein) => {
+    if (!Array.isArray(schein.notes)) return 0;
+
+    const completedTasks = schein.completedTasks || [];
+    return schein.notes.filter((note) => !completedTasks.includes(note)).length;
   };
 
   const adminOnlyRoutes = [
@@ -308,19 +397,6 @@ const DashboardContent = ({
       label: "Teile-Reklamation",
       badge: null,
     },
-    /* {
-      href: "/PersonalData",
-      icon: <FiUsers className="text-cyan-400" />,
-      label: "Kontakte",
-      badge: null,
-    }, */
-
-    /*  {
-      href: "/excel",
-      icon: <FiPieChart className="text-emerald-400" />,
-      label: "Buchhaltung",
-      badge: null,
-    },*/
     {
       href: "/Reg",
       icon: <FiUserPlus className="text-rose-400" />,
@@ -519,7 +595,6 @@ const DashboardContent = ({
   };
 
   const handleDismissSchein = async (id) => {
-    // lokal aus Dashboard entfernen
     setVisibleScheins((prev) => prev.filter((s) => s._id !== id));
 
     try {
@@ -756,19 +831,18 @@ const DashboardContent = ({
                           darkMode ? "text-gray-400" : "text-gray-600"
                         }`}
                       >
-                        {Array.isArray(schein.notes) ? schein.notes.length : 0}{" "}
-                        Aufgaben
+                        {getActiveTasksCount(schein)} aktive Aufgaben
                       </span>
-                      <Link
-                        href="/Auto-scheins"
-                        className={`text-[12px] sm:text-xs font-medium hover:text-slate-300 ${
+                      <button
+                        onClick={() => openTasksModal(schein)}
+                        className={`text-[12px] sm:text-xs font-medium hover:text-slate-300 transition-colors ${
                           darkMode
-                            ? "text-slate-400"
+                            ? "text-slate-400 hover:text-slate-300"
                             : "text-slate-600 hover:text-slate-700"
                         }`}
                       >
-                        Details
-                      </Link>
+                        Einzelheiten
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -874,6 +948,174 @@ const DashboardContent = ({
           </main>
         </div>
       </div>
+
+      {/* Tasks Modal */}
+      {showTasksModal && selectedScheinTasks && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowTasksModal(false)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className={`w-full max-w-lg rounded-xl shadow-2xl ${
+                darkMode
+                  ? "bg-gray-800 border-gray-700"
+                  : "bg-white border-gray-200"
+              } border`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div
+                className={`flex items-center justify-between border-b px-5 py-4 ${
+                  darkMode ? "border-gray-700" : "border-gray-200"
+                }`}
+              >
+                <div>
+                  <h3
+                    className={`text-base font-semibold ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    {selectedScheinTasks.carName || "Unbekanntes Fahrzeug"}
+                  </h3>
+                  <p
+                    className={`text-xs mt-0.5 ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    Aufgaben verwalten
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowTasksModal(false)}
+                  className={`p-2 rounded-full ${
+                    darkMode
+                      ? "text-gray-400 hover:bg-gray-700 hover:text-gray-300"
+                      : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                  }`}
+                >
+                  <FiX size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="px-5 py-4 max-h-[65vh] overflow-y-auto">
+                {Array.isArray(selectedScheinTasks.notes) &&
+                selectedScheinTasks.notes.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedScheinTasks.notes.map((note, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-start gap-3 p-3 rounded-lg ${
+                          darkMode ? "hover:bg-gray-700/50" : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <button
+                          onClick={() => handleTaskCheckboxChange(index)}
+                          className={`mt-0.5 flex-shrink-0 rounded ${
+                            taskCheckboxes[index]
+                              ? "text-blue-600"
+                              : darkMode
+                              ? "text-gray-500"
+                              : "text-gray-400"
+                          }`}
+                        >
+                          {taskCheckboxes[index] ? (
+                            <FiCheckSquare size={20} />
+                          ) : (
+                            <FiSquare size={20} />
+                          )}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-sm leading-relaxed ${
+                              taskCheckboxes[index]
+                                ? darkMode
+                                  ? "text-gray-400 line-through"
+                                  : "text-gray-900 line-through"
+                                : darkMode
+                                ? "text-gray-200"
+                                : "text-gray-900"
+                            }`}
+                          >
+                            {note}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-10 text-center">
+                    <div
+                      className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${
+                        darkMode ? "bg-gray-700" : "bg-gray-100"
+                      }`}
+                    >
+                      <FiFileText
+                        className={`h-6 w-6 ${
+                          darkMode ? "text-gray-400" : "text-gray-400"
+                        }`}
+                      />
+                    </div>
+                    <p
+                      className={`text-sm ${
+                        darkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
+                      Keine Aufgaben für dieses Fahrzeug vorhanden.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div
+                className={`flex items-center justify-between border-t px-5 py-4 ${
+                  darkMode ? "border-gray-700" : "border-gray-200"
+                }`}
+              >
+                <div>
+                  <p
+                    className={`text-xs ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    {Object.values(taskCheckboxes).filter(Boolean).length} von{" "}
+                    {selectedScheinTasks.notes?.length || 0} Aufgaben erledigt
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowTasksModal(false)}
+                    disabled={savingTasks}
+                    className={`px-4 py-2 text-sm rounded-md border ${
+                      darkMode
+                        ? "border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600"
+                        : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+                    } ${savingTasks ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    onClick={handleSaveTasks}
+                    disabled={savingTasks}
+                    className={`px-4 py-2 text-sm rounded-md ${
+                      savingTasks
+                        ? "bg-gray-400 text-white cursor-not-allowed"
+                        : darkMode
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`}
+                  >
+                    {savingTasks ? "Speichern..." : "Speichern"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

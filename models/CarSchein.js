@@ -8,17 +8,18 @@ const CarScheinSchema = new mongoose.Schema(
     imageUrl: { type: String },
     publicId: { type: String },
     notes: { type: [String], default: [] },
+    completedTasks: { type: [String], default: [] }, // NEW: Track completed tasks
     owner: { type: String, default: "" },
 
     // Schlüssel-Felder
-    keyNumber: { type: String, default: "" }, // z.B. "99"
-    keyCount: { type: Number, default: 2 }, // 1 oder 2
-    keyColor: { type: String, default: "#000000" }, // Farbcodierung
-    keySold: { type: Boolean, default: false }, // Fahrzeug verkauft?
-    keyNote: { type: String, default: "" }, // Notiz zum Schlüssel
+    keyNumber: { type: String, default: "" },
+    keyCount: { type: Number, default: 2 },
+    keyColor: { type: String, default: "#000000" },
+    keySold: { type: Boolean, default: false },
+    keyNote: { type: String, default: "" },
 
     // Tankstatus
-    fuelNeeded: { type: Boolean, default: false }, // Tank leer / muss aufgefüllt werden?
+    fuelNeeded: { type: Boolean, default: false },
 
     // 🔹 Nur für Dashboard (ob Karte ausgeblendet ist)
     dashboardHidden: { type: Boolean, default: false },
