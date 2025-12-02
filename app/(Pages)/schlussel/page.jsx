@@ -79,7 +79,7 @@ export default function KeysPage() {
   const tableRef = useRef(null);
   const brandsRef = useRef(null);
   const idleTimerRef = useRef(null);
-  const previewRef = useRef(null); // 👈 für Scroll zur Vorschau
+  const previewRef = useRef(null);
 
   // ---------- Dark mode initialisieren ----------
   useEffect(() => {
@@ -166,7 +166,11 @@ export default function KeysPage() {
           throw new Error("Fehler beim Laden der Fahrzeugdaten");
         }
 
-        setScheins(Array.isArray(scheinData.docs) ? scheinData.docs : []);
+        const loadedScheins = Array.isArray(scheinData.docs)
+          ? scheinData.docs
+          : [];
+
+        setScheins(loadedScheins);
         setCarList(carsData);
       } catch (error) {
         console.error("Fehler beim Laden:", error);
@@ -244,15 +248,23 @@ export default function KeysPage() {
     [scheins, filterBrand, searchTerm, showSoldOnly]
   );
 
-  // Wenn der ausgewählte Schein weggefiltert wird → Auswahl zurücksetzen
+  // ---------- Auswahl immer konsistent halten ----------
   useEffect(() => {
+    if (isLoading) return;
+
+    if (filteredScheins.length === 0) {
+      setSelectedSchein(null);
+      return;
+    }
+
+    // falls nichts gewählt ist oder die Auswahl nicht mehr in der Liste ist → ersten nehmen
     if (
-      selectedSchein &&
+      !selectedSchein ||
       !filteredScheins.some((s) => s._id === selectedSchein._id)
     ) {
-      setSelectedSchein(null);
+      setSelectedSchein(filteredScheins[0]);
     }
-  }, [filteredScheins, selectedSchein]);
+  }, [filteredScheins, isLoading, selectedSchein]);
 
   // Helper: FIN normalisieren (nur Buchstaben/Zahlen, lowercase)
   const normalizeFin = (val) =>
@@ -266,11 +278,8 @@ export default function KeysPage() {
     if (!selectedSchein || carList.length === 0) return null;
 
     const fin = normalizeFin(selectedSchein.finNumber);
-
-    // keine FIN → kein Bild
     if (!fin) return null;
 
-    // Suche nur über FIN/VIN
     const carByFin = carList.find((c) => {
       const carFin = normalizeFin(c.finNumber || c.vin || c.vinNumber);
       return carFin && carFin === fin;
@@ -312,8 +321,6 @@ export default function KeysPage() {
       ? "bg-gradient-to-r from-slate-700 to-slate-700/80 border-slate-600"
       : "bg-gradient-to-r from-slate-50 to-slate-100/80 border-slate-200";
 
-    if (!selectedSchein) return null;
-
     return (
       <aside
         ref={previewRef}
@@ -334,7 +341,10 @@ export default function KeysPage() {
           <p
             className={`mt-0.5 text-[11px] transition-colors duration-300 ${textMuted}`}
           >
-            {selectedSchein?.carName || "Ausgewähltes Fahrzeug"}
+            {selectedSchein?.carName ||
+              (filteredScheins.length === 0
+                ? "Keine Fahrzeuge vorhanden"
+                : "Bitte ein Fahrzeug in der Tabelle auswählen")}
           </p>
         </div>
 
@@ -351,7 +361,7 @@ export default function KeysPage() {
                 : "border-blue-200 from-blue-50/50 to-blue-100/30"
             }`}
           >
-            {/* VERKAUFT ribbon (für verkaufte Fahrzeuge) */}
+            {/* VERKAUFT ribbon (deine ursprüngliche Version) */}
             {isSold && (
               <div className="absolute top-0 right-0 z-30 animate-fade-in">
                 <div className="relative">
@@ -362,107 +372,65 @@ export default function KeysPage() {
               </div>
             )}
 
-            {/* Kleines Status-Badge NUR wenn nicht verkauft & kein Bild */}
-            {!isSold && !hasImage && (
-              <div
-                className={`absolute top-3 right-3 z-10 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur-sm ${
-                  darkMode
-                    ? "bg-blue-600/90 text-white"
-                    : "bg-blue-500/90 text-white"
-                }`}
-              >
-                <span className="flex items-center gap-1">
-                  <MdInventory className="w-3 h-3" />
-                  Verfügbar
-                </span>
-              </div>
-            )}
-
             <div className="relative aspect-[4/3] w-full">
               {hasImage ? (
-                <>
-                  <Image
-                    src={previewImageSrc}
-                    alt={
-                      matchedCar
-                        ? `${matchedCar.make || ""} ${matchedCar.model || ""}`
-                        : selectedSchein?.carName || "Fahrzeugbild"
-                    }
-                    fill
-                    className={`object-cover transition-all duration-500 ${
-                      isSold ? "grayscale-[40%] brightness-95" : ""
-                    }`}
-                    unoptimized
-                  />
-                </>
+                <Image
+                  src={previewImageSrc}
+                  alt={
+                    matchedCar
+                      ? `${matchedCar.make || ""} ${matchedCar.model || ""}`
+                      : selectedSchein?.carName || "Fahrzeugbild"
+                  }
+                  fill
+                  className="object-cover transition-all duration-500"
+                  unoptimized
+                />
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center">
-                  {/* Illustration */}
                   <div
                     className={`relative mb-4 rounded-2xl p-6 ${
-                      isSold
-                        ? darkMode
-                          ? "bg-gradient-to-br from-blue-900/30 to-blue-800/20"
-                          : "bg-gradient-to-br from-rose-100/80 to-rose-200/50"
-                        : darkMode
+                      darkMode
                         ? "bg-gradient-to-br from-blue-900/30 to-blue-800/20"
                         : "bg-gradient-to-br from-blue-100/80 to-blue-200/50"
                     }`}
                   >
-                    {isSold ? (
-                      <div className="flex flex-col items-center">
-                        <FiCamera
-                          className={`w-12 h-12 mb-2 ${
-                            darkMode ? "text-rose-400" : "text-rose-400"
-                          }`}
-                        />
-                        <div
-                          className={`w-16 h-1 rounded-full mt-2 ${
-                            darkMode ? "bg-rose-500" : "bg-rose-300"
-                          }`}
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center">
-                        <FiCamera
-                          className={`w-12 h-12 mb-2 ${
-                            darkMode ? "text-blue-400" : "text-blue-400"
-                          }`}
-                        />
-                        <div
-                          className={`w-16 h-1 rounded-full mt-2 ${
-                            darkMode ? "bg-blue-500" : "bg-blue-300"
-                          }`}
-                        />
-                      </div>
-                    )}
+                    <div className="flex flex-col items-center">
+                      <FiCamera
+                        className={`w-12 h-12 mb-2 ${
+                          darkMode ? "text-blue-400" : "text-blue-500"
+                        }`}
+                      />
+                      <div
+                        className={`w-16 h-1 rounded-full mt-2 ${
+                          darkMode ? "bg-blue-500" : "bg-blue-300"
+                        }`}
+                      />
+                    </div>
                   </div>
 
-                  {/* Text Content */}
                   <h4
                     className={`text-sm font-semibold mb-2 ${
-                      isSold
-                        ? darkMode
-                          ? "text-rose-300"
-                          : "text-rose-700"
-                        : darkMode
-                        ? "text-blue-300"
-                        : "text-blue-700"
+                      darkMode ? "text-blue-300" : "text-blue-700"
                     }`}
                   >
-                    {isSold ? "Fahrzeug verkauft" : "Kein Bild verfügbar"}
+                    {selectedSchein
+                      ? "Kein Bild verfügbar"
+                      : filteredScheins.length === 0
+                      ? "Keine Fahrzeugdaten"
+                      : "Noch kein Fahrzeug ausgewählt"}
                   </h4>
                   <p
                     className={`text-xs max-w-xs leading-relaxed ${
                       darkMode ? "text-slate-400" : "text-slate-600"
                     }`}
                   >
-                    {isSold
-                      ? "Dieses Fahrzeug wurde bereits verkauft und ist nicht mehr verfügbar."
-                      : "Für dieses Fahrzeug ist aktuell kein Bild in der Datenbank hinterlegt."}
+                    {selectedSchein
+                      ? "Für dieses Fahrzeug ist aktuell kein Bild in der Datenbank hinterlegt."
+                      : filteredScheins.length === 0
+                      ? "Sobald Fahrzeugschlüssel angelegt sind und Fahrzeugdaten vorhanden sind, erscheinen sie hier."
+                      : "Wählen Sie links in der Tabelle ein Fahrzeug aus, um Details zu sehen."}
                   </p>
 
-                  {/* Additional Info */}
                   {selectedSchein?.keyNote && (
                     <div
                       className={`mt-4 p-3 rounded-lg border ${
@@ -492,7 +460,7 @@ export default function KeysPage() {
             </div>
 
             {/* Vehicle Info Overlay für Bilder */}
-            {hasImage && (
+            {hasImage && selectedSchein && (
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
                 <div className="text-white">
                   <h4 className="text-sm font-semibold truncate">
@@ -508,53 +476,55 @@ export default function KeysPage() {
             )}
           </div>
 
-          {/* Key Information */}
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <div
-              className={`rounded-lg p-3 border transition-colors duration-300 ${
-                darkMode
-                  ? "bg-slate-700/80 border-slate-600"
-                  : "bg-slate-50/80 border-slate-200/60"
-              }`}
-            >
-              <p
-                className={`text-[10px] font-medium uppercase tracking-wide transition-colors duration-300 ${
-                  darkMode ? "text-slate-400" : "text-slate-500"
+          {/* Key Information – nur wenn ein Schein ausgewählt ist */}
+          {selectedSchein && (
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div
+                className={`rounded-lg p-3 border transition-colors duration-300 ${
+                  darkMode
+                    ? "bg-slate-700/80 border-slate-600"
+                    : "bg-slate-50/80 border-slate-200/60"
                 }`}
               >
-                Schlüssel Nr.
-              </p>
-              <p
-                className={`text-sm font-semibold font-mono mt-1 transition-colors duration-300 ${
-                  darkMode ? "text-white" : "text-slate-900"
+                <p
+                  className={`text-[10px] font-medium uppercase tracking-wide transition-colors duration-300 ${
+                    darkMode ? "text-slate-400" : "text-slate-500"
+                  }`}
+                >
+                  Schlüssel Nr.
+                </p>
+                <p
+                  className={`text-sm font-semibold font-mono mt-1 transition-colors duration-300 ${
+                    darkMode ? "text-white" : "text-slate-900"
+                  }`}
+                >
+                  {selectedSchein?.keyNumber || "–"}
+                </p>
+              </div>
+              <div
+                className={`rounded-lg p-3 border transition-colors duration-300 ${
+                  darkMode
+                    ? "bg-slate-700/80 border-slate-600"
+                    : "bg-slate-50/80 border-slate-200/60"
                 }`}
               >
-                {selectedSchein?.keyNumber || "–"}
-              </p>
+                <p
+                  className={`text-[10px] font-medium uppercase tracking-wide transition-colors duration-300 ${
+                    darkMode ? "text-slate-400" : "text-slate-500"
+                  }`}
+                >
+                  Anzahl
+                </p>
+                <p
+                  className={`text-sm font-semibold mt-1 transition-colors duration-300 ${
+                    darkMode ? "text-white" : "text-slate-900"
+                  }`}
+                >
+                  {selectedSchein?.keyCount ?? 2}
+                </p>
+              </div>
             </div>
-            <div
-              className={`rounded-lg p-3 border transition-colors duration-300 ${
-                darkMode
-                  ? "bg-slate-700/80 border-slate-600"
-                  : "bg-slate-50/80 border-slate-200/60"
-              }`}
-            >
-              <p
-                className={`text-[10px] font-medium uppercase tracking-wide transition-colors duration-300 ${
-                  darkMode ? "text-slate-400" : "text-slate-500"
-                }`}
-              >
-                Anzahl
-              </p>
-              <p
-                className={`text-sm font-semibold mt-1 transition-colors duration-300 ${
-                  darkMode ? "text-white" : "text-slate-900"
-                }`}
-              >
-                {selectedSchein?.keyCount ?? 2}
-              </p>
-            </div>
-          </div>
+          )}
         </div>
       </aside>
     );
@@ -563,7 +533,7 @@ export default function KeysPage() {
   // ---------- WaitingLounge ----------
   if (isIdle) return <WaitingLounge />;
 
-  // ---------- Table-Komponente (wird 1x definiert, 2x benutzt) ----------
+  // ---------- Table-Komponente ----------
   const tableSection = (
     <section
       ref={tableRef}
@@ -588,7 +558,7 @@ export default function KeysPage() {
               Fahrzeugschlüssel
             </h3>
             <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors duration-300 ${
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors	duration-300 ${
                 darkMode
                   ? "bg-blue-900/50 text-blue-200"
                   : "bg-blue-100 text-blue-700"
@@ -598,7 +568,7 @@ export default function KeysPage() {
             </span>
             {showSoldOnly && (
               <span
-                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors duration-300 ${
+                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors	duration-300 ${
                   darkMode
                     ? "border-amber-700 bg-amber-900/50 text-amber-200"
                     : "border-amber-200 bg-amber-50 text-amber-700"
@@ -608,8 +578,8 @@ export default function KeysPage() {
               </span>
             )}
 
-            {/* Optional Dark Mode Toggle */}
-            {/*
+            {/* Optional Dark Mode Toggle (wenn du willst, aktivieren) */}
+            {/* 
             <button
               onClick={toggleDarkMode}
               className={`p-1.5 rounded-lg transition-colors duration-300 ${
@@ -635,7 +605,7 @@ export default function KeysPage() {
             {/* Search */}
             <div className="relative w-52 sm:w-64">
               <FiSearch
-                className={`pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors duration-300 ${
+                className={`pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors	duration-300 ${
                   darkMode ? "text-slate-400" : "text-slate-400"
                 }`}
               />
@@ -649,7 +619,7 @@ export default function KeysPage() {
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm("")}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 transition-colors duration-300 ${
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 transition-colors	duration-300 ${
                     darkMode
                       ? "text-slate-400 hover:text-slate-300"
                       : "text-slate-400 hover:text-slate-600"
@@ -699,7 +669,7 @@ export default function KeysPage() {
       <div className="w-full overflow-x-auto">
         <table className="min-w-full text-xs sm:text-sm">
           <thead
-            className={`border-b transition-colors duration-300 ${
+            className={`border-b transition-colors	duration-300 ${
               darkMode
                 ? "border-slate-700 bg-slate-700/80"
                 : "border-slate-200 bg-slate-100/80"
@@ -707,17 +677,17 @@ export default function KeysPage() {
           >
             <tr>
               <th
-                className={`px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide sm:px-4 sm:py-3 sm:text-xs transition-colors duration-300 ${textMuted}`}
+                className={`px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide sm:px-4 sm:py-3 sm:text-xs transition-colors	duration-300 ${textMuted}`}
               >
                 Fahrzeug
               </th>
               <th
-                className={`w-24 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide sm:px-4 sm:py-3 sm:text-xs transition-colors duration-300 ${textMuted}`}
+                className={`w-24 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide sm:px-4 sm:py-3 sm:text-xs transition-colors	duration-300 ${textMuted}`}
               >
                 Schl.Nr.
               </th>
               <th
-                className={`w-20 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide sm:px-4 sm:py-3 sm:text-xs transition-colors duration-300 ${textMuted}`}
+                className={`w-20 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide sm:px-4 sm:py-3 sm:text-xs transition-colors	duration-300 ${textMuted}`}
               >
                 Anzahl
               </th>
@@ -730,7 +700,7 @@ export default function KeysPage() {
           </thead>
 
           <tbody
-            className={`divide-y transition-colors duration-300 ${
+            className={`divide-y transition-colors	duration-300 ${
               darkMode
                 ? "divide-slate-700 bg-slate-800"
                 : "divide-slate-200 bg-white"
@@ -742,18 +712,18 @@ export default function KeysPage() {
                   <td className="px-3 py-3 sm:px-4">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`h-6 w-6 rounded-full transition-colors duration-300 ${
+                        className={`h-6 w-6 rounded-full transition-colors	duration-300 ${
                           darkMode ? "bg-slate-700" : "bg-slate-200"
                         }`}
                       />
                       <div className="space-y-1">
                         <div
-                          className={`h-3 w-28 rounded sm:h-4 sm:w-40 transition-colors duration-300 ${
+                          className={`h-3 w-28 rounded sm:h-4 sm:w-40 transition-colors	duration-300 ${
                             darkMode ? "bg-slate-700" : "bg-slate-200"
                           }`}
                         />
                         <div
-                          className={`h-2.5 w-20 rounded sm:w-28 transition-colors duration-300 ${
+                          className={`h-2.5 w-20 rounded sm:w-28 transition-colors	duration-300 ${
                             darkMode ? "bg-slate-700" : "bg-slate-200"
                           }`}
                         />
@@ -762,14 +732,14 @@ export default function KeysPage() {
                   </td>
                   <td className="px-3 py-3 text-center sm:px-4">
                     <div
-                      className={`mx-auto h-5 w-14 rounded sm:h-6 sm:w-16 transition-colors duration-300 ${
+                      className={`mx-auto h-5 w-14 rounded sm:h-6 sm:w-16 transition-colors	duration-300 ${
                         darkMode ? "bg-slate-700" : "bg-slate-200"
                       }`}
                     />
                   </td>
                   <td className="px-3 py-3 text-center sm:px-4">
                     <div
-                      className={`mx-auto h-4 w-8 rounded transition-colors duration-300 ${
+                      className={`mx-auto h-4 w-8 rounded transition-colors	duration-300 ${
                         darkMode ? "bg-slate-700" : "bg-slate-200"
                       }`}
                     />
@@ -789,7 +759,6 @@ export default function KeysPage() {
                   key={car._id}
                   onClick={() => {
                     setSelectedSchein(car);
-                    // Scroll zur Vorschau – auch auf Mobile
                     setTimeout(() => {
                       if (previewRef.current) {
                         previewRef.current.scrollIntoView({
@@ -799,7 +768,7 @@ export default function KeysPage() {
                       }
                     }, 80);
                   }}
-                  className={`cursor-pointer transition-all duration-200 ${
+                  className={`cursor-pointer transition-all	duration-200 ${
                     selectedSchein?._id === car._id
                       ? darkMode
                         ? "bg-sky-900/30 border-l-4 border-l-sky-500 shadow-sm"
@@ -832,7 +801,7 @@ export default function KeysPage() {
                         </div>
                         {car.keyNote && (
                           <div
-                            className={`mt-0.5 truncate text-[11px] sm:text-xs transition-colors duration-300 ${
+                            className={`mt-0.5 truncate text-[11px] sm:text-xs transition-colors	duration-300 ${
                               darkMode ? "text-slate-400" : "text-slate-500"
                             }`}
                             title={car.keyNote}
@@ -847,7 +816,7 @@ export default function KeysPage() {
                   {/* Schlüsselnummer */}
                   <td className="px-3 py-2.5 text-center sm:px-4 sm:py-3">
                     <span
-                      className={`inline-flex min-w-[3.5rem] items-center justify-center rounded-md border px-2 py-1 text-xs font-semibold font-mono sm:min-w-[4rem] sm:px-2.5 sm:py-1.5 sm:text-sm transition-colors duration-300 ${
+                      className={`inline-flex min-w-[3.5rem] items-center justify-center rounded-md border px-2 py-1 text-xs font-semibold font-mono sm:min-w-[4rem] sm:px-2.5 sm:py-1.5 sm:text-sm transition-colors	duration-300 ${
                         darkMode
                           ? "border-sky-800 bg-sky-900/50 text-slate-200"
                           : "border-sky-100 bg-sky-50 text-slate-800"
@@ -860,7 +829,7 @@ export default function KeysPage() {
                   {/* Anzahl */}
                   <td className="px-3 py-2.5 text-center sm:px-4 sm:py-3">
                     <span
-                      className={`text-xs font-semibold sm:text-sm transition-colors duration-300 ${textPrimary}`}
+                      className={`text-xs font-semibold sm:text-sm transition-colors	duration-300 ${textPrimary}`}
                     >
                       {car.keyCount ?? 2}
                     </span>
@@ -869,7 +838,7 @@ export default function KeysPage() {
                   {/* Status */}
                   <td className="hidden px-3 py-2.5 text-center sm:table-cell sm:px-4 sm:py-3">
                     <span
-                      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold sm:px-3 sm:py-1.5 sm:text-xs transition-colors duration-300 ${
+                      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold sm:px-3 sm:py-1.5 sm:text-xs transition-colors	duration-300 ${
                         car.keySold
                           ? darkMode
                             ? "border-rose-700 bg-rose-900/50 text-rose-300"
@@ -890,7 +859,7 @@ export default function KeysPage() {
                   <div className="flex flex-col items-center justify-center">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className={`mb-3 h-10 w-10 sm:h-12 sm:w-12 transition-colors duration-300 ${
+                      className={`mb-3 h-10 w-10 sm:h-12 sm:w-12 transition-colors	duration-300 ${
                         darkMode ? "text-slate-600" : "text-slate-400"
                       }`}
                       fill="none"
@@ -905,14 +874,14 @@ export default function KeysPage() {
                       />
                     </svg>
                     <p
-                      className={`mb-1 text-sm font-medium transition-colors duration-300 ${
+                      className={`mb-1 text-sm font-medium transition-colors	duration-300 ${
                         darkMode ? "text-slate-400" : "text-slate-500"
                       }`}
                     >
                       Keine Fahrzeuge gefunden
                     </p>
                     <p
-                      className={`max-w-xs text-[11px] sm:text-xs transition-colors duration-300 ${
+                      className={`max-w-xs text-[11px] sm:text-xs transition-colors	duration-300 ${
                         darkMode ? "text-slate-500" : "text-slate-400"
                       }`}
                     >
@@ -932,14 +901,14 @@ export default function KeysPage() {
 
   return (
     <div
-      className={`min-h-screen px-2 py-4 sm:px-3 md:px-4 transition-colors duration-300 ${bgClass}`}
+      className={`min-h-screen px-2 py-4 sm:px-3 md:px-4 transition-colors	duration-300 ${bgClass}`}
     >
       <div className="mx-auto mt-4 w-full max-w-[1200px] lg:max-w-[1400px]">
         {/* Marken-Filter oben */}
         <section ref={brandsRef} className="mb-5 sm:mb-6">
           <div className="mb-3 flex items-center justify-between">
             <h3
-              className={`text-xs font-semibold uppercase tracking-wide transition-colors duration-300 ${
+              className={`text-xs font-semibold uppercase tracking-wide transition-colors	duration-300 ${
                 darkMode ? "text-slate-300" : "text-slate-700"
               }`}
             >
@@ -952,7 +921,7 @@ export default function KeysPage() {
               <button
                 key={brand.name}
                 onClick={() => handleFilterBrand(brand.name)}
-                className={`flex flex-col items-center rounded-xl border p-2 text-center text-xs font-medium transition-all duration-150 ${
+                className={`flex flex-col items-center rounded-xl border p-2 text-center text-xs font-medium transition-all	duration-150 ${
                   filterBrand === brand.name
                     ? darkMode
                       ? "border-sky-500 bg-sky-900/50 shadow-sm shadow-sky-900/50"
@@ -973,7 +942,7 @@ export default function KeysPage() {
                   />
                 </div>
                 <span
-                  className={`w-full truncate text-[11px] sm:text-xs transition-colors duration-300 ${
+                  className={`w-full truncate text-[11px] sm:text-xs transition-colors	duration-300 ${
                     darkMode ? "text-slate-300" : "text-slate-700"
                   }`}
                 >
@@ -984,21 +953,14 @@ export default function KeysPage() {
           </div>
         </section>
 
-        {/* Layout:
-            - kein selectedSchein → nur Tabelle (volle Breite)
-            - selectedSchein → Tabelle + Vorschau (stacked on mobile, side-by-side on lg)
-        */}
-        {!selectedSchein ? (
-          tableSection
-        ) : (
-          <div className="grid gap-4 items-start lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1.3fr)]">
-            {tableSection}
-            <VehiclePreview />
-          </div>
-        )}
+        {/* Immer: Tabelle links, Vorschau rechts (auf Mobile untereinander) */}
+        <div className="grid gap-4 items-start lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1.3fr)]">
+          {tableSection}
+          <VehiclePreview />
+        </div>
 
         <p
-          className={`mt-4 text-center text-[11px] sm:text-xs transition-colors duration-300 ${
+          className={`mt-4 text-center text-[11px] sm:text-xs transition-colors	duration-300 ${
             darkMode ? "text-slate-500" : "text-slate-400"
           }`}
         >
