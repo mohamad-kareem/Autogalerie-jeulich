@@ -17,19 +17,19 @@ import WaitingLounge from "@/app/(components)/helpers/WaitingLounge";
 const carBrands = [
   { name: "BMW", logo: "/logos/bmw.png" },
   { name: "Citroen", logo: "/logos/citroen1.png" },
-  { name: "Volkswagen", logo: "/logos/Volkswagen2.jpg" },
-  { name: "Fiat", logo: "/logos/fiat.jpg" },
+  { name: "Volkswagen", logo: "/logos/vw2.png" },
+  { name: "Fiat", logo: "/logos/fiattest.png" },
   { name: "Ford", logo: "/logos/ford.png" },
   { name: "Opel", logo: "/logos/opel44.png" },
   { name: "Dacia", logo: "/logos/Dacia1.png" },
   { name: "Honda", logo: "/logos/honda1.png" },
   { name: "Mercedes", logo: "/logos/Mercedes2.png" },
-  { name: "Suzuki", logo: "/logos/suzuki.jpg" },
+  { name: "Suzuki", logo: "/logos/suzuki.png" },
   { name: "Renault", logo: "/logos/Renault.png" },
-  { name: "Skoda", logo: "/logos/scoda1.jpg" },
-  { name: "Hyundai", logo: "/logos/hyundia.jpg" },
+  { name: "Skoda", logo: "/logos/skodaa.png" },
+  { name: "Hyundai", logo: "/logos/hyundia.png" },
   { name: "Peugeot", logo: "/logos/peugeot1.png" },
-  { name: "Mazda", logo: "/logos/mazda.png" },
+  { name: "Mazda", logo: "/logos/mazdaa.png" },
   { name: "Nissan", logo: "/logos/nissan.png" },
   { name: "Seat", logo: "/logos/seat1.png" },
   { name: "Kia", logo: "/logos/kia1.png" },
@@ -487,14 +487,14 @@ export default function KeysPage() {
                 }`}
               >
                 <p
-                  className={`text-[10px] font-medium uppercase tracking-wide transition-colors duration-300 ${
+                  className={`text-[12px] font-medium uppercase tracking-wide transition-colors duration-300 ${
                     darkMode ? "text-slate-400" : "text-slate-500"
                   }`}
                 >
                   Schlüssel Nr.
                 </p>
                 <p
-                  className={`text-sm font-semibold font-mono mt-1 transition-colors duration-300 ${
+                  className={`text-lg font-semibold font-mono mt-1 transition-colors duration-300 ${
                     darkMode ? "text-white" : "text-slate-900"
                   }`}
                 >
@@ -509,14 +509,14 @@ export default function KeysPage() {
                 }`}
               >
                 <p
-                  className={`text-[10px] font-medium uppercase tracking-wide transition-colors duration-300 ${
+                  className={`text-[12px] font-medium uppercase tracking-wide transition-colors duration-300 ${
                     darkMode ? "text-slate-400" : "text-slate-500"
                   }`}
                 >
                   Anzahl
                 </p>
                 <p
-                  className={`text-sm font-semibold mt-1 transition-colors duration-300 ${
+                  className={`text-lg font-semibold mt-1 transition-colors duration-300 ${
                     darkMode ? "text-white" : "text-slate-900"
                   }`}
                 >
@@ -838,14 +838,14 @@ export default function KeysPage() {
                   {/* Status */}
                   <td className="hidden px-3 py-2.5 text-center sm:table-cell sm:px-4 sm:py-3">
                     <span
-                      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold sm:px-3 sm:py-1.5 sm:text-xs transition-colors	duration-300 ${
+                      className={`inline-flex items-center rounded-full  px-2 py-1 text-[11px] font-semibold sm:px-2 sm:py-1.5 sm:text-xs transition-colors	duration-300 ${
                         car.keySold
                           ? darkMode
-                            ? "border-rose-700 bg-rose-900/50 text-rose-300"
-                            : "border-rose-200 bg-rose-50 text-rose-700"
+                            ? "  text-rose-300"
+                            : "  text-rose-700"
                           : darkMode
-                          ? "border-emerald-700 bg-emerald-900/50 text-emerald-300"
-                          : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          ? "  text-emerald-500"
+                          : "  text-emerald-900"
                       }`}
                     >
                       {car.keySold ? "Verkauft" : "Verfügbar"}
@@ -903,7 +903,7 @@ export default function KeysPage() {
     <div
       className={`min-h-screen px-2 py-4 sm:px-3 md:px-4 transition-colors	duration-300 ${bgClass}`}
     >
-      <div className="mx-auto mt-4 w-full max-w-[1200px] lg:max-w-[1400px]">
+      <div className="mx-auto mt-5 w-full max-w-[1200px] lg:max-w-[1400px]">
         {/* Marken-Filter oben */}
         <section ref={brandsRef} className="mb-5 sm:mb-6">
           <div className="mb-3 flex items-center justify-between">
@@ -912,11 +912,11 @@ export default function KeysPage() {
                 darkMode ? "text-slate-300" : "text-slate-700"
               }`}
             >
-              Markenfilter
+              Schlüsselverwaltung
             </h3>
           </div>
 
-          <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9">
+          <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-7">
             {carBrands.map((brand) => (
               <button
                 key={brand.name}
@@ -927,11 +927,11 @@ export default function KeysPage() {
                       ? "border-sky-500 bg-sky-900/50 shadow-sm shadow-sky-900/50"
                       : "border-sky-500 bg-sky-50 shadow-sm shadow-sky-100"
                     : darkMode
-                    ? "border-slate-600 bg-slate-800 hover:border-slate-500 hover:shadow-sm"
+                    ? "border-slate-800 bg-slate-800 hover:border-blue-500 hover:shadow-sm"
                     : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
                 }`}
               >
-                <div className="mb-1.5 flex h-12 w-16 items-center justify-center sm:h-14 sm:w-20">
+                <div className="mb-1.5 flex h-12 w-16 items-center justify-center sm:h-17 sm:w-24">
                   <Image
                     src={brand.logo}
                     alt={brand.name}
@@ -954,7 +954,7 @@ export default function KeysPage() {
         </section>
 
         {/* Immer: Tabelle links, Vorschau rechts (auf Mobile untereinander) */}
-        <div className="grid gap-4 items-start lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1.3fr)]">
+        <div className="grid gap-4 items-start lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1.3fr)] pt-8">
           {tableSection}
           <VehiclePreview />
         </div>

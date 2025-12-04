@@ -270,7 +270,7 @@ export default function ScheinForm({
                   className={`mb-1.5 block text-xs sm:text-sm font-medium transition-colors duration-300 ${textSecondary}`}
                 >
                   Schein-Dokument{" "}
-                  {isCreate && <span className="text-red-500">*</span>}
+                  {isCreate && <span className="text-red-500"></span>}
                 </label>
 
                 <div
@@ -338,7 +338,6 @@ export default function ScheinForm({
                             onChange={handleFileChange}
                             ref={fileInputRef}
                             className="sr-only"
-                            required={isCreate && !previewUrl}
                           />
                         </label>
 
