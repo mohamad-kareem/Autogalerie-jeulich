@@ -260,7 +260,7 @@ function FilterSection({
               />
               <span>Besitzer</span>
               <FiChevronDown
-                className={`transition-transform transition-colors duration-300 ${iconColor} ${
+                className={` transition-colors duration-300 ${iconColor} ${
                   showOwnerFilter ? "rotate-180" : ""
                 }`}
               />
