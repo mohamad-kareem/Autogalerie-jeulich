@@ -1,37 +1,97 @@
+// app/(components)/AdminDashboard.jsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { FiXCircle, FiMessageSquare } from "react-icons/fi";
+import { useRouter } from "next/navigation";
+import { FiXCircle, FiMessageSquare, FiSun, FiMoon } from "react-icons/fi";
 import { FaCar } from "react-icons/fa";
+import { motion } from "framer-motion";
+
 import CarsTable from "./CarsTable";
 import SubmissionsTable from "./SubmissionsTable";
-import { motion } from "framer-motion";
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
-  const [viewMode, setViewMode] = useState("submissions"); // 'cars' or 'submissions'
+  const router = useRouter();
+
+  const [viewMode, setViewMode] = useState("submissions"); // "submissions" | "cars"
   const [unreadCount, setUnreadCount] = useState(0);
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Initialize dark mode like on your other pages
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+
+    const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
+    setDarkMode(isDark);
+
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+
+    if (newDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
+
+  const bgClass = darkMode ? "bg-gray-900" : "bg-slate-50";
+  const textPrimary = darkMode ? "text-white" : "text-slate-900";
+  const textSecondary = darkMode ? "text-slate-300" : "text-slate-600";
+  const cardBg = darkMode ? "bg-gray-900/80" : "bg-white";
+  const borderColor = darkMode ? "border-gray-700" : "border-slate-200";
 
   if (status === "loading") {
     return (
-      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-slate-950">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-slate-500"></div>
+      <div
+        className={`flex justify-center items-center h-screen transition-colors duration-300 ${bgClass}`}
+      >
+        <div
+          className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${
+            darkMode ? "border-slate-400" : "border-slate-700"
+          }`}
+        />
       </div>
     );
   }
 
   if (!session?.user) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-slate-950 text-white">
+      <div
+        className={`flex justify-center items-center h-screen transition-colors duration-300 ${bgClass}`}
+      >
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gray-900/70 backdrop-blur-md p-8 rounded-2xl border border-gray-800 shadow-xl max-w-lg text-center"
+          className={`max-w-lg w-full mx-4 rounded-2xl border shadow-xl px-6 py-8 text-center ${
+            darkMode
+              ? "bg-gray-900/90 border-gray-700"
+              : "bg-white border-slate-200"
+          }`}
         >
-          <FiXCircle className="mx-auto text-slate-500 text-5xl mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Zugriff verweigert</h2>
-          <p className="text-gray-400">
+          <FiXCircle
+            className={`mx-auto mb-4 text-5xl ${
+              darkMode ? "text-slate-500" : "text-slate-400"
+            }`}
+          />
+          <h2 className={`text-xl md:text-2xl font-bold mb-2 ${textPrimary}`}>
+            Zugriff verweigert
+          </h2>
+          <p className={`text-sm ${textSecondary}`}>
             Sie sind nicht berechtigt, diese Seite zu sehen. Bitte wenden Sie
             sich an Ihren Administrator.
           </p>
@@ -41,67 +101,91 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-slate-950 text-white relative p-4 md:p-6">
-      {/* Glow Background */}
-      <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-60 h-60 bg-slate-500/10 blur-3xl rounded-full" />
-        <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-purple-500/10 blur-3xl rounded-full" />
-      </div>
-
-      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1600px] mx-auto">
+    <div
+      className={`min-h-screen transition-colors duration-300 ${bgClass} px-2 py-3 sm:px-4 sm:py-4 lg:px-6`}
+    >
+      <div className="w-full max-w-screen-2xl mx-auto">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-3 md:mb-4"
+        <motion.header
+          initial={{ y: -10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="mb-3 sm:mb-4 flex items-center justify-between gap-3"
         >
-          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-3">
-            <FaCar className="text-slate-500" />
-            Posteingang
-          </h1>
-        </motion.div>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1
+                className={`flex items-center gap-2 text-lg sm:text-xl font-bold ${textPrimary}`}
+              >
+                <FaCar
+                  className={darkMode ? "text-slate-400" : "text-slate-500"}
+                />
+                Posteingang
+              </h1>
+            </div>
+          </div>
+        </motion.header>
 
-        {/* Toggle Buttons */}
+        {/* View toggle (Kontaktanfragen / Fahrzeuge) */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex mb-4 bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-lg p-1 max-w-sm"
+          className={`mb-3 sm:mb-4 rounded-lg border px-1 py-1 flex max-w-sm transition-colors duration-300 ${borderColor} ${cardBg}`}
         >
           <button
             onClick={() => setViewMode("submissions")}
-            className={`flex-1 py-1  rounded-md text-sm font-medium transition ${
+            className={`flex-1 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-1.5 ${
               viewMode === "submissions"
-                ? "bg-slate-600 text-white shadow"
-                : "text-gray-300 hover:bg-gray-800"
+                ? darkMode
+                  ? "bg-slate-600 text-white shadow"
+                  : "bg-slate-700 text-white shadow"
+                : darkMode
+                ? "text-slate-300 hover:bg-gray-800"
+                : "text-slate-600 hover:bg-slate-100"
             }`}
           >
-            <FiMessageSquare className="inline mr-2" />
-            Kontaktanfragen
+            <FiMessageSquare className="text-sm" />
+            <span>Kontaktanfragen</span>
             {unreadCount > 0 && (
-              <span className="ml-2 bg-slate-500 text-xs px-2 py-0.5 rounded-full">
+              <span
+                className={`ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                  darkMode
+                    ? "bg-slate-700 text-slate-100"
+                    : "bg-slate-300 text-slate-800"
+                }`}
+              >
                 {unreadCount}
               </span>
             )}
           </button>
+
           <button
             onClick={() => setViewMode("cars")}
-            className={`flex-1 py-1  rounded-md text-sm font-medium transition ${
+            className={`flex-1 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-1.5 ${
               viewMode === "cars"
-                ? "bg-slate-600 text-white shadow"
-                : "text-gray-300 hover:bg-gray-800"
+                ? darkMode
+                  ? "bg-slate-600 text-white shadow"
+                  : "bg-slate-700 text-white shadow"
+                : darkMode
+                ? "text-slate-300 hover:bg-gray-800"
+                : "text-slate-600 hover:bg-slate-100"
             }`}
           >
-            <FaCar className="inline mr-2" />
-            Fahrzeuge
+            <FaCar className="text-sm" />
+            <span>Fahrzeuge</span>
           </button>
         </motion.div>
 
-        {/* Main Content */}
-        {viewMode === "cars" ? (
-          <CarsTable />
-        ) : (
-          <SubmissionsTable setUnreadCount={setUnreadCount} />
-        )}
+        {/* Main content */}
+        <div className="mb-4">
+          {viewMode === "cars" ? (
+            <CarsTable darkMode={darkMode} />
+          ) : (
+            <SubmissionsTable
+              setUnreadCount={setUnreadCount}
+              darkMode={darkMode}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

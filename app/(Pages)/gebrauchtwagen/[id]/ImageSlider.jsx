@@ -2,14 +2,14 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { FiArrowLeft } from "react-icons/fi";
+import { FiArrowLeft, FiMaximize2, FiX } from "react-icons/fi";
 
 const ImageSlider = ({
   images = [],
   car = {},
-  // still allow overrides, but mobile height is more relaxed
   height = "h-64 sm:h-80 lg:h-96",
   width = "w-full",
+  darkMode = false,
 }) => {
   const [activeImage, setActiveImage] = useState(0);
   const [fullscreenImage, setFullscreenImage] = useState(null);
@@ -32,32 +32,32 @@ const ImageSlider = ({
     setter((prev) => (prev === imageUrls.length - 1 ? 0 : prev + 1));
   };
 
+  // Theme styles
+  const borderColor = darkMode ? "border-gray-700" : "border-slate-200";
+  const bgColor = darkMode ? "bg-gray-900/60" : "bg-slate-50";
+  const textColor = darkMode ? "text-gray-100" : "text-slate-900";
+  const textMuted = darkMode ? "text-gray-400" : "text-slate-500";
+  const buttonBg = darkMode ? "bg-gray-800/90" : "bg-white/90";
+  const buttonHover = darkMode ? "hover:bg-gray-700" : "hover:bg-slate-100";
+  const accentColor = darkMode ? "text-blue-400" : "text-blue-600";
+  const accentBorder = darkMode ? "border-blue-500" : "border-blue-500";
+
   return (
     <>
       {/* MAIN VIEWER */}
       <div className="relative w-full">
-        <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/95 shadow-sm shadow-black/40 group">
+        <div
+          className={`relative overflow-hidden rounded-xl ${borderColor} border shadow-sm`}
+        >
           {/* Fullscreen Button */}
           {hasImages && (
             <button
               type="button"
-              className="absolute right-2 top-2 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 bg-slate-900/90 text-slate-100 shadow-md transition-all hover:border-sky-500 hover:bg-slate-900 hover:text-white sm:right-3 sm:top-3"
+              className={`absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border ${borderColor} ${buttonBg} ${textMuted} shadow-md transition-all ${buttonHover} hover:${accentBorder} hover:${accentColor}`}
               onClick={() => setFullscreenImage(activeImage)}
               aria-label="Vollbild"
             >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.7}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5-5-5m5 5v-4m0 4h-4"
-                />
-              </svg>
+              <FiMaximize2 size={14} />
             </button>
           )}
 
@@ -65,20 +65,37 @@ const ImageSlider = ({
           <div
             className={`
               relative ${width} ${height}
-              bg-slate-950
+              ${darkMode ? "bg-gray-900" : "bg-slate-100"}
               transition-opacity duration-300
             `}
           >
-            <Image
-              src={imageUrls[activeImage] || "/default-car.jpg"}
-              alt={altText}
-              fill
-              className="object-contain bg-gradient-to-b from-slate-900 via-slate-950 to-black transition-transform duration-500 ease-out group-hover:scale-[1.02]"
-              priority
-              quality={90}
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 900px"
-              unoptimized
-            />
+            {hasImages ? (
+              <Image
+                src={imageUrls[activeImage] || "/default-car.jpg"}
+                alt={altText}
+                fill
+                className={`object-contain transition-transform duration-300 ease-out ${
+                  darkMode
+                    ? "from-gray-900 via-gray-950 to-black"
+                    : "from-slate-100 via-slate-50 to-white"
+                }`}
+                priority
+                quality={90}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 900px"
+                unoptimized
+              />
+            ) : (
+              <div
+                className={`flex h-full items-center justify-center ${
+                  darkMode ? "text-gray-600" : "text-slate-400"
+                }`}
+              >
+                <div className="text-center">
+                  <FiX size={32} className="mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Kein Bild verfügbar</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* NAVIGATION ARROWS */}
@@ -87,50 +104,56 @@ const ImageSlider = ({
               <button
                 type="button"
                 onClick={() => goPrev(setActiveImage)}
-                className="
-                  absolute left-1 top-1/2 -translate-y-1/2
-                  inline-flex h-9 w-9 items-center justify-center
-                  rounded-full border border-slate-700
-                  bg-slate-900/90 text-slate-100
+                className={`
+                  absolute left-2 top-1/2 -translate-y-1/2
+                  inline-flex h-8 w-8 items-center justify-center
+                  rounded-full border ${borderColor}
+                  ${buttonBg} ${textMuted}
                   shadow-md
                   transition-all
-                  hover:border-sky-500 hover:bg-slate-900 hover:text-white
+                  ${buttonHover} hover:${accentBorder} hover:${accentColor}
                   active:scale-95
-                  sm:left-2
-                "
+                `}
                 aria-label="Vorheriges Bild"
               >
-                <FiArrowLeft className="h-4 w-4" />
+                <FiArrowLeft size={14} />
               </button>
 
               <button
                 type="button"
                 onClick={() => goNext(setActiveImage)}
-                className="
-                  absolute right-1 top-1/2 -translate-y-1/2
-                  inline-flex h-9 w-9 items-center justify-center
-                  rounded-full border border-slate-700
-                  bg-slate-900/90 text-slate-100
+                className={`
+                  absolute right-2 top-1/2 -translate-y-1/2
+                  inline-flex h-8 w-8 items-center justify-center
+                  rounded-full border ${borderColor}
+                  ${buttonBg} ${textMuted}
                   shadow-md
                   transition-all
-                  hover:border-sky-500 hover:bg-slate-900 hover:text-white
+                  ${buttonHover} hover:${accentBorder} hover:${accentColor}
                   active:scale-95
-                  sm:right-2
-                "
+                `}
                 aria-label="Nächstes Bild"
               >
-                <FiArrowLeft className="h-4 w-4 rotate-180" />
+                <FiArrowLeft className="rotate-180" size={14} />
               </button>
 
               {/* COUNTER */}
-              <div className="pointer-events-none absolute bottom-2 left-1/2 z-10 -translate-x-1/2 rounded-full bg-slate-900/90 px-3 py-1 text-[11px] font-medium text-slate-100 shadow-sm ring-1 ring-slate-700 sm:bottom-3">
+              <div
+                className={`pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full ${buttonBg} ${borderColor} border px-3 py-1 text-xs font-medium ${textColor} shadow-sm`}
+              >
                 {activeImage + 1} / {imageUrls.length}
               </div>
 
               {/* PROGRESS BAR */}
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-800">
+              <div
+                className={`absolute bottom-0 left-0 right-0 h-1 ${
+                  darkMode ? "bg-gray-800" : "bg-slate-200"
+                }`}
+              >
                 <div
-                  className="h-full bg-sky-500 transition-all duration-300"
+                  className={`h-full ${
+                    darkMode ? "bg-blue-500" : "bg-blue-600"
+                  } transition-all duration-300`}
                   style={{
                     width: `${((activeImage + 1) / imageUrls.length) * 100}%`,
                   }}
@@ -143,10 +166,22 @@ const ImageSlider = ({
 
       {/* THUMBNAILS */}
       {hasMultiple && (
-        <div className="relative mt-3">
-          {/* Soft gradient edges only from sm+ (on very small screens it's not needed) */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-10 bg-gradient-to-r from-slate-950 via-slate-950 to-transparent sm:block" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 hidden w-10 bg-gradient-to-l from-slate-950 via-slate-950 to-transparent sm:block" />
+        <div className="relative mt-4">
+          {/* Gradient edges for better UX */}
+          <div
+            className={`pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-8 ${
+              darkMode
+                ? "bg-gradient-to-r from-gray-900 via-gray-900/95 to-transparent"
+                : "bg-gradient-to-r from-white via-white/95 to-transparent"
+            } sm:block`}
+          />
+          <div
+            className={`pointer-events-none absolute inset-y-0 right-0 z-10 hidden w-8 ${
+              darkMode
+                ? "bg-gradient-to-l from-gray-900 via-gray-900/95 to-transparent"
+                : "bg-gradient-to-l from-white via-white/95 to-transparent"
+            } sm:block`}
+          />
 
           <div className="flex space-x-2 overflow-x-auto px-1 py-2 scrollbar-hide">
             {imageUrls.map((img, index) => {
@@ -158,14 +193,14 @@ const ImageSlider = ({
                   onClick={() => setActiveImage(index)}
                   className={`
                     relative flex-shrink-0
-                    h-14 w-20
-                    sm:h-16 sm:w-24
-                    overflow-hidden rounded-xl border text-left
+                    h-16 w-20
+                    sm:h-18 sm:w-24
+                    overflow-hidden rounded-lg border text-left
                     transition-all duration-200
                     ${
                       isActive
-                        ? "border-sky-500 ring-2 ring-sky-500/70 scale-[1.03]"
-                        : "border-slate-800 hover:border-sky-500/60 hover:scale-[1.02]"
+                        ? `${accentBorder} ring-2 ring-blue-500/30 scale-[1.03]`
+                        : `${borderColor} hover:border-blue-400/60 hover:scale-[1.02]`
                     }
                   `}
                   aria-label={`Bild ${index + 1} anzeigen`}
@@ -175,10 +210,16 @@ const ImageSlider = ({
                     alt={`${altText} Bild ${index + 1}`}
                     fill
                     className="object-cover"
-                    sizes="80px"
+                    sizes="96px"
                   />
                   {isActive && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                    <div
+                      className={`absolute inset-0 ${
+                        darkMode
+                          ? "bg-gradient-to-t from-black/30 via-transparent to-transparent"
+                          : "bg-gradient-to-t from-white/20 via-transparent to-transparent"
+                      }`}
+                    />
                   )}
                 </button>
               );
@@ -189,28 +230,26 @@ const ImageSlider = ({
 
       {/* FULLSCREEN MODAL */}
       {fullscreenImage !== null && hasImages && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-2 sm:p-4">
-          <div className="relative flex h-full w-full max-w-6xl items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+          {/* Backdrop */}
+          <div
+            className={`absolute inset-0 ${
+              darkMode
+                ? "bg-gray-900/95 backdrop-blur-sm"
+                : "bg-gray-900/90 backdrop-blur-sm"
+            }`}
+            onClick={() => setFullscreenImage(null)}
+          />
+
+          <div className="relative z-10 flex h-full w-full max-w-6xl items-center justify-center">
             {/* CLOSE BUTTON */}
             <button
               type="button"
               onClick={() => setFullscreenImage(null)}
-              className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-900/90 text-slate-100 shadow-md transition-all hover:bg-slate-800 hover:text-white"
+              className={`absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full ${buttonBg} ${textMuted} shadow-md transition-all ${buttonHover} hover:${accentColor}`}
               aria-label="Schließen"
             >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.7}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <FiX size={20} />
             </button>
 
             {/* FULLSCREEN NAV ARROWS */}
@@ -219,19 +258,19 @@ const ImageSlider = ({
                 <button
                   type="button"
                   onClick={() => goPrev(setFullscreenImage)}
-                  className="absolute left-2 top-1/2 z-50 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-900/80 text-slate-100 shadow-md transition-all hover:bg-slate-800 hover:text-white sm:left-4"
+                  className={`absolute left-4 top-1/2 z-50 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full ${buttonBg} ${textMuted} shadow-md transition-all ${buttonHover} hover:${accentColor}`}
                   aria-label="Vorheriges Bild"
                 >
-                  <FiArrowLeft className="h-5 w-5" />
+                  <FiArrowLeft size={20} />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => goNext(setFullscreenImage)}
-                  className="absolute right-2 top-1/2 z-50 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-900/80 text-slate-100 shadow-md transition-all hover:bg-slate-800 hover:text-white sm:right-4"
+                  className={`absolute right-4 top-1/2 z-50 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full ${buttonBg} ${textMuted} shadow-md transition-all ${buttonHover} hover:${accentColor}`}
                   aria-label="Nächstes Bild"
                 >
-                  <FiArrowLeft className="h-5 w-5 rotate-180" />
+                  <FiArrowLeft className="rotate-180" size={20} />
                 </button>
               </>
             )}
@@ -249,7 +288,13 @@ const ImageSlider = ({
 
             {/* COUNTER IN FS */}
             {hasMultiple && (
-              <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-1.5 text-xs font-medium text-slate-50 shadow-md">
+              <div
+                className={`pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full ${
+                  darkMode ? "bg-black/60" : "bg-white/90"
+                } px-4 py-2 text-sm font-medium ${
+                  darkMode ? "text-gray-100" : "text-gray-900"
+                } shadow-lg`}
+              >
                 {fullscreenImage + 1} / {imageUrls.length}
               </div>
             )}

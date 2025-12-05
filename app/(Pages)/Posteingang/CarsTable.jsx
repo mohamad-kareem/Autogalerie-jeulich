@@ -16,23 +16,23 @@ import {
   FiPhone,
   FiInfo,
   FiCheck,
-  FiClock,
   FiLayers,
   FiShield,
   FiSettings,
   FiStar,
   FiNavigation,
+  FiExternalLink,
+  FiTag,
+  FiMessageSquare,
 } from "react-icons/fi";
 import { FaCar, FaGasPump, FaCarCrash, FaTools } from "react-icons/fa";
 import { GiCarDoor, GiCarSeat, GiGearStick, GiWeight } from "react-icons/gi";
 import { MdAir, MdColorLens } from "react-icons/md";
 import { motion } from "framer-motion";
-import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import ImageSlider from "@/app/(Pages)/gebrauchtwagen/[id]/ImageSlider";
 
-export default function CarsTable() {
+export default function CarsTable({ darkMode = false }) {
   const [cars, setCars] = useState([]);
-  const [filteslateCars, setFilteslateCars] = useState([]);
   const [selectedCar, setSelectedCar] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +40,16 @@ export default function CarsTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const carsPerPage = 10;
   const router = useRouter();
+
+  // Theme helpers for consistent styling
+  const cardBg = darkMode ? "bg-gray-900/80" : "bg-white";
+  const cardBgSoft = darkMode ? "bg-gray-900/60" : "bg-slate-50";
+  const borderColor = darkMode ? "border-gray-700" : "border-slate-200";
+  const headerBg = darkMode ? "bg-gray-900" : "bg-slate-100";
+  const rowHover = darkMode ? "hover:bg-gray-800/50" : "hover:bg-slate-50";
+  const textPrimary = darkMode ? "text-white" : "text-slate-900";
+  const textSecondary = darkMode ? "text-slate-300" : "text-slate-600";
+  const textMuted = darkMode ? "text-slate-400" : "text-slate-500";
 
   useEffect(() => {
     fetchCars();
@@ -51,7 +61,6 @@ export default function CarsTable() {
       const res = await fetch("/api/manualcars");
       const data = await res.json();
       setCars(data);
-      setFilteslateCars(data);
     } catch {
       toast.error("Fahrzeuge konnten nicht geladen werden");
     } finally {
@@ -77,13 +86,6 @@ export default function CarsTable() {
     }
   };
 
-  const formatField = (value) => {
-    if (value === undefined || value === null) return "—";
-    if (typeof value === "boolean") return value ? "Ja" : "Nein";
-    if (Array.isArray(value)) return value.join(", ");
-    return value;
-  };
-
   const formatDate = (dateString) => {
     if (!dateString) return "—";
     try {
@@ -100,25 +102,46 @@ export default function CarsTable() {
   };
 
   const formatPrice = (price) => {
-    return price?.toLocaleString("de-DE", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+    if (!price) return "— €";
+    return (
+      price.toLocaleString("de-DE", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }) + " €"
+    );
   };
 
-  const renderDetailItem = (icon, label, value, unit = "") => {
+  // Professional detail card renderer - similar to your original but cleaner
+  const renderDetailCard = (icon, label, value, unit = "") => {
+    if (value === undefined || value === null || value === "") return null;
+
     return (
-      <div className="flex items-start space-x-3 p-3 bg-gray-800/40 rounded-lg transition-colors hover:bg-gray-700/40 border border-gray-800 ">
-        <div className="text-slate-400 mt-1">{icon}</div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider truncate ">
+      <div
+        className={`p-3 rounded-lg ${
+          darkMode ? "bg-gray-800/30" : "bg-gray-50"
+        } transition-colors hover:${
+          darkMode ? "bg-gray-700/30" : "bg-gray-100"
+        }`}
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <div className={darkMode ? "text-gray-400" : "text-gray-500"}>
+            {icon}
+          </div>
+          <h4
+            className={`text-xs font-semibold uppercase tracking-wider ${
+              darkMode ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
             {label}
-          </p>
-          <p className="text-gray-200 font-medium truncate">
-            {formatField(value)}{" "}
-            {unit && <span className="text-gray-400">{unit}</span>}
-          </p>
+          </h4>
         </div>
+        <p
+          className={`text-sm font-medium ${
+            darkMode ? "text-white" : "text-gray-900"
+          }`}
+        >
+          {value} {unit && <span className="text-gray-400">{unit}</span>}
+        </p>
       </div>
     );
   };
@@ -126,65 +149,90 @@ export default function CarsTable() {
   // Pagination
   const indexOfLast = currentPage * carsPerPage;
   const indexOfFirst = indexOfLast - carsPerPage;
-  const currentCars = filteslateCars.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filteslateCars.length / carsPerPage);
+  const currentCars = cars.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(cars.length / carsPerPage);
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-950 to-slate-950">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-slate-500"></div>
+      <div className="flex justify-center items-center min-h-[260px]">
+        <div
+          className={`animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 ${
+            darkMode ? "border-slate-400" : "border-slate-600"
+          }`}
+        />
       </div>
     );
   }
 
   if (cars.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-950 to-slate-950 flex items-center justify-center">
-        <div className="bg-gray-900/60 backdrop-blur-md rounded-xl shadow-sm p-8 text-center border border-gray-800">
-          <FiInfo className="mx-auto text-gray-400 text-4xl mb-4" />
-          <h3 className="text-xl font-medium text-gray-200 mb-2">
-            Keine Fahrzeuge gefunden
-          </h3>
-          <p className="text-gray-400">
-            Es wurden noch keine Fahrzeuge hinzugefügt
-          </p>
-        </div>
+      <div
+        className={`rounded-xl px-6 py-8 text-center shadow-sm ${cardBg} ${borderColor} border`}
+      >
+        <FiInfo
+          className={`mx-auto mb-4 text-4xl ${
+            darkMode ? "text-slate-500" : "text-slate-400"
+          }`}
+        />
+        <h3
+          className={`text-lg font-semibold mb-1 ${
+            darkMode ? "text-white" : "text-slate-900"
+          }`}
+        >
+          Keine Fahrzeuge gefunden
+        </h3>
+        <p className={`text-sm ${textSecondary}`}>
+          Es wurden bisher keine Fahrzeuge hinzugefügt.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen  text-white">
-      {/* Content */}
-      <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1600px] mx-auto px-1 sm:px-0 py-2">
-        {/* Table */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="bg-gray-900/60 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden"
-        >
-          {/* Desktop Table */}
-          <div className="hidden md:block">
-            <div className="grid grid-cols-12 bg-gray-800 p-4 font-medium text-gray-300 text-xs uppercase tracking-wider border-b border-gray-700">
-              <div className="col-span-5">Fahrzeug</div>
-              <div className="col-span-2">Preis</div>
-              <div className="col-span-2">Kilometer</div>
-              <div className="col-span-2">Hinzugefügt</div>
-              <div className="col-span-1 text-right">Aktionen</div>
-            </div>
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.15 }}
+        className={`rounded-xl border overflow-hidden shadow-sm ${cardBg} ${borderColor}`}
+      >
+        {/* Desktop Table */}
+        <div className="hidden md:block">
+          <div
+            className={`grid grid-cols-12 px-4 py-3 border-b text-[11px] font-medium uppercase tracking-wider ${headerBg} ${
+              darkMode
+                ? "border-gray-800 text-slate-300"
+                : "border-slate-200 text-slate-600"
+            }`}
+          >
+            <div className="col-span-5">Fahrzeug</div>
+            <div className="col-span-2">Preis</div>
+            <div className="col-span-2">Kilometer</div>
+            <div className="col-span-2">Hinzugefügt</div>
+            <div className="col-span-1 text-right">Aktionen</div>
+          </div>
 
-            {currentCars.map((car) => (
-              <div
-                key={car._id}
-                className="grid grid-cols-12 p-4 border-b border-gray-800 hover:bg-black/50 transition-colors items-center cursor-pointer"
-                onClick={() => {
-                  setSelectedCar(car);
-                  setActiveTab("übersicht");
-                }}
-              >
-                <div className="col-span-5 flex items-center space-x-3">
-                  <div className="flex-shrink-0 h-12 w-16 bg-gray-800 rounded-md overflow-hidden border border-gray-700">
+          {currentCars.map((car) => (
+            <div
+              key={car._id}
+              className={`grid grid-cols-12 px-4 py-3 border-b ${
+                darkMode ? "border-gray-800" : "border-slate-200"
+              } text-base items-center cursor-pointer transition-colors duration-200 ${rowHover}`}
+              onClick={() => {
+                setSelectedCar(car);
+                setActiveTab("übersicht");
+              }}
+            >
+              {/* Fahrzeug */}
+              <div className="col-span-5">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex-shrink-0 h-12 w-16 ${
+                      darkMode ? "bg-gray-800" : "bg-slate-100"
+                    } rounded-md overflow-hidden border ${
+                      darkMode ? "border-gray-700" : "border-slate-200"
+                    }`}
+                  >
                     {car.images?.[0] && (
                       <img
                         src={car.images[0]}
@@ -194,472 +242,636 @@ export default function CarsTable() {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-medium text-gray-200 truncate">
+                    <p
+                      className={`font-medium ${
+                        darkMode ? "text-slate-100" : "text-slate-900"
+                      }`}
+                    >
                       {car.make} {car.model}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs bg-slate-900/40 text-slate-300 px-2 py-0.5 rounded-full border border-slate-800/50">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          darkMode
+                            ? "bg-gray-800/40 text-slate-300 border border-gray-700"
+                            : "bg-slate-100 text-slate-600 border border-slate-300"
+                        }`}
+                      >
                         {car.registration || "Keine Angabe"}
                       </span>
                       {car.fuel && (
-                        <span className="text-xs bg-slate-900/40 text-slate-300 px-2 py-0.5 rounded-full border border-slate-800/50">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            darkMode
+                              ? "bg-gray-800/40 text-slate-300 border border-gray-700"
+                              : "bg-slate-100 text-slate-600 border border-slate-300"
+                          }`}
+                        >
                           {car.fuel}
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
-                <div className="col-span-2">
-                  <div className="flex items-center text-gray-300 font-medium">
-                    {formatPrice(car.price)} €
+              </div>
+
+              {/* Preis */}
+              <div className="col-span-2">
+                <p
+                  className={`font-medium ${
+                    darkMode ? "text-slate-200" : "text-slate-800"
+                  }`}
+                >
+                  {formatPrice(car.price)}
+                </p>
+              </div>
+
+              {/* Kilometer */}
+              <div className="col-span-2">
+                <div className="flex items-center gap-2">
+                  <FiTrendingUp
+                    className={darkMode ? "text-slate-400" : "text-slate-500"}
+                    size={14}
+                  />
+                  <span
+                    className={darkMode ? "text-slate-300" : "text-slate-700"}
+                  >
+                    {car.kilometers?.toLocaleString("de-DE") || "—"} km
+                  </span>
+                </div>
+              </div>
+
+              {/* Datum */}
+              <div className="col-span-2">
+                <div className={`flex items-center gap-1 text-sm ${textMuted}`}>
+                  <FiCalendar size={13} />
+                  <span>{formatDate(car.createdAt)}</span>
+                </div>
+              </div>
+
+              {/* Aktionen */}
+              <div className="col-span-1 flex justify-end items-center gap-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedCar(car);
+                    setActiveTab("übersicht");
+                  }}
+                  className={`p-1.5 rounded-md text-xs border transition-colors ${
+                    darkMode
+                      ? "border-gray-700 text-slate-300 hover:bg-gray-800 hover:border-slate-500"
+                      : "border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400"
+                  }`}
+                  title="Details anzeigen"
+                >
+                  <FiEye size={14} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteCar(car._id);
+                  }}
+                  className={`p-1.5 rounded-md text-xs border transition-colors ${
+                    darkMode
+                      ? "border-gray-700 text-slate-300 hover:bg-gray-800 hover:border-slate-500 hover:text-red-400"
+                      : "border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400 hover:text-red-600"
+                  }`}
+                  title="Fahrzeug löschen"
+                >
+                  <FiTrash2 size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Mobile View */}
+        <div className="md:hidden">
+          {currentCars.map((car) => (
+            <div
+              key={car._id}
+              className={`border-b ${
+                darkMode ? "border-gray-800" : "border-slate-200"
+              }`}
+            >
+              <div
+                className={`px-4 py-3 flex items-center justify-between cursor-pointer ${rowHover}`}
+                onClick={() => {
+                  setSelectedCar(car);
+                  setActiveTab("übersicht");
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex-shrink-0 h-12 w-16 ${
+                      darkMode ? "bg-gray-800" : "bg-slate-100"
+                    } rounded-md overflow-hidden border ${
+                      darkMode ? "border-gray-700" : "border-slate-200"
+                    }`}
+                  >
+                    {car.images?.[0] && (
+                      <img
+                        src={car.images[0]}
+                        alt={`${car.make} ${car.model}`}
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <p
+                      className={`text-sm font-medium ${
+                        darkMode ? "text-slate-100" : "text-slate-900"
+                      }`}
+                    >
+                      {car.make} {car.model}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span
+                        className={`text-sm ${
+                          darkMode ? "text-slate-300" : "text-slate-700"
+                        }`}
+                      >
+                        {formatPrice(car.price)}
+                      </span>
+                      <span className={`text-xs ${textSecondary}`}>
+                        {car.kilometers?.toLocaleString("de-DE") || "—"} km
+                      </span>
+                    </div>
+                    <p
+                      className={`mt-1 flex items-center gap-1 text-[11px] ${textMuted}`}
+                    >
+                      <FiCalendar size={11} />
+                      {formatDate(car.createdAt)}
+                    </p>
                   </div>
                 </div>
-                <div className="col-span-2">
-                  <div className="flex items-center text-gray-300">
-                    {car.kilometers?.toLocaleString("de-DE")} km
-                  </div>
-                </div>
-                <div className="col-span-2">
-                  <div className="text-sm text-gray-400 flex items-center gap-1">
-                    <FiCalendar className="text-slate-400" size={14} />
-                    <span>{formatDate(car.createdAt)}</span>
-                  </div>
-                </div>
-                <div className="col-span-1 flex justify-end items-center gap-1">
+                <div className="flex gap-1">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedCar(car);
                       setActiveTab("übersicht");
                     }}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-slate-600 rounded-md transition-colors duration-200 border border-gray-700 hover:border-slate-500"
+                    className={`p-2 rounded-md border text-xs transition-colors ${
+                      darkMode
+                        ? "border-gray-700 text-slate-300 hover:bg-gray-800"
+                        : "border-slate-300 text-slate-600 hover:bg-slate-100"
+                    }`}
                     title="Details anzeigen"
                   >
-                    <FiEye />
+                    <FiEye size={14} />
                   </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteCar(car._id);
                     }}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-slate-600 rounded-md transition-colors duration-200 border border-gray-700 hover:border-slate-500"
+                    className={`p-2 rounded-md border text-xs transition-colors ${
+                      darkMode
+                        ? "border-gray-700 text-slate-300 hover:bg-gray-800 hover:text-red-400"
+                        : "border-slate-300 text-slate-600 hover:bg-slate-100 hover:text-red-600"
+                    }`}
                     title="Fahrzeug löschen"
                   >
-                    <FiTrash2 />
+                    <FiTrash2 size={14} />
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
 
-          {/* Mobile List */}
-          <div className="md:hidden">
-            {currentCars.map((car) => (
-              <div
-                key={car._id}
-                className="border-b border-gray-800 last:border-b-0 hover:bg-black/50 transition-colors"
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div
+            className={`px-4 py-3 flex items-center justify-between border-t ${
+              darkMode
+                ? "border-gray-800 bg-gray-900/60"
+                : "border-slate-200 bg-slate-100"
+            }`}
+          >
+            <p className={`text-sm ${textMuted}`}>
+              Seite <span className="font-medium">{currentPage}</span> von{" "}
+              <span className="font-medium">{totalPages}</span> – {cars.length}{" "}
+              Einträge
+            </p>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className={`px-2 py-1 rounded text-sm ${
+                  darkMode
+                    ? "bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-gray-300"
+                    : "bg-slate-200 hover:bg-slate-300 disabled:opacity-40 text-slate-700"
+                }`}
               >
-                <div
-                  className="p-4 flex justify-between items-center cursor-pointer"
-                  onClick={() => {
-                    setSelectedCar(car);
-                    setActiveTab("übersicht");
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0 h-12 w-16 bg-gray-800 rounded-md overflow-hidden border border-gray-700">
-                      {car.images?.[0] && (
-                        <img
-                          src={car.images[0]}
-                          alt={`${car.make} ${car.model}`}
-                          className="h-full w-full object-cover"
-                        />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-200">
-                        {car.make} {car.model}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-sm text-gray-300">
-                          {formatPrice(car.price)} €
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {car.kilometers?.toLocaleString("de-DE")} km
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                «
+              </button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className={`px-2 py-1 rounded text-sm ${
+                  darkMode
+                    ? "bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-gray-300"
+                    : "bg-slate-200 hover:bg-slate-300 disabled:opacity-40 text-slate-700"
+                }`}
+              >
+                ‹
+              </button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) pageNum = i + 1;
+                else if (currentPage <= 3) pageNum = i + 1;
+                else if (currentPage >= totalPages - 2)
+                  pageNum = totalPages - 4 + i;
+                else pageNum = currentPage - 2 + i;
+
+                return (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedCar(car);
-                      setActiveTab("übersicht");
-                    }}
-                    className="p-2 text-gray-400 hover:text-slate-400 rounded-md hover:bg-slate-900/20 transition-colors border border-gray-700"
-                    title="Details anzeigen"
-                  >
-                    <FiEye />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="px-4 py-3 flex items-center justify-between bg-gray-800 border-t border-gray-700 text-sm">
-              <p className="text-gray-300">
-                Seite <span className="font-medium">{currentPage}</span> von{" "}
-                <span className="font-medium">{totalPages}</span> –{" "}
-                {filteslateCars.length} Einträge
-              </p>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-gray-300"
-                >
-                  «
-                </button>
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-gray-300"
-                >
-                  ‹
-                </button>
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) pageNum = i + 1;
-                  else if (currentPage <= 3) pageNum = i + 1;
-                  else if (currentPage >= totalPages - 2)
-                    pageNum = totalPages - 4 + i;
-                  else pageNum = currentPage - 2 + i;
-
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-1 rounded ${
-                        currentPage === pageNum
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`px-3 py-1 rounded text-sm ${
+                      currentPage === pageNum
+                        ? darkMode
                           ? "bg-slate-600 text-white"
-                          : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                          : "bg-slate-600 text-white"
+                        : darkMode
+                        ? "bg-gray-800 hover:bg-gray-700 text-gray-300"
+                        : "bg-slate-200 hover:bg-slate-300 text-slate-700"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(p + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className={`px-2 py-1 rounded text-sm ${
+                  darkMode
+                    ? "bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-gray-300"
+                    : "bg-slate-200 hover:bg-slate-300 disabled:opacity-40 text-slate-700"
+                }`}
+              >
+                ›
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className={`px-2 py-1 rounded text-sm ${
+                  darkMode
+                    ? "bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-gray-300"
+                    : "bg-slate-200 hover:bg-slate-300 disabled:opacity-40 text-slate-700"
+                }`}
+              >
+                »
+              </button>
+            </div>
+          </div>
+        )}
+      </motion.div>
+
+      {/* Car Detail Modal - Professional Design */}
+      {selectedCar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className={`absolute inset-0 ${
+              darkMode
+                ? "bg-gray-900/80 backdrop-blur-sm"
+                : "bg-gray-800/60 backdrop-blur-sm"
+            }`}
+            onClick={() => setSelectedCar(null)}
+          />
+
+          {/* Modal Container */}
+          <div
+            className={`relative z-10 w-full max-w-6xl mx-auto rounded-xl shadow-xl ${
+              darkMode
+                ? "bg-gray-900 border border-gray-800"
+                : "bg-white border border-gray-200"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              className={`px-5 py-3 border-b ${
+                darkMode ? "border-gray-800" : "border-gray-200"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-lg ${
+                      darkMode
+                        ? "bg-blue-900/40 text-blue-300"
+                        : "bg-blue-50 text-blue-600"
+                    }`}
+                  >
+                    <FaCar size={20} />
+                  </div>
+                  <div>
+                    <h3
+                      className={`text-lg font-semibold ${
+                        darkMode ? "text-white" : "text-gray-900"
                       }`}
                     >
-                      {pageNum}
-                    </button>
-                  );
-                })}
+                      {selectedCar.make} {selectedCar.model}
+                    </h3>
+                    <p
+                      className={`text-xs mt-0.5 flex items-center gap-1 ${
+                        darkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
+                      <FiCalendar size={12} />
+                      Hinzugefügt: {formatDate(selectedCar.createdAt)}
+                    </p>
+                  </div>
+                </div>
+
                 <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(p + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-gray-300"
+                  onClick={() => setSelectedCar(null)}
+                  className={`p-1.5 rounded-lg ${
+                    darkMode
+                      ? "hover:bg-gray-800 text-gray-400 hover:text-white"
+                      : "hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                  }`}
                 >
-                  ›
-                </button>
-                <button
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                  className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-gray-300"
-                >
-                  »
+                  <FiX size={20} />
                 </button>
               </div>
             </div>
-          )}
-        </motion.div>
-      </main>
 
-      {/* Car Detail Modal */}
-      {selectedCar && (
-        <div className="fixed inset-0 z-50 .scrollbar-hide">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div
-              className="fixed inset-0 transition-opacity"
-              aria-hidden="true"
-            >
-              <div className="absolute inset-0 bg-gray-900 bg-opacity-90 backdrop-blur-sm"></div>
-            </div>
-
-            <span
-              className="hidden sm:inline-block sm:align-middle sm:h-screen"
-              aria-hidden="true"
-            >
-              &#8203;
-            </span>
-
-            <div className="inline-block align-bottom bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full mx-4 border border-gray-800">
-              <div className="bg-gradient-to-r from-black to-slate-900 px-6 py-3 border-b border-gray-800">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <h3 className="text-base md:text-xl font-bold text-white">
-                        {selectedCar.make} {selectedCar.model}
-                      </h3>
-                      <p className="text-gray-400 mt-1 text-sm md:text-xs flex items-center gap-1">
-                        <FiCalendar size={14} />
-                        {formatDate(selectedCar.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setSelectedCar(null)}
-                    className="text-gray-400 hover:text-white transition-colors hover:bg-slate-600/20 p-1 rounded-md"
-                  >
-                    <FiX className="h-6 w-6" />
-                  </button>
+            {/* Body */}
+            <div className="px-5 py-4 max-h-[70vh] overflow-y-auto">
+              {/* Image Slider */}
+              {selectedCar.images?.length > 0 && (
+                <div className="mb-6">
+                  <ImageSlider
+                    images={selectedCar.images}
+                    car={selectedCar}
+                    height="h-[200px] md:h-[250px]"
+                    width="w-full"
+                  />
                 </div>
+              )}
+
+              {/* Tabs */}
+              <div className="mb-6">
+                <nav className="flex space-x-1">
+                  {["übersicht", "technik", "ausstattung", "kontakt"].map(
+                    (tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                          activeTab === tab
+                            ? darkMode
+                              ? "bg-gray-800 text-white"
+                              : "bg-slate-100 text-slate-900"
+                            : darkMode
+                            ? "text-gray-400 hover:text-white hover:bg-gray-800/50"
+                            : "text-gray-500 hover:text-gray-900 hover:bg-slate-50"
+                        }`}
+                      >
+                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      </button>
+                    )
+                  )}
+                </nav>
               </div>
 
-              <div className="px-4 md:px-6 py-4 max-h-[70vh] overflow-y-auto ">
-                {/* Image Slider */}
-                {selectedCar.images?.length > 0 && (
-                  <div className="mb-6">
-                    <ImageSlider
-                      images={selectedCar.images}
-                      car={selectedCar}
-                      height="h-[200px] md:h-[250px]"
-                      width="w-full"
-                    />
-                  </div>
-                )}
-
-                {/* Tabs */}
-                <div className="mb-6 border-b border-gray-800 overflow-x-auto">
-                  <nav className="flex space-x-4 min-w-max">
-                    {["übersicht", "technik", "ausstattung", "kontakt"].map(
-                      (tab) => (
-                        <button
-                          key={tab}
-                          onClick={() => setActiveTab(tab)}
-                          className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
-                            activeTab === tab
-                              ? "border-slate-500 text-slate-400"
-                              : "border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-600"
-                          }`}
-                        >
-                          {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                        </button>
-                      )
-                    )}
-                  </nav>
-                </div>
-
-                {/* Overview Tab */}
+              {/* Content Sections */}
+              <div className="space-y-6">
+                {/* Overview Tab - Shows all important fields like original */}
                 {activeTab === "übersicht" && (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {renderDetailItem(
-                        <FiSettings />,
-                        "Name",
-                        selectedCar.name
-                      )}
-                      {renderDetailItem(<FiSettings />, "VIN", selectedCar.vin)}
-                      {renderDetailItem(
+                    {/* Key Information Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                      {renderDetailCard(
                         <FiDollarSign />,
                         "Preis",
-                        selectedCar.price?.toLocaleString("de-DE"),
-                        "€"
+                        formatPrice(selectedCar.price)
                       )}
-                      {renderDetailItem(
+                      {renderDetailCard(
                         <FiTrendingUp />,
                         "Kilometerstand",
                         selectedCar.kilometers?.toLocaleString("de-DE"),
                         "km"
                       )}
-                      {renderDetailItem(
+                      {renderDetailCard(
                         <FiCalendar />,
                         "Erstzulassung",
                         selectedCar.registration
                       )}
-                      {renderDetailItem(
+                      {renderDetailCard(
                         <FaGasPump />,
                         "Kraftstoffart",
                         selectedCar.fuel
                       )}
-                      {renderDetailItem(
+                      {renderDetailCard(
                         <GiGearStick />,
                         "Getriebe",
                         selectedCar.transmission
                       )}
-                      {renderDetailItem(
+                      {renderDetailCard(
                         <FiZap />,
                         "Leistung",
                         selectedCar.power,
                         "kW"
                       )}
-                      {renderDetailItem(<FiZap />, "PS", selectedCar.hp, "HP")}
-                      {renderDetailItem(
+                      {renderDetailCard(<FiZap />, "PS", selectedCar.hp, "HP")}
+                      {renderDetailCard(
                         <FiCheck />,
                         "Zustand",
                         selectedCar.condition
                       )}
-                      {renderDetailItem(
+                      {renderDetailCard(
                         <FaCarCrash />,
                         "Unfallfrei",
-                        selectedCar.accidentFree
+                        selectedCar.accidentFree ? "Ja" : "Nein"
                       )}
-                      {renderDetailItem(
+                      {renderDetailCard(
                         <FiUser />,
                         "Vorbesitzer",
                         selectedCar.previousOwners
                       )}
-                      {renderDetailItem(
+                      {renderDetailCard(
                         <GiCarDoor />,
                         "Türen",
                         selectedCar.doors
                       )}
-                      {renderDetailItem(
+                      {renderDetailCard(
                         <GiCarSeat />,
                         "Sitze",
                         selectedCar.seats
                       )}
-                      {renderDetailItem(
+                      {renderDetailCard(
                         <FiShield />,
                         "Status",
                         selectedCar.status
                       )}
-                      {renderDetailItem(
+                      {renderDetailCard(
                         <FiSettings />,
                         "Kategorie",
                         selectedCar.category
                       )}
-                      {renderDetailItem(
-                        <FiSettings />,
-                        "Aktiv",
-                        selectedCar.active
-                      )}
-                      {renderDetailItem(
-                        <FiSettings />,
-                        "Betriebsbereit",
-                        selectedCar.operational
-                      )}
-                      {renderDetailItem(
+                      {renderDetailCard(
                         <FiSettings />,
                         "Modellreihe",
                         selectedCar.modelSeries
                       )}
-                      {renderDetailItem(
+                      {renderDetailCard(
                         <FiSettings />,
                         "Ausstattungslinie",
                         selectedCar.equipmentLine
                       )}
+                      {renderDetailCard(
+                        <FiSettings />,
+                        "Aktiv",
+                        selectedCar.active ? "Ja" : "Nein"
+                      )}
+                      {renderDetailCard(
+                        <FiSettings />,
+                        "Betriebsbereit",
+                        selectedCar.operational ? "Ja" : "Nein"
+                      )}
+                      {renderDetailCard(
+                        <FiSettings />,
+                        "Name",
+                        selectedCar.name
+                      )}
+                      {renderDetailCard(<FiSettings />, "VIN", selectedCar.vin)}
                     </div>
 
+                    {/* Description */}
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-200 mb-3 flex items-center">
-                        <FiInfo className="mr-2 text-slate-400" />
-                        Beschreibung
-                      </h4>
-                      <div className="bg-gray-800/40 p-4 rounded-lg border border-gray-700">
-                        {selectedCar.description ? (
-                          <p className="text-gray-300 whitespace-pre-line">
-                            {selectedCar.description}
-                          </p>
-                        ) : (
-                          <p className="text-gray-500">
-                            Keine Beschreibung vorhanden
-                          </p>
-                        )}
+                      <div className="flex items-center gap-2 mb-2">
+                        <FiMessageSquare
+                          className={
+                            darkMode ? "text-gray-400" : "text-gray-500"
+                          }
+                          size={14}
+                        />
+                        <h4
+                          className={`text-xs font-semibold uppercase tracking-wider ${
+                            darkMode ? "text-gray-400" : "text-gray-500"
+                          }`}
+                        >
+                          Beschreibung
+                        </h4>
+                      </div>
+                      <div
+                        className={`rounded-lg p-4 ${
+                          darkMode ? "bg-gray-800/30" : "bg-gray-50"
+                        }`}
+                      >
+                        <p
+                          className={`text-sm leading-relaxed whitespace-pre-wrap ${
+                            darkMode ? "text-gray-200" : "text-gray-700"
+                          }`}
+                        >
+                          {selectedCar.description ||
+                            "Keine Beschreibung vorhanden."}
+                        </p>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Tech Tab */}
+                {/* Tech Tab - Shows all technical details */}
                 {activeTab === "technik" && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {renderDetailItem(
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    {renderDetailCard(
                       <FiSettings />,
                       "Hubraum",
                       selectedCar.displacement,
                       "ccm"
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <FiSettings />,
                       "Zylinder",
                       selectedCar.cylinders
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <FiNavigation />,
                       "Antriebsart",
                       selectedCar.driveType
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <GiWeight />,
                       "Gewicht",
                       selectedCar.weight,
                       "kg"
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <FiNavigation />,
                       "Anhängelast gebremst",
                       selectedCar.towCapacityBraked,
                       "kg"
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <FiNavigation />,
                       "Anhängelast ungebremst",
                       selectedCar.towCapacityUnbraked,
                       "kg"
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <FaGasPump />,
                       "Tankvolumen",
                       selectedCar.tankCapacity,
                       "L"
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <FaGasPump />,
                       "Verbrauch kombiniert",
                       selectedCar.fuelConsumption,
                       "L/100km"
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <MdAir />,
                       "CO2-Emission",
                       selectedCar.co2Emission,
                       "g/km"
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <FiShield />,
                       "Emissionsklasse",
                       selectedCar.emissionClass
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <FiShield />,
                       "Umweltplakette",
                       selectedCar.environmentalBadge
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <FiCalendar />,
                       "TÜV bis",
                       selectedCar.inspectionDate
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <FaTools />,
                       "Motorschaden",
-                      selectedCar.hasEngineDamage
+                      selectedCar.hasEngineDamage ? "Ja" : "Nein"
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <FiSettings />,
                       "Energieverbrauch",
                       selectedCar.energyConsumption
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <FiSettings />,
                       "Klimaanlage",
                       selectedCar.airConditioning
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <FiSettings />,
                       "Airbags",
                       selectedCar.airbags
                     )}
-                    {renderDetailItem(
+                    {renderDetailCard(
                       <FiSettings />,
                       "Einparkhilfe",
                       selectedCar.parkingAssistance
@@ -670,134 +882,242 @@ export default function CarsTable() {
                 {/* Features Tab */}
                 {activeTab === "ausstattung" && (
                   <div className="space-y-6">
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-200 mb-3 flex items-center">
-                        <MdColorLens className="mr-2 text-slate-400" />
-                        Farben & Materialien
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {renderDetailItem(
-                          <MdColorLens />,
-                          "Außenfarbe",
-                          selectedCar.exteriorColor
-                        )}
-                        {renderDetailItem(
-                          <MdColorLens />,
-                          "Außenfarbe (einfach)",
-                          selectedCar.exteriorColorSimple
-                        )}
-                        {renderDetailItem(
-                          <MdColorLens />,
-                          "Innenfarbe",
-                          selectedCar.interiorColor
-                        )}
-                        {renderDetailItem(
-                          <MdColorLens />,
-                          "Innenfarbe (einfach)",
-                          selectedCar.interiorColorSimple
-                        )}
-                        {renderDetailItem(
-                          <FiLayers />,
-                          "Innenmaterial",
-                          selectedCar.interiorMaterial
-                        )}
-                      </div>
+                    {/* Colors & Materials */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {renderDetailCard(
+                        <MdColorLens />,
+                        "Außenfarbe",
+                        selectedCar.exteriorColor
+                      )}
+                      {renderDetailCard(
+                        <MdColorLens />,
+                        "Außenfarbe (einfach)",
+                        selectedCar.exteriorColorSimple
+                      )}
+                      {renderDetailCard(
+                        <MdColorLens />,
+                        "Innenfarbe",
+                        selectedCar.interiorColor
+                      )}
+                      {renderDetailCard(
+                        <MdColorLens />,
+                        "Innenfarbe (einfach)",
+                        selectedCar.interiorColorSimple
+                      )}
+                      {renderDetailCard(
+                        <FiLayers />,
+                        "Innenmaterial",
+                        selectedCar.interiorMaterial
+                      )}
                     </div>
 
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-200 mb-3 flex items-center">
-                        <FiStar className="mr-2 text-slate-400" />
-                        Serienausstattung
-                      </h4>
-                      {selectedCar.features?.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {/* Features Grids */}
+                    {selectedCar.features?.length > 0 && (
+                      <div>
+                        <h4
+                          className={`text-sm font-semibold mb-3 flex items-center ${
+                            darkMode ? "text-gray-300" : "text-gray-700"
+                          }`}
+                        >
+                          <FiStar className="mr-2" />
+                          Serienausstattung
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                           {selectedCar.features.map((feature, index) => (
                             <div
                               key={index}
-                              className="flex items-start bg-gray-800/40 px-4 py-3 rounded-lg border border-gray-700"
+                              className={`p-2 rounded ${
+                                darkMode ? "bg-gray-800/30" : "bg-gray-50"
+                              } border ${
+                                darkMode ? "border-gray-700" : "border-gray-200"
+                              }`}
                             >
-                              <FiCheck className="text-green-400 mr-2 mt-0.5 flex-shrink-0" />
-                              <span className="text-gray-300">{feature}</span>
+                              <div className="flex items-center gap-2">
+                                <FiCheck
+                                  className={`flex-shrink-0 ${
+                                    darkMode
+                                      ? "text-green-400"
+                                      : "text-green-500"
+                                  }`}
+                                  size={14}
+                                />
+                                <span
+                                  className={`text-sm ${
+                                    darkMode ? "text-gray-300" : "text-gray-700"
+                                  }`}
+                                >
+                                  {feature}
+                                </span>
+                              </div>
                             </div>
                           ))}
                         </div>
-                      ) : (
-                        <p className="text-gray-500">
-                          Keine Angaben zur Serienausstattung
-                        </p>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-200 mb-3 flex items-center">
-                        <FiStar className="mr-2 text-slate-400" />
-                        Sonderausstattung
-                      </h4>
-                      {selectedCar.specialFeatures?.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {selectedCar.specialFeatures?.length > 0 && (
+                      <div>
+                        <h4
+                          className={`text-sm font-semibold mb-3 flex items-center ${
+                            darkMode ? "text-gray-300" : "text-gray-700"
+                          }`}
+                        >
+                          <FiStar className="mr-2" />
+                          Sonderausstattung
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                           {selectedCar.specialFeatures.map((feature, index) => (
                             <div
                               key={index}
-                              className="flex items-start bg-slate-900/20 px-4 py-3 rounded-lg border border-slate-800/30"
+                              className={`p-2 rounded ${
+                                darkMode ? "bg-blue-900/10" : "bg-blue-50"
+                              } border ${
+                                darkMode
+                                  ? "border-blue-800/30"
+                                  : "border-blue-200"
+                              }`}
                             >
-                              <FiStar className="text-slate-400 mr-2 mt-0.5 flex-shrink-0" />
-                              <span className="text-gray-300">{feature}</span>
+                              <div className="flex items-center gap-2">
+                                <FiStar
+                                  className={`flex-shrink-0 ${
+                                    darkMode ? "text-blue-400" : "text-blue-500"
+                                  }`}
+                                  size={14}
+                                />
+                                <span
+                                  className={`text-sm ${
+                                    darkMode ? "text-gray-300" : "text-gray-700"
+                                  }`}
+                                >
+                                  {feature}
+                                </span>
+                              </div>
                             </div>
                           ))}
                         </div>
-                      ) : (
-                        <p className="text-gray-500">Keine Sonderausstattung</p>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {/* Contact Tab */}
                 {activeTab === "kontakt" && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {renderDetailItem(
-                      <FiUser />,
-                      "Vollständiger Name",
-                      selectedCar.contact?.fullName
-                    )}
-                    {renderDetailItem(
-                      <FiMail />,
-                      "E-Mail",
-                      selectedCar.contact?.email
-                    )}
-                    {renderDetailItem(
-                      <FiPhone />,
-                      "Telefon",
-                      selectedCar.contact?.phone
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div
+                      className={`p-4 rounded-lg ${
+                        darkMode ? "bg-gray-800/30" : "bg-gray-50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <FiUser
+                          className={
+                            darkMode ? "text-gray-400" : "text-gray-500"
+                          }
+                          size={16}
+                        />
+                        <h4
+                          className={`text-sm font-semibold ${
+                            darkMode ? "text-gray-300" : "text-gray-700"
+                          }`}
+                        >
+                          Kontaktinformationen
+                        </h4>
+                      </div>
+                      <div className="space-y-3">
+                        {selectedCar.contact?.fullName && (
+                          <div className="flex items-center gap-2">
+                            <FiUser
+                              className={`flex-shrink-0 ${
+                                darkMode ? "text-blue-400" : "text-blue-500"
+                              }`}
+                              size={14}
+                            />
+                            <span
+                              className={`text-sm ${
+                                darkMode ? "text-gray-200" : "text-gray-800"
+                              }`}
+                            >
+                              {selectedCar.contact.fullName}
+                            </span>
+                          </div>
+                        )}
+                        {selectedCar.contact?.email && (
+                          <div className="flex items-center gap-2">
+                            <FiMail
+                              className={`flex-shrink-0 ${
+                                darkMode ? "text-blue-400" : "text-blue-500"
+                              }`}
+                              size={14}
+                            />
+                            <span
+                              className={`text-sm ${
+                                darkMode ? "text-gray-200" : "text-gray-800"
+                              }`}
+                            >
+                              {selectedCar.contact.email}
+                            </span>
+                          </div>
+                        )}
+                        {selectedCar.contact?.phone && (
+                          <div className="flex items-center gap-2">
+                            <FiPhone
+                              className={`flex-shrink-0 ${
+                                darkMode ? "text-green-400" : "text-green-500"
+                              }`}
+                              size={14}
+                            />
+                            <span
+                              className={`text-sm ${
+                                darkMode ? "text-gray-200" : "text-gray-800"
+                              }`}
+                            >
+                              {selectedCar.contact.phone}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
+            </div>
 
-              <div className="bg-gray-800 px-6 py-4 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 border-t border-gray-700">
-                <button
-                  onClick={() => setSelectedCar(null)}
-                  className="px-4 py-2 border border-gray-600 rounded-lg text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none transition-colors"
-                >
-                  Schließen
-                </button>
-                <button
-                  onClick={() => handleDeleteCar(selectedCar._id)}
-                  className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-white bg-slate-600 hover:bg-slate-700 focus:outline-none transition-colors"
-                >
-                  Fahrzeug löschen
-                </button>
+            {/* Footer */}
+            <div
+              className={`px-5 py-3 border-t ${
+                darkMode ? "border-gray-800" : "border-gray-200"
+              }`}
+            >
+              <div className="flex items-center justify-end">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSelectedCar(null)}
+                    className={`px-3 py-1.5 text-sm rounded-lg font-medium ${
+                      darkMode
+                        ? "bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white"
+                        : "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900"
+                    }`}
+                  >
+                    Schließen
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteCar(selectedCar._id)}
+                    className={`px-3 py-1.5 text-sm rounded-lg font-medium flex items-center gap-1.5 ${
+                      darkMode
+                        ? "bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300"
+                        : "bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700"
+                    }`}
+                  >
+                    <FiTrash2 size={14} />
+                    Löschen
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Background Glow */}
-      <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-60 h-60 bg-slate-500/10 blur-3xl rounded-full" />
-        <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-purple-500/10 blur-3xl rounded-full" />
-      </div>
-    </div>
+    </>
   );
 }
