@@ -25,6 +25,7 @@ import {
   FiCheck,
   FiCheckSquare,
   FiSquare,
+  FiDroplet,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -172,7 +173,10 @@ const DashboardContent = ({
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
 
-  // NEW: Task modal states
+  // NEW: Fuel modal state
+  const [showFuelModal, setShowFuelModal] = useState(false);
+
+  // Task modal states
   const [showTasksModal, setShowTasksModal] = useState(false);
   const [selectedScheinTasks, setSelectedScheinTasks] = useState(null);
   const [taskCheckboxes, setTaskCheckboxes] = useState({});
@@ -232,7 +236,7 @@ const DashboardContent = ({
     }
   };
 
-  // NEW: Open tasks modal
+  // Open tasks modal
   const openTasksModal = (schein) => {
     setSelectedScheinTasks(schein);
 
@@ -240,7 +244,6 @@ const DashboardContent = ({
     const initialCheckboxes = {};
     if (Array.isArray(schein.notes)) {
       schein.notes.forEach((note, index) => {
-        // Check if this task is in completedTasks array
         const isCompleted = schein.completedTasks?.includes(note) || false;
         initialCheckboxes[index] = isCompleted;
       });
@@ -249,7 +252,7 @@ const DashboardContent = ({
     setShowTasksModal(true);
   };
 
-  // NEW: Handle checkbox change
+  // Handle checkbox change
   const handleTaskCheckboxChange = (index) => {
     setTaskCheckboxes((prev) => ({
       ...prev,
@@ -257,13 +260,12 @@ const DashboardContent = ({
     }));
   };
 
-  // NEW: Save completed tasks
+  // Save completed tasks
   const handleSaveTasks = async () => {
     if (!selectedScheinTasks?._id) return;
 
     setSavingTasks(true);
     try {
-      // Get all completed tasks (checked checkboxes)
       const completedTasks = [];
       if (Array.isArray(selectedScheinTasks.notes)) {
         selectedScheinTasks.notes.forEach((note, index) => {
@@ -273,7 +275,6 @@ const DashboardContent = ({
         });
       }
 
-      // Update the schein with completed tasks
       const res = await fetch("/api/carschein", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -285,10 +286,8 @@ const DashboardContent = ({
 
       if (!res.ok) throw new Error("Failed to save tasks");
 
-      // Update local state
       const updatedSchein = await res.json();
 
-      // Update in visibleScheins
       setVisibleScheins((prev) =>
         prev.map((s) =>
           s._id === updatedSchein._id
@@ -297,19 +296,7 @@ const DashboardContent = ({
         )
       );
 
-      // Update parent if needed
-      if (onDismissSchein) {
-        // Notify parent of update (you might want to add a new callback for this)
-      }
-
       setShowTasksModal(false);
-
-      // Show success message
-      const completedCount = completedTasks.length;
-      const totalCount = selectedScheinTasks.notes?.length || 0;
-
-      // You could add a toast here
-      console.log(`${completedCount}/${totalCount} Aufgaben gespeichert`);
     } catch (err) {
       console.error("Fehler beim Speichern der Aufgaben:", err);
       alert("Fehler beim Speichern der Aufgaben");
@@ -318,7 +305,7 @@ const DashboardContent = ({
     }
   };
 
-  // NEW: Get active (incomplete) tasks count
+  // Get active (incomplete) tasks count
   const getActiveTasksCount = (schein) => {
     if (!Array.isArray(schein.notes)) return 0;
 
@@ -549,8 +536,6 @@ const DashboardContent = ({
      Dashboard data derived from visibleScheins
      ───────────────────────────────────────── */
 
-  // All cars visible on dashboard (already in visibleScheins)
-  // Sold-only list for cards
   const soldOnlyScheins = useMemo(
     () =>
       (visibleScheins || []).filter(
@@ -559,7 +544,6 @@ const DashboardContent = ({
     [visibleScheins]
   );
 
-  // All cars with empty tank (sold OR not sold), but not hidden
   const fuelAlertScheins = useMemo(
     () =>
       (visibleScheins || []).filter(
@@ -679,11 +663,12 @@ const DashboardContent = ({
                 <FiMenu className="h-4 w-4" />
               </button>
 
-              {/* Fuel alert - Mobile optimized */}
+              {/* Fuel alert - now opens modal */}
               <div className="flex items-center">
                 {fuelAlertScheins.length > 0 && (
-                  <Link
-                    href="/Auto-scheins"
+                  <button
+                    type="button"
+                    onClick={() => setShowFuelModal(true)}
                     className={`inline-flex items-center gap-1 sm:gap-1 border px-2 py-1 sm:px-3 sm:py-1 text-xs font-medium shadow-sm transition-colors mr-12 ${
                       darkMode
                         ? "border-amber-900 bg-amber-900/50 text-amber-200 hover:bg-amber-800 hover:border-amber-600"
@@ -706,7 +691,7 @@ const DashboardContent = ({
                       {fuelAlertScheins.length === 1 ? "Fahrzeug" : "Fahrzeuge"}{" "}
                       mit leerem Tank
                     </span>
-                  </Link>
+                  </button>
                 )}
               </div>
             </div>
@@ -729,7 +714,7 @@ const DashboardContent = ({
                     {/* Status bar */}
                     <div className="h-1 bg-slate-500" />
 
-                    {/* Header - Mobile optimized */}
+                    {/* Header */}
                     <div
                       className={`p-2 sm:p-3 border-b ${
                         darkMode ? "border-gray-700" : "border-gray-100"
@@ -766,7 +751,7 @@ const DashboardContent = ({
                       </p>
                     </div>
 
-                    {/* Compact details - Mobile optimized */}
+                    {/* Compact details */}
                     <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
                       <div className="flex justify-center items-center text-[14px] sm:text-base">
                         <span
@@ -818,7 +803,7 @@ const DashboardContent = ({
                       </div>
                     </div>
 
-                    {/* Footer - Mobile optimized */}
+                    {/* Footer */}
                     <div
                       className={`px-2 sm:px-3 py-1.5 sm:py-2 border-t flex justify-between items-center ${
                         darkMode
@@ -877,7 +862,7 @@ const DashboardContent = ({
               </div>
             )}
 
-            {/* Bevorstehende Kundentermine - Mobile optimized */}
+            {/* Bevorstehende Kundentermine */}
             {upcomingAppointments.length > 0 && (
               <section className="mt-4 sm:mt-6">
                 <div className="mb-2 sm:mb-3 flex items-center gap-2 sm:gap-3">
@@ -904,7 +889,6 @@ const DashboardContent = ({
                   </div>
                 </div>
 
-                {/* Single compact card - Mobile optimized */}
                 <div
                   className={`border rounded-lg hover:border-slate-500 transition-all duration-200 w-full max-w-sm ${
                     darkMode
@@ -1103,14 +1087,153 @@ const DashboardContent = ({
                     className={`px-4 py-2 text-sm rounded-md ${
                       savingTasks
                         ? "bg-gray-400 text-white cursor-not-allowed"
-                        : darkMode
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
                         : "bg-blue-600 text-white hover:bg-blue-700"
                     }`}
                   >
                     {savingTasks ? "Speichern..." : "Speichern"}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Fuel Alert Modal */}
+      {showFuelModal && fuelAlertScheins.length > 0 && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowFuelModal(false)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className={`w-full max-w-lg rounded-xl shadow-2xl border ${
+                darkMode
+                  ? "bg-gray-900 border-gray-700"
+                  : "bg-white border-gray-200"
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div
+                className={`flex items-center justify-between px-5 py-3 border-b ${
+                  darkMode ? "border-gray-700" : "border-gray-200"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                      darkMode ? "bg-amber-900/60" : "bg-amber-50"
+                    }`}
+                  >
+                    <FiDroplet
+                      className={darkMode ? "text-amber-300" : "text-amber-500"}
+                    />
+                  </span>
+                  <div>
+                    <h3
+                      className={`text-sm sm:text-base font-semibold ${
+                        darkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      Fahrzeuge mit leerem Tank
+                    </h3>
+                    <p
+                      className={`text-[11px] sm:text-xs ${
+                        darkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
+                      {fuelAlertScheins.length}{" "}
+                      {fuelAlertScheins.length === 1
+                        ? "Fahrzeug benötigt"
+                        : "Fahrzeuge benötigen"}{" "}
+                      Benzin / Diesel.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="px-5 py-4 max-h-[60vh] overflow-y-auto space-y-2">
+                {fuelAlertScheins.map((car) => (
+                  <div
+                    key={car._id}
+                    className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border px-3 py-2.5 text-sm ${
+                      darkMode
+                        ? "bg-gray-800/80 border-gray-700"
+                        : "bg-gray-50 border-gray-200"
+                    }`}
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <div
+                        className={`font-semibold ${
+                          darkMode ? "text-white" : "text-gray-900"
+                        }`}
+                      >
+                        {car.carName || "Unbekanntes Fahrzeug"}
+                      </div>
+                      <div
+                        className={`text-[11px] ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}
+                      >
+                        FIN:{" "}
+                        <span className="font-medium">
+                          {car.finNumber || "–"}
+                        </span>
+                      </div>
+                      <div
+                        className={`text-[11px] ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}
+                      >
+                        Besitzer:{" "}
+                        <span className="font-medium">{car.owner || "–"}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-end sm:items-center gap-2 sm:flex-col sm:gap-1 sm:text-right">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          darkMode
+                            ? "bg-amber-900/60 text-amber-200"
+                            : "bg-amber-100 text-amber-800"
+                        }`}
+                      >
+                        <FiAlertTriangle className="h-3 w-3" />
+                        Tank leer
+                      </span>
+                      <Link
+                        href="/Auto-scheins"
+                        className={`text-[11px] underline decoration-dotted ${
+                          darkMode
+                            ? "text-slate-300 hover:text-slate-100"
+                            : "text-slate-700 hover:text-slate-900"
+                        }`}
+                      >
+                        In Fahrzeugscheinen öffnen
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div
+                className={`flex justify-end border-t px-5 py-3 ${
+                  darkMode ? "border-gray-700" : "border-gray-200"
+                }`}
+              >
+                <button
+                  onClick={() => setShowFuelModal(false)}
+                  className={`px-4 py-2 text-sm rounded-md ${
+                    darkMode
+                      ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  Schließen
+                </button>
               </div>
             </div>
           </div>
