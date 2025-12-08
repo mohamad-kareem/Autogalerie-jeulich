@@ -180,10 +180,7 @@ export default function TranslatorPage() {
 
           <div className="p-3 bg-gray-100 rounded h-full">
             <p className="font-bold mb-1">Customer (German):</p>
-            <p>
-              {germanDetected ||
-                "When you click Start, recognized German will appear here."}
-            </p>
+            <p>{germanDetected || "click Start."}</p>
           </div>
         </div>
       </div>
