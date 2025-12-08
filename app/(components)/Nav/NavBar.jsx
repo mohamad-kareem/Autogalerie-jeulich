@@ -54,6 +54,7 @@ export default function NavBar() {
     "/medicine",
     "/Autoteil",
     "/aufgabenboard",
+    "/translator",
   ];
 
   const isAdminRoute = adminRoutes.some((route) =>

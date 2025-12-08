@@ -1,71 +1,108 @@
-// app/translator/page.jsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 
 export default function TranslatorPage() {
-  // Speech recognition state
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(true);
   const recognitionRef = useRef(null);
 
-  // Text state
+  // --- Text states ---
   const [germanDetected, setGermanDetected] = useState("");
-  const [englishDetected, setEnglishDetected] = useState("");
-
-  const [englishReply, setEnglishReply] = useState("");
+  const [englishTranslation, setEnglishTranslation] = useState("");
+  const [typedEnglish, setTypedEnglish] = useState("");
+  const [germanTranslationOfEnglish, setGermanTranslationOfEnglish] =
+    useState("");
   const [germanReply, setGermanReply] = useState("");
 
-  // ---------- API helper ----------
-  async function translate(text, target) {
-    const res = await fetch("/api/translate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, target }),
+  // --- Conversation memory ---
+  const [history, setHistory] = useState([]);
+
+  // ======================
+  // AI CALL (typing or speech)
+  // ======================
+  async function askAssistant({
+    germanText = "",
+    englishText = "",
+    historyList = [],
+  }) {
+    try {
+      const res = await fetch("/api/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ germanText, englishText, history: historyList }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error);
+
+      // Update UI results
+      if (data.english_translation)
+        setEnglishTranslation(data.english_translation);
+      if (data.german_translation)
+        setGermanTranslationOfEnglish(data.german_translation);
+      if (data.german_reply) setGermanReply(data.german_reply);
+
+      // store last dealer reply in memory
+      if (data.german_reply) {
+        setHistory((prev) => {
+          const updated = [
+            ...prev,
+            { role: "dealer", text: data.german_reply },
+          ];
+          return updated.slice(-3);
+        });
+      }
+    } catch (err) {
+      console.error("AI error:", err);
+    }
+  }
+
+  // ======================
+  // Trigger when YOU TYPE ENGLISH
+  // ======================
+  async function handleTranslateTypedEnglish() {
+    if (!typedEnglish.trim()) return;
+
+    // store typed english before sending
+    setHistory((prev) => {
+      const updated = [...prev, { role: "dealer", text: typedEnglish }];
+      return updated.slice(-3);
     });
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      console.error("Translate error:", data);
-      throw new Error(data.error || "Failed to translate");
-    }
-
-    return data.translated;
+    await askAssistant({
+      englishText: typedEnglish,
+      historyList: history,
+    });
   }
 
-  // ---------- When German speech is detected ----------
-  async function handleGermanDetected(germanText) {
+  // ======================
+  // SPEECH HANDLING (CUSTOMER GERMAN)
+  // ======================
+  function handleGermanDetected(germanText) {
     setGermanDetected(germanText);
 
-    try {
-      const en = await translate(germanText, "English");
-      setEnglishDetected(en);
-    } catch (err) {
-      console.error(err);
-    }
+    // add to history as customer text
+    setHistory((prev) => {
+      const updated = [...prev, { role: "customer", text: germanText }];
+      return updated.slice(-3);
+    });
+
+    askAssistant({
+      germanText,
+      historyList: history,
+    });
   }
 
-  // ---------- Translate your English reply to German ----------
-  async function handleTranslateReply() {
-    if (!englishReply.trim()) return;
-    try {
-      const de = await translate(englishReply, "German");
-      setGermanReply(de);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  // ---------- Setup SpeechRecognition inside the page ----------
+  // ======================
+  // SPEECH RECOGNITION INIT
+  // ======================
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      console.warn("Speech recognition not supported in this browser.");
       setSupported(false);
       return;
     }
@@ -77,29 +114,13 @@ export default function TranslatorPage() {
 
     recog.onresult = (event) => {
       const transcript = event.results[event.results.length - 1][0].transcript;
-      console.log("🎙️ Recognized German:", transcript);
       handleGermanDetected(transcript);
     };
 
-    recog.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
-    };
-
-    recog.onstart = () => {
-      console.log("Speech recognition started");
-    };
-
-    recog.onend = () => {
-      console.log("Speech recognition ended");
-      // no auto-restart to keep it simple
-    };
+    recog.onerror = (e) => console.error("Speech error:", e.error);
+    recog.onend = () => setListening(false);
 
     recognitionRef.current = recog;
-
-    return () => {
-      recog.stop();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleListening = () => {
@@ -108,79 +129,94 @@ export default function TranslatorPage() {
       recognitionRef.current.stop();
       setListening(false);
     } else {
-      try {
-        recognitionRef.current.start();
-        setListening(true);
-      } catch (e) {
-        console.error("Error starting recognition:", e);
-      }
+      recognitionRef.current.start();
+      setListening(true);
     }
   };
 
+  // ======================
+  // RENDER PAGE
+  // ======================
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6 mt-25">
-      <h1 className="text-2xl font-bold mb-4">
-        📞 Live Phone Translator (Deutsch ↔ Englisch)
+    <div className="max-w-6xl mx-auto p-6 space-y-8">
+      <h1 className="text-2xl font-bold">
+        📞 AI Buyer Assistant – Real-Time Translator
       </h1>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* LEFT SIDE: English + your reply */}
-        <div className="md:w-2/3 space-y-4">
-          {/* English translation */}
-          <div className="p-3 bg-gray-100 rounded">
-            <p className="font-bold mb-1">English translation of customer:</p>
-            <p>
-              {englishDetected || "Here you will see the English translation."}
-            </p>
-          </div>
+      <p className="text-gray-600">
+        You write in English → AI translates to German → you read it. Seller
+        speaks German → AI translates to English → AI answers in German.
+      </p>
 
-          {/* Your custom English reply */}
-          <div className="space-y-2">
-            <p className="font-semibold">Write your reply in English:</p>
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* LEFT: YOU (English input & translations) */}
+        <div className="md:w-2/3 space-y-5">
+          {/* TYPE ENGLISH */}
+          <div>
+            <p className="font-semibold">Write your English message:</p>
             <textarea
-              value={englishReply}
-              onChange={(e) => setEnglishReply(e.target.value)}
-              placeholder="Write your reply in English and I will translate it to German..."
+              value={typedEnglish}
+              onChange={(e) => setTypedEnglish(e.target.value)}
               className="w-full p-3 border rounded"
               rows={3}
+              placeholder="Type what you want to say to the seller..."
             />
             <button
-              onClick={handleTranslateReply}
-              className="px-4 py-2 bg-green-600 text-white rounded"
+              onClick={handleTranslateTypedEnglish}
+              className="mt-2 px-4 py-2 bg-green-600 text-white rounded"
             >
-              Translate my reply to German
+              Translate to German
             </button>
           </div>
 
-          {/* Final German reply (big) */}
+          {/* TRANSLATION TO GERMAN */}
           <div className="p-3 bg-gray-100 rounded">
-            <p className="font-bold mb-1">Your reply to read in German:</p>
+            <p className="font-bold mb-1">
+              German translation (you read this):
+            </p>
             <p className="text-xl font-semibold">
-              {germanReply ||
-                "After translating, your German reply will appear here."}
+              {germanTranslationOfEnglish ||
+                "Translated German sentence will appear here."}
+            </p>
+          </div>
+
+          {/* TRANSLATION OF CUSTOMER (GERMAN → ENGLISH) */}
+          <div className="p-3 bg-gray-100 rounded">
+            <p className="font-bold">Customer → English:</p>
+            <p>
+              {englishTranslation || "Customer English meaning appears here."}
+            </p>
+          </div>
+
+          {/* AI-GENERATED GERMAN REPLY */}
+          <div className="p-3 bg-gray-100 rounded">
+            <p className="font-bold">
+              AI German Reply (you read this to seller):
+            </p>
+            <p className="text-xl font-semibold">
+              {germanReply || "AI reply will appear here."}
             </p>
           </div>
         </div>
 
-        {/* RIGHT SIDE: Listening + German text from customer */}
+        {/* RIGHT: SPEECH */}
         <div className="md:w-1/3 space-y-4">
           {!supported && (
-            <div className="p-3 bg-red-100 text-red-700 rounded">
-              Your browser does not support speech recognition. Please use
-              Chrome on desktop.
+            <div className="p-3 bg-red-100 text-red-700">
+              Speech recognition not supported. Use Chrome Desktop.
             </div>
           )}
 
           <button
             onClick={toggleListening}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg"
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded"
           >
             {listening ? "Stop Listening" : "Start Listening"}
           </button>
 
-          <div className="p-3 bg-gray-100 rounded h-full">
-            <p className="font-bold mb-1">Customer (German):</p>
-            <p>{germanDetected || "click Start."}</p>
+          <div className="p-3 bg-gray-100 rounded min-h-[100px]">
+            <p className="font-bold">Customer German Speech:</p>
+            <p>{germanDetected || "Waiting for speech..."}</p>
           </div>
         </div>
       </div>

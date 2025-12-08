@@ -59,5 +59,6 @@ export const config = {
     "/Auto-scheins/:path*",
     "/Autoteil/:path*",
     "/aufgabenboard/:path*",
+    "/translator/:path*",
   ],
 };
