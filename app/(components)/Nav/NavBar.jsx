@@ -5,15 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import {
-  User,
-  Settings,
-  Home,
-  LogOut,
-  UserCog,
-  Mail,
-  Shield,
-} from "lucide-react";
+import { User, Settings, Home, LogOut, UserCog, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 
@@ -58,6 +50,13 @@ export default function NavBar() {
   ];
 
   const isAdminRoute = adminRoutes.some((route) =>
+    pathname?.toLowerCase().startsWith(route.toLowerCase())
+  );
+
+  // 🔹 Routes where the floating dropdown should be completely hidden
+  const hideDropdownRoutes = ["/schlussel"];
+
+  const hideDropdown = hideDropdownRoutes.some((route) =>
     pathname?.toLowerCase().startsWith(route.toLowerCase())
   );
 
@@ -157,14 +156,14 @@ export default function NavBar() {
               exit={{ opacity: 0, y: 10, scale: 0.97 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
               className="
-        absolute right-0 mt-3 w-[290px] sm:w-[320px]
-        rounded-2xl 
-        border border-slate-700/70
-        bg-slate-900/95 
-        shadow-2xl shadow-black/50
-        backdrop-blur-xl
-        overflow-hidden
-      "
+                absolute right-0 mt-3 w-[290px] sm:w-[320px]
+                rounded-2xl 
+                border border-slate-700/70
+                bg-slate-900/95 
+                shadow-2xl shadow-black/50
+                backdrop-blur-xl
+                overflow-hidden
+              "
             >
               {/* HEADER */}
               <div className="bg-gradient-to-r from-slate-950 to-slate-900 px-4 py-4 text-white">
@@ -206,16 +205,16 @@ export default function NavBar() {
                   href="/AdminDashboard"
                   onClick={() => setOpen(false)}
                   className="
-      flex items-center px-4 py-2.5 text-sm text-slate-200
-      hover:bg-slate-800 hover:text-blue-400
-      transition-colors group
-    "
+                    flex items-center px-4 py-2.5 text-sm text-slate-200
+                    hover:bg-slate-800 hover:text-blue-400
+                    transition-colors group
+                  "
                 >
                   <div
                     className="
-        w-8 h-8 flex items-center justify-center rounded-lg
-        bg-blue-900/40 group-hover:bg-blue-900/60
-      "
+                      w-8 h-8 flex items-center justify-center rounded-lg
+                      bg-blue-900/40 group-hover:bg-blue-900/60
+                    "
                   >
                     <Settings className="w-4 h-4 text-blue-400" />
                   </div>
@@ -227,39 +226,39 @@ export default function NavBar() {
                   href="/"
                   onClick={() => setOpen(false)}
                   className="
-      flex items-center px-4 py-2.5 text-sm text-slate-200
-      hover:bg-slate-800 hover:text-emerald-400
-      transition-colors group
-    "
+                    flex items-center px-4 py-2.5 text-sm text-slate-200
+                    hover:bg-slate-800 hover:text-emerald-400
+                    transition-colors group
+                  "
                 >
                   <div
                     className="
-        w-8 h-8 flex items-center justify-center rounded-lg
-        bg-emerald-900/40 group-hover:bg-emerald-900/60
-      "
+                      w-8 h-8 flex items-center justify-center rounded-lg
+                      bg-emerald-900/40 group-hover:bg-emerald-900/60
+                    "
                   >
                     <Home className="w-4 h-4 text-emerald-400" />
                   </div>
                   <span className="ml-3">Zur Homepage</span>
                 </Link>
 
-                {/* Profil bearbeiten — same style as links */}
+                {/* Profil bearbeiten */}
                 <button
                   onClick={() => {
                     setOpen(false);
                     setShowProfileModal(true);
                   }}
                   className="
-      w-full flex items-center px-4 py-2.5 text-sm text-slate-200
-      hover:bg-slate-800 hover:text-indigo-400
-      transition-colors group
-    "
+                    w-full flex items-center px-4 py-2.5 text-sm text-slate-200
+                    hover:bg-slate-800 hover:text-indigo-400
+                    transition-colors group
+                  "
                 >
                   <div
                     className="
-        w-8 h-8 flex items-center justify-center rounded-lg
-        bg-indigo-900/40 group-hover:bg-indigo-900/60
-      "
+                      w-8 h-8 flex items-center justify-center rounded-lg
+                      bg-indigo-900/40 group-hover:bg-indigo-900/60
+                    "
                   >
                     <UserCog className="w-4 h-4 text-indigo-400" />
                   </div>
@@ -275,14 +274,14 @@ export default function NavBar() {
                     signOut({ callbackUrl: "/" });
                   }}
                   className="
-            flex w-full items-center justify-center gap-2
-            px-1 py-1 rounded-md
-            border border-blue-500/40 
-            bg-blue-900/40 text-blue-300
-            hover:bg-blue-900/60 hover:text-blue-200
-            transition-all
-            shadow-sm shadow-black/40
-          "
+                    flex w-full items-center justify-center gap-2
+                    px-1 py-1 rounded-md
+                    border border-blue-500/40 
+                    bg-blue-900/40 text-blue-300
+                    hover:bg-blue-900/60 hover:text-blue-200
+                    transition-all
+                    shadow-sm shadow-black/40
+                  "
                 >
                   <LogOut className="w-4 h-4" />
                   Abmelden
@@ -313,8 +312,13 @@ export default function NavBar() {
     </div>
   );
 
-  // On admin routes, only show floating dropdown (no full navbar)
+  // 🧩 On admin routes:
+  // - normally show only floating dropdown
+  // - BUT on routes in hideDropdownRoutes (e.g. /schlussel) show nothing at all
   if (session?.user && isAdminRoute) {
+    if (hideDropdown) {
+      return null; // ❌ no navbar, no dropdown on /schlussel
+    }
     return <>{UserDropdown}</>;
   }
 
@@ -372,8 +376,8 @@ export default function NavBar() {
           <MobMenu Menus={Menus} />
         </div>
 
-        {/* Floating user dropdown (top-right) */}
-        {session?.user && UserDropdown}
+        {/* Floating user dropdown (top-right) on normal routes ONLY */}
+        {session?.user && !hideDropdown && UserDropdown}
       </nav>
     </header>
   );
