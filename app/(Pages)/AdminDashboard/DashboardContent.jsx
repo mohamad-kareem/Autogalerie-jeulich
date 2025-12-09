@@ -26,6 +26,7 @@ import {
   FiCheckSquare,
   FiSquare,
   FiDroplet,
+  FiMapPin,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -355,8 +356,14 @@ const DashboardContent = ({
       badge: null,
     },
     {
+      href: "/Rotkennzeichen",
+      icon: <FiMapPin className="text-red-400" />,
+      label: "Rotkennzeichen",
+      badge: null,
+    },
+    {
       href: "/punsh",
-      icon: <FiClock className="text-red-400" />,
+      icon: <FiClock className=" text-sky-400" />,
       label: "Stempeluhr",
       badge: null,
     },
