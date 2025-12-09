@@ -765,40 +765,62 @@ export default function KeysPage() {
 
   return (
     <div
-      className={`min-h-screen px-2 py-4 sm:px-3 md:px-4 transition-colors duration-300 ${bgClass}`}
+      className={`min-h-screen px-2  sm:px-3 md:px-4 transition-colors duration-300 ${bgClass}`}
     >
-      <div className="mx-auto mt-2 w-full max-w-[1200px] lg:max-w-[1400px]">
+      <div className="mx-auto  w-full max-w-[1200px] lg:max-w-[1400px]">
         {/* Marken-Filter oben */}
-        <section ref={brandsRef} className="mb-5 sm:mb-6">
-          <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-7">
+        <section
+          ref={brandsRef}
+          className="h-[100vh] flex items-center justify-center mb-10"
+        >
+          <div
+            className="
+      grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7
+      gap-6 sm:gap-7 md:gap-8
+      w-full max-w-[1450px]
+      px-4
+    "
+          >
             {carBrands.map((brand) => (
               <button
                 key={brand.name}
                 onClick={() => handleFilterBrand(brand.name)}
-                className={`flex flex-col items-center rounded-xl border p-2 text-center text-xs font-medium transition-all duration-150 ${
-                  filterBrand === brand.name
-                    ? darkMode
-                      ? "border-sky-500 bg-sky-900/50 shadow-sm shadow-sky-900/50"
-                      : "border-sky-500 bg-sky-50 shadow-sm shadow-sky-100"
-                    : darkMode
-                    ? "border-slate-800 bg-slate-800 hover:border-blue-500 hover:shadow-sm"
-                    : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
-                }`}
+                className={`
+          flex flex-col items-center justify-center
+          rounded-xl border p-4 sm:p-5 md:p-4
+          transition-all duration-150
+          ${
+            filterBrand === brand.name
+              ? darkMode
+                ? "border-sky-500 bg-sky-900/40 shadow-lg shadow-sky-900/40"
+                : "border-sky-500 bg-sky-100 shadow-md"
+              : darkMode
+              ? "border-slate-700 bg-slate-800 hover:border-blue-400 hover:shadow-md"
+              : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-md"
+          }
+        `}
+                style={{
+                  minHeight: "135px",
+                }}
               >
-                <div className="mb-1.5 flex h-12 w-16 items-center justify-center sm:h-17 sm:w-24">
+                {/* Larger icon */}
+                <div className="mb-1 flex h-18 w-28 sm:h-20 sm:w-32 md:h-24 md:w-32 items-center justify-center">
                   <Image
                     src={brand.logo}
                     alt={brand.name}
-                    width={64}
-                    height={64}
+                    width={160}
+                    height={160}
                     unoptimized
                     className="h-full w-full object-contain"
                   />
                 </div>
+
+                {/* Text slightly larger */}
                 <span
-                  className={`w-full truncate text-[11px] sm:text-xs transition-colors duration-300 ${
-                    darkMode ? "text-slate-300" : "text-slate-700"
-                  }`}
+                  className={`
+            text-[11px] sm:text-sm md:text-base font-medium tracking-wide
+            ${darkMode ? "text-slate-300" : "text-slate-700"}
+          `}
                 >
                   {brand.name}
                 </span>
@@ -817,7 +839,7 @@ export default function KeysPage() {
         <div className="mt-4 flex items-center justify-center gap-2">
           <Link
             href="/AdminDashboard"
-            className="inline-flex items-center justify-center rounded-full border border-slate-500/40 px-3 py-1.5 text-[12px] sm:text-xs text-slate-300 hover:border-blue-400 hover:text-blue-300 hover:bg-slate-800/60 transition-colors duration-200"
+            className="inline-flex items-center justify-center rounded-full border border-slate-500/40 px-3 py-1.5 mb-2 text-[12px] sm:text-xs text-slate-300 hover:border-blue-400 hover:text-blue-300 hover:bg-slate-800/60 transition-colors duration-200"
             aria-label="Zum Dashboard"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
