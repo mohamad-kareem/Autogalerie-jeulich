@@ -60,5 +60,6 @@ export const config = {
     "/Autoteil/:path*",
     "/aufgabenboard/:path*",
     "/translator/:path*",
+    "/Rotkennzeichen/:path*",
   ],
 };

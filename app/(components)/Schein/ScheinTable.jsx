@@ -43,6 +43,7 @@ export default function ScheinTable({
     keySold: false,
     keyNote: "",
     fuelNeeded: false,
+    rotKennzeichen: false,
   });
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -570,6 +571,7 @@ export default function ScheinTable({
       keySold: !!schein.keySold,
       keyNote: schein.keyNote || "",
       fuelNeeded: !!schein.fuelNeeded,
+      rotKennzeichen: !!schein.rotKennzeichen,
     });
     setShowKeyModal(true);
   };
@@ -603,6 +605,7 @@ export default function ScheinTable({
           keySold: keyForm.keySold,
           keyNote: keyForm.keyNote.trim(),
           fuelNeeded: keyForm.fuelNeeded,
+          rotKennzeichen: keyForm.rotKennzeichen, // ✅ NEW
         }),
       });
 
@@ -659,7 +662,7 @@ export default function ScheinTable({
               </tr>
             </thead>
             <tbody
-              className={`divide-y transition-colors duration-300 ${
+              className={`divide-y transition-colors duration-300 tracking-wide ${
                 darkMode
                   ? "divide-gray-700 bg-gray-800"
                   : "divide-gray-200 bg-white"
@@ -669,9 +672,9 @@ export default function ScheinTable({
                 [...Array(6)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
                     {Array.from({ length: 4 }).map((__, j) => (
-                      <td key={j} className="px-3 py-3">
+                      <td key={j} className="px-3 py-3 ">
                         <div
-                          className={`h-4 w-20 rounded transition-colors duration-300 ${
+                          className={`h-4 w-20 rounded transition-colors duration-300  ${
                             darkMode ? "bg-gray-700" : "bg-gray-200"
                           }`}
                         />
@@ -684,7 +687,7 @@ export default function ScheinTable({
                   <td colSpan={4} className="px-3 py-8 text-center">
                     <div className="mx-auto max-w-md">
                       <div
-                        className={`mb-1 text-sm font-medium transition-colors duration-300 ${
+                        className={`mb-1 text-sm font-medium transition-colors duration-300  ${
                           darkMode ? "text-gray-300" : "text-gray-700"
                         }`}
                       >
@@ -717,9 +720,9 @@ export default function ScheinTable({
 
                         {schein.keySold && (
                           <span
-                            className={`inline-flex items-center rounded-full px-2 py-[1px] text-[10px] font-semibold ${
+                            className={`inline-flex items-center rounded-full px-2 py-[1px] text-[11px] font-semibold ${
                               darkMode
-                                ? "bg-green-900 text-green-300"
+                                ? "bg-green-900 text-green-100"
                                 : "bg-green-100 text-green-700"
                             }`}
                           >
@@ -729,9 +732,9 @@ export default function ScheinTable({
 
                         {schein.fuelNeeded && (
                           <span
-                            className={`inline-flex items-center rounded-full px-2 py-[1px] text-[10px] font-semibold ${
+                            className={`inline-flex items-center rounded-full px-2 py-[1px] text-[11px] font-semibold ${
                               darkMode
-                                ? "bg-orange-900 text-orange-300"
+                                ? "bg-orange-900 text-orange-100"
                                 : "bg-orange-100 text-orange-700"
                             }`}
                           >
@@ -1395,6 +1398,21 @@ export default function ScheinTable({
                   className="h-4 w-4 rounded border-gray-300 accent-gray-600"
                 />
                 Fahrzeug braucht Benzin / Diesel (Tank leer)
+              </label>
+              <label
+                className={`flex items-center gap-2 text-xs font-medium transition-colors duration-300 ${
+                  darkMode ? "text-gray-300" : "text-gray-700"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={keyForm.rotKennzeichen}
+                  onChange={(e) =>
+                    handleKeyChange("rotKennzeichen", e.target.checked)
+                  }
+                  className="h-4 w-4 rounded border-gray-300 accent-gray-600"
+                />
+                Rotkennzeichen
               </label>
             </div>
 

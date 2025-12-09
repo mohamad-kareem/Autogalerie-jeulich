@@ -7,8 +7,11 @@ const CarScheinSchema = new mongoose.Schema(
     finNumber: { type: String, unique: true },
     imageUrl: { type: String },
     publicId: { type: String },
+
+    // Aufgaben
     notes: { type: [String], default: [] },
-    completedTasks: { type: [String], default: [] }, // NEW: Track completed tasks
+    completedTasks: { type: [String], default: [] },
+
     owner: { type: String, default: "" },
 
     // Schlüssel-Felder
@@ -21,7 +24,10 @@ const CarScheinSchema = new mongoose.Schema(
     // Tankstatus
     fuelNeeded: { type: Boolean, default: false },
 
-    // 🔹 Nur für Dashboard (ob Karte ausgeblendet ist)
+    // Rotkennzeichen (rotes Kennzeichen)
+    rotKennzeichen: { type: Boolean, default: false },
+
+    // Nur für Dashboard (ob Karte ausgeblendet ist)
     dashboardHidden: { type: Boolean, default: false },
   },
   { timestamps: true }
