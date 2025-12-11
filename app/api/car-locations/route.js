@@ -13,14 +13,13 @@ function jsonResponse(data, status = 200) {
 
 // -----------------------
 // GET /api/car-locations
-// List all records
 // -----------------------
 export async function GET() {
   try {
     await connectDB();
 
     const docs = await CarLocation.find()
-      .sort({ date: -1, createdAt: -1 })
+      .sort({ startDateTime: -1, createdAt: -1 })
       .lean();
 
     return jsonResponse({ docs }, 200);
@@ -32,7 +31,6 @@ export async function GET() {
 
 // -----------------------
 // POST /api/car-locations
-// Create new record
 // -----------------------
 export async function POST(req) {
   try {
@@ -44,15 +42,27 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { date, carName, finNumber, location } = body;
+    const {
+      startDateTime,
+      endDateTime,
+      vehicleType,
+      manufacturer,
+      vehicleId,
+      routeSummary,
+      driverInfo,
+    } = body;
 
-    const dateObj = date ? new Date(date) : null;
+    const startDate = startDateTime ? new Date(startDateTime) : null;
+    const endDate = endDateTime ? new Date(endDateTime) : null;
 
     const doc = await CarLocation.create({
-      date: dateObj,
-      carName: carName || "",
-      finNumber: finNumber || "",
-      location: location || "",
+      startDateTime: startDate,
+      endDateTime: endDate,
+      vehicleType: vehicleType || "",
+      manufacturer: manufacturer || "",
+      vehicleId: vehicleId || "",
+      routeSummary: routeSummary || "",
+      driverInfo: driverInfo || "",
     });
 
     return jsonResponse(doc, 201);
@@ -64,7 +74,6 @@ export async function POST(req) {
 
 // -----------------------
 // PUT /api/car-locations
-// Update existing record
 // -----------------------
 export async function PUT(req) {
   try {
@@ -76,7 +85,16 @@ export async function PUT(req) {
     }
 
     const body = await req.json();
-    const { id, date, carName, finNumber, location } = body;
+    const {
+      id,
+      startDateTime,
+      endDateTime,
+      vehicleType,
+      manufacturer,
+      vehicleId,
+      routeSummary,
+      driverInfo,
+    } = body;
 
     if (!id) {
       return jsonResponse({ error: "Missing id" }, 400);
@@ -84,17 +102,28 @@ export async function PUT(req) {
 
     const updateFields = {};
 
-    if (typeof date !== "undefined") {
-      updateFields.date = date ? new Date(date) : null;
+    if (typeof startDateTime !== "undefined") {
+      updateFields.startDateTime = startDateTime
+        ? new Date(startDateTime)
+        : null;
     }
-    if (typeof carName !== "undefined") {
-      updateFields.carName = carName || "";
+    if (typeof endDateTime !== "undefined") {
+      updateFields.endDateTime = endDateTime ? new Date(endDateTime) : null;
     }
-    if (typeof finNumber !== "undefined") {
-      updateFields.finNumber = finNumber || "";
+    if (typeof vehicleType !== "undefined") {
+      updateFields.vehicleType = vehicleType || "";
     }
-    if (typeof location !== "undefined") {
-      updateFields.location = location || "";
+    if (typeof manufacturer !== "undefined") {
+      updateFields.manufacturer = manufacturer || "";
+    }
+    if (typeof vehicleId !== "undefined") {
+      updateFields.vehicleId = vehicleId || "";
+    }
+    if (typeof routeSummary !== "undefined") {
+      updateFields.routeSummary = routeSummary || "";
+    }
+    if (typeof driverInfo !== "undefined") {
+      updateFields.driverInfo = driverInfo || "";
     }
 
     const updated = await CarLocation.findByIdAndUpdate(id, updateFields, {
@@ -114,7 +143,6 @@ export async function PUT(req) {
 
 // -----------------------
 // DELETE /api/car-locations?id=...
-// Delete record
 // -----------------------
 export async function DELETE(req) {
   try {

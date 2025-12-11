@@ -3,15 +3,23 @@ import mongoose from "mongoose";
 
 const CarLocationSchema = new mongoose.Schema(
   {
-    // Date of the entry (e.g. when car was parked / moved)
-    date: { type: Date },
+    // Beginn & Ende der Fahrt (Datum + Uhrzeit)
+    startDateTime: { type: Date },
+    endDateTime: { type: Date },
 
-    // Just store plain strings for now
-    carName: { type: String, default: "" },
-    finNumber: { type: String, default: "" },
+    // Fahrzeugdaten
+    vehicleType: { type: String, default: "" }, // PKW, LKW, ...
+    // Herst. – hier speichern wir den Namen aus Rotschein (z.B. "VW Golf 1.6")
+    manufacturer: { type: String, default: "" },
+    // FZ-Ident.Nr – FIN oder Kennzeichen
+    vehicleId: { type: String, default: "" },
 
-    // Free text for location: e.g. "Halle links", "Parkplatz A3", etc.
-    location: { type: String, default: "" },
+    // Fahrstrecke + Art der Fahrt in einem Feld:
+    // z.B. "Jülich-Aldenhoven-Jülich + Überführungsfahrt"
+    routeSummary: { type: String, default: "" },
+
+    // Name und Anschrift des Fahrzeugführers
+    driverInfo: { type: String, default: "" },
   },
   { timestamps: true }
 );
