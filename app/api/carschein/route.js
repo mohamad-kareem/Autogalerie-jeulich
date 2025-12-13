@@ -5,7 +5,9 @@ import cloudinary from "@/app/utils/cloudinary";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// Small helper for JSON responses
+// -----------------------
+// Helper: JSON response
+// -----------------------
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -45,7 +47,7 @@ export async function POST(req) {
       rotKennzeichen,
     } = body;
 
-    // FIN uniqueness check (only if provided)
+    // FIN uniqueness check
     if (finNumber) {
       const existing = await CarSchein.findOne({ finNumber }).lean();
       if (existing) {
@@ -56,7 +58,6 @@ export async function POST(req) {
       }
     }
 
-    // Normalize notes → array of strings
     const notesArr = Array.isArray(notes)
       ? notes
       : (notes || "")
@@ -64,10 +65,7 @@ export async function POST(req) {
           .map((n) => n.trim())
           .filter(Boolean);
 
-    // Normalize completedTasks → array of strings
-    const completedArr = Array.isArray(completedTasks)
-      ? completedTasks
-      : (completedTasks || []).map((t) => String(t).trim()).filter(Boolean);
+    const completedArr = Array.isArray(completedTasks) ? completedTasks : [];
 
     const doc = await CarSchein.create({
       carName,
@@ -124,7 +122,6 @@ export async function GET(req) {
 
 // -----------------------
 // DELETE /api/carschein?id=...
-// Delete one document
 // -----------------------
 export async function DELETE(req) {
   try {
@@ -147,7 +144,6 @@ export async function DELETE(req) {
       return jsonResponse({ error: "Not found" }, 404);
     }
 
-    // NOTE: Image deletion is handled by /api/delete-image or explicitly
     await CarSchein.findByIdAndDelete(id);
 
     return jsonResponse({ success: true }, 200);
@@ -159,7 +155,7 @@ export async function DELETE(req) {
 
 // -----------------------
 // PUT /api/carschein
-// Update full document
+// Update document
 // -----------------------
 export async function PUT(req) {
   try {
@@ -192,7 +188,7 @@ export async function PUT(req) {
     } = body;
 
     if (!id) {
-      return jsonResponse({ error: "Missing data" }, 400);
+      return jsonResponse({ error: "Missing id" }, 400);
     }
 
     // Delete old Cloudinary image if changed
@@ -206,12 +202,11 @@ export async function PUT(req) {
 
     const updateFields = {};
 
-    if (typeof carName !== "undefined") updateFields.carName = carName;
-    if (typeof finNumber !== "undefined")
-      updateFields.finNumber = finNumber || "";
-    if (typeof owner !== "undefined") updateFields.owner = owner;
+    if (carName !== undefined) updateFields.carName = carName;
+    if (finNumber !== undefined) updateFields.finNumber = finNumber || "";
+    if (owner !== undefined) updateFields.owner = owner;
 
-    if (typeof notes !== "undefined") {
+    if (notes !== undefined) {
       updateFields.notes = Array.isArray(notes)
         ? notes
         : (notes || "")
@@ -220,35 +215,35 @@ export async function PUT(req) {
             .filter(Boolean);
     }
 
-    if (typeof completedTasks !== "undefined") {
+    if (completedTasks !== undefined) {
       updateFields.completedTasks = Array.isArray(completedTasks)
         ? completedTasks
-        : (completedTasks || []).map((t) => String(t).trim()).filter(Boolean);
+        : [];
     }
 
-    if (typeof imageUrl !== "undefined") {
-      updateFields.imageUrl = imageUrl || null;
-    }
-    if (typeof publicId !== "undefined") {
-      updateFields.publicId = publicId || null;
-    }
+    if (imageUrl !== undefined) updateFields.imageUrl = imageUrl || null;
+    if (publicId !== undefined) updateFields.publicId = publicId || null;
 
-    if (typeof keyNumber !== "undefined") updateFields.keyNumber = keyNumber;
-    if (typeof keyCount !== "undefined") updateFields.keyCount = keyCount;
-    if (typeof keyColor !== "undefined") updateFields.keyColor = keyColor;
-    if (typeof keySold !== "undefined") updateFields.keySold = !!keySold;
-    if (typeof keyNote !== "undefined") updateFields.keyNote = keyNote;
+    if (keyNumber !== undefined) updateFields.keyNumber = keyNumber;
+    if (keyCount !== undefined) updateFields.keyCount = keyCount;
+    if (keyColor !== undefined) updateFields.keyColor = keyColor;
+    if (keySold !== undefined) updateFields.keySold = !!keySold;
+    if (keyNote !== undefined) updateFields.keyNote = keyNote;
 
-    if (typeof fuelNeeded !== "undefined") {
-      updateFields.fuelNeeded = !!fuelNeeded;
-    }
-
-    if (typeof dashboardHidden !== "undefined") {
-      updateFields.dashboardHidden = !!dashboardHidden;
-    }
-
-    if (typeof rotKennzeichen !== "undefined") {
+    if (fuelNeeded !== undefined) updateFields.fuelNeeded = !!fuelNeeded;
+    if (rotKennzeichen !== undefined)
       updateFields.rotKennzeichen = !!rotKennzeichen;
+
+    // ✅ IMPORTANT PART: dashboard close → release key
+    if (dashboardHidden !== undefined) {
+      updateFields.dashboardHidden = !!dashboardHidden;
+
+      if (dashboardHidden === true) {
+        updateFields.keyNumber = "";
+        updateFields.keyColor = "";
+        updateFields.keyCount = 0;
+        updateFields.keyNote = "";
+      }
     }
 
     const updated = await CarSchein.findByIdAndUpdate(id, updateFields, {
@@ -267,7 +262,7 @@ export async function PUT(req) {
 }
 
 // -----------------------
-// PATCH /api/carschein/tasks
+// PATCH /api/carschein
 // Update only completedTasks
 // -----------------------
 export async function PATCH(req) {
@@ -298,7 +293,7 @@ export async function PATCH(req) {
 
     return jsonResponse(updated, 200);
   } catch (err) {
-    console.error("PATCH /api/carschein/tasks error:", err);
+    console.error("PATCH /api/carschein error:", err);
     return jsonResponse({ error: err.message }, 500);
   }
 }
