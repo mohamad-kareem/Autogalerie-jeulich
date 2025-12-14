@@ -737,16 +737,19 @@ const DashboardContent = ({
                         </h3>
                         <button
                           onClick={() => handleDismissSchein(schein._id)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 sm:p-1 rounded ml-1 sm:ml-2 flex-shrink-0"
-                          title="Ausblenden"
+                          title="Entfernen"
+                          aria-label="Entfernen"
+                          className={`ml-1 sm:ml-2 flex-shrink-0 rounded-full p-1.5
+    opacity-0 group-hover:opacity-100
+    transition-all duration-200
+    ${
+      darkMode
+        ? "bg-gray-700/40 hover:bg-yellow-600/30 text-gray-300 hover:text-yellow-300"
+        : "bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-yellow-600"
+    }
+    hover:scale-110`}
                         >
-                          <FiX
-                            className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${
-                              darkMode
-                                ? "text-gray-400 hover:bg-gray-700"
-                                : "text-gray-500 hover:bg-gray-100"
-                            }`}
-                          />
+                          <FiX className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </button>
                       </div>
                       <p
@@ -819,12 +822,24 @@ const DashboardContent = ({
                       }`}
                     >
                       <span
-                        className={`text-[12px] sm:text-xs ${
-                          darkMode ? "text-gray-400" : "text-gray-600"
+                        className={`text-[12px] sm:text-xs font-medium ${
+                          getActiveTasksCount(schein) === 0
+                            ? darkMode
+                              ? "text-yellow-300"
+                              : "text-yellow-600"
+                            : darkMode
+                            ? "text-gray-400"
+                            : "text-gray-600"
                         }`}
                       >
-                        {getActiveTasksCount(schein)} aktive Aufgaben
+                        {(() => {
+                          const active = getActiveTasksCount(schein);
+                          return active === 0
+                            ? "Bereit zur Abholung"
+                            : `${active} aktive Aufgaben`;
+                        })()}
                       </span>
+
                       <button
                         onClick={() => openTasksModal(schein)}
                         className={`text-[12px] sm:text-xs font-medium hover:text-slate-300 transition-colors ${
