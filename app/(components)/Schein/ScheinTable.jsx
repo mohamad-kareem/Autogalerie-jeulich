@@ -583,11 +583,6 @@ export default function ScheinTable({
   const handleKeySave = async () => {
     if (!selectedSchein?._id) return;
 
-    if (!keyForm.keyNumber.trim()) {
-      toast.error("Bitte eine Schlüsselnummer eintragen.");
-      return;
-    }
-
     try {
       const res = await fetch("/api/carschein", {
         method: "PUT",
@@ -599,7 +594,8 @@ export default function ScheinTable({
           notes: selectedSchein.notes || [],
           imageUrl: selectedSchein.imageUrl ?? null,
           publicId: selectedSchein.publicId ?? null,
-          keyNumber: keyForm.keyNumber.trim(),
+          keyNumber: keyForm.keyNumber.trim() || "",
+
           keyCount: keyForm.keyCount,
           keyColor: keyForm.keyColor,
           keySold: keyForm.keySold,
@@ -1276,7 +1272,7 @@ export default function ScheinTable({
                     darkMode ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
-                  Schlüsselnummer <span className="text-red-500">*</span>
+                  Schlüsselnummer
                 </label>
                 <input
                   type="text"
