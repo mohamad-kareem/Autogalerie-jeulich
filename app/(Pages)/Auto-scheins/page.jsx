@@ -16,6 +16,7 @@ import {
   FiCheck,
   FiSun,
   FiMoon,
+  FiArrowLeft,
 } from "react-icons/fi";
 
 const LIMIT = 100;
@@ -139,21 +140,15 @@ export default function CarScheinPage() {
         {/* Header */}
         <header className="mb-3 sm:mb-4 flex items-center gap-4">
           <button
-            onClick={toggleDarkMode}
-            className={`p-2 rounded-lg transition-colors duration-300 ${
+            onClick={() => router.push("/AdminDashboard")}
+            className={`p-2 rounded-lg transition-colors duration-300 flex items-center gap-2 ${
               darkMode
-                ? "bg-gray-800 hover:bg-gray-700"
-                : "bg-gray-200 hover:bg-gray-300"
+                ? "bg-slate-800 hover:bg-slate-700 text-gray-200"
+                : "bg-slate-200 hover:bg-slate-300 text-slate-700"
             }`}
-            title={
-              darkMode ? "Zu Hellmodus wechseln" : "Zu Dunkelmodus wechseln"
-            }
+            title="Zurück zum Dashboard"
           >
-            {darkMode ? (
-              <FiSun className="h-4 w-4 text-yellow-400" />
-            ) : (
-              <FiMoon className="h-4 w-4 text-gray-600" />
-            )}
+            <FiArrowLeft className="h-4 w-4" />
           </button>
           <h1
             className={`text-lg sm:text-xl font-bold transition-colors duration-300 ${textPrimary}`}

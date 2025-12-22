@@ -61,5 +61,6 @@ export const config = {
     "/aufgabenboard/:path*",
     "/translator/:path*",
     "/Rotkennzeichen/:path*",
+    "/Kundenkontakte/:path*",
   ],
 };

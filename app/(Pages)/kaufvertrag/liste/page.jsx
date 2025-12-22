@@ -16,6 +16,7 @@ import {
   FiChevronDown,
   FiSun,
   FiMoon,
+  FiArrowLeft,
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 
@@ -342,35 +343,21 @@ export default function KaufvertragListe() {
           className="mb-2 sm:mb-3 lg:mb-4"
         >
           <div className="flex flex-wrap items-center  gap-4">
-            {/* Dark Mode Toggle */}
             <button
-              onClick={toggleDarkMode}
-              className={`p-2 rounded-lg transition-colors duration-300 ${
+              onClick={() => router.push("/AdminDashboard")}
+              className={`p-2 rounded-lg transition-colors duration-300 flex items-center gap-2 ${
                 darkMode
-                  ? "bg-slate-800 hover:bg-slate-700"
-                  : "bg-slate-200 hover:bg-slate-300"
+                  ? "bg-slate-800 hover:bg-slate-700 text-gray-200"
+                  : "bg-slate-200 hover:bg-slate-300 text-slate-700"
               }`}
-              title={
-                darkMode ? "Zu Hellmodus wechseln" : "Zu Dunkelmodus wechseln"
-              }
+              title="Zurück zum Dashboard"
             >
-              {darkMode ? (
-                <FiSun className="h-4 w-4 text-yellow-400" />
-              ) : (
-                <FiMoon className="h-4 w-4 text-slate-600" />
-              )}
-            </button>{" "}
+              <FiArrowLeft className="h-4 w-4" />
+            </button>
             <h1
               className={`text-base sm:text-lg lg:text-2xl font-bold transition-colors duration-300 ${textPrimary}`}
             >
               Kaufverträge
-              <span
-                className={`ml-2 text-xs sm:text-sm font-normal transition-colors duration-300 ${
-                  darkMode ? "text-slate-400" : "text-slate-500"
-                }`}
-              >
-                ({filteredContracts.length})
-              </span>
             </h1>
           </div>
         </motion.header>

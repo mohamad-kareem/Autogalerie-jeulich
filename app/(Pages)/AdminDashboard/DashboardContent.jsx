@@ -95,15 +95,25 @@ function parseAppointmentFromTitle(title) {
 
   if (!date) return null;
 
-  const timeMatch = lower.match(/(\d{1,2})\s*[:\.]?\s*(\d{2})?\s*uhr/);
-  let hours = 10;
-  let minutes = 0;
+  const timeMatch = lower.match(
+    /(\d{1,2})\s*[:\.]\s*(\d{2})|\b(\d{1,2})\s*uhr\b/
+  );
 
-  if (timeMatch) {
+  if (!timeMatch) {
+    return null; // ❌ no time → not a Termin
+  }
+
+  let hours;
+  let minutes;
+
+  if (timeMatch[1] && timeMatch[2]) {
+    // 14:30 or 9.30
     hours = parseInt(timeMatch[1], 10);
-    if (timeMatch[2]) {
-      minutes = parseInt(timeMatch[2], 10);
-    }
+    minutes = parseInt(timeMatch[2], 10);
+  } else if (timeMatch[3]) {
+    // 14 Uhr
+    hours = parseInt(timeMatch[3], 10);
+    minutes = 0;
   }
 
   date.setHours(hours, minutes, 0, 0);
@@ -378,6 +388,12 @@ const DashboardContent = ({
       icon: <FiClock className="text-yellow-400" />,
       label: "Zeiterfassung",
       badge: null,
+    },
+    {
+      href: "/Kundenkontakte",
+      icon: <FiUsers className="text-green-400" />,
+      label: "Kundenkontakte",
+      badge: unreadCount > 0 ? unreadCount : null,
     },
     {
       href: "/Posteingang",
@@ -906,7 +922,7 @@ const DashboardContent = ({
                     >
                       {upcomingAppointments.length} Termin
                       {upcomingAppointments.length !== 1 ? "e" : ""} in den
-                      nächsten 48 Stunden
+                      nächsten 72 Stunden
                     </p>
                   </div>
                 </div>
@@ -935,13 +951,14 @@ const DashboardContent = ({
                               >
                                 {appt.title}
                               </p>
+                              {/* 
                               <p
                                 className={`text-[10px] sm:text-xs font-medium ${
                                   darkMode ? "text-slate-400" : "text-slate-600"
                                 }`}
                               >
                                 {formatAppointmentDateTime(appt.date)}
-                              </p>
+                              </p>*/}
                             </div>
                           </div>
                         </div>

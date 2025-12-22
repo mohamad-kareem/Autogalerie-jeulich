@@ -48,6 +48,7 @@ export default function NavBar() {
     "/aufgabenboard",
     "/translator",
     "/Rotkennzeichen",
+    "/Kundenkontakte",
   ];
 
   const isAdminRoute = adminRoutes.some((route) =>

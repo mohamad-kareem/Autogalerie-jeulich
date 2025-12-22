@@ -1,31 +1,33 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
+
 import Kaufvertrag from "@/models/Kaufvertrag";
 import CarSchein from "@/models/CarSchein";
-import { generateNextNumber } from "@/app/utils/invoiceHelpers";
-import { getLastValidContract } from "@/app/utils/getLastValidContract"; // ✅ import helper
+import ContactCustomer from "@/models/ContactCustomer";
 
-// ➕ Create new contract
+import { generateNextNumber } from "@/app/utils/invoiceHelpers";
+import { getLastValidContract } from "@/app/utils/getLastValidContract";
+
+/* ─────────────────────────────────────────────
+   POST → Create Kaufvertrag
+───────────────────────────────────────────── */
 export async function POST(req) {
   try {
     await connectDB();
     const data = await req.json();
 
-    // 1️⃣ Use helper to get correct last contract
+    /* 1️⃣ Get last valid contract for correct numbering */
     const lastValidContract = await getLastValidContract(data.issuer);
 
-    // 2️⃣ Determine base number
     const baseNumber =
       lastValidContract?.originalInvoiceNumber ||
       lastValidContract?.invoiceNumber;
 
-    // 3️⃣ Generate new invoice number
-    const newInvoiceNumber = generateNextNumber(baseNumber, data.issuer);
+    /* 2️⃣ Generate new invoice number */
+    const invoiceNumber = generateNextNumber(baseNumber, data.issuer);
 
-    // 4️⃣ Ensure uniqueness
-    const exists = await Kaufvertrag.findOne({
-      invoiceNumber: newInvoiceNumber,
-    });
+    /* 3️⃣ Ensure invoice number is unique */
+    const exists = await Kaufvertrag.findOne({ invoiceNumber });
     if (exists) {
       return NextResponse.json(
         { error: "Diese Rechnungsnummer existiert bereits." },
@@ -33,43 +35,52 @@ export async function POST(req) {
       );
     }
 
-    // 5️⃣ Create new contract
-    const newContract = await Kaufvertrag.create({
+    /* 4️⃣ Create Kaufvertrag */
+    const contract = await Kaufvertrag.create({
       ...data,
-      invoiceNumber: newInvoiceNumber,
+      invoiceNumber,
     });
 
-    // 6️⃣ CarSchein sync + Fahrzeug als verkauft markieren
+    /* 5️⃣ Save ContactCustomer (independent from Kaufvertrag) */
+    await ContactCustomer.create({
+      customerName: data.buyerName,
+      phone: data.phone,
+      email: data.email,
+      street: data.buyerStreet,
+      city: data.buyerCity,
+      postalCode: data.postalCode || "",
+      carName: data.carType,
+      vin: data.vin,
+      firstRegistration: data.firstRegistration,
+      source: "kaufvertrag",
+    });
+
+    /* 6️⃣ CarSchein sync + mark vehicle as sold */
     const { carType, vin, agreements, issuer } = data;
+
     if (carType && vin) {
       let parsedNotes = [];
 
       if (Array.isArray(agreements)) {
-        parsedNotes = agreements.map((line) => line.trim()).filter(Boolean);
+        parsedNotes = agreements.map((l) => l.trim()).filter(Boolean);
       } else if (typeof agreements === "string") {
         parsedNotes = agreements
-          .split(/\r?\n|;/) // split by newline or semicolon
-          .map((line) => line.replace(/^\* /, "").trim())
+          .split(/\r?\n|;/)
+          .map((l) => l.replace(/^\* /, "").trim())
           .filter(Boolean);
       }
 
       const existingSchein = await CarSchein.findOne({ finNumber: vin });
 
       if (existingSchein) {
-        const update = {};
+        const update = {
+          keySold: true,
+        };
 
-        // Notizen mergen, wenn vorhanden
         if (parsedNotes.length > 0) {
-          const combinedNotes = [
-            ...(existingSchein.notes || []),
-            ...parsedNotes,
-          ];
-          const uniqueNotes = [...new Set(combinedNotes)];
-          update.notes = uniqueNotes;
+          const merged = [...(existingSchein.notes || []), ...parsedNotes];
+          update.notes = [...new Set(merged)];
         }
-
-        // 🔴 Hier: Fahrzeug als verkauft markieren
-        update.keySold = true;
 
         await CarSchein.findByIdAndUpdate(existingSchein._id, {
           $set: update,
@@ -81,27 +92,26 @@ export async function POST(req) {
           notes: parsedNotes,
           assignedTo: "",
           owner: issuer === "karim" ? "Karim" : "Alawie",
-          // 🔴 Neuer Schein aus Vertrag = direkt verkauft
           keySold: true,
         });
       }
     }
 
-    return NextResponse.json(newContract, { status: 201 });
+    return NextResponse.json(contract, { status: 201 });
   } catch (err) {
-    console.error("POST ERROR:", err);
+    console.error("POST /kaufvertrag ERROR:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-// 📋 List contracts
+/* ─────────────────────────────────────────────
+   GET → List Kaufverträge (archived / active)
+───────────────────────────────────────────── */
 export async function GET(req) {
   try {
     await connectDB();
-    const { searchParams } = new URL(
-      req.url,
-      `http://${req.headers.get("host")}`
-    );
+
+    const { searchParams } = new URL(req.url);
     const showArchived = searchParams.get("archived") === "true";
 
     const contracts = await Kaufvertrag.find(
@@ -115,17 +125,18 @@ export async function GET(req) {
 
     return NextResponse.json(contracts);
   } catch (err) {
-    console.error("GET ERROR:", err);
+    console.error("GET /kaufvertrag ERROR:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-// 🛠️ Utility for single fetch
+/* ─────────────────────────────────────────────
+   Utility → Fetch single contract (internal use)
+───────────────────────────────────────────── */
 export async function GET_SINGLE(id) {
   try {
     await connectDB();
-    const contract = await Kaufvertrag.findById(id).lean();
-    return contract;
+    return await Kaufvertrag.findById(id).lean();
   } catch (err) {
     throw new Error(err.message);
   }
