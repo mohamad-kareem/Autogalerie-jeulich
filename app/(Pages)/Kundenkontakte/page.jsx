@@ -834,13 +834,6 @@ export default function ContactCustomersPage() {
                   >
                     {editingId ? "Kontakt bearbeiten" : "Neuer Kontakt"}
                   </h2>
-                  <p
-                    className={`text-xs mt-1 transition-colors duration-300 ${
-                      darkMode ? "text-slate-400" : "text-slate-500"
-                    }`}
-                  >
-                    Alle Felder mit * sind Pflichtfelder
-                  </p>
                 </div>
                 <button
                   onClick={cancelForm}
@@ -892,7 +885,7 @@ export default function ContactCustomersPage() {
                         onChange={(e) =>
                           setForm({ ...form, phone: e.target.value })
                         }
-                        placeholder="+49 123 456789"
+                        placeholder="+49 15562993627"
                         className={`w-full px-3 py-2.5 text-sm rounded-lg border transition-colors duration-300 ${inputBg} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
                       />
                     </div>
@@ -911,7 +904,7 @@ export default function ContactCustomersPage() {
                         onChange={(e) =>
                           setForm({ ...form, street: e.target.value })
                         }
-                        placeholder="Musterstraße 123"
+                        placeholder="Wießenstraße 6H"
                         className={`w-full px-3 py-2.5 text-sm rounded-lg border transition-colors duration-300 ${inputBg} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
                       />
                     </div>
@@ -929,7 +922,7 @@ export default function ContactCustomersPage() {
                         onChange={(e) =>
                           setForm({ ...form, postalCode: e.target.value })
                         }
-                        placeholder="12345"
+                        placeholder="52428"
                         className={`w-full px-3 py-2.5 text-sm rounded-lg border transition-colors duration-300 ${inputBg} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
                       />
                     </div>
@@ -947,7 +940,7 @@ export default function ContactCustomersPage() {
                         onChange={(e) =>
                           setForm({ ...form, city: e.target.value })
                         }
-                        placeholder="Musterstadt"
+                        placeholder="Jülich"
                         className={`w-full px-3 py-2.5 text-sm rounded-lg border transition-colors duration-300 ${inputBg} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
                       />
                     </div>
@@ -966,7 +959,7 @@ export default function ContactCustomersPage() {
                         onChange={(e) =>
                           setForm({ ...form, carName: e.target.value })
                         }
-                        placeholder="Hersteller Modell"
+                        placeholder="Modell"
                         className={`w-full px-3 py-2.5 text-sm rounded-lg border transition-colors duration-300 ${inputBg} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
                       />
                     </div>
@@ -1025,7 +1018,7 @@ export default function ContactCustomersPage() {
                           setForm({ ...form, note: e.target.value })
                         }
                         placeholder="Weitere Informationen oder Bemerkungen..."
-                        rows="3"
+                        rows="2"
                         className={`w-full px-3 py-2.5 text-sm rounded-lg border transition-colors duration-300 ${inputBg} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
                       />
                     </div>
