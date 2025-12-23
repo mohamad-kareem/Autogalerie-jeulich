@@ -51,7 +51,7 @@ export default function ContactCustomersPage() {
 
   const { data: session } = useSession();
   const router = useRouter();
-  const isAdmin = session?.user?.role === "admin";
+  // Removed admin check - all users have full permissions
 
   // Initialize dark mode
   useEffect(() => {
@@ -202,7 +202,8 @@ export default function ContactCustomersPage() {
   };
 
   const startEdit = (item) => {
-    if (!isAdmin || selectedIds.length !== 1) return;
+    // Available to all users now
+    if (selectedIds.length !== 1) return;
     setForm(item);
     setEditingId(item._id);
     setShowForm(true);
@@ -210,6 +211,7 @@ export default function ContactCustomersPage() {
   };
 
   const startAdd = () => {
+    // Available to all users now
     setForm(emptyForm);
     setEditingId(null);
     setShowForm(true);
@@ -222,6 +224,7 @@ export default function ContactCustomersPage() {
   };
 
   const deleteContact = async (id) => {
+    // Available to all users now
     if (!confirm("Kontakt wirklich löschen?")) return;
 
     try {
@@ -234,6 +237,7 @@ export default function ContactCustomersPage() {
   };
 
   const handleBulkDelete = async () => {
+    // Available to all users now
     if (selectedIds.length === 0) return;
     if (!confirm(`${selectedIds.length} Kontakte löschen?`)) return;
 
@@ -251,12 +255,14 @@ export default function ContactCustomersPage() {
   };
 
   const toggleSelectOne = (id) => {
+    // Available to all users now
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
   const selectAll = () => {
+    // Available to all users now
     if (selectedIds.length === currentItems.length) {
       setSelectedIds([]);
     } else {
@@ -288,8 +294,8 @@ export default function ContactCustomersPage() {
     );
   }
 
-  // Column count adjusted (removed email column)
-  const columnCount = isAdmin ? 7 : 6;
+  // Column count - all users have checkbox column
+  const columnCount = 7;
 
   return (
     <div
@@ -332,18 +338,17 @@ export default function ContactCustomersPage() {
           <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Left side: Add button + Search */}
             <div className="flex w-full sm:w-auto items-center gap-2">
-              {isAdmin && (
-                <button
-                  onClick={startAdd}
-                  className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] sm:text-xs md:text-sm font-medium shadow-sm transition cursor-pointer ${
-                    darkMode
-                      ? "bg-slate-700 hover:bg-slate-600 text-white"
-                      : "bg-slate-400 hover:bg-slate-500 text-white"
-                  }`}
-                >
-                  <FiPlus className="text-xs sm:text-sm" /> Neu
-                </button>
-              )}
+              {/* Add button available to all users */}
+              <button
+                onClick={startAdd}
+                className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] sm:text-xs md:text-sm font-medium shadow-sm transition cursor-pointer ${
+                  darkMode
+                    ? "bg-slate-700 hover:bg-slate-600 text-white"
+                    : "bg-slate-400 hover:bg-slate-500 text-white"
+                }`}
+              >
+                <FiPlus className="text-xs sm:text-sm" /> Neu
+              </button>
 
               <div className="relative flex-1 min-w-[160px] max-w-xs sm:max-w-sm">
                 <FiSearch
@@ -384,8 +389,8 @@ export default function ContactCustomersPage() {
                 </button>
               )}
 
-              {/* Bulk actions */}
-              {isAdmin && someSelected && (
+              {/* Bulk actions available to all users */}
+              {someSelected && (
                 <div className="flex items-center gap-1 sm:gap-2">
                   {/* separator line */}
                   <span
@@ -449,7 +454,8 @@ export default function ContactCustomersPage() {
                     darkMode ? "text-slate-400" : "text-slate-500"
                   }`}
                 >
-                  {isAdmin && <th className="w-8 px-3 py-2"></th>}
+                  {/* Checkbox column for all users */}
+                  <th className="w-8 px-8 py-2"></th>
                   <th
                     className={`px-3 py-3 cursor-pointer whitespace-nowrap transition-colors duration-300 ${
                       darkMode ? "hover:bg-slate-700" : "hover:bg-slate-100"
@@ -570,22 +576,19 @@ export default function ContactCustomersPage() {
                               }`
                         }`}
                       >
-                        {isAdmin && (
-                          <td
-                            className="px-3 py-5 align-middle"
+                        {/* Checkbox for all users */}
+                        <td
+                          className="px-3 py-5 align-middle"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="checkbox"
+                            className={`kv-checkbox ${darkMode ? "dark" : ""}`}
+                            checked={isSelected}
                             onClick={(e) => e.stopPropagation()}
-                          >
-                            <input
-                              type="checkbox"
-                              className={`kv-checkbox ${
-                                darkMode ? "dark" : ""
-                              }`}
-                              checked={isSelected}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={() => toggleSelectOne(contact._id)}
-                            />
-                          </td>
-                        )}
+                            onChange={() => toggleSelectOne(contact._id)}
+                          />
+                        </td>
                         <td className="px-3 py-2 max-w-[140px] sm:max-w-[180px] lg:max-w-[220px]">
                           <div
                             className={`text-[11px] sm:text-sm truncate transition-colors duration-300 ${
@@ -685,7 +688,7 @@ export default function ContactCustomersPage() {
                           )}
                         </td>
                         <td
-                          className={`px-3 py-2 text-[11px] sm:text-sm text-left whitespace-nowrap font-mono sm:table-cell transition-colors duration-300 ${
+                          className={`px-8 py-2 text-[11px] sm:text-sm text-left whitespace-nowrap font-mono sm:table-cell transition-colors duration-300 ${
                             darkMode ? "text-slate-400" : "text-slate-500"
                           }`}
                         >
@@ -792,7 +795,7 @@ export default function ContactCustomersPage() {
                   className={`rounded border p-1 disabled:opacity-50 transition-colors duration-300 ${
                     darkMode
                       ? "border-slate-600 text-slate-400 hover:bg-slate-700"
-                      : "border-slate-300 text-slate-600 hover:bg-slate-100"
+                      : "border-slate-300 text-slate-500 hover:bg-slate-100"
                   }`}
                   aria-label="Letzte Seite"
                 >
@@ -805,8 +808,7 @@ export default function ContactCustomersPage() {
                   darkMode ? "text-slate-400" : "text-slate-500"
                 } text-[11px] sm:text-xs`}
               >
-                Seite {currentPage} von {totalPages} •{" "}
-                {filteredAndSortedItems.length} Einträge
+                Seite {currentPage} von {totalPages}
               </div>
             </div>
           )}

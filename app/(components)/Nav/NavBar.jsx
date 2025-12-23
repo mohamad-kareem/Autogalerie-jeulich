@@ -314,9 +314,6 @@ export default function NavBar() {
     </div>
   );
 
-  // 🧩 On admin routes:
-  // - normally show only floating dropdown
-  // - BUT on routes in hideDropdownRoutes (e.g. /schlussel) show nothing at all
   if (session?.user && isAdminRoute) {
     if (hideDropdown) {
       return null; // ❌ no navbar, no dropdown on /schlussel
@@ -365,7 +362,7 @@ export default function NavBar() {
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex items-center space-x-1">
+        <div className="hidden lg:flex items-center space-x-1 mr-5">
           <ul className="flex items-center space-x-1">
             {Menus.map((menu) => (
               <DesktopMenu key={menu.name} menu={menu} scrolled={scrolled} />
