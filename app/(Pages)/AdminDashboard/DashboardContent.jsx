@@ -888,15 +888,8 @@ const DashboardContent = ({
                     darkMode ? "text-white" : "text-gray-900"
                   }`}
                 >
-                  Keine verkauften Scheine
+                  Aktuell keine verkauften Fahrzeuge
                 </h3>
-                <p
-                  className={`text-xs max-w-xs px-4 ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  Keine Fahrzeugscheine als verkauft markiert.
-                </p>
               </div>
             )}
 
