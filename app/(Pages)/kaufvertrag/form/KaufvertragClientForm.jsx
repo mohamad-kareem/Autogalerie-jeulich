@@ -301,7 +301,7 @@ export default function KaufvertragClientForm() {
                 value={form.invoiceNumber || ""}
                 onChange={handleChange}
                 className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] print:border-none"
-                placeholder="z.B. RE-202583 oder 37/25"
+                placeholder="z.B. RE-2026101 oder 37/26"
               />
             </div>
 
