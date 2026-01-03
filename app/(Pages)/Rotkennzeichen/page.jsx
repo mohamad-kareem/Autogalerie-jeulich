@@ -522,183 +522,167 @@ export default function CarLocationsPage() {
 
   const columnCount = 8;
 
-  // Rotbuch sidebar component
+  // Rotbuch sidebar component - SIMPLIFIED
   const RotbuchSidebar = () => {
     const handleClose = () => setShowRotbuch(false);
-    const handleBackdropClick = (e) => {
-      if (e.target === e.currentTarget) {
-        handleClose();
-      }
-    };
 
     return (
-      <>
-        {/* Mobile backdrop */}
-        {isMobile && (
-          <div
-            className="fixed inset-0 bg-black/50 z-40"
-            onClick={handleBackdropClick}
-          />
-        )}
-
-        {/* Sidebar */}
+      <div
+        className={`fixed top-0 right-0 h-full z-50 ${
+          isMobile ? "w-full" : "w-[380px] lg:w-[420px]"
+        } shadow-2xl border-l ${
+          darkMode
+            ? "bg-slate-900 border-slate-700"
+            : "bg-white border-slate-200"
+        }`}
+      >
+        {/* Header with clear X button */}
         <div
-          className={`fixed top-0 right-0 h-full z-50 ${
-            isMobile ? "w-full" : "w-[380px] lg:w-[420px]"
-          } shadow-2xl border-l ${
+          className={`sticky top-0 z-10 border-b p-4 ${
             darkMode
               ? "bg-slate-900 border-slate-700"
               : "bg-white border-slate-200"
           }`}
         >
-          {/* Header */}
-          <div
-            className={`sticky top-0 z-10 border-b p-4 ${
-              darkMode
-                ? "bg-slate-900 border-slate-700"
-                : "bg-white border-slate-200"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`p-2 rounded-lg ${
-                    darkMode ? "bg-red-900/30" : "bg-red-100"
-                  }`}
-                >
-                  <FiBook
-                    className={`w-5 h-5 ${
-                      darkMode ? "text-red-300" : "text-red-600"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <h2
-                    className={`text-sm font-semibold ${
-                      darkMode ? "text-white" : "text-slate-900"
-                    }`}
-                  >
-                    Rotbuch
-                  </h2>
-                  <p
-                    className={`text-xs ${
-                      darkMode ? "text-slate-400" : "text-slate-600"
-                    }`}
-                  >
-                    {redCarsWithImages.length} Fahrzeuge mit Rotkennzeichen
-                  </p>
-                </div>
-              </div>
+          <div className="flex items-center ">
+            <div className="flex items-center gap-3">
               <button
                 onClick={handleClose}
-                className={`p-2 rounded-full ${
+                className={`p-1 rounded-full ${
                   darkMode
-                    ? "hover:bg-slate-800 text-slate-400"
-                    : "hover:bg-slate-100 text-slate-500"
+                    ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
+                aria-label="Schließen"
               >
                 <FiX size={20} />
               </button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="h-[calc(100%-80px)] overflow-y-auto p-4">
-            {redCarsWithImages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                <FiBook
-                  className={`w-16 h-16 mb-4 ${
-                    darkMode ? "text-slate-700" : "text-slate-300"
+              <div>
+                <h2
+                  className={`text-sm font-semibold ${
+                    darkMode ? "text-white" : "text-slate-900"
                   }`}
-                />
+                >
+                  Rotbuch
+                </h2>
                 <p
-                  className={`text-sm ${
+                  className={`text-xs ${
                     darkMode ? "text-slate-400" : "text-slate-600"
                   }`}
                 >
-                  Keine Fahrzeuge mit Rotkennzeichen gefunden
+                  {redCarsWithImages.length} Fahrzeuge mit Rotkennzeichen
                 </p>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                {redCarsWithImages.map((car) => (
-                  <div
-                    key={car.id}
-                    className={`rounded-lg border overflow-hidden ${
-                      darkMode
-                        ? "bg-slate-800 border-slate-700"
-                        : "bg-slate-50 border-slate-200"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 p-3">
-                      {/* Image Container */}
-                      <div className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-md bg-slate-200">
-                        {car.imageUrl ? (
-                          <Image
-                            src={car.imageUrl}
-                            alt={car.carName}
-                            fill
-                            className="object-cover"
-                            unoptimized
-                            sizes="(max-width: 768px) 96px, 96px"
-                          />
-                        ) : (
-                          <div
-                            className={`h-full w-full flex items-center justify-center ${
-                              darkMode ? "bg-slate-700" : "bg-slate-200"
-                            }`}
-                          >
-                            <FiBook
-                              className={`w-8 h-8 ${
-                                darkMode ? "text-slate-600" : "text-slate-400"
-                              }`}
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Car Info */}
-                      <div className="flex-1 min-w-0">
-                        <h3
-                          className={`text-sm font-semibold truncate ${
-                            darkMode ? "text-white" : "text-slate-900"
-                          }`}
-                        >
-                          {car.carName}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded-full ${
-                              darkMode
-                                ? "bg-slate-700 text-slate-300"
-                                : "bg-slate-200 text-slate-700"
-                            }`}
-                          >
-                            FIN: {car.finNumber || "–"}
-                          </span>
-                          <span className="text-xs">
-                            {hexToEmoji(car.keyColor)}
-                          </span>
-                        </div>
-                        {car.matchedCar && (
-                          <p
-                            className={`text-xs truncate mt-1 ${
-                              darkMode ? "text-slate-400" : "text-slate-600"
-                            }`}
-                          >
-                            {car.matchedCar.make || ""}{" "}
-                            {car.matchedCar.model || ""}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            </div>
           </div>
         </div>
-      </>
+
+        {/* Content */}
+        <div className="h-[calc(100%-80px)] overflow-y-auto p-4">
+          {redCarsWithImages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-12">
+              <FiBook
+                className={`w-16 h-16 mb-4 ${
+                  darkMode ? "text-slate-700" : "text-slate-300"
+                }`}
+              />
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-slate-400" : "text-slate-600"
+                }`}
+              >
+                Keine Fahrzeuge mit Rotkennzeichen gefunden
+              </p>
+              <button
+                onClick={handleClose}
+                className={`mt-4 px-4 py-2 rounded-md text-sm ${
+                  darkMode
+                    ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                    : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                }`}
+              >
+                Schließen
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+              {redCarsWithImages.map((car) => (
+                <div
+                  key={car.id}
+                  className={`rounded-lg border overflow-hidden ${
+                    darkMode
+                      ? "bg-slate-800 border-slate-700"
+                      : "bg-slate-50 border-slate-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 p-3">
+                    {/* Image Container */}
+                    <div className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-md bg-slate-200">
+                      {car.imageUrl ? (
+                        <Image
+                          src={car.imageUrl}
+                          alt={car.carName}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                          sizes="(max-width: 768px) 96px, 96px"
+                        />
+                      ) : (
+                        <div
+                          className={`h-full w-full flex items-center justify-center ${
+                            darkMode ? "bg-slate-700" : "bg-slate-200"
+                          }`}
+                        >
+                          <FiBook
+                            className={`w-8 h-8 ${
+                              darkMode ? "text-slate-600" : "text-slate-400"
+                            }`}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Car Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3
+                        className={`text-sm font-semibold truncate ${
+                          darkMode ? "text-white" : "text-slate-900"
+                        }`}
+                      >
+                        {car.carName}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            darkMode
+                              ? "bg-slate-700 text-slate-300"
+                              : "bg-slate-200 text-slate-700"
+                          }`}
+                        >
+                          FIN: {car.finNumber || "–"}
+                        </span>
+                        <span className="text-xs">
+                          {hexToEmoji(car.keyColor)}
+                        </span>
+                      </div>
+                      {car.matchedCar && (
+                        <p
+                          className={`text-xs truncate mt-1 ${
+                            darkMode ? "text-slate-400" : "text-slate-600"
+                          }`}
+                        >
+                          {car.matchedCar.make || ""}{" "}
+                          {car.matchedCar.model || ""}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     );
   };
 
@@ -706,7 +690,7 @@ export default function CarLocationsPage() {
     <div
       className={`relative min-h-screen ${bgClass} px-2 py-3 sm:px-4 lg:px-6`}
     >
-      {/* Main container - responsive adjustment for Rotbuch */}
+      {/* Main container */}
       <div
         className={`max-w-screen-2xl mx-auto ${
           showRotbuch && !isMobile ? "pr-[380px] lg:pr-[420px]" : ""
@@ -792,9 +776,7 @@ export default function CarLocationsPage() {
 
         {/* TABLE CARD */}
         <div
-          className={`rounded-lg border ${borderColor} ${cardBg} shadow-sm overflow-hidden ${
-            showRotbuch && isMobile ? "opacity-50 pointer-events-none" : ""
-          }`}
+          className={`rounded-lg border ${borderColor} ${cardBg} shadow-sm overflow-hidden`}
         >
           <div className="w-full overflow-x-auto">
             <table className="w-full border-collapse text-[11px] sm:text-xs">
@@ -1110,9 +1092,7 @@ export default function CarLocationsPage() {
         <div className="mt-4 flex justify-center">
           <button
             onClick={addNewRow}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium shadow-sm ${buttonPrimary} ${
-              showRotbuch && isMobile ? "opacity-50 pointer-events-none" : ""
-            }`}
+            className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium shadow-sm ${buttonPrimary}`}
           >
             <FiPlus size={16} />
             Neue Zeile
@@ -1120,7 +1100,7 @@ export default function CarLocationsPage() {
         </div>
       </div>
 
-      {/* ROTBUCH SIDEBAR */}
+      {/* ROTBUCH SIDEBAR - ALWAYS ON TOP */}
       {showRotbuch && <RotbuchSidebar />}
 
       {/* Checkbox Styles */}
