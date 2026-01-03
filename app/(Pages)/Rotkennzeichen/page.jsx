@@ -3,19 +3,18 @@
 import { useEffect, useState, useMemo } from "react";
 import {
   FiCalendar,
-  FiSun,
-  FiMoon,
   FiEdit2,
   FiSave,
   FiX,
   FiTrash2,
   FiPlus,
-  FiDownload, // NEW
+  FiDownload,
+  FiBook,
 } from "react-icons/fi";
-import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
+import Image from "next/image";
 
-// NEW: for Word export
+// For Word export
 import {
   Document,
   Packer,
@@ -28,7 +27,7 @@ import {
 } from "docx";
 import { saveAs } from "file-saver";
 
-// Kleine Spielerei: Schlüssel-Farbe als Emoji
+// Helper functions
 function hexToEmoji(hex) {
   if (!hex) return "⚪";
   const c = hex.toLowerCase();
@@ -70,18 +69,31 @@ export default function CarLocationsPage() {
   const [darkMode, setDarkMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
+  const [showRotbuch, setShowRotbuch] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const [rows, setRows] = useState([]);
-  const [carOptions, setCarOptions] = useState([]); // aus Rotschein
+  const [carOptions, setCarOptions] = useState([]);
   const [editRowId, setEditRowId] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [allCars, setAllCars] = useState([]);
 
   const currentMonth = String(new Date().getMonth() + 1);
   const [monthFilter, setMonthFilter] = useState(currentMonth);
 
-  // ---------------------------
-  // THEME INIT
-  // ---------------------------
+  // Check for mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Theme initialization
   useEffect(() => {
     const saved = localStorage.getItem("theme");
     const prefersDark = window.matchMedia(
@@ -93,16 +105,7 @@ export default function CarLocationsPage() {
     document.documentElement.classList.toggle("dark", isDark);
   }, []);
 
-  const toggleDarkMode = () => {
-    const next = !darkMode;
-    setDarkMode(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
-  };
-
-  // ---------------------------
-  // LOAD DATA (Rotschein + Fahrtenbuch)
-  // ---------------------------
+  // Load data
   useEffect(() => {
     let mounted = true;
 
@@ -110,7 +113,12 @@ export default function CarLocationsPage() {
       try {
         setLoading(true);
 
-        // 1) Rotschein-Autos laden
+        // Load all cars for images
+        const carsRes = await fetch("/api/cars");
+        const carsData = await carsRes.json();
+        const allCarsList = Array.isArray(carsData) ? carsData : [];
+
+        // Load Rotschein cars
         const scheinRes = await fetch("/api/carschein?page=1&limit=5000");
         const scheinData = await scheinRes.json();
 
@@ -125,7 +133,7 @@ export default function CarLocationsPage() {
               }))
           : [];
 
-        // 2) Fahrtenbuch-Einträge laden
+        // Load Fahrtenbuch entries
         const locRes = await fetch("/api/car-locations");
         const locData = await locRes.json();
 
@@ -148,6 +156,7 @@ export default function CarLocationsPage() {
 
         if (!mounted) return;
 
+        setAllCars(allCarsList);
         setCarOptions(options);
         setRows(mapped);
       } catch (err) {
@@ -165,14 +174,48 @@ export default function CarLocationsPage() {
     };
   }, []);
 
+  // Normalize FIN for matching
+  const normalizeFin = (val) =>
+    (val || "")
+      .toString()
+      .replace(/[^a-z0-9]/gi, "")
+      .toLowerCase();
+
+  // Get red cars with their images
+  const redCarsWithImages = useMemo(() => {
+    return carOptions
+      .map((car) => {
+        const fin = normalizeFin(car.finNumber);
+        const matchedCar = allCars.find((c) => {
+          const carFin = normalizeFin(c.finNumber || c.vin || c.vinNumber);
+          return carFin && carFin === fin;
+        });
+
+        let imageUrl = null;
+        if (
+          matchedCar &&
+          Array.isArray(matchedCar.images) &&
+          matchedCar.images.length > 0
+        ) {
+          const first = matchedCar.images[0];
+          imageUrl = first?.ref || first?.url || null;
+        }
+
+        return {
+          ...car,
+          imageUrl,
+          matchedCar: matchedCar || null,
+        };
+      })
+      .filter((car) => car.carName && car.carName.trim() !== "");
+  }, [carOptions, allCars]);
+
   const sortedOptions = useMemo(
     () => [...carOptions].sort((a, b) => a.carName.localeCompare(b.carName)),
     [carOptions]
   );
 
-  // ---------------------------
-  // FILTER + HELPERS
-  // ---------------------------
+  // Filter rows by month
   const filteredRows = useMemo(() => {
     return rows.filter((r) => {
       if (!r.startDateTime) {
@@ -185,9 +228,7 @@ export default function CarLocationsPage() {
     });
   }, [rows, monthFilter, currentMonth]);
 
-  // ---------------------------
-  // EXPORT TO WORD (current month / filteredRows)
-  // ---------------------------
+  // Export to Word
   const exportToWord = async () => {
     try {
       if (!filteredRows.length) {
@@ -279,6 +320,7 @@ export default function CarLocationsPage() {
     }
   };
 
+  // Table row handlers
   const handleField = (id, field, value) => {
     setRows((prev) =>
       prev.map((r) => {
@@ -287,14 +329,13 @@ export default function CarLocationsPage() {
 
         if (field === "manufacturer") {
           const found = sortedOptions.find((o) => o.carName === value);
-
           const fullName = found ? found.carName : value || "";
-          const firstWord = fullName.trim().split(/\s+/)[0] || fullName; // nur das erste Wort
+          const firstWord = fullName.trim().split(/\s+/)[0] || fullName;
 
           return {
             ...r,
-            manufacturer: firstWord, // z.B. "BMW"
-            vehicleId: found ? found.finNumber : "", // FIN bleibt vom Rotschein
+            manufacturer: firstWord,
+            vehicleId: found ? found.finNumber : "",
           };
         }
 
@@ -331,7 +372,6 @@ export default function CarLocationsPage() {
       if (!confirm("Diesen Eintrag wirklich löschen?")) return;
     }
 
-    // Nur lokal
     if (!row._id) {
       setRows((prev) => prev.filter((r) => r.tempId !== row.tempId));
       setSelectedIds((prev) =>
@@ -435,7 +475,7 @@ export default function CarLocationsPage() {
     );
   };
 
-  // Reset Auswahl beim Monatswechsel
+  // Reset selection when month changes
   useEffect(() => {
     setSelectedIds([]);
     setEditRowId(null);
@@ -452,9 +492,7 @@ export default function CarLocationsPage() {
     await deleteRow(row);
   };
 
-  // ---------------------------
-  // THEME CLASSES
-  // ---------------------------
+  // Theme classes
   const bgClass = darkMode ? "bg-slate-950" : "bg-slate-100";
   const cardBg = darkMode ? "bg-slate-900" : "bg-white";
   const borderColor = darkMode ? "border-slate-700" : "border-slate-200";
@@ -469,9 +507,7 @@ export default function CarLocationsPage() {
     ? "bg-slate-700 hover:bg-slate-600 text-slate-50"
     : "bg-slate-700 hover:bg-slate-800 text-white";
 
-  // ---------------------------
-  // LOADING
-  // ---------------------------
+  // Loading state
   if (loading) {
     return (
       <div
@@ -484,23 +520,200 @@ export default function CarLocationsPage() {
     );
   }
 
-  // Wir haben immer 8 Spalten (Checkbox + 7 Daten-Spalten)
   const columnCount = 8;
 
-  // ---------------------------
-  // RENDER
-  // ---------------------------
+  // Rotbuch sidebar component
+  const RotbuchSidebar = () => {
+    const handleClose = () => setShowRotbuch(false);
+    const handleBackdropClick = (e) => {
+      if (e.target === e.currentTarget) {
+        handleClose();
+      }
+    };
+
+    return (
+      <>
+        {/* Mobile backdrop */}
+        {isMobile && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={handleBackdropClick}
+          />
+        )}
+
+        {/* Sidebar */}
+        <div
+          className={`fixed top-0 right-0 h-full z-50 ${
+            isMobile ? "w-full" : "w-[380px] lg:w-[420px]"
+          } shadow-2xl border-l ${
+            darkMode
+              ? "bg-slate-900 border-slate-700"
+              : "bg-white border-slate-200"
+          }`}
+        >
+          {/* Header */}
+          <div
+            className={`sticky top-0 z-10 border-b p-4 ${
+              darkMode
+                ? "bg-slate-900 border-slate-700"
+                : "bg-white border-slate-200"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`p-2 rounded-lg ${
+                    darkMode ? "bg-red-900/30" : "bg-red-100"
+                  }`}
+                >
+                  <FiBook
+                    className={`w-5 h-5 ${
+                      darkMode ? "text-red-300" : "text-red-600"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <h2
+                    className={`text-sm font-semibold ${
+                      darkMode ? "text-white" : "text-slate-900"
+                    }`}
+                  >
+                    Rotbuch
+                  </h2>
+                  <p
+                    className={`text-xs ${
+                      darkMode ? "text-slate-400" : "text-slate-600"
+                    }`}
+                  >
+                    {redCarsWithImages.length} Fahrzeuge mit Rotkennzeichen
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleClose}
+                className={`p-2 rounded-full ${
+                  darkMode
+                    ? "hover:bg-slate-800 text-slate-400"
+                    : "hover:bg-slate-100 text-slate-500"
+                }`}
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="h-[calc(100%-80px)] overflow-y-auto p-4">
+            {redCarsWithImages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                <FiBook
+                  className={`w-16 h-16 mb-4 ${
+                    darkMode ? "text-slate-700" : "text-slate-300"
+                  }`}
+                />
+                <p
+                  className={`text-sm ${
+                    darkMode ? "text-slate-400" : "text-slate-600"
+                  }`}
+                >
+                  Keine Fahrzeuge mit Rotkennzeichen gefunden
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                {redCarsWithImages.map((car) => (
+                  <div
+                    key={car.id}
+                    className={`rounded-lg border overflow-hidden ${
+                      darkMode
+                        ? "bg-slate-800 border-slate-700"
+                        : "bg-slate-50 border-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 p-3">
+                      {/* Image Container */}
+                      <div className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-md bg-slate-200">
+                        {car.imageUrl ? (
+                          <Image
+                            src={car.imageUrl}
+                            alt={car.carName}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                            sizes="(max-width: 768px) 96px, 96px"
+                          />
+                        ) : (
+                          <div
+                            className={`h-full w-full flex items-center justify-center ${
+                              darkMode ? "bg-slate-700" : "bg-slate-200"
+                            }`}
+                          >
+                            <FiBook
+                              className={`w-8 h-8 ${
+                                darkMode ? "text-slate-600" : "text-slate-400"
+                              }`}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Car Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3
+                          className={`text-sm font-semibold truncate ${
+                            darkMode ? "text-white" : "text-slate-900"
+                          }`}
+                        >
+                          {car.carName}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full ${
+                              darkMode
+                                ? "bg-slate-700 text-slate-300"
+                                : "bg-slate-200 text-slate-700"
+                            }`}
+                          >
+                            FIN: {car.finNumber || "–"}
+                          </span>
+                          <span className="text-xs">
+                            {hexToEmoji(car.keyColor)}
+                          </span>
+                        </div>
+                        {car.matchedCar && (
+                          <p
+                            className={`text-xs truncate mt-1 ${
+                              darkMode ? "text-slate-400" : "text-slate-600"
+                            }`}
+                          >
+                            {car.matchedCar.make || ""}{" "}
+                            {car.matchedCar.model || ""}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  };
+
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${bgClass} px-2 py-3 sm:px-4 lg:px-6`}
+      className={`relative min-h-screen ${bgClass} px-2 py-3 sm:px-4 lg:px-6`}
     >
-      <div className="max-w-screen-2xl mx-auto">
+      {/* Main container - responsive adjustment for Rotbuch */}
+      <div
+        className={`max-w-screen-2xl mx-auto ${
+          showRotbuch && !isMobile ? "pr-[380px] lg:pr-[420px]" : ""
+        }`}
+      >
         {/* HEADER + FILTER */}
-        <motion.header
-          initial={{ y: -10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="mb-3 sm:mb-4 lg:mb-5 flex flex-col sm:flex-row sm:items-center gap-3"
-        >
+        <header className="mb-3 sm:mb-4 lg:mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <h1
               className={`text-sm sm:text-base lg:text-xl font-semibold tracking-tight ${textPrimary}`}
@@ -509,10 +722,10 @@ export default function CarLocationsPage() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-2 ">
+          <div className="flex items-center flex-wrap gap-2">
             {/* Month Filter */}
             <div
-              className={`flex items-center gap-1 rounded-md border px-2 py-[5px] text-[11px] sm:text-xs transition-colors duration-300 ${
+              className={`flex items-center gap-1 rounded-md border px-2 py-[5px] text-[11px] sm:text-xs ${
                 darkMode
                   ? "bg-slate-900 border-slate-700 text-slate-300"
                   : "bg-slate-50 border-slate-300 text-slate-600"
@@ -545,10 +758,27 @@ export default function CarLocationsPage() {
               </select>
             </div>
 
+            {/* Rotbuch button */}
+            <button
+              onClick={() => setShowRotbuch(!showRotbuch)}
+              className={`inline-flex items-center gap-1 rounded-md border px-2 py-[5px] text-[11px] sm:text-xs ${
+                showRotbuch
+                  ? darkMode
+                    ? "bg-red-900/50 border-red-700 text-red-300"
+                    : "bg-red-100 border-red-300 text-red-700"
+                  : darkMode
+                  ? "bg-slate-900 border-slate-700 text-slate-300 hover:border-red-500 hover:text-red-300"
+                  : "bg-slate-50 border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-600"
+              }`}
+            >
+              <FiBook className="text-xs" />
+              <span>Rotbuch</span>
+            </button>
+
             {/* Export to Word button */}
             <button
               onClick={exportToWord}
-              className={`inline-flex items-center gap-1 rounded-md border px-2 py-[5px] text-[11px] sm:text-xs transition-colors duration-300 ${
+              className={`inline-flex items-center gap-1 rounded-md border px-2 py-[5px] text-[11px] sm:text-xs ${
                 darkMode
                   ? "bg-slate-900 border-slate-700 text-slate-300"
                   : "bg-slate-50 border-slate-300 text-slate-600"
@@ -558,17 +788,16 @@ export default function CarLocationsPage() {
               <span>Word</span>
             </button>
           </div>
-        </motion.header>
+        </header>
 
         {/* TABLE CARD */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className={`rounded-lg border ${borderColor} ${cardBg} shadow-sm overflow-hidden`}
+        <div
+          className={`rounded-lg border ${borderColor} ${cardBg} shadow-sm overflow-hidden ${
+            showRotbuch && isMobile ? "opacity-50 pointer-events-none" : ""
+          }`}
         >
           <div className="w-full overflow-x-auto">
-            <table className="min-w-[1100px] border-collapse text-[11px] sm:text-xs">
+            <table className="w-full border-collapse text-[11px] sm:text-xs">
               <thead
                 className={`sticky top-0 z-10 ${
                   darkMode ? "bg-slate-900" : "bg-slate-100"
@@ -579,26 +808,28 @@ export default function CarLocationsPage() {
                     darkMode ? "text-slate-400" : "text-slate-500"
                   }`}
                 >
-                  <th className="w-8 px-3 py-2 border-r border-slate-600/10 text-center" />
-                  <th className="w-10 px-2 py-2 border-r border-slate-600/10 text-center">
-                    Ltd.
+                  <th className="w-8 px-3 py-2 border-r border-slate-600/10 text-center">
+                    ✓
                   </th>
-                  <th className="w-[210px] px-3 py-2 border-r border-slate-600/10 text-center">
-                    Datum Beginn / Ende
+                  <th className="w-10 px-2 py-2 border-r border-slate-600/10 text-center">
+                    Nr.
+                  </th>
+                  <th className="min-w-[180px] px-3 py-2 border-r border-slate-600/10 text-center">
+                    Datum/Uhrzeit
                   </th>
                   <th className="w-[80px] px-3 py-2 border-r border-slate-600/10 text-center">
                     Art
                   </th>
-                  <th className="w-[220px] px-3 py-2 border-r border-slate-600/10 text-center">
+                  <th className="min-w-[140px] px-3 py-2 border-r border-slate-600/10 text-center">
                     Herst.
                   </th>
-                  <th className="w-[150px] px-3 py-2 border-r border-slate-600/10 text-center">
-                    FZ-Ident.Nr
+                  <th className="min-w-[120px] px-3 py-2 border-r border-slate-600/10 text-center">
+                    FZ-Nr
                   </th>
-                  <th className="w-[260px] px-6 py-2 border-r border-slate-600/10 text-center">
+                  <th className="min-w-[180px] px-6 py-2 border-r border-slate-600/10 text-center">
                     Fahrstrecke
                   </th>
-                  <th className="w-[260px] px-3 py-2 border-r border-slate-600/10 text-left">
+                  <th className="min-w-[180px] px-3 py-2 border-r border-slate-600/10 text-left">
                     Fahrer
                   </th>
                 </tr>
@@ -662,7 +893,7 @@ export default function CarLocationsPage() {
                         </td>
 
                         {/* Datum / Uhrzeit */}
-                        <td className="px-5 text-center py-[5px] align-middle border-r border-slate-600/10">
+                        <td className="px-3 text-center py-[5px] align-middle border-r border-slate-600/10">
                           {isEditing ? (
                             <div className="flex flex-col gap-1.5">
                               <input
@@ -688,7 +919,7 @@ export default function CarLocationsPage() {
                             </div>
                           ) : (
                             <span
-                              className={`text-[11px] sm:text-xs block ${textPrimary}`}
+                              className={`text-[11px] sm:text-xs block ${textPrimary} break-words`}
                             >
                               {formatDateRange(
                                 row.startDateTime,
@@ -758,11 +989,11 @@ export default function CarLocationsPage() {
                                 handleField(id, "vehicleId", e.target.value)
                               }
                               className={`w-full rounded-none border px-2 py-1 text-[11px] sm:text-xs font-mono tracking-wide ${inputBg}`}
-                              placeholder="FZ-Ident.Nr / Kennz."
+                              placeholder="FZ-Nr"
                             />
                           ) : (
                             <span
-                              className={`text-[11px] sm:text-xs font-mono tracking-wide ${textSecondary}`}
+                              className={`text-[11px] sm:text-xs font-mono tracking-wide ${textSecondary} break-all`}
                             >
                               {row.vehicleId || "-"}
                             </span>
@@ -770,7 +1001,7 @@ export default function CarLocationsPage() {
                         </td>
 
                         {/* Fahrstrecke */}
-                        <td className="px-8 text-center py-[5px] align-middle border-r border-slate-600/10">
+                        <td className="px-4 text-center py-[5px] align-middle border-r border-slate-600/10">
                           {isEditing ? (
                             <input
                               type="text"
@@ -779,7 +1010,7 @@ export default function CarLocationsPage() {
                                 handleField(id, "routeSummary", e.target.value)
                               }
                               className={`w-full rounded-none border px-2 py-1 text-[11px] sm:text-xs ${inputBg}`}
-                              placeholder="z.B. Jülich-Aldenhoven-Jülich + Überführungsfahrt"
+                              placeholder="Fahrstrecke"
                             />
                           ) : (
                             <span
@@ -801,12 +1032,12 @@ export default function CarLocationsPage() {
                                   handleField(id, "driverInfo", e.target.value)
                                 }
                                 className={`w-full rounded-none border px-2 py-1 text-[11px] sm:text-xs ${inputBg}`}
-                                placeholder="z.B. Hussein Karim, Jülich"
+                                placeholder="Fahrer"
                               />
                               <div className="flex items-center gap-1.5 shrink-0">
                                 <button
                                   onClick={() => saveRow(row)}
-                                  className={`h-7 w-7 flex items-center justify-center rounded-md border text-slate-50 transition-colors duration-300 ${
+                                  className={`h-7 w-7 flex items-center justify-center rounded-md border text-slate-50 ${
                                     darkMode
                                       ? "border-slate-600 bg-emerald-600 hover:bg-emerald-500"
                                       : "border-emerald-600 bg-emerald-600 hover:bg-emerald-500"
@@ -821,7 +1052,7 @@ export default function CarLocationsPage() {
                                 </button>
                                 <button
                                   onClick={() => setEditRowId(null)}
-                                  className={`h-7 w-7 flex items-center justify-center rounded-md border transition-colors duration-300 ${
+                                  className={`h-7 w-7 flex items-center justify-center rounded-md border ${
                                     darkMode
                                       ? "border-slate-600 bg-slate-800 text-red-300 hover:bg-slate-700"
                                       : "border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
@@ -843,7 +1074,7 @@ export default function CarLocationsPage() {
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   <button
                                     onClick={() => handleRowEditClick(id)}
-                                    className={`h-7 w-7 flex items-center justify-center rounded-md border transition-colors duration-300 ${
+                                    className={`h-7 w-7 flex items-center justify-center rounded-md border ${
                                       darkMode
                                         ? "border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700"
                                         : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
@@ -853,7 +1084,7 @@ export default function CarLocationsPage() {
                                   </button>
                                   <button
                                     onClick={() => handleRowDeleteClick(row)}
-                                    className={`h-7 w-7 flex items-center justify-center rounded-md border transition-colors duration-300 ${
+                                    className={`h-7 w-7 flex items-center justify-center rounded-md border ${
                                       darkMode
                                         ? "border-slate-600 bg-slate-800 text-red-300 hover:bg-slate-700"
                                         : "border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
@@ -873,13 +1104,15 @@ export default function CarLocationsPage() {
               </tbody>
             </table>
           </div>
-        </motion.div>
+        </div>
 
         {/* ADD NEW ROW BUTTON */}
         <div className="mt-4 flex justify-center">
           <button
             onClick={addNewRow}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium shadow-sm ${buttonPrimary}`}
+            className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium shadow-sm ${buttonPrimary} ${
+              showRotbuch && isMobile ? "opacity-50 pointer-events-none" : ""
+            }`}
           >
             <FiPlus size={16} />
             Neue Zeile
@@ -887,7 +1120,10 @@ export default function CarLocationsPage() {
         </div>
       </div>
 
-      {/* Checkbox-Styles – Excel-artig, kantig */}
+      {/* ROTBUCH SIDEBAR */}
+      {showRotbuch && <RotbuchSidebar />}
+
+      {/* Checkbox Styles */}
       <style jsx>{`
         .kv-checkbox {
           width: 14px;

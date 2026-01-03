@@ -820,7 +820,7 @@ const DashboardContent = ({
                           FIN:
                         </span>
                         <span
-                          className={`font-medium ml-1 sm:mr-7 sm:max-w-[80px] ${
+                          className={`font-medium ml-1 sm:mr-14 sm:max-w-[80px] ${
                             darkMode ? "text-white" : "text-gray-900"
                           }`}
                         >
@@ -1206,7 +1206,7 @@ const DashboardContent = ({
                         {car.carName || "Unbekanntes Fahrzeug"}
                       </div>
                       <div
-                        className={`text-[11px] ${
+                        className={`text-[11px]  ${
                           darkMode ? "text-gray-400" : "text-gray-600"
                         }`}
                       >
