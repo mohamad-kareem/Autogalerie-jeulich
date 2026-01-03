@@ -713,7 +713,7 @@ export default function CarLocationsPage() {
         }`}
       >
         {/* HEADER + FILTER */}
-        <header className="mb-3 sm:mb-4 lg:mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <header className="mb-3 sm:mb-4 lg:mb-5 flex flex-col sm:flex-row sm:items-center  gap-3">
           <div className="flex items-center gap-3">
             <h1
               className={`text-sm sm:text-base lg:text-xl font-semibold tracking-tight ${textPrimary}`}
