@@ -578,7 +578,7 @@ export default function CarLocationsPage() {
         </div>
 
         {/* Content */}
-        <div className="h-[calc(100%-80px)] overflow-y-auto p-4">
+        <div className="h-[calc(100%-80px)] overflow-y-auto custom-scroll p-4">
           {redCarsWithImages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center py-12">
               <FiBook
@@ -778,7 +778,11 @@ export default function CarLocationsPage() {
         <div
           className={`rounded-lg border ${borderColor} ${cardBg} shadow-sm overflow-hidden`}
         >
-          <div className="w-full overflow-x-auto">
+          <div
+            className={`w-full overflow-x-auto custom-scroll ${
+              showRotbuch ? "overflow-y-auto max-h-[calc(100vh-220px)]" : ""
+            }`}
+          >
             <table className="w-full border-collapse text-[11px] sm:text-xs">
               <thead
                 className={`sticky top-0 z-10 ${
