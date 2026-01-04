@@ -250,6 +250,7 @@ export default function KaufvertragClientForm() {
             <input
               type="text"
               name="buyerName"
+              required
               autoComplete="off"
               placeholder="Name"
               onChange={handleChange}

@@ -4,31 +4,56 @@ import Kaufvertrag from "@/models/Kaufvertrag";
 export async function getLastValidContract(issuer) {
   const all = await Kaufvertrag.find({
     issuer,
-    ignored: { $ne: true },
+    ignored: { $ne: true }, // ignore ignored contracts
   }).lean();
 
   if (!all.length) return null;
 
+  const normalize = (c) => c.originalInvoiceNumber || c.invoiceNumber;
+
+  /* ────────────────────────────
+     KARIM LOGIC (fix applied)
+  ──────────────────────────── */
   if (issuer === "karim") {
-    return all
-      .filter((c) => /^\d+\/\d+$/.test(c.invoiceNumber))
+    const list = all
+      .map((c) => ({ ...c, base: normalize(c) }))
+      .filter((c) => /^\d+\/\d{2}$/.test(c.base))
+      .map((c) => {
+        const [seq, year] = c.base.split("/");
+        return {
+          ...c,
+          seq: parseInt(seq, 10),
+          year: parseInt(year, 10),
+        };
+      })
+      // SORT BY YEAR DESC, THEN SEQUENCE DESC
       .sort((a, b) => {
-        const aNum = parseInt(a.invoiceNumber.split("/")[0], 10);
-        const bNum = parseInt(b.invoiceNumber.split("/")[0], 10);
-        return bNum - aNum;
-      })[0];
+        if (b.year !== a.year) return b.year - a.year;
+        return b.seq - a.seq;
+      });
+
+    return list[0] || null;
   }
 
+  /* ────────────────────────────
+     ALAWIE LOGIC (works but improved)
+  ──────────────────────────── */
   if (issuer === "alawie") {
-    return all
-      .filter((c) => /^RE-\d{4}\d+$/.test(c.invoiceNumber))
+    const list = all
+      .map((c) => ({ ...c, base: normalize(c) }))
+      .filter((c) => /^RE-\d{4}\d+$/.test(c.base))
+      .map((c) => {
+        const year = parseInt(c.base.slice(3, 7), 10);
+        const seq = parseInt(c.base.slice(7), 10);
+        return { ...c, year, seq };
+      })
       .sort((a, b) => {
-        const aNum = parseInt(a.invoiceNumber.replace(/^RE-\d{4}/, ""), 10);
-        const bNum = parseInt(b.invoiceNumber.replace(/^RE-\d{4}/, ""), 10);
-        return bNum - aNum;
-      })[0];
+        if (b.year !== a.year) return b.year - a.year;
+        return b.seq - a.seq;
+      });
+
+    return list[0] || null;
   }
 
-  // fallback: latest created
   return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 }
