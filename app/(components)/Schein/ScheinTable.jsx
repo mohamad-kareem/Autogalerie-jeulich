@@ -529,9 +529,15 @@ export default function ScheinTable({
       toast.error("Kein Bild verfügbar für diesen Schein.");
       return;
     }
+
     setSelectedSchein(schein);
     setModalImageUrl(schein.imageUrl);
-    setImageRotation(270);
+
+    const isSmallScreen =
+      typeof window !== "undefined" && window.innerWidth < 768;
+
+    setImageRotation(isSmallScreen ? 0 : 270);
+
     setShowPreviewModal(true);
   };
 
