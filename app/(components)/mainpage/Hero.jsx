@@ -4,8 +4,42 @@ import Image from "next/image";
 import Link from "next/link";
 import back from "@/app/(assets)/background.jpg";
 import { ShieldCheck, PhoneCall, BadgeEuro } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function Hero() {
+  const [text, setText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [loopNum, setLoopNum] = useState(0);
+  const [typingSpeed, setTypingSpeed] = useState(150);
+
+  const fullText = "Premium-Fahrzeuge.";
+
+  useEffect(() => {
+    const handleType = () => {
+      const i = loopNum % fullText.length;
+      const currentText = isDeleting
+        ? fullText.substring(0, text.length - 1)
+        : fullText.substring(0, text.length + 1);
+
+      setText(currentText);
+
+      if (!isDeleting && currentText === fullText) {
+        // Pause at the end of typing
+        setTimeout(() => setIsDeleting(true), 1500);
+        setTypingSpeed(100);
+      } else if (isDeleting && currentText === "") {
+        setIsDeleting(false);
+        setLoopNum(loopNum + 1);
+        setTypingSpeed(150);
+      } else {
+        setTypingSpeed(isDeleting ? 50 : 150);
+      }
+    };
+
+    const timer = setTimeout(handleType, typingSpeed);
+    return () => clearTimeout(timer);
+  }, [text, isDeleting, loopNum, typingSpeed, fullText]);
+
   return (
     <section
       className="
@@ -78,7 +112,10 @@ export default function Hero() {
                 2xl:text-[4.5rem]
               "
             >
-              Premium-Fahrzeuge.
+              <span className="inline-block min-h-[1em]">
+                {text}
+                <span className="animate-pulse">|</span>
+              </span>
               <span
                 className="
                   mt-2 block 
