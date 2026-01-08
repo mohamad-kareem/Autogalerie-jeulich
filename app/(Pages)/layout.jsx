@@ -10,37 +10,35 @@ export default function PagesLayout({ children }) {
   const { data: session } = useSession();
   const pathname = usePathname();
 
-  const [mounted, setMounted] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [isMinimized, setIsMinimized] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
+  // ✅ ONLY auth/public pages (Reg is allowed)
   const HIDE_SIDEBAR_ROUTES = useMemo(() => ["/login", "/forgotpassword"], []);
 
-  const hideSidebar =
-    !mounted ||
-    !session?.user ||
-    HIDE_SIDEBAR_ROUTES.some(
+  const shouldHideSidebar = useMemo(() => {
+    return HIDE_SIDEBAR_ROUTES.some(
       (r) => pathname === r || pathname.startsWith(r + "/")
     );
+  }, [pathname, HIDE_SIDEBAR_ROUTES]);
+
+  // ✅ Sidebar only for logged-in users AND not auth pages
+  const shouldShowSidebar = !!session?.user && !shouldHideSidebar;
 
   useEffect(() => {
-    if (!mounted) return;
-
     const savedTheme = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia(
+    const systemPrefersDark = window.matchMedia(
       "(prefers-color-scheme: dark)"
     ).matches;
 
-    const isDark = savedTheme === "dark" || (!savedTheme && prefersDark);
+    const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
+
     setDarkMode(isDark);
     document.documentElement.classList.toggle("dark", isDark);
-  }, [mounted]);
+  }, []);
 
+  // Close mobile sidebar on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
@@ -54,8 +52,7 @@ export default function PagesLayout({ children }) {
       }}
     >
       <div className="flex min-h-screen">
-        {/* ✅ ALWAYS rendered */}
-        <aside className={hideSidebar ? "hidden" : ""}>
+        {shouldShowSidebar && (
           <Sidebar
             user={session?.user}
             unreadCount={0}
@@ -73,9 +70,8 @@ export default function PagesLayout({ children }) {
             onToggleMinimize={() => setIsMinimized((p) => !p)}
             onToggleMobile={() => setMobileOpen((p) => !p)}
           />
-        </aside>
+        )}
 
-        {/* ✅ ALWAYS rendered */}
         <main className="flex-1 overflow-x-hidden">{children}</main>
       </div>
     </SidebarContext.Provider>
