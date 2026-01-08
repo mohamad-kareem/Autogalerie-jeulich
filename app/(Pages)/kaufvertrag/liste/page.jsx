@@ -17,9 +17,10 @@ import {
   FiSun,
   FiMoon,
   FiArrowLeft,
+  FiMenu,
 } from "react-icons/fi";
 import { motion } from "framer-motion";
-
+import { useSidebar } from "@/app/(components)/SidebarContext";
 // Currency formatter
 const currencyFmt = (v, currency = "EUR") => {
   try {
@@ -72,7 +73,7 @@ export default function KaufvertragListe() {
   const { data: session } = useSession();
   const router = useRouter();
   const isAdmin = session?.user?.role === "admin";
-
+  const { openSidebar } = useSidebar();
   // Initialize dark mode
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -342,20 +343,22 @@ export default function KaufvertragListe() {
           animate={{ y: 0, opacity: 1 }}
           className="mb-2 sm:mb-3 lg:mb-4"
         >
-          <div className="flex flex-wrap items-center  gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+            {/* Mobile hamburger */}
             <button
-              onClick={() => router.push("/AdminDashboard")}
-              className={`p-2 rounded-lg transition-colors duration-300 flex items-center gap-2 ${
+              onClick={openSidebar}
+              className={`md:hidden p-2 rounded-lg transition-colors duration-300 ${
                 darkMode
-                  ? "bg-slate-800 hover:bg-slate-700 text-gray-200"
+                  ? "bg-slate-800 hover:bg-slate-700 text-white"
                   : "bg-slate-200 hover:bg-slate-300 text-slate-700"
               }`}
-              title="Zurück zum Dashboard"
+              aria-label="Menü öffnen"
             >
-              <FiArrowLeft className="h-4 w-4" />
+              <FiMenu className="h-4 w-4" />
             </button>
+
             <h1
-              className={`text-base sm:text-lg lg:text-2xl font-bold transition-colors duration-300 ${textPrimary}`}
+              className={`text-base sm:text-lg lg:text-2xl font-bold ${textPrimary}`}
             >
               Kaufverträge
             </h1>

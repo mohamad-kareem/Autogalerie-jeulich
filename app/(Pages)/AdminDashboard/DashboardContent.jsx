@@ -5,31 +5,18 @@ import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  FiKey,
-  FiFileText,
-  FiClock,
-  FiUsers,
-  FiArchive,
-  FiInbox,
-  FiUserPlus,
-  FiPieChart,
-  FiPackage,
-  FiGrid,
-  FiChevronRight,
-  FiMenu,
-  FiX,
-  FiCamera,
   FiAlertTriangle,
-  FiSun,
-  FiMoon,
   FiCheck,
   FiCheckSquare,
   FiSquare,
   FiDroplet,
-  FiMapPin,
+  FiMenu,
+  FiX,
+  FiFileText,
+  FiClock,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-
+import { useSidebar } from "@/app/(components)/SidebarContext";
 /* ─────────────────────────────────────────
    Helper functions for Termine / appointments
    ───────────────────────────────────────── */
@@ -179,20 +166,15 @@ const DashboardContent = ({
   onDismissSchein,
 }) => {
   const pathname = usePathname();
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [visibleScheins, setVisibleScheins] = useState(soldScheins || []);
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
-
-  // NEW: Fuel modal state
   const [showFuelModal, setShowFuelModal] = useState(false);
-
-  // Task modal states
   const [showTasksModal, setShowTasksModal] = useState(false);
   const [selectedScheinTasks, setSelectedScheinTasks] = useState(null);
   const [taskCheckboxes, setTaskCheckboxes] = useState({});
   const [savingTasks, setSavingTasks] = useState(false);
-
+  const { openSidebar } = useSidebar();
   // Initialize dark mode
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -324,237 +306,6 @@ const DashboardContent = ({
     return schein.notes.filter((note) => !completedTasks.includes(note)).length;
   };
 
-  const adminOnlyRoutes = [
-    "/kaufvertrag/archiv",
-    "/Reg",
-    "/Zeiterfassungsverwaltung",
-    "/excel",
-  ];
-
-  const firstName = user?.name?.split(" ")[0] || "Admin";
-  const isAdmin = user?.role === "admin";
-
-  const navItems = [
-    {
-      href: "/aufgabenboard",
-      icon: <FiGrid className="text-yellow-500" />,
-      label: "Trello",
-      badge: null,
-    },
-    {
-      href: "/schlussel",
-      icon: <FiKey className="text-slate-400" />,
-      label: "Schlüssel",
-      badge: null,
-    },
-    {
-      href: "/kaufvertrag/liste",
-      icon: <FiFileText className="text-green-400" />,
-      label: "Verträge",
-      badge: null,
-    },
-    {
-      href: "/kaufvertrag/archiv",
-      icon: <FiArchive className="text-purple-400" />,
-      label: "Archiv",
-      badge: null,
-    },
-    {
-      href: "/Auto-scheins",
-      icon: <FiCamera className="text-orange-400" />,
-      label: "Fahrzeugscheine",
-      badge: null,
-    },
-    {
-      href: "/Rotkennzeichen",
-      icon: <FiMapPin className="text-red-400" />,
-      label: "Rotkennzeichen",
-      badge: null,
-    },
-    {
-      href: "/punsh",
-      icon: <FiClock className=" text-sky-400" />,
-      label: "Stempeluhr",
-      badge: null,
-    },
-    {
-      href: "/kaufvertrag/auswahl",
-      icon: <FiFileText className="text-teal-400" />,
-      label: "Neuer Vertrag",
-      badge: null,
-    },
-    {
-      href: "/Zeiterfassungsverwaltung",
-      icon: <FiClock className="text-yellow-400" />,
-      label: "Zeiterfassung",
-      badge: null,
-    },
-    {
-      href: "/Kundenkontakte",
-      icon: <FiUsers className="text-green-400" />,
-      label: "Kundenkontakte",
-      badge: unreadCount > 0 ? unreadCount : null,
-    },
-    {
-      href: "/Posteingang",
-      icon: <FiInbox className="text-pink-400" />,
-      label: "Posteingang",
-      badge: unreadCount > 0 ? unreadCount : null,
-    },
-    {
-      href: "/Autoteil",
-      icon: <FiPackage className="text-indigo-400" />,
-      label: "Teile-Reklamation",
-      badge: null,
-    },
-    {
-      href: "/Reg",
-      icon: <FiUserPlus className="text-rose-400" />,
-      label: "Admin hinzufügen",
-      badge: null,
-    },
-  ];
-
-  const isActiveRoute = (href) =>
-    pathname === href || pathname.startsWith(href + "/");
-
-  const SidebarLink = ({ href, icon, label, badge }) => {
-    const active = isActiveRoute(href);
-
-    return (
-      <Link href={href}>
-        <div
-          className={`flex items-center justify-between rounded-lg px-3 py-2.5 mx-2 cursor-pointer transition-all duration-200
-          ${
-            active
-              ? `${
-                  darkMode
-                    ? "bg-slate-900/50 text-slate-100 border-r-2 border-slate-400"
-                    : "bg-slate-50 text-slate-700 border-r-2 border-slate-600"
-                }`
-              : `${
-                  darkMode
-                    ? "text-gray-300 hover:bg-gray-700 hover:text-white"
-                    : "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
-                }`
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <span
-              className={`text-lg ${
-                active ? "scale-110" : ""
-              } transition-transform`}
-            >
-              {icon}
-            </span>
-            <span className="font-medium text-sm">{label}</span>
-          </div>
-          {badge && (
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-semibold min-w-6 text-center ${
-                active
-                  ? `${
-                      darkMode
-                        ? "bg-slate-700 text-slate-100"
-                        : "bg-slate-100 text-slate-700"
-                    }`
-                  : "bg-red-500 text-white"
-              }`}
-            >
-              {badge}
-            </span>
-          )}
-        </div>
-      </Link>
-    );
-  };
-
-  const SidebarContent = () => (
-    <div className="flex h-full flex-col transition-colors duration-300">
-      <div
-        className={`flex items-center gap-3 px-[1.92rem] py-[0.85rem] border-b transition-colors duration-300 ${
-          darkMode ? "border-gray-700" : "border-slate-200"
-        }`}
-      >
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-slate-600 to-slate-700">
-          <FiGrid className="h-5 w-5 text-white" />
-        </div>
-        <div className="min-w-0">
-          <p
-            className={`text-sm font-semibold truncate transition-colors duration-300 ${
-              darkMode ? "text-white" : "text-slate-900"
-            }`}
-          >
-            Autogalerie Jülich
-          </p>
-          <p
-            className={`text-xs truncate transition-colors duration-300 ${
-              darkMode ? "text-gray-400" : "text-slate-500"
-            }`}
-          >
-            {firstName}
-          </p>
-        </div>
-      </div>
-
-      <nav className="mt-3 flex-1 overflow-y-auto pb-20">
-        <div className="space-y-1">
-          {navItems
-            .filter((item) => {
-              if (adminOnlyRoutes.includes(item.href) && !isAdmin) {
-                return false;
-              }
-              return true;
-            })
-            .map((item) => (
-              <SidebarLink
-                key={item.href}
-                href={item.href}
-                icon={item.icon}
-                label={item.label}
-                badge={item.badge}
-              />
-            ))}
-        </div>
-      </nav>
-
-      {/* Dark Mode Toggle at the bottom */}
-      <div className="absolute bottom-4 left-0 right-0 px-4">
-        <button
-          onClick={toggleDarkMode}
-          className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-all duration-300 border ${
-            darkMode
-              ? "bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border-gray-600"
-              : "bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border-slate-300"
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            {darkMode ? (
-              <>
-                <FiSun className="text-lg text-yellow-400" />
-                <span className="font-medium text-sm">Hell</span>
-              </>
-            ) : (
-              <>
-                <FiMoon className="text-lg text-slate-400" />
-                <span className="font-medium text-sm">Dunkel</span>
-              </>
-            )}
-          </div>
-          <div
-            className={`w-12 h-6 flex items-center rounded-full p-1 transition-all duration-300 ${
-              darkMode
-                ? "bg-slate-600 justify-end"
-                : "bg-slate-400 justify-start"
-            }`}
-          >
-            <div className="w-4 h-4 bg-white rounded-full shadow-lg transform transition-transform duration-300" />
-          </div>
-        </button>
-      </div>
-    </div>
-  );
-
   /* ─────────────────────────────────────────
      Dashboard data derived from visibleScheins
      ───────────────────────────────────────── */
@@ -625,46 +376,13 @@ const DashboardContent = ({
   // Conditional classes based on dark mode
   const mainBgClass = darkMode ? "bg-gray-900" : "bg-slate-50";
   const textClass = darkMode ? "text-gray-100" : "text-slate-900";
-  const sidebarBgClass = darkMode ? "bg-gray-800" : "bg-white";
-  const sidebarBorderClass = darkMode ? "border-gray-700" : "border-slate-200";
 
   return (
     <div
       className={`min-h-screen ${mainBgClass} ${textClass} transition-colors duration-300`}
     >
       <div className="flex min-h-screen">
-        {/* Desktop sidebar */}
-        <aside
-          className={`hidden md:flex md:w-64 lg:w-55 border-r transition-colors duration-300 ${sidebarBgClass} ${sidebarBorderClass} relative`}
-        >
-          <SidebarContent />
-        </aside>
-
-        {/* Mobile sidebar */}
-        <AnimatePresence>
-          {mobileSidebarOpen && (
-            <>
-              <motion.div
-                className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setMobileSidebarOpen(false)}
-              />
-              <motion.aside
-                className={`fixed inset-y-0 left-0 z-50 w-64 border-r shadow-xl md:hidden transition-colors duration-300 ${sidebarBgClass} ${sidebarBorderClass}`}
-                initial={{ x: -260 }}
-                animate={{ x: 0 }}
-                exit={{ x: -260 }}
-                transition={{ type: "tween", duration: 0.2 }}
-              >
-                <SidebarContent />
-              </motion.aside>
-            </>
-          )}
-        </AnimatePresence>
-
-        {/* Main area */}
+        {/* Main area - Full width since sidebar is removed */}
         <div className="flex flex-1 flex-col">
           {/* Top bar - Mobile optimized */}
           <header
@@ -675,24 +393,24 @@ const DashboardContent = ({
             }`}
           >
             <div className="flex items-center gap-2 sm:gap-3">
-              <button
-                className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-colors duration-300 ${
-                  darkMode
-                    ? "border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                } md:hidden`}
-                onClick={() => setMobileSidebarOpen(true)}
-              >
-                <FiMenu className="h-4 w-4" />
-              </button>
-
               {/* Fuel alert - now opens modal */}
+              <button
+                onClick={openSidebar}
+                className="md:hidden p-2 rounded-md hover:bg-gray-700/40 transition-colors"
+                aria-label="Menü öffnen"
+              >
+                <FiMenu
+                  className={`h-5 w-5 ${
+                    darkMode ? "text-white" : "text-gray-700"
+                  }`}
+                />
+              </button>
               <div className="flex items-center">
                 {fuelAlertScheins.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setShowFuelModal(true)}
-                    className={`inline-flex items-center gap-1 sm:gap-1 border px-2 py-1 sm:px-3 sm:py-1 text-xs font-medium shadow-sm transition-colors mr-12 ${
+                    className={`inline-flex items-center gap-1 sm:gap-1 border px-2 py-1 sm:px-3 sm:py-1 text-xs font-medium shadow-sm transition-colors ${
                       darkMode
                         ? "border-amber-900 bg-amber-900/50 text-amber-200 hover:bg-amber-800 hover:border-amber-600"
                         : "border-amber-200 bg-amber-50/90 text-amber-800 hover:bg-amber-100 hover:border-amber-300"
@@ -944,14 +662,6 @@ const DashboardContent = ({
                               >
                                 {appt.title}
                               </p>
-                              {/* 
-                              <p
-                                className={`text-[10px] sm:text-xs font-medium ${
-                                  darkMode ? "text-slate-400" : "text-slate-600"
-                                }`}
-                              >
-                                {formatAppointmentDateTime(appt.date)}
-                              </p>*/}
                             </div>
                           </div>
                         </div>

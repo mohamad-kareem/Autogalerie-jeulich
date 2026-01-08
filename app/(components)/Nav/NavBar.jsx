@@ -18,7 +18,7 @@ import ProfileEditModal from "@/app/(components)/admin/ProfileEditModal";
 export default function NavBar() {
   const { data: session } = useSession();
   const pathname = usePathname();
-
+  const isHomePage = pathname === "/";
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -105,7 +105,9 @@ export default function NavBar() {
   }, [session?.user?.id]);
 
   if (!hydrated) return null;
-
+  if (isAdminRoute) {
+    return null;
+  }
   const avatarUrl = user?.image || "";
 
   // Floating user dropdown (used both on admin and normal routes)
@@ -314,13 +316,6 @@ export default function NavBar() {
     </div>
   );
 
-  if (session?.user && isAdminRoute) {
-    if (hideDropdown) {
-      return null; // ❌ no navbar, no dropdown on /schlussel
-    }
-    return <>{UserDropdown}</>;
-  }
-
   return (
     <header
       className={`print:hidden fixed inset-x-0 top-0 z-40 transition-all duration-500 ${
@@ -376,7 +371,7 @@ export default function NavBar() {
         </div>
 
         {/* Floating user dropdown (top-right) on normal routes ONLY */}
-        {session?.user && !hideDropdown && UserDropdown}
+        {session?.user && isHomePage && UserDropdown}
       </nav>
     </header>
   );
