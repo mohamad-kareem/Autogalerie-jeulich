@@ -9,7 +9,7 @@ export default function PagesLayout({ children }) {
   const { data: session } = useSession();
 
   const [darkMode, setDarkMode] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {

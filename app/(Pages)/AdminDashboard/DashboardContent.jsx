@@ -379,9 +379,9 @@ const DashboardContent = ({
 
   return (
     <div
-      className={`min-h-screen ${mainBgClass} ${textClass} transition-colors duration-300`}
+      className={`${mainBgClass} ${textClass} transition-colors duration-300 min-h-full flex`}
     >
-      <div className="flex min-h-screen">
+      <div className="flex flex-1">
         {/* Main area - Full width since sidebar is removed */}
         <div className="flex flex-1 flex-col">
           {/* Top bar - Mobile optimized */}

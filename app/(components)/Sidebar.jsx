@@ -1,7 +1,7 @@
 // app/(components)/Sidebar.jsx
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -36,16 +36,18 @@ const Sidebar = ({
   onToggleDarkMode = () => {},
 }) => {
   const pathname = usePathname();
-  const [tooltipData, setTooltipData] = useState({
+  const [tooltip, setTooltip] = useState({
     show: false,
     label: "",
     badge: null,
-    top: 0,
-    left: 0,
+    x: 0,
+    y: 0,
+    targetHref: null,
   });
 
   const navItemRefs = useRef({});
   const sidebarRef = useRef(null);
+  const tooltipTimeoutRef = useRef(null);
 
   const adminOnlyRoutes = [
     "/kaufvertrag/archiv",
@@ -70,7 +72,7 @@ const Sidebar = ({
       icon: <FiHome />,
       label: "Startseite",
       badge: null,
-      color: "text-slate-300",
+      color: "text-violet-500",
     },
     {
       href: "/aufgabenboard",
@@ -168,42 +170,85 @@ const Sidebar = ({
   const isActiveRoute = (href) =>
     pathname === href || pathname.startsWith(href + "/");
 
-  const handleMouseEnter = (href, label, badge, event) => {
-    if (!isMinimized || mobileOpen) return;
+  const showTooltip = useCallback(
+    (href, label, badge, event) => {
+      if (!isMinimized || mobileOpen) return;
 
-    const element = navItemRefs.current[href];
-    if (element) {
-      const rect = element.getBoundingClientRect();
-      const sidebarRect = sidebarRef.current?.getBoundingClientRect();
+      clearTimeout(tooltipTimeoutRef.current);
 
-      // Position tooltip to the right of the sidebar
-      const tooltipLeft = sidebarRect ? sidebarRect.right + 8 : rect.right + 8;
+      const element = navItemRefs.current[href];
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const sidebarRect = sidebarRef.current?.getBoundingClientRect();
 
-      // Center tooltip vertically relative to the nav item
-      const tooltipTop = rect.top + rect.height / 2;
+        if (!sidebarRect) return;
 
-      setTooltipData({
-        show: true,
-        label,
-        badge,
-        top: tooltipTop,
-        left: tooltipLeft,
-      });
+        // Calculate position relative to viewport
+        const tooltipLeft = sidebarRect.right + 8;
+        const tooltipTop = rect.top + rect.height / 2;
+
+        // Boundary check to keep tooltip within viewport
+        const viewportHeight = window.innerHeight;
+        const tooltipHeight = 40; // Approximate tooltip height
+        const adjustedTop = Math.min(
+          Math.max(tooltipTop - tooltipHeight / 2, 10),
+          viewportHeight - tooltipHeight - 10
+        );
+
+        tooltipTimeoutRef.current = setTimeout(() => {
+          setTooltip({
+            show: true,
+            label,
+            badge,
+            x: tooltipLeft,
+            y: adjustedTop,
+            targetHref: href,
+          });
+        }, 100); // Small delay for smoother experience
+      }
+    },
+    [isMinimized, mobileOpen]
+  );
+
+  const hideTooltip = useCallback((immediate = false) => {
+    clearTimeout(tooltipTimeoutRef.current);
+
+    if (immediate) {
+      setTooltip((prev) => ({ ...prev, show: false }));
+    } else {
+      tooltipTimeoutRef.current = setTimeout(() => {
+        setTooltip((prev) => ({ ...prev, show: false }));
+      }, 150); // Small delay to allow moving cursor to tooltip
     }
+  }, []);
+
+  const handleMouseEnter = (href, label, badge, event) => {
+    showTooltip(href, label, badge, event);
   };
 
   const handleMouseLeave = () => {
-    if (tooltipData.show) {
-      setTooltipData((prev) => ({ ...prev, show: false }));
-    }
+    hideTooltip();
   };
 
-  // Close tooltip when sidebar is toggled
+  const handleTooltipMouseEnter = () => {
+    clearTimeout(tooltipTimeoutRef.current);
+  };
+
+  const handleTooltipMouseLeave = () => {
+    hideTooltip(true);
+  };
+
+  // Close tooltip when sidebar state changes
   useEffect(() => {
-    if (!isMinimized) {
-      setTooltipData((prev) => ({ ...prev, show: false }));
-    }
-  }, [isMinimized]);
+    hideTooltip(true);
+  }, [isMinimized, mobileOpen, hideTooltip]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      clearTimeout(tooltipTimeoutRef.current);
+    };
+  }, []);
 
   const SidebarLink = ({ href, icon, label, badge, color }) => {
     const active = isActiveRoute(href);
@@ -261,40 +306,47 @@ const Sidebar = ({
   };
 
   const Tooltip = () => {
-    if (!tooltipData.show || mobileOpen) return null;
+    if (!tooltip.show || mobileOpen || !isMinimized) return null;
 
     return (
       <div
-        className="fixed z-[9999] pointer-events-none transition-opacity duration-200"
+        className="fixed z-[9999] transition-opacity duration-200"
         style={{
-          top: `${tooltipData.top}px`,
-          left: `${tooltipData.left}px`,
+          top: `${tooltip.y}px`,
+          left: `${tooltip.x}px`,
           transform: "translateY(-50%)",
         }}
+        onMouseEnter={handleTooltipMouseEnter}
+        onMouseLeave={handleTooltipMouseLeave}
       >
         <div
-          className={`px-3 py-2 rounded-lg shadow-lg ${
+          className={`px-3 py-2 rounded-lg shadow-lg border ${
             darkMode
-              ? "bg-gray-900 text-white border border-gray-700"
-              : "bg-white text-gray-900 border border-gray-200"
+              ? "bg-gray-900 text-white border-gray-700"
+              : "bg-white text-gray-900 border-gray-200"
           }`}
         >
           <div className="flex items-center gap-2 whitespace-nowrap">
-            <span className="text-sm font-medium">{tooltipData.label}</span>
-            {tooltipData.badge && (
+            <span className="text-sm font-medium">{tooltip.label}</span>
+            {tooltip.badge && (
               <span
                 className={`px-1.5 py-0.5 text-xs font-semibold rounded-full min-w-[1.25rem] text-center ${
                   darkMode ? "bg-red-600 text-white" : "bg-red-500 text-white"
                 }`}
               >
-                {tooltipData.badge}
+                {tooltip.badge}
               </span>
             )}
           </div>
           {/* Tooltip arrow */}
           <div
-            className={`absolute top-1/2 -left-1.5 w-0 h-0 border-y-[6px] border-y-transparent border-r-[6px] -translate-y-1/2 ${
+            className={`absolute top-1/2 -left-2 w-0 h-0 border-y-[6px] border-y-transparent border-r-[6px] -translate-y-1/2 ${
               darkMode ? "border-r-gray-900" : "border-r-white"
+            }`}
+          />
+          <div
+            className={`absolute top-1/2 -left-[9px] w-0 h-0 border-y-[7px] border-y-transparent border-r-[7px] -translate-y-1/2 ${
+              darkMode ? "border-r-gray-700" : "border-r-gray-200"
             }`}
           />
         </div>
@@ -313,9 +365,9 @@ const Sidebar = ({
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div
-        className={`px-4 py-[0.83rem] border-b ${
+        className={`px-4 border-b ${
           darkMode ? "border-gray-700" : "border-gray-200"
-        }`}
+        } ${isMinimized ? "py-[1.1rem]" : "py-[0.83rem]"}`}
       >
         <div className="flex items-center gap-3">
           <button
@@ -323,15 +375,27 @@ const Sidebar = ({
             className={`flex items-center justify-center rounded-lg h-7 w-7 flex-shrink-0 transition-colors ${
               darkMode
                 ? "bg-gray-600 hover:bg-gray-600"
-                : "bg-gray-100 hover:bg-gray-200"
+                : "bg-gray-200 hover:bg-gray-300"
             }`}
           >
             {isMobile ? (
-              <FiX className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              <FiX
+                className={`h-5 w-5 ${
+                  darkMode ? "text-gray-100" : "text-black"
+                }`}
+              />
             ) : isMinimized ? (
-              <FiMenu className="h-5 w-5 text-red-600 dark:text-black" />
+              <FiMenu
+                className={`h-5 w-5 ${
+                  darkMode ? "text-gray-100" : "text-black"
+                }`}
+              />
             ) : (
-              <FiChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              <FiChevronRight
+                className={`h-5 w-5 ${
+                  darkMode ? "text-gray-300" : "text-black"
+                }`}
+              />
             )}
           </button>
 
@@ -357,7 +421,7 @@ const Sidebar = ({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-2">
+      <nav className="flex-1 overflow-y-auto py-4">
         <div className="space-y-1">
           {navItems
             .filter((item) => {
@@ -387,7 +451,10 @@ const Sidebar = ({
       >
         {!isMinimized || isMobile ? (
           <button
-            onClick={onToggleDarkMode}
+            onClick={() => {
+              onToggleDarkMode();
+              window.location.reload();
+            }}
             className={`flex items-center justify-between w-full p-3 transition-colors ${
               darkMode
                 ? "hover:bg-gray-700/30 text-gray-300 hover:text-white"
@@ -423,7 +490,10 @@ const Sidebar = ({
           </button>
         ) : (
           <button
-            onClick={onToggleDarkMode}
+            onClick={() => {
+              onToggleDarkMode();
+              window.location.reload();
+            }}
             className={`flex items-center justify-center w-full p-3 transition-colors ${
               darkMode
                 ? "hover:bg-gray-700/30 text-gray-300 hover:text-white"
@@ -450,7 +520,6 @@ const Sidebar = ({
         className={`hidden md:flex flex-col border-r transition-all duration-300 ${
           darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
         } ${isMinimized ? "w-16" : "w-64"}`}
-        onMouseLeave={handleMouseLeave}
       >
         <SidebarContent />
       </aside>
