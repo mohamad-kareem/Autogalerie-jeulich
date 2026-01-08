@@ -6,7 +6,7 @@ import logo from "@/app/(assets)/kauftraglogo.png";
 import toast from "react-hot-toast";
 import Button from "@/app/(components)/helpers/Button";
 import { useSearchParams } from "next/navigation";
-
+import LogoKarim from "@/app/(assets)/logo1111.png";
 export default function KaufvertragClientForm() {
   const initialFormState = {
     downPayment: 0,
@@ -217,6 +217,63 @@ export default function KaufvertragClientForm() {
       toast.error("Fehler beim Speichern des Formulars.");
     }
   };
+  function AlawieHeader() {
+    return (
+      <div className="flex flex-col sm:flex-row justify-between items-center border p-2 sm:p-7 bg-black text-white print:flex-row print:justify-between print:items-center print:p-2 print:px-6">
+        <div className="text-left w-full md:w-auto mb-2 md:mb-0 print:mb-2 print:text-left print:w-full">
+          <p className="font-semibold text-sm md:text-lg print:text-sm">
+            E-Mail: autogalerie.juelich@web.de / Tel.: 02461/9163780
+          </p>
+        </div>
+        <div className="text-right w-full md:w-auto print:w-1/2 print:text-right">
+          <Image
+            src={logo}
+            alt="Autogalerie Jülich – Alawie"
+            width={150}
+            height={100}
+            className="object-fill mx-auto md:mx-0 print:ml-auto print:mr-0"
+            priority
+          />
+        </div>
+      </div>
+    );
+  }
+  function KarimHeader() {
+    return (
+      <div className="flex flex-col sm:flex-row justify-between items-center border py-2 px-2 sm:px-7 sm:py-6 bg-gradient-to-b from-slate-950/95 to-slate-900/90 text-white print:flex-row print:justify-between print:items-center print:py-2 print:px-6">
+        {/* Left: Logo + Name */}
+        <div className="flex items-center gap-3 w-full md:w-auto mb-2 md:mb-0 print:mb-2 print:w-full">
+          <Image
+            src={LogoKarim} // ✅ Karim logo
+            alt="Autogalerie Jülich – Karim"
+            width={55}
+            height={55}
+            className="object-contain"
+            priority
+          />
+
+          <span className="font-playfair text-lg md:text-xl tracking-wide print:text-lg">
+            AUTOGALERIE JÜLICH
+          </span>
+        </div>
+
+        {/* Right: Contact */}
+        <div className="text-right w-full md:w-auto print:w-1/2 print:text-right">
+          <p className="font-mono text-sm md:text-lg print:text-sm">
+            <span className="print:whitespace-nowrap">
+              E-Mail:&nbsp;autogalerie.juelich@web.de
+            </span>
+          </p>
+
+          <p className="font-mono text-sm md:text-lg print:text-sm">
+            <span className="print:whitespace-nowrap">
+              Tel.:&nbsp;02461&nbsp;/&nbsp;9163780
+            </span>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto p-4 font-sans text-[13px] print:p-0 print:max-w-none">
@@ -226,22 +283,7 @@ export default function KaufvertragClientForm() {
         className="space-y-4 print:space-y-1"
       >
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-center border p-2 sm:p-7 bg-black text-white print:flex-row print:justify-between print:items-center print:p-2 print:px-6">
-          <div className="text-left w-full md:w-auto mb-2 md:mb-0 print:mb-2 print:text-left print:w-full">
-            <p className="font-semibold text-sm md:text-lg print:text-sm">
-              E-Mail: autogalerie.juelich@web.de / Tel.: 02461/9163780
-            </p>
-          </div>
-          <div className="text-right w-full md:w-auto print:w-1/2 print:text-right">
-            <Image
-              src={logo}
-              alt="Logo"
-              width={150}
-              height={100}
-              className="object-fill mx-auto md:mx-0 print:ml-auto print:mr-0"
-            />
-          </div>
-        </div>
+        {form.issuer === "karim" ? <KarimHeader /> : <AlawieHeader />}
 
         {/* Buyer Info and Invoice */}
         <div className="flex flex-col sm:flex-row justify-between items-start pb-2 print:pb-1 gap-4 md:gap-0">
@@ -284,7 +326,9 @@ export default function KaufvertragClientForm() {
               autoComplete="off"
               value={form.title || ""}
               onChange={handleChange}
-              className="text-red-600 text-xl md:text-2xl print:text-2xl bg-transparent border-none outline-none w-[160px] text-right"
+              className={`text-xl md:text-2xl print:text-2xl bg-transparent border-none outline-none w-[160px] text-right ${
+                form.issuer === "karim" ? "text-slate-800" : "text-red-600"
+              }`}
             />
 
             <div className="flex justify-end items-center gap-2 text-[13px]">
