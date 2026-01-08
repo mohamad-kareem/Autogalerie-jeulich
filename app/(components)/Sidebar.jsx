@@ -313,7 +313,7 @@ const Sidebar = ({
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div
-        className={`px-4 py-4 border-b ${
+        className={`px-4 py-[0.83rem] border-b ${
           darkMode ? "border-gray-700" : "border-gray-200"
         }`}
       >
