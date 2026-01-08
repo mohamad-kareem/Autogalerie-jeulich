@@ -18,9 +18,10 @@ import {
   FiChevronUp,
   FiChevronLeft,
   FiChevronRight,
+  FiMenu,
 } from "react-icons/fi";
 import { motion } from "framer-motion";
-
+import { useSidebar } from "@/app/(components)/SidebarContext";
 export default function ContactCustomersPage() {
   const emptyForm = {
     customerName: "",
@@ -33,7 +34,7 @@ export default function ContactCustomersPage() {
     firstRegistration: "",
     note: "",
   };
-
+  const { openSidebar } = useSidebar();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
@@ -309,16 +310,17 @@ export default function ContactCustomersPage() {
           className="mb-2 sm:mb-3 lg:mb-4"
         >
           <div className="flex flex-wrap items-center gap-4">
+            {/* Mobile hamburger */}
             <button
-              onClick={() => router.push("/AdminDashboard")}
-              className={`p-2 rounded-lg transition-colors duration-300 flex items-center gap-2 ${
+              onClick={openSidebar}
+              className={`md:hidden p-2 rounded-lg transition-colors duration-300 ${
                 darkMode
-                  ? "bg-slate-800 hover:bg-slate-700 text-gray-200"
+                  ? "bg-slate-800 hover:bg-slate-700 text-white"
                   : "bg-slate-200 hover:bg-slate-300 text-slate-700"
               }`}
-              title="Zurück zum Dashboard"
+              aria-label="Menü öffnen"
             >
-              <FiArrowLeft className="h-4 w-4" />
+              <FiMenu className="h-4 w-4" />
             </button>
             <h1
               className={`text-base sm:text-lg lg:text-2xl font-bold transition-colors duration-300 ${textPrimary}`}

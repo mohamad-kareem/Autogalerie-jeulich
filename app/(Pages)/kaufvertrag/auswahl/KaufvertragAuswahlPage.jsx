@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle, FileText, ChevronRight, User } from "lucide-react";
-
+import { useSidebar } from "@/app/(components)/SidebarContext";
+import { FiMenu } from "react-icons/fi";
 export default function KaufvertragAuswahlPage({ carId }) {
   const router = useRouter();
   const [selected, setSelected] = useState("");
-
+  const { openSidebar } = useSidebar();
   const handleContinue = () => {
     if (!selected) {
       alert("Bitte wählen Sie eine Option aus");
@@ -27,6 +28,15 @@ export default function KaufvertragAuswahlPage({ carId }) {
 
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+      {/* Mobile hamburger */}
+      <button
+        onClick={openSidebar}
+        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-colors duration-300"
+        aria-label="Menü öffnen"
+      >
+        <FiMenu className="h-4 w-4" />
+      </button>
+
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

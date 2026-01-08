@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "react-hot-toast";
 import DatePicker from "react-datepicker";
+import { useSidebar } from "@/app/(components)/SidebarContext";
 import {
   format,
   startOfMonth,
@@ -38,6 +39,7 @@ import {
   FiBell,
   FiSun,
   FiMoon,
+  FiMenu,
 } from "react-icons/fi";
 import { IoMdLocate } from "react-icons/io";
 
@@ -53,7 +55,7 @@ export default function Zeiterfassungsverwaltung() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [darkMode, setDarkMode] = useState(false);
-
+  const { openSidebar } = useSidebar();
   // Initialize dark mode
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -623,48 +625,27 @@ export default function Zeiterfassungsverwaltung() {
       <div className="z-40 px-4 sm:px-6 py-2">
         <div className="flex ">
           <div className="flex items-center gap-3 mr-3">
+            {/* Mobile hamburger */}
             <button
-              onClick={() => router.push("/AdminDashboard")}
-              className={`p-2 rounded-lg transition-colors ${
+              onClick={openSidebar}
+              className={`md:hidden p-2 rounded-lg transition-colors duration-300 ${
                 darkMode
-                  ? "bg-slate-800 hover:bg-slate-700"
-                  : "bg-slate-200 hover:bg-slate-300"
+                  ? "bg-slate-800 hover:bg-slate-700 text-white"
+                  : "bg-slate-200 hover:bg-slate-300 text-slate-700"
               }`}
+              aria-label="Menü öffnen"
             >
-              <FiArrowLeft
-                className={`h-4 w-4 ${
-                  darkMode ? "text-white" : "text-slate-700"
-                }`}
-              />
+              <FiMenu className="h-4 w-4" />
             </button>
             <h1 className="text-lg sm:text-xl font-bold">
               Zeiterfassungsübersicht
             </h1>
           </div>
-
-          {/* Dark Mode Toggle */}
-          <button
-            onClick={toggleDarkMode}
-            className={`p-2 rounded-lg transition-colors ${
-              darkMode
-                ? "bg-slate-800 hover:bg-slate-700"
-                : "bg-slate-200 hover:bg-slate-300"
-            }`}
-            title={
-              darkMode ? "Zu Hellmodus wechseln" : "Zu Dunkelmodus wechseln"
-            }
-          >
-            {darkMode ? (
-              <FiSun className="h-4 w-4 text-yellow-400" />
-            ) : (
-              <FiMoon className="h-4 w-4 text-slate-600" />
-            )}
-          </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1600px] mx-auto px-1 sm:px-0 py-2">
+      <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1600px] mx-auto px-1 sm:px-6 py-2 ">
         {/* Control Panel */}
         <div
           className={`${cardBg} rounded-xl overflow-hidden mb-4 transition-colors duration-300`}

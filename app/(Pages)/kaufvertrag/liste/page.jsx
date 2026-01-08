@@ -375,19 +375,6 @@ export default function KaufvertragListe() {
           <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Left side: Archiv button + Search */}
             <div className="flex w-full sm:w-auto items-center gap-2">
-              {isAdmin && (
-                <button
-                  onClick={() => router.push("/kaufvertrag/archiv")}
-                  className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] sm:text-xs md:text-sm font-medium shadow-sm transition cursor-pointer ${
-                    darkMode
-                      ? "bg-slate-700 hover:bg-slate-600 text-white"
-                      : "bg-slate-400 hover:bg-slate-500 text-white"
-                  }`}
-                >
-                  <FiArchive className="text-xs sm:text-sm" /> Archiv
-                </button>
-              )}
-
               <div className="relative flex-1 min-w-[160px] max-w-xs sm:max-w-sm">
                 <FiSearch
                   className={`pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs sm:text-sm transition-colors duration-300 ${

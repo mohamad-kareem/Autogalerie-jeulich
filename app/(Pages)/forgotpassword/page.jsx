@@ -32,19 +32,19 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-700 to-slate-900 relative overflow-hidden px-4">
-      {/* Background Glow (same as login) */}
-      <div className="absolute top-0 left-1/3 w-60 h-60 bg-blue-500/10 blur-3xl rounded-full" />
-      <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-sky-400/10 blur-3xl rounded-full" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-700 to-slate-900 px-4">
+      {/* Background Glow */}
+      <div className="absolute top-0 left-1/3 w-48 h-48 bg-blue-500/10 blur-3xl rounded-full" />
+      <div className="absolute bottom-0 right-1/3 w-48 h-48 bg-sky-400/10 blur-3xl rounded-full" />
 
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-slate-800 backdrop-blur-xl border border-slate-800/80 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
-          <div className="p-8">
-            {/* Icon (same style as login) */}
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg border border-slate-600/70 bg-gradient-to-br from-slate-800 to-slate-900">
+      <div className="w-full max-w-sm relative z-10">
+        <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-xl">
+          <div className="p-6">
+            {/* Icon */}
+            <div className="flex justify-center mb-3">
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center border border-slate-600 bg-slate-900">
                 <svg
-                  className="w-8 h-8 text-slate-100"
+                  className="w-7 h-7 text-slate-200"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -58,78 +58,55 @@ export default function ForgotPassword() {
             </div>
 
             {/* Title */}
-            <h1 className="text-2xl font-bold text-center text-slate-50 mb-2 tracking-wide">
+            <h1 className="text-xl font-semibold text-center text-slate-100">
               Passwort zurücksetzen
             </h1>
 
-            <p className="text-center text-slate-400 mb-8 text-sm">
+            {/* Info text (unchanged content) */}
+            <p className="text-center text-slate-400 text-xs mt-2 mb-5 leading-relaxed">
               {submitted
                 ? "Wenn Ihre E-Mail in unserem System vorhanden ist, erhalten Sie in Kürze eine Anleitung zum Zurücksetzen."
                 : "Geben Sie Ihre E-Mail-Adresse ein, um einen Link zum Zurücksetzen des Passworts zu erhalten."}
             </p>
 
-            {/* Error Message */}
+            {/* Error */}
             {error && (
-              <div className="mb-6 p-3 bg-red-900/40 text-red-300 border border-red-700/80 rounded-md text-sm flex items-center">
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+              <div className="mb-4 text-xs text-red-300 bg-red-900/40 border border-red-700/70 rounded-md px-3 py-2">
                 {error}
               </div>
             )}
 
             {/* Form */}
             {!submitted && (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Email Input */}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Email */}
                 <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-slate-200 mb-1"
-                  >
+                  <label className="block text-xs text-slate-300 mb-1">
                     E-Mail-Adresse
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FiMail className="text-slate-500" />
-                    </div>
+                    <FiMail className="absolute left-3 top-2.5 text-slate-500 text-sm" />
                     <input
-                      id="email"
-                      name="email"
                       type="email"
-                      autoComplete="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="block w-full pl-10 pr-3 py-2 bg-slate-900/80 border border-slate-700 rounded-md text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="admin@firma.de"
+                      className="w-full pl-9 pr-3 py-2 text-sm bg-slate-900 border border-slate-700 rounded-md text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
                     />
                   </div>
                 </div>
 
-                {/* Submit Button */}
+                {/* Button */}
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`w-full flex justify-center items-center py-2.5 px-4 rounded-md text-sm font-medium text-slate-50 bg-slate-600 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-slate-900 transition ${
-                    isLoading ? "opacity-75 cursor-not-allowed" : ""
-                  }`}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-slate-600 hover:bg-slate-700 rounded-md transition disabled:opacity-70"
                 >
                   {isLoading ? (
                     <>
                       <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-slate-50"
-                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-4 h-4 animate-spin"
                         fill="none"
                         viewBox="0 0 24 24"
                       >
@@ -140,29 +117,29 @@ export default function ForgotPassword() {
                           r="10"
                           stroke="currentColor"
                           strokeWidth="4"
-                        ></circle>
+                        />
                         <path
                           className="opacity-75"
                           fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
+                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                        />
                       </svg>
-                      Senden...
+                      Senden…
                     </>
                   ) : (
                     <>
-                      Reset-Link senden <FiArrowRight className="ml-2" />
+                      Reset-Link senden <FiArrowRight />
                     </>
                   )}
                 </button>
               </form>
             )}
 
-            {/* Back Link */}
-            <div className="mt-6 text-center text-sm">
+            {/* Back */}
+            <div className="mt-5 text-center text-xs">
               <Link
                 href="/login"
-                className="font-medium text-blue-400 hover:text-blue-300"
+                className="text-blue-400 hover:text-blue-300 font-medium"
               >
                 Zurück zur Anmeldung
               </Link>

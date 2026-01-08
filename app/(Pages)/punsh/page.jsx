@@ -15,10 +15,11 @@ import {
   FiShield,
   FiMapPin,
   FiHelpCircle,
+  FiMenu,
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import * as turf from "@turf/turf";
-
+import { useSidebar } from "@/app/(components)/SidebarContext";
 const dealershipCoords = turf.polygon([
   [
     [6.381400250922695, 50.91247701778411],
@@ -35,7 +36,7 @@ const dealershipCoords = turf.polygon([
 export default function ZeiterfassungPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-
+  const { openSidebar } = useSidebar();
   const [statusZeiterfassung, setStatusZeiterfassung] =
     useState("ausgestempelt");
   const [wirdGeladen, setWirdGeladen] = useState(false);
@@ -183,11 +184,19 @@ export default function ZeiterfassungPage() {
           className="mb-8"
         >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-200">
+            <div className="flex items-center gap-3">
+              {/* Mobile hamburger */}
+              <button
+                onClick={openSidebar}
+                className="md:hidden p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-colors duration-300"
+                aria-label="Menü öffnen"
+              >
+                <FiMenu className="h-4 w-4" />
+              </button>
+
+              <h1 className="text-xl font-bold text-gray-200">
                 Zeiterfassungssystem
               </h1>
-              <p className="text-gray-400">Erfassen Sie Ihre Arbeitszeiten</p>
             </div>
 
             <div className="flex items-center gap-4">

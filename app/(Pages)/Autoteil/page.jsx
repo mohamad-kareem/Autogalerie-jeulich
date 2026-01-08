@@ -16,10 +16,11 @@ import {
   FiEdit3,
   FiChevronLeft,
   FiChevronRight,
+  FiMenu,
 } from "react-icons/fi";
 import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
-
+import { useSidebar } from "@/app/(components)/SidebarContext";
 const OWNERS = ["Karim", "Alawie"];
 
 const currencyFmt = (v, currency = "EUR") => {
@@ -61,7 +62,7 @@ export default function ReclamationDashboard() {
 
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const { openSidebar } = useSidebar();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
@@ -366,7 +367,15 @@ export default function ReclamationDashboard() {
     <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
       <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
         <header className="mb-3 sm:mb-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center  gap-2">
+            {/* Mobile hamburger */}
+            <button
+              onClick={openSidebar}
+              className="md:hidden  p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-colors duration-300"
+              aria-label="Menü öffnen"
+            >
+              <FiMenu className="h-4 w-4" />
+            </button>
             <h1 className="text-lg sm:text-xl font-bold text-gray-900">
               Reklamationsverwaltung
             </h1>

@@ -10,10 +10,11 @@ import {
   FiPlus,
   FiDownload,
   FiBook,
+  FiMenu,
 } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
-
+import { useSidebar } from "@/app/(components)/SidebarContext";
 // For Word export
 import {
   Document,
@@ -71,7 +72,7 @@ export default function CarLocationsPage() {
   const [savingId, setSavingId] = useState(null);
   const [showRotbuch, setShowRotbuch] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-
+  const { openSidebar } = useSidebar();
   const [rows, setRows] = useState([]);
   const [carOptions, setCarOptions] = useState([]);
   const [editRowId, setEditRowId] = useState(null);
@@ -699,6 +700,18 @@ export default function CarLocationsPage() {
         {/* HEADER + FILTER */}
         <header className="mb-3 sm:mb-4 lg:mb-5 flex flex-col sm:flex-row sm:items-center  gap-3">
           <div className="flex items-center gap-3">
+            {/* Mobile hamburger */}
+            <button
+              onClick={openSidebar}
+              className={`md:hidden p-2 rounded-lg transition-colors duration-300 ${
+                darkMode
+                  ? "bg-slate-800 hover:bg-slate-700 text-white"
+                  : "bg-slate-200 hover:bg-slate-300 text-slate-700"
+              }`}
+              aria-label="Menü öffnen"
+            >
+              <FiMenu className="h-4 w-4" />
+            </button>
             <h1
               className={`text-sm sm:text-base lg:text-xl font-semibold tracking-tight ${textPrimary}`}
             >

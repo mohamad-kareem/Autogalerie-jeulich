@@ -17,10 +17,11 @@ import {
   FiSun,
   FiMoon,
   FiArrowLeft,
+  FiMenu,
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { ArrowUturnLeftIcon, NoSymbolIcon } from "@heroicons/react/24/solid";
-
+import { useSidebar } from "@/app/(components)/SidebarContext";
 // Currency formatter (same style as Liste page)
 const currencyFmt = (v, currency = "EUR") => {
   try {
@@ -60,7 +61,7 @@ export default function ArchivPage() {
   const [contracts, setContracts] = useState([]);
   const [filteredContracts, setFilteredContracts] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const { openSidebar } = useSidebar();
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({ month: "" });
   const [sortConfig, setSortConfig] = useState({
@@ -351,16 +352,17 @@ export default function ArchivPage() {
           className="mb-2 sm:mb-3 lg:mb-4"
         >
           <div className="flex flex-wrap items-center  gap-4">
+            {/* Mobile hamburger */}
             <button
-              onClick={() => router.push("/AdminDashboard")}
-              className={`p-2 rounded-lg transition-colors duration-300 flex items-center gap-2 ${
+              onClick={openSidebar}
+              className={`md:hidden p-2 rounded-lg transition-colors duration-300 ${
                 darkMode
-                  ? "bg-slate-800 hover:bg-slate-700 text-gray-200"
+                  ? "bg-slate-800 hover:bg-slate-700 text-white"
                   : "bg-slate-200 hover:bg-slate-300 text-slate-700"
               }`}
-              title="Zurück zum Dashboard"
+              aria-label="Menü öffnen"
             >
-              <FiArrowLeft className="h-4 w-4" />
+              <FiMenu className="h-4 w-4" />
             </button>
             <h1
               className={`text-base sm:text-lg lg:text-2xl font-bold transition-colors duration-300 ${textPrimary}`}
@@ -387,17 +389,6 @@ export default function ArchivPage() {
           <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Left: search */}
             <div className="flex w-full sm:w-auto items-center gap-2">
-              {/* Zur Liste button BESIDE search */}
-              <button
-                onClick={() => router.push("/kaufvertrag/liste")}
-                className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-2.5 py-1.5 text-[11px] sm:text-xs font-medium text-white shadow-sm transition ${
-                  darkMode
-                    ? "bg-slate-700 hover:bg-slate-600"
-                    : "bg-slate-400 hover:bg-slate-500"
-                }`}
-              >
-                verträge
-              </button>
               {/* Search */}
               <div className="relative flex-1 min-w-[160px] max-w-xs sm:max-w-sm">
                 <FiSearch

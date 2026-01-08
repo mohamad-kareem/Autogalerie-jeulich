@@ -7,7 +7,7 @@ import { toast } from "react-hot-toast";
 
 import ScheinForm from "@/app/(components)/Schein/ScheinForm";
 import ScheinTable from "@/app/(components)/Schein/ScheinTable";
-
+import { useSidebar } from "@/app/(components)/SidebarContext";
 import {
   FiPlus,
   FiSearch,
@@ -17,6 +17,7 @@ import {
   FiSun,
   FiMoon,
   FiArrowLeft,
+  FiMenu,
 } from "react-icons/fi";
 
 const LIMIT = 100;
@@ -25,7 +26,7 @@ const OWNERS = ["Karim", "Alawie"];
 export default function CarScheinPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-
+  const { openSidebar } = useSidebar();
   const [scheins, setScheins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
@@ -139,16 +140,17 @@ export default function CarScheinPage() {
       <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
         {/* Header */}
         <header className="mb-3 sm:mb-4 flex items-center gap-4">
+          {/* Mobile hamburger */}
           <button
-            onClick={() => router.push("/AdminDashboard")}
-            className={`p-2 rounded-lg transition-colors duration-300 flex items-center gap-2 ${
+            onClick={openSidebar}
+            className={`md:hidden p-2 rounded-lg transition-colors duration-300 ${
               darkMode
-                ? "bg-slate-800 hover:bg-slate-700 text-gray-200"
+                ? "bg-slate-800 hover:bg-slate-700 text-white"
                 : "bg-slate-200 hover:bg-slate-300 text-slate-700"
             }`}
-            title="Zurück zum Dashboard"
+            aria-label="Menü öffnen"
           >
-            <FiArrowLeft className="h-4 w-4" />
+            <FiMenu className="h-4 w-4" />
           </button>
           <h1
             className={`text-lg sm:text-xl font-bold transition-colors duration-300 ${textPrimary}`}

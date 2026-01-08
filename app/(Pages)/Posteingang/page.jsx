@@ -4,10 +4,10 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { FiXCircle, FiMessageSquare, FiSun, FiMoon } from "react-icons/fi";
+import { FiXCircle, FiMessageSquare, FiMenu } from "react-icons/fi";
 import { FaCar } from "react-icons/fa";
 import { motion } from "framer-motion";
-
+import { useSidebar } from "@/app/(components)/SidebarContext";
 import CarsTable from "./CarsTable";
 import SubmissionsTable from "./SubmissionsTable";
 
@@ -18,7 +18,7 @@ export default function AdminDashboard() {
   const [viewMode, setViewMode] = useState("submissions"); // "submissions" | "cars"
   const [unreadCount, setUnreadCount] = useState(0);
   const [darkMode, setDarkMode] = useState(false);
-
+  const { openSidebar } = useSidebar();
   // Initialize dark mode like on your other pages
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -116,9 +116,18 @@ export default function AdminDashboard() {
               <h1
                 className={`flex items-center gap-2 text-lg sm:text-xl font-bold ${textPrimary}`}
               >
-                <FaCar
-                  className={darkMode ? "text-slate-400" : "text-slate-500"}
-                />
+                {/* Mobile hamburger */}
+                <button
+                  onClick={openSidebar}
+                  className={`md:hidden p-2 rounded-lg transition-colors duration-300 ${
+                    darkMode
+                      ? "bg-slate-800 hover:bg-slate-700 text-white"
+                      : "bg-slate-200 hover:bg-slate-300 text-slate-700"
+                  }`}
+                  aria-label="Menü öffnen"
+                >
+                  <FiMenu className="h-4 w-4" />
+                </button>
                 Posteingang
               </h1>
             </div>
