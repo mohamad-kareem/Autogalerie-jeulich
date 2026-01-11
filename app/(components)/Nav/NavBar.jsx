@@ -224,50 +224,6 @@ export default function NavBar() {
                   </div>
                   <span className="ml-3">Admin Dashboard</span>
                 </Link>
-
-                {/* Homepage */}
-                <Link
-                  href="/"
-                  onClick={() => setOpen(false)}
-                  className="
-                    flex items-center px-4 py-2.5 text-sm text-slate-200
-                    hover:bg-slate-800 hover:text-emerald-400
-                    transition-colors group
-                  "
-                >
-                  <div
-                    className="
-                      w-8 h-8 flex items-center justify-center rounded-lg
-                      bg-emerald-900/40 group-hover:bg-emerald-900/60
-                    "
-                  >
-                    <Home className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <span className="ml-3">Zur Homepage</span>
-                </Link>
-
-                {/* Profil bearbeiten */}
-                <button
-                  onClick={() => {
-                    setOpen(false);
-                    setShowProfileModal(true);
-                  }}
-                  className="
-                    w-full flex items-center px-4 py-2.5 text-sm text-slate-200
-                    hover:bg-slate-800 hover:text-indigo-400
-                    transition-colors group
-                  "
-                >
-                  <div
-                    className="
-                      w-8 h-8 flex items-center justify-center rounded-lg
-                      bg-indigo-900/40 group-hover:bg-indigo-900/60
-                    "
-                  >
-                    <UserCog className="w-4 h-4 text-indigo-400" />
-                  </div>
-                  <span className="ml-3">Profil bearbeiten</span>
-                </button>
               </div>
 
               {/* LOGOUT */}

@@ -43,6 +43,13 @@ export default function PagesLayout({ children }) {
     setMobileOpen(false);
   }, [pathname]);
 
+  const handleToggleDarkMode = () => {
+    const next = !darkMode;
+    setDarkMode(next);
+    localStorage.setItem("theme", next ? "dark" : "light");
+    document.documentElement.classList.toggle("dark", next);
+  };
+
   return (
     <SidebarContext.Provider
       value={{
@@ -59,14 +66,7 @@ export default function PagesLayout({ children }) {
             darkMode={darkMode}
             isMinimized={isMinimized}
             mobileOpen={mobileOpen}
-            onToggleDarkMode={() =>
-              setDarkMode((prev) => {
-                const next = !prev;
-                localStorage.setItem("theme", next ? "dark" : "light");
-                document.documentElement.classList.toggle("dark", next);
-                return next;
-              })
-            }
+            onToggleDarkMode={handleToggleDarkMode}
             onToggleMinimize={() => setIsMinimized((p) => !p)}
             onToggleMobile={() => setMobileOpen((p) => !p)}
           />
