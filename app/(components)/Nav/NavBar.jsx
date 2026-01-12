@@ -67,6 +67,9 @@ export default function NavBar() {
       setUser(session.user);
     }
   }, [session]);
+  const showDropdownOnHome = session?.user && isHomePage; // ✅ mobile + desktop
+  const showDropdownOnOtherPagesMobileOnly =
+    session?.user && !isHomePage && !isAdminRoute && !hideDropdown; // ✅ only mobile
 
   useEffect(() => {
     setHydrated(true);
@@ -326,8 +329,12 @@ export default function NavBar() {
           <MobMenu Menus={Menus} />
         </div>
 
-        {/* Floating user dropdown (top-right) on normal routes ONLY */}
-        {session?.user && isHomePage && UserDropdown}
+        {/* Floating user dropdown rules */}
+        {showDropdownOnHome && UserDropdown}
+
+        {showDropdownOnOtherPagesMobileOnly && (
+          <div className="lg:hidden">{UserDropdown}</div>
+        )}
       </nav>
     </header>
   );
