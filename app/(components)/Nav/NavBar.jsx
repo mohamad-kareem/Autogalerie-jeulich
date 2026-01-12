@@ -332,9 +332,7 @@ export default function NavBar() {
         {/* Floating user dropdown rules */}
         {showDropdownOnHome && UserDropdown}
 
-        {showDropdownOnOtherPagesMobileOnly && (
-          <div className="lg:hidden">{UserDropdown}</div>
-        )}
+        {showDropdownOnOtherPagesMobileOnly && UserDropdown}
       </nav>
     </header>
   );

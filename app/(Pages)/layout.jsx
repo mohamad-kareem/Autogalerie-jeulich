@@ -15,7 +15,25 @@ export default function PagesLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // ✅ ONLY auth/public pages (Reg is allowed)
-  const HIDE_SIDEBAR_ROUTES = useMemo(() => ["/login", "/forgotpassword"], []);
+  const HIDE_SIDEBAR_ROUTES = useMemo(
+    () => [
+      "/", // homepage
+      "/login",
+      "/forgotpassword",
+
+      // ✅ public pages (no sidebar)
+      "/finanzierung",
+      "/Datenschutz",
+      "/Autoverkaufen",
+      "/garantie",
+      "/gebrauchtwagen",
+      "/impressum",
+      "/kontakt",
+      "/vergleich",
+      "/TrackVisitors76546633",
+    ],
+    []
+  );
 
   const shouldHideSidebar = useMemo(() => {
     return HIDE_SIDEBAR_ROUTES.some(
