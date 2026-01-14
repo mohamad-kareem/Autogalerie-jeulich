@@ -16,6 +16,8 @@ import {
   FiRotateCcw,
   FiRotateCw,
   FiDownload,
+  FiCheckCircle,
+  FiAlertTriangle,
 } from "react-icons/fi";
 import ScheinForm from "./ScheinForm";
 import WarrantyReklamationButton from "@/app/(components)/Schein/WarrantyReklamationButton";
@@ -721,28 +723,60 @@ export default function ScheinTable({
                           {schein.carName}
                         </span>
 
+                        {/* SOLD */}
                         {schein.keySold && (
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-[1px] text-[11px] font-semibold ${
-                              darkMode
-                                ? "bg-green-900 text-green-100"
-                                : "bg-green-100 text-green-700"
-                            }`}
-                          >
-                            Verkauft
-                          </span>
+                          <>
+                            {/* Mobile: icon only (NO BORDER) */}
+                            <span
+                              title="Verkauft"
+                              className={`inline-flex md:hidden items-center justify-center rounded-full p-1.5 transition-colors duration-300 ${
+                                darkMode
+                                  ? "bg-green-900/40 text-green-200"
+                                  : "bg-green-50 text-green-700"
+                              }`}
+                            >
+                              <FiCheckCircle size={14} />
+                            </span>
+
+                            {/* Desktop/Tablet: text badge */}
+                            <span
+                              className={`hidden md:inline-flex items-center rounded-full px-2 py-[1px] text-[11px] font-semibold ${
+                                darkMode
+                                  ? "bg-green-900 text-green-100"
+                                  : "bg-green-100 text-green-700"
+                              }`}
+                            >
+                              Verkauft
+                            </span>
+                          </>
                         )}
 
+                        {/* FUEL */}
                         {schein.fuelNeeded && (
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-[1px] text-[11px] font-semibold ${
-                              darkMode
-                                ? "bg-orange-900 text-orange-100"
-                                : "bg-orange-100 text-orange-700"
-                            }`}
-                          >
-                            Tank leer
-                          </span>
+                          <>
+                            {/* Mobile: icon only (NO BORDER) */}
+                            <span
+                              title="Tank leer"
+                              className={`inline-flex md:hidden items-center justify-center rounded-full p-1.5 transition-colors duration-300 ${
+                                darkMode
+                                  ? "bg-orange-900/40 text-orange-200"
+                                  : "bg-orange-50 text-orange-700"
+                              }`}
+                            >
+                              <FiAlertTriangle size={14} />
+                            </span>
+
+                            {/* Desktop/Tablet: text badge */}
+                            <span
+                              className={`hidden md:inline-flex items-center rounded-full px-2 py-[1px] text-[11px] font-semibold ${
+                                darkMode
+                                  ? "bg-orange-900 text-orange-100"
+                                  : "bg-orange-100 text-orange-700"
+                              }`}
+                            >
+                              Tank leer
+                            </span>
+                          </>
                         )}
                       </div>
 
