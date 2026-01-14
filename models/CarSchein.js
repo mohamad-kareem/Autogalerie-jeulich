@@ -29,6 +29,20 @@ const CarScheinSchema = new mongoose.Schema(
 
     // Nur für Dashboard (ob Karte ausgeblendet ist)
     dashboardHidden: { type: Boolean, default: false },
+    // Warranty + Reklamation
+    soldAt: { type: Date, default: null },
+
+    reclamations: {
+      type: [
+        {
+          date: { type: Date, default: null },
+          where: { type: String, default: "" },
+          what: { type: String, default: "" },
+          cost: { type: Number, default: null },
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );

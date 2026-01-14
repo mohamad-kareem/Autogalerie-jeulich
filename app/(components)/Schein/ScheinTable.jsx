@@ -18,7 +18,7 @@ import {
   FiDownload,
 } from "react-icons/fi";
 import ScheinForm from "./ScheinForm";
-
+import WarrantyReklamationButton from "@/app/(components)/Schein/WarrantyReklamationButton";
 const PAGE_SIZE = 15;
 
 export default function ScheinTable({
@@ -659,7 +659,8 @@ export default function ScheinTable({
               >
                 <th className="px-3 py-2">Fahrzeug</th>
                 <th className="px-16 py-2">FIN</th>
-                <th className="px-3 py-2 text-right">Besitzer</th>
+                <th className="px-3 py-2 text-right">Gewährleistung</th>
+
                 <th className="px-11 py-2 text-right">Aktionen</th>
               </tr>
             </thead>
@@ -763,17 +764,14 @@ export default function ScheinTable({
                       </div>
                     </td>
 
-                    {/* Besitzer */}
-                    <td className="px-3 py-2 text-right">
-                      <div className="flex justify-end items-center gap-1">
-                        <FiUser
-                          className={`transition-colors duration-300 ${textMuted} text-xs`}
+                    {/* Garantie / Reklamation */}
+                    <td className="px-15 py-2 text-right">
+                      <div className="flex justify-end">
+                        <WarrantyReklamationButton
+                          schein={schein}
+                          darkMode={darkMode}
+                          onUpdated={onUpdateSchein} // so table updates after saving
                         />
-                        <span
-                          className={`text-sm transition-colors duration-300 ${textPrimary}`}
-                        >
-                          {schein.owner}
-                        </span>
                       </div>
                     </td>
 

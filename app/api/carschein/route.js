@@ -16,6 +16,51 @@ function jsonResponse(data, status = 200) {
 }
 
 // -----------------------
+// Helpers
+// -----------------------
+function normalizeNotes(notes) {
+  if (Array.isArray(notes))
+    return notes
+      .filter(Boolean)
+      .map((n) => String(n).trim())
+      .filter(Boolean);
+  return String(notes || "")
+    .split("\n")
+    .map((n) => n.trim())
+    .filter(Boolean);
+}
+
+function normalizeCompletedTasks(completedTasks) {
+  return Array.isArray(completedTasks)
+    ? completedTasks
+        .filter(Boolean)
+        .map((n) => String(n).trim())
+        .filter(Boolean)
+    : [];
+}
+
+function normalizeReclamations(reclamations) {
+  if (!Array.isArray(reclamations)) return [];
+  return reclamations.map((r) => ({
+    date: r?.date ? new Date(r.date) : null,
+    where: String(r?.where || "").trim(),
+    what: String(r?.what || "").trim(),
+    cost:
+      r?.cost === null || r?.cost === undefined || r?.cost === ""
+        ? null
+        : Number(r.cost),
+  }));
+}
+
+// optional: if you want a strict 1-year warranty (365 days)
+// remaining days are calculated on frontend; backend just stores soldAt.
+function ensureValidDateOrNull(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// -----------------------
 // POST /api/carschein
 // Create new CarSchein
 // -----------------------
@@ -24,9 +69,7 @@ export async function POST(req) {
     await connectDB();
 
     const session = await getServerSession(authOptions);
-    if (!session) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
+    if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
 
     const body = await req.json();
     const {
@@ -45,11 +88,16 @@ export async function POST(req) {
       dashboardHidden,
       completedTasks,
       rotKennzeichen,
+
+      // ✅ NEW
+      soldAt,
+      reclamations,
     } = body;
 
-    // FIN uniqueness check
-    if (finNumber) {
-      const existing = await CarSchein.findOne({ finNumber }).lean();
+    // FIN uniqueness check (only if provided)
+    const fin = String(finNumber || "").trim();
+    if (fin) {
+      const existing = await CarSchein.findOne({ finNumber: fin }).lean();
       if (existing) {
         return jsonResponse(
           { error: "Diese FIN-Nummer existiert bereits" },
@@ -58,32 +106,43 @@ export async function POST(req) {
       }
     }
 
-    const notesArr = Array.isArray(notes)
-      ? notes
-      : (notes || "")
-          .split("\n")
-          .map((n) => n.trim())
-          .filter(Boolean);
+    const notesArr = normalizeNotes(notes);
+    const completedArr = normalizeCompletedTasks(completedTasks);
+    const reclamationsArr = normalizeReclamations(reclamations);
 
-    const completedArr = Array.isArray(completedTasks) ? completedTasks : [];
+    const soldBool = !!keySold;
+
+    // soldAt logic:
+    // - if provided, use it
+    // - else if keySold true, set now
+    // - else null
+    const soldAtValue =
+      ensureValidDateOrNull(soldAt) || (soldBool ? new Date() : null);
 
     const doc = await CarSchein.create({
-      carName,
-      finNumber: finNumber || "",
-      owner: owner || "",
+      carName: String(carName || "").trim(),
+      finNumber: fin || "",
+      owner: String(owner || "").trim(),
       notes: notesArr,
       completedTasks: completedArr,
+
       imageUrl: imageUrl || null,
       publicId: publicId || null,
+
       keyNumber: keyNumber ?? "",
       keyCount:
         typeof keyCount === "number" && !Number.isNaN(keyCount) ? keyCount : 2,
       keyColor: keyColor || "#000000",
-      keySold: !!keySold,
+      keySold: soldBool,
       keyNote: keyNote || "",
+
       fuelNeeded: !!fuelNeeded,
       rotKennzeichen: !!rotKennzeichen,
       dashboardHidden: !!dashboardHidden,
+
+      // ✅ NEW
+      soldAt: soldAtValue,
+      reclamations: reclamationsArr,
     });
 
     return jsonResponse(doc, 201);
@@ -112,7 +171,6 @@ export async function GET(req) {
     ]);
 
     const totalPages = Math.max(1, Math.ceil(total / limit));
-
     return jsonResponse({ docs, page, totalPages, total }, 200);
   } catch (err) {
     console.error("GET /api/carschein error:", err);
@@ -128,24 +186,16 @@ export async function DELETE(req) {
     await connectDB();
 
     const session = await getServerSession(authOptions);
-    if (!session) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
+    if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
-
-    if (!id) {
-      return jsonResponse({ error: "Missing id" }, 400);
-    }
+    if (!id) return jsonResponse({ error: "Missing id" }, 400);
 
     const doc = await CarSchein.findById(id);
-    if (!doc) {
-      return jsonResponse({ error: "Not found" }, 404);
-    }
+    if (!doc) return jsonResponse({ error: "Not found" }, 404);
 
     await CarSchein.findByIdAndDelete(id);
-
     return jsonResponse({ success: true }, 200);
   } catch (err) {
     console.error("DELETE /api/carschein error:", err);
@@ -162,9 +212,7 @@ export async function PUT(req) {
     await connectDB();
 
     const session = await getServerSession(authOptions);
-    if (!session) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
+    if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
 
     const body = await req.json();
     const {
@@ -185,11 +233,17 @@ export async function PUT(req) {
       fuelNeeded,
       dashboardHidden,
       rotKennzeichen,
+
+      // ✅ NEW
+      soldAt,
+      reclamations,
     } = body;
 
-    if (!id) {
-      return jsonResponse({ error: "Missing id" }, 400);
-    }
+    if (!id) return jsonResponse({ error: "Missing id" }, 400);
+
+    // Load current doc (needed to detect transitions like keySold false -> true)
+    const current = await CarSchein.findById(id).lean();
+    if (!current) return jsonResponse({ error: "Not found" }, 404);
 
     // Delete old Cloudinary image if changed
     if (oldPublicId && oldPublicId !== publicId) {
@@ -202,24 +256,16 @@ export async function PUT(req) {
 
     const updateFields = {};
 
-    if (carName !== undefined) updateFields.carName = carName;
-    if (finNumber !== undefined) updateFields.finNumber = finNumber || "";
-    if (owner !== undefined) updateFields.owner = owner;
+    // Basic fields
+    if (carName !== undefined)
+      updateFields.carName = String(carName || "").trim();
+    if (finNumber !== undefined)
+      updateFields.finNumber = String(finNumber || "").trim();
+    if (owner !== undefined) updateFields.owner = String(owner || "").trim();
 
-    if (notes !== undefined) {
-      updateFields.notes = Array.isArray(notes)
-        ? notes
-        : (notes || "")
-            .split("\n")
-            .map((n) => n.trim())
-            .filter(Boolean);
-    }
-
-    if (completedTasks !== undefined) {
-      updateFields.completedTasks = Array.isArray(completedTasks)
-        ? completedTasks
-        : [];
-    }
+    if (notes !== undefined) updateFields.notes = normalizeNotes(notes);
+    if (completedTasks !== undefined)
+      updateFields.completedTasks = normalizeCompletedTasks(completedTasks);
 
     if (imageUrl !== undefined) updateFields.imageUrl = imageUrl || null;
     if (publicId !== undefined) updateFields.publicId = publicId || null;
@@ -227,12 +273,40 @@ export async function PUT(req) {
     if (keyNumber !== undefined) updateFields.keyNumber = keyNumber;
     if (keyCount !== undefined) updateFields.keyCount = keyCount;
     if (keyColor !== undefined) updateFields.keyColor = keyColor;
-    if (keySold !== undefined) updateFields.keySold = !!keySold;
     if (keyNote !== undefined) updateFields.keyNote = keyNote;
 
+    // Flags
     if (fuelNeeded !== undefined) updateFields.fuelNeeded = !!fuelNeeded;
     if (rotKennzeichen !== undefined)
       updateFields.rotKennzeichen = !!rotKennzeichen;
+
+    // ✅ keySold + soldAt logic
+    if (keySold !== undefined) {
+      const newKeySold = !!keySold;
+      updateFields.keySold = newKeySold;
+
+      const wasSold = !!current.keySold;
+
+      // If it becomes sold now, set soldAt if not provided
+      if (!wasSold && newKeySold) {
+        updateFields.soldAt = ensureValidDateOrNull(soldAt) || new Date();
+      }
+
+      // If it becomes NOT sold, clear soldAt (you can remove this if you prefer to keep history)
+      if (wasSold && !newKeySold) {
+        updateFields.soldAt = null;
+      }
+    }
+
+    // Allow explicit soldAt set (manual override)
+    if (soldAt !== undefined) {
+      updateFields.soldAt = ensureValidDateOrNull(soldAt);
+    }
+
+    // ✅ Reclamations
+    if (reclamations !== undefined) {
+      updateFields.reclamations = normalizeReclamations(reclamations);
+    }
 
     // ✅ IMPORTANT PART: dashboard close → release key
     if (dashboardHidden !== undefined) {
@@ -250,9 +324,7 @@ export async function PUT(req) {
       new: true,
     }).lean();
 
-    if (!updated) {
-      return jsonResponse({ error: "Not found" }, 404);
-    }
+    if (!updated) return jsonResponse({ error: "Not found" }, 404);
 
     return jsonResponse(updated, 200);
   } catch (err) {
@@ -270,9 +342,7 @@ export async function PATCH(req) {
     await connectDB();
 
     const session = await getServerSession(authOptions);
-    if (!session) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
+    if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
 
     const body = await req.json();
     const { id, completedTasks } = body;
@@ -283,13 +353,11 @@ export async function PATCH(req) {
 
     const updated = await CarSchein.findByIdAndUpdate(
       id,
-      { completedTasks },
+      { completedTasks: normalizeCompletedTasks(completedTasks) },
       { new: true }
     ).lean();
 
-    if (!updated) {
-      return jsonResponse({ error: "Not found" }, 404);
-    }
+    if (!updated) return jsonResponse({ error: "Not found" }, 404);
 
     return jsonResponse(updated, 200);
   } catch (err) {

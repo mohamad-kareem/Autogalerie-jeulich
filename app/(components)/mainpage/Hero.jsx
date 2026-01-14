@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import back from "@/app/(assets)/background.jpg";
+import back from "@/app/(assets)/back2.png";
 import { ShieldCheck, PhoneCall, BadgeEuro } from "lucide-react";
 import { useEffect, useState } from "react";
 
