@@ -319,7 +319,7 @@ export default function WarrantyReklamationButton({
                       value={recCost}
                       onChange={(e) => setRecCost(e.target.value)}
                       className={styles.input}
-                      placeholder="z. B. 120,50"
+                      placeholder="z. B. 200 Euro"
                       inputMode="decimal"
                     />
                   </div>
@@ -336,7 +336,7 @@ export default function WarrantyReklamationButton({
                       value={recWhere}
                       onChange={(e) => setRecWhere(e.target.value)}
                       className={styles.input}
-                      placeholder="z. B. Werkstatt Köln"
+                      placeholder="z. B. Abo Ali"
                     />
                   </div>
 
@@ -352,7 +352,7 @@ export default function WarrantyReklamationButton({
                       value={recWhat}
                       onChange={(e) => setRecWhat(e.target.value)}
                       className={styles.input}
-                      placeholder="z. B. Bremsen quietschen"
+                      placeholder="z. B. Spureinstellung"
                     />
                   </div>
                 </div>
