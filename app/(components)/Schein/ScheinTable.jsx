@@ -712,7 +712,7 @@ export default function ScheinTable({
                 paginatedScheins.map((schein) => (
                   <tr
                     key={schein._id}
-                    className={`cursor-pointer transition-colors duration-300 ${hoverBg}`}
+                    className={` transition-colors duration-300 ${hoverBg}`}
                   >
                     {/* Fahrzeug + Datum + Badges */}
                     <td className="px-3 py-2 max-w-[260px]">
@@ -796,7 +796,7 @@ export default function ScheinTable({
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => openKeyModal(schein)}
-                          className={`rounded p-1 transition-colors duration-300 ${
+                          className={`rounded cursor-pointer p-1 transition-colors duration-300 ${
                             darkMode
                               ? "text-gray-400 hover:bg-gray-700 hover:text-white"
                               : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
@@ -819,7 +819,7 @@ export default function ScheinTable({
 
                         <button
                           onClick={() => handlePrintImage(schein)}
-                          className={`rounded p-1 transition-colors duration-300 ${
+                          className={`rounded p-1 cursor-pointer transition-colors duration-300 ${
                             darkMode
                               ? "text-gray-400 hover:bg-gray-700 hover:text-white"
                               : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
@@ -831,7 +831,7 @@ export default function ScheinTable({
 
                         <button
                           onClick={() => openInfoModal(schein)}
-                          className={`rounded p-1 transition-colors duration-300 ${
+                          className={`rounded p-1 cursor-pointer transition-colors duration-300 ${
                             darkMode
                               ? "text-gray-400 hover:bg-gray-700 hover:text-white"
                               : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
@@ -843,7 +843,7 @@ export default function ScheinTable({
 
                         <button
                           onClick={() => openImagePreview(schein)}
-                          className={`rounded p-1 transition-colors duration-300 ${
+                          className={`rounded p-1 cursor-pointer transition-colors duration-300 ${
                             darkMode
                               ? "text-gray-400 hover:bg-gray-700 hover:text-white"
                               : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
@@ -857,7 +857,7 @@ export default function ScheinTable({
                           onClick={() =>
                             handleDelete(schein._id, schein.publicId)
                           }
-                          className={`rounded p-1 transition-colors duration-300 ${
+                          className={`rounded p-1 cursor-pointer transition-colors duration-300 ${
                             darkMode
                               ? "text-red-400 hover:bg-red-900 hover:text-red-300"
                               : "text-red-600 hover:bg-red-50"

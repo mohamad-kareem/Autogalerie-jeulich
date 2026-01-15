@@ -186,7 +186,7 @@ export default function WarrantyReklamationButton({
         type="button"
         onClick={() => setOpen(true)}
         title="Garantie & Reklamation"
-        className={`rounded p-1 transition-colors ${
+        className={`rounded p-1 transition-colors cursor-pointer ${
           schein?.keySold
             ? darkMode
               ? "text-green-400 hover:bg-green-900/25 hover:text-green-300"

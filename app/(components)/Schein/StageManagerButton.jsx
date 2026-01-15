@@ -35,28 +35,34 @@ function normalizeStage(s) {
 function badgeClass(stage, darkMode) {
   const s = String(stage || "").toUpperCase();
   const base =
-    "inline-flex items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold leading-none whitespace-nowrap";
+    "inline-flex items-center justify-center rounded-full cursor-pointer px-3 py-1.5 text-[11px] font-semibold leading-none whitespace-nowrap";
+
+  // ✅ light mode: always black text for contrast
+  const text = darkMode ? "" : "text-gray-900";
 
   if (s === "SOLD")
-    return `${base} ${
-      darkMode ? "bg-green-900 text-green-100" : "bg-green-100 text-green-700"
+    return `${base} ${text} ${
+      darkMode ? "bg-green-900 text-green-100" : "bg-green-200"
     }`;
+
   if (s === "TUEV")
-    return `${base} ${
-      darkMode
-        ? "bg-indigo-900 text-indigo-100"
-        : "bg-indigo-100 text-indigo-700"
+    return `${base} ${text} ${
+      darkMode ? "bg-indigo-900 text-indigo-100" : "bg-indigo-200"
     }`;
+
   if (s === "PLATZ")
-    return `${base} ${
-      darkMode ? "bg-slate-700 text-slate-200" : "bg-slate-100 text-slate-700"
+    return `${base} ${text} ${
+      darkMode ? "bg-slate-600 text-slate-200" : "bg-slate-300"
     }`;
+
   if (s === "AUFBEREITUNG")
-    return `${base} ${
-      darkMode ? "bg-cyan-900 text-cyan-100" : "bg-cyan-100 text-cyan-700"
+    return `${base} ${text} ${
+      darkMode ? "bg-cyan-900 text-cyan-100" : "bg-cyan-200"
     }`;
-  return `${base} ${
-    darkMode ? "bg-orange-900 text-orange-100" : "bg-orange-100 text-orange-700"
+
+  // WERKSTATT default
+  return `${base} ${text} ${
+    darkMode ? "bg-orange-900 text-orange-100" : "bg-orange-200"
   }`;
 }
 
@@ -88,8 +94,8 @@ function StageCard({ s, active, darkMode, onClick }) {
       className={`rounded-xl border px-3 h-12 w-full flex items-center gap-2 text-left transition-colors duration-200 ${
         active
           ? darkMode
-            ? "border-gray-500 bg-gray-700 text-white"
-            : "border-gray-900 bg-gray-50 text-gray-900"
+            ? "border-sky-500/60 bg-sky-900/30 text-white"
+            : "border-sky-500 bg-sky-100 text-gray-900"
           : darkMode
           ? "border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700"
           : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
@@ -288,7 +294,7 @@ export default function StageManagerButton({
                     darkMode ? "text-gray-400" : "text-gray-500"
                   }`}
                 >
-                  Wähle die Phase und trage Details ein (optional).
+                  Wähle die Phase und trage Details ein.
                 </p>
               </div>
 
