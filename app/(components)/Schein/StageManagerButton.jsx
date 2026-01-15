@@ -276,7 +276,8 @@ export default function StageManagerButton({
           <div
             className={`w-full max-w-4xl overflow-hidden rounded-2xl shadow-2xl border transition-colors duration-300
             flex flex-col
-            max-h-[92dvh] h-[92dvh] sm:h-auto sm:max-h-[85vh]
+         max-h-[92dvh] sm:max-h-[92vh]
+  lg:min-h-[60vh]
             ${
               darkMode
                 ? "bg-gray-800 border-gray-700"
@@ -355,7 +356,7 @@ export default function StageManagerButton({
 
               {/* Detail box */}
               <div
-                className={`mt-4 rounded-xl border p-4 transition-colors duration-300 ${
+                className={`mt-4 lg:mt-10 rounded-xl border p-4 transition-colors duration-300 ${
                   darkMode
                     ? "border-gray-700 bg-gray-800"
                     : "border-gray-200 bg-gray-50"
@@ -367,10 +368,13 @@ export default function StageManagerButton({
                       darkMode ? "text-gray-200" : "text-gray-800"
                     }`}
                   >
-                    Details für:{" "}
-                    <span className="font-bold">
-                      {stage === "SOLD" ? "Kunden" : stageInfo.label}
-                    </span>
+                    {stage === "SOLD" ? (
+                      <>
+                        Details für: <span className="font-bold">Kunden</span>
+                      </>
+                    ) : (
+                      <>Details:</>
+                    )}
                   </div>
 
                   <span className={badgeClass(stage, darkMode)}>
