@@ -36,6 +36,20 @@ export const metadata = {
   metadataBase: new URL("https://autogaleriejülich.de"),
 };
 
+/**
+ * ✅ Force a desktop-like viewport on mobile
+ * - Mobile will render pages as "desktop size"
+ * - Users can pinch-zoom if they want
+ *
+ * Tune initialScale:
+ * - bigger UI: 0.40
+ * - smaller UI: 0.30
+ */
+export const viewport = {
+  width: 1200,
+  initialScale: 0.3,
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={playfair.variable}>
@@ -43,6 +57,7 @@ export default function RootLayout({ children }) {
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0F4C81" />
       </head>
+
       <body>
         <Toaster
           position="top-center"
