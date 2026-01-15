@@ -17,6 +17,7 @@ import {
   FiRotateCw,
   FiDownload,
   FiAlertTriangle,
+  FiDroplet,
 } from "react-icons/fi";
 import ScheinForm from "./ScheinForm";
 import WarrantyReklamationButton from "@/app/(components)/Schein/WarrantyReklamationButton";
@@ -725,30 +726,16 @@ export default function ScheinTable({
 
                         {/* FUEL */}
                         {schein.fuelNeeded && (
-                          <>
-                            {/* Mobile: icon only (NO BORDER) */}
-                            <span
-                              title="Tank leer"
-                              className={`inline-flex md:hidden items-center justify-center rounded-full p-1.5 transition-colors duration-300 ${
-                                darkMode
-                                  ? "bg-orange-900/40 text-orange-200"
-                                  : "bg-orange-50 text-orange-700"
-                              }`}
-                            >
-                              <FiAlertTriangle size={14} />
-                            </span>
-
-                            {/* Desktop/Tablet: text badge */}
-                            <span
-                              className={`hidden md:inline-flex items-center rounded-full px-2 py-[1px] text-[11px] font-semibold ${
-                                darkMode
-                                  ? "bg-orange-900 text-orange-100"
-                                  : "bg-orange-100 text-orange-700"
-                              }`}
-                            >
-                              Tank leer
-                            </span>
-                          </>
+                          <span
+                            title="Tank leer"
+                            className={`inline-flex items-center justify-center rounded-full p-1.5 transition-colors duration-300 ${
+                              darkMode
+                                ? "bg-green-500 text-white"
+                                : "bg-green-300 text-green-950"
+                            }`}
+                          >
+                            <FiDroplet size={14} />
+                          </span>
                         )}
                       </div>
 
