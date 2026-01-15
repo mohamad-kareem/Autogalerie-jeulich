@@ -661,8 +661,8 @@ export default function ScheinTable({
               >
                 <th className="px-3 py-2">Fahrzeug</th>
                 <th className="px-16 py-2">FIN</th>
-                <th className="px-3 py-2 text-right">Gewährleistung</th>
-                <th className="px-3 py-2 text-right">Phase</th>
+                <th className="px-9 py-2 text-right">Garantie</th>
+                <th className="px-18 py-2 text-right">Phase</th>
                 <th className="px-11 py-2 text-right">Aktionen</th>
               </tr>
             </thead>
