@@ -1,161 +1,217 @@
 // app/api/carschein/route.js
 import { connectDB } from "@/lib/mongodb";
 import CarSchein from "@/models/CarSchein";
+import ContactCustomer from "@/models/ContactCustomer";
 import cloudinary from "@/app/utils/cloudinary";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// -----------------------
-// Helper: JSON response
-// -----------------------
-function jsonResponse(data, status = 200) {
+/* -----------------------
+   Response helper
+------------------------ */
+function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { "Content-Type": "application/json" },
   });
 }
 
-// -----------------------
-// Helpers
-// -----------------------
+/* -----------------------
+   Auth helper
+------------------------ */
+async function requireAuth() {
+  const session = await getServerSession(authOptions);
+  return session || null;
+}
+
+/* -----------------------
+   Normalizers
+------------------------ */
+const STAGES = ["WERKSTATT", "AUFBEREITUNG", "PLATZ", "TUEV", "SOLD"];
+
+function toStr(v) {
+  return String(v ?? "").trim();
+}
+function toBool(v) {
+  return !!v;
+}
+function toNumOrDefault(v, def) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : def;
+}
+function ensureValidDateOrNull(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 function normalizeNotes(notes) {
-  if (Array.isArray(notes))
+  if (Array.isArray(notes)) {
     return notes
       .filter(Boolean)
-      .map((n) => String(n).trim())
+      .map((n) => toStr(n))
       .filter(Boolean);
-  return String(notes || "")
+  }
+  return toStr(notes)
     .split("\n")
-    .map((n) => n.trim())
+    .map((n) => toStr(n))
     .filter(Boolean);
 }
 
 function normalizeCompletedTasks(completedTasks) {
-  return Array.isArray(completedTasks)
-    ? completedTasks
-        .filter(Boolean)
-        .map((n) => String(n).trim())
-        .filter(Boolean)
-    : [];
+  if (!Array.isArray(completedTasks)) return [];
+  return completedTasks
+    .filter(Boolean)
+    .map((n) => toStr(n))
+    .filter(Boolean);
 }
 
 function normalizeReclamations(reclamations) {
   if (!Array.isArray(reclamations)) return [];
   return reclamations.map((r) => ({
-    date: r?.date ? new Date(r.date) : null,
-    where: String(r?.where || "").trim(),
-    what: String(r?.what || "").trim(),
+    date: r?.date ? ensureValidDateOrNull(r.date) : null,
+    where: toStr(r?.where),
+    what: toStr(r?.what),
     cost:
       r?.cost === null || r?.cost === undefined || r?.cost === ""
         ? null
-        : Number(r.cost),
+        : toNumOrDefault(r.cost, null),
   }));
 }
 
-// optional: if you want a strict 1-year warranty (365 days)
-// remaining days are calculated on frontend; backend just stores soldAt.
-function ensureValidDateOrNull(value) {
-  if (!value) return null;
-  const d = new Date(value);
-  return isNaN(d.getTime()) ? null : d;
+function normalizeStage(stage, fallback = "WERKSTATT") {
+  const s = toStr(stage).toUpperCase();
+  return STAGES.includes(s) ? s : fallback;
 }
 
-// -----------------------
-// POST /api/carschein
-// Create new CarSchein
-// -----------------------
+function normalizeStageMeta(meta) {
+  const m = meta && typeof meta === "object" ? meta : {};
+  return {
+    werkstatt: {
+      where: toStr(m?.werkstatt?.where),
+      what: toStr(m?.werkstatt?.what),
+    },
+    platz: { note: toStr(m?.platz?.note) },
+    tuev: {
+      passed: toBool(m?.tuev?.passed),
+      issue: toStr(m?.tuev?.issue),
+    },
+  };
+}
+
+/* -----------------------
+   FIN uniqueness helper
+------------------------ */
+async function finExists(finNumber, excludeId = null) {
+  const fin = toStr(finNumber);
+  if (!fin) return false;
+
+  const query = { finNumber: fin };
+  if (excludeId) query._id = { $ne: excludeId };
+
+  const existing = await CarSchein.findOne(query).select("_id").lean();
+  return !!existing;
+}
+
+/* -----------------------
+   SOLD Contact auto-link (FIN ONLY)
+   ContactCustomer.vin must equal CarSchein.finNumber
+------------------------ */
+async function findSoldContactIdByFin(finNumber) {
+  const fin = toStr(finNumber);
+  if (!fin) return null;
+
+  const byVin = await ContactCustomer.findOne({ vin: fin })
+    .sort({ createdAt: -1 })
+    .select("_id")
+    .lean();
+
+  return byVin?._id || null;
+}
+
+/* =========================================================
+   POST /api/carschein  (Create)
+========================================================= */
 export async function POST(req) {
   try {
     await connectDB();
 
-    const session = await getServerSession(authOptions);
-    if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
+    const session = await requireAuth();
+    if (!session) return json({ error: "Unauthorized" }, 401);
 
     const body = await req.json();
-    const {
-      carName,
-      finNumber,
-      owner,
-      notes,
-      imageUrl,
-      publicId,
-      keyNumber,
-      keyCount,
-      keyColor,
-      keySold,
-      keyNote,
-      fuelNeeded,
-      dashboardHidden,
-      completedTasks,
-      rotKennzeichen,
 
-      // ✅ NEW
-      soldAt,
-      reclamations,
-    } = body;
+    const carName = toStr(body.carName);
+    const finNumber = toStr(body.finNumber);
+    const owner = toStr(body.owner);
 
-    // FIN uniqueness check (only if provided)
-    const fin = String(finNumber || "").trim();
-    if (fin) {
-      const existing = await CarSchein.findOne({ finNumber: fin }).lean();
-      if (existing) {
-        return jsonResponse(
-          { error: "Diese FIN-Nummer existiert bereits" },
-          409
-        );
-      }
+    if (!carName) return json({ error: "carName is required" }, 400);
+
+    if (finNumber) {
+      const exists = await finExists(finNumber);
+      if (exists)
+        return json({ error: "Diese FIN-Nummer existiert bereits" }, 409);
     }
 
-    const notesArr = normalizeNotes(notes);
-    const completedArr = normalizeCompletedTasks(completedTasks);
-    const reclamationsArr = normalizeReclamations(reclamations);
+    const stage = normalizeStage(body.stage, "WERKSTATT");
+    const stageMeta = normalizeStageMeta(body.stageMeta);
 
-    const soldBool = !!keySold;
+    const notes = normalizeNotes(body.notes);
+    const completedTasks = normalizeCompletedTasks(body.completedTasks);
+    const reclamations = normalizeReclamations(body.reclamations);
 
-    // soldAt logic:
-    // - if provided, use it
-    // - else if keySold true, set now
-    // - else null
-    const soldAtValue =
-      ensureValidDateOrNull(soldAt) || (soldBool ? new Date() : null);
+    let keySold = toBool(body.keySold);
+    let soldAt = ensureValidDateOrNull(body.soldAt);
+
+    if (stage === "SOLD") keySold = true;
+    if (!soldAt && keySold) soldAt = new Date();
+
+    const soldContactId =
+      stage === "SOLD" ? await findSoldContactIdByFin(finNumber) : null;
 
     const doc = await CarSchein.create({
-      carName: String(carName || "").trim(),
-      finNumber: fin || "",
-      owner: String(owner || "").trim(),
-      notes: notesArr,
-      completedTasks: completedArr,
+      carName,
+      finNumber: finNumber || "",
+      owner,
 
-      imageUrl: imageUrl || null,
-      publicId: publicId || null,
+      imageUrl: body.imageUrl || null,
+      publicId: body.publicId || null,
 
-      keyNumber: keyNumber ?? "",
-      keyCount:
-        typeof keyCount === "number" && !Number.isNaN(keyCount) ? keyCount : 2,
-      keyColor: keyColor || "#000000",
-      keySold: soldBool,
-      keyNote: keyNote || "",
+      notes,
+      completedTasks,
 
-      fuelNeeded: !!fuelNeeded,
-      rotKennzeichen: !!rotKennzeichen,
-      dashboardHidden: !!dashboardHidden,
+      keyNumber: toStr(body.keyNumber),
+      keyCount: Number.isFinite(body.keyCount) ? body.keyCount : 2,
+      keyColor: toStr(body.keyColor) || "#000000",
+      keySold,
+      keyNote: toStr(body.keyNote),
 
-      // ✅ NEW
-      soldAt: soldAtValue,
-      reclamations: reclamationsArr,
+      fuelNeeded: toBool(body.fuelNeeded),
+      rotKennzeichen: toBool(body.rotKennzeichen),
+      dashboardHidden: toBool(body.dashboardHidden),
+
+      soldAt,
+      soldContactId,
+      reclamations,
+
+      stage,
+      stageMeta,
     });
 
-    return jsonResponse(doc, 201);
+    const populated = await CarSchein.findById(doc._id)
+      .populate("soldContactId", "customerName phone street postalCode city")
+      .lean();
+
+    return json(populated, 201);
   } catch (err) {
     console.error("POST /api/carschein error:", err);
-    return jsonResponse({ error: err.message }, 500);
+    return json({ error: err.message || "Server error" }, 500);
   }
 }
 
-// -----------------------
-// GET /api/carschein
-// Paginated list
-// -----------------------
+/* =========================================================
+   GET /api/carschein?page=1&limit=10  (List)
+========================================================= */
 export async function GET(req) {
   try {
     await connectDB();
@@ -167,201 +223,213 @@ export async function GET(req) {
 
     const [total, docs] = await Promise.all([
       CarSchein.countDocuments(),
-      CarSchein.find().sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      CarSchein.find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate("soldContactId", "customerName phone street postalCode city")
+        .lean(),
     ]);
 
     const totalPages = Math.max(1, Math.ceil(total / limit));
-    return jsonResponse({ docs, page, totalPages, total }, 200);
+    return json({ docs, page, totalPages, total }, 200);
   } catch (err) {
     console.error("GET /api/carschein error:", err);
-    return jsonResponse({ error: err.message }, 500);
+    return json({ error: err.message || "Server error" }, 500);
   }
 }
 
-// -----------------------
-// DELETE /api/carschein?id=...
-// -----------------------
+/* =========================================================
+   DELETE /api/carschein?id=...
+========================================================= */
 export async function DELETE(req) {
   try {
     await connectDB();
 
-    const session = await getServerSession(authOptions);
-    if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
+    const session = await requireAuth();
+    if (!session) return json({ error: "Unauthorized" }, 401);
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
-    if (!id) return jsonResponse({ error: "Missing id" }, 400);
+    if (!id) return json({ error: "Missing id" }, 400);
 
-    const doc = await CarSchein.findById(id);
-    if (!doc) return jsonResponse({ error: "Not found" }, 404);
+    const doc = await CarSchein.findById(id).select("_id publicId").lean();
+    if (!doc) return json({ error: "Not found" }, 404);
 
     await CarSchein.findByIdAndDelete(id);
-    return jsonResponse({ success: true }, 200);
+    return json({ success: true }, 200);
   } catch (err) {
     console.error("DELETE /api/carschein error:", err);
-    return jsonResponse({ error: err.message }, 500);
+    return json({ error: err.message || "Server error" }, 500);
   }
 }
 
-// -----------------------
-// PUT /api/carschein
-// Update document
-// -----------------------
+/* =========================================================
+   PUT /api/carschein  (Update)
+========================================================= */
 export async function PUT(req) {
   try {
     await connectDB();
 
-    const session = await getServerSession(authOptions);
-    if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
+    const session = await requireAuth();
+    if (!session) return json({ error: "Unauthorized" }, 401);
 
     const body = await req.json();
-    const {
-      id,
-      carName,
-      finNumber,
-      owner,
-      notes,
-      completedTasks,
-      imageUrl,
-      publicId,
-      oldPublicId,
-      keyNumber,
-      keyCount,
-      keyColor,
-      keySold,
-      keyNote,
-      fuelNeeded,
-      dashboardHidden,
-      rotKennzeichen,
+    const id = body.id;
+    if (!id) return json({ error: "Missing id" }, 400);
 
-      // ✅ NEW
-      soldAt,
-      reclamations,
-    } = body;
-
-    if (!id) return jsonResponse({ error: "Missing id" }, 400);
-
-    // Load current doc (needed to detect transitions like keySold false -> true)
     const current = await CarSchein.findById(id).lean();
-    if (!current) return jsonResponse({ error: "Not found" }, 404);
+    if (!current) return json({ error: "Not found" }, 404);
+
+    // FIN uniqueness if changed
+    if (body.finNumber !== undefined) {
+      const nextFin = toStr(body.finNumber);
+      const prevFin = toStr(current.finNumber);
+
+      if (nextFin && nextFin !== prevFin) {
+        const exists = await finExists(nextFin, id);
+        if (exists)
+          return json({ error: "Diese FIN-Nummer existiert bereits" }, 409);
+      }
+    }
 
     // Delete old Cloudinary image if changed
-    if (oldPublicId && oldPublicId !== publicId) {
+    if (body.oldPublicId && body.oldPublicId !== body.publicId) {
       try {
-        await cloudinary.uploader.destroy(oldPublicId);
+        await cloudinary.uploader.destroy(body.oldPublicId);
       } catch (err) {
         console.warn("Cloudinary delete failed:", err.message);
       }
     }
 
-    const updateFields = {};
+    const update = {};
 
-    // Basic fields
-    if (carName !== undefined)
-      updateFields.carName = String(carName || "").trim();
-    if (finNumber !== undefined)
-      updateFields.finNumber = String(finNumber || "").trim();
-    if (owner !== undefined) updateFields.owner = String(owner || "").trim();
+    // Basic
+    if (body.carName !== undefined) update.carName = toStr(body.carName);
+    if (body.finNumber !== undefined) update.finNumber = toStr(body.finNumber);
+    if (body.owner !== undefined) update.owner = toStr(body.owner);
 
-    if (notes !== undefined) updateFields.notes = normalizeNotes(notes);
-    if (completedTasks !== undefined)
-      updateFields.completedTasks = normalizeCompletedTasks(completedTasks);
+    // Notes/tasks
+    if (body.notes !== undefined) update.notes = normalizeNotes(body.notes);
+    if (body.completedTasks !== undefined)
+      update.completedTasks = normalizeCompletedTasks(body.completedTasks);
 
-    if (imageUrl !== undefined) updateFields.imageUrl = imageUrl || null;
-    if (publicId !== undefined) updateFields.publicId = publicId || null;
+    // Image
+    if (body.imageUrl !== undefined) update.imageUrl = body.imageUrl || null;
+    if (body.publicId !== undefined) update.publicId = body.publicId || null;
 
-    if (keyNumber !== undefined) updateFields.keyNumber = keyNumber;
-    if (keyCount !== undefined) updateFields.keyCount = keyCount;
-    if (keyColor !== undefined) updateFields.keyColor = keyColor;
-    if (keyNote !== undefined) updateFields.keyNote = keyNote;
+    // Key
+    if (body.keyNumber !== undefined) update.keyNumber = toStr(body.keyNumber);
+    if (body.keyCount !== undefined)
+      update.keyCount = toNumOrDefault(body.keyCount, 2);
+    if (body.keyColor !== undefined)
+      update.keyColor = toStr(body.keyColor) || "#000000";
+    if (body.keyNote !== undefined) update.keyNote = toStr(body.keyNote);
 
     // Flags
-    if (fuelNeeded !== undefined) updateFields.fuelNeeded = !!fuelNeeded;
-    if (rotKennzeichen !== undefined)
-      updateFields.rotKennzeichen = !!rotKennzeichen;
+    if (body.fuelNeeded !== undefined)
+      update.fuelNeeded = toBool(body.fuelNeeded);
+    if (body.rotKennzeichen !== undefined)
+      update.rotKennzeichen = toBool(body.rotKennzeichen);
 
-    // ✅ keySold + soldAt logic
-    if (keySold !== undefined) {
-      const newKeySold = !!keySold;
-      updateFields.keySold = newKeySold;
+    // Stage + meta
+    if (body.stage !== undefined) {
+      update.stage = normalizeStage(body.stage, current.stage || "WERKSTATT");
+    }
+    if (body.stageMeta !== undefined) {
+      update.stageMeta = normalizeStageMeta(body.stageMeta);
+    }
 
-      const wasSold = !!current.keySold;
+    // Reclamations
+    if (body.reclamations !== undefined) {
+      update.reclamations = normalizeReclamations(body.reclamations);
+    }
 
-      // If it becomes sold now, set soldAt if not provided
+    // dashboardHidden behavior (clears key fields)
+    if (body.dashboardHidden !== undefined) {
+      const hide = toBool(body.dashboardHidden);
+      update.dashboardHidden = hide;
+
+      if (hide) {
+        update.keyNumber = "";
+        update.keyColor = "";
+        update.keyCount = 0;
+        update.keyNote = "";
+      }
+    }
+
+    // keySold + soldAt logic (keep your behavior)
+    if (body.keySold !== undefined) {
+      const newKeySold = toBool(body.keySold);
+      const wasSold = toBool(current.keySold);
+
+      update.keySold = newKeySold;
+
       if (!wasSold && newKeySold) {
-        updateFields.soldAt = ensureValidDateOrNull(soldAt) || new Date();
+        update.soldAt = ensureValidDateOrNull(body.soldAt) || new Date();
       }
-
-      // If it becomes NOT sold, clear soldAt (you can remove this if you prefer to keep history)
       if (wasSold && !newKeySold) {
-        updateFields.soldAt = null;
+        update.soldAt = null;
       }
     }
 
-    // Allow explicit soldAt set (manual override)
-    if (soldAt !== undefined) {
-      updateFields.soldAt = ensureValidDateOrNull(soldAt);
+    if (body.soldAt !== undefined) {
+      update.soldAt = ensureValidDateOrNull(body.soldAt);
     }
 
-    // ✅ Reclamations
-    if (reclamations !== undefined) {
-      updateFields.reclamations = normalizeReclamations(reclamations);
-    }
+    // ✅ SOLD behavior (FIN ONLY, no carName)
+    const nextStage = update.stage ?? current.stage;
+    if (nextStage === "SOLD") {
+      update.keySold = true;
+      update.soldAt = current.soldAt || new Date();
 
-    // ✅ IMPORTANT PART: dashboard close → release key
-    if (dashboardHidden !== undefined) {
-      updateFields.dashboardHidden = !!dashboardHidden;
-
-      if (dashboardHidden === true) {
-        updateFields.keyNumber = "";
-        updateFields.keyColor = "";
-        updateFields.keyCount = 0;
-        updateFields.keyNote = "";
+      // set soldContactId only once if missing
+      if (!current.soldContactId) {
+        const fin = update.finNumber ?? current.finNumber;
+        update.soldContactId = await findSoldContactIdByFin(fin);
       }
     }
 
-    const updated = await CarSchein.findByIdAndUpdate(id, updateFields, {
-      new: true,
-    }).lean();
+    const updated = await CarSchein.findByIdAndUpdate(id, update, { new: true })
+      .populate("soldContactId", "customerName phone street postalCode city")
+      .lean();
 
-    if (!updated) return jsonResponse({ error: "Not found" }, 404);
-
-    return jsonResponse(updated, 200);
+    return json(updated, 200);
   } catch (err) {
     console.error("PUT /api/carschein error:", err);
-    return jsonResponse({ error: err.message }, 500);
+    return json({ error: err.message || "Server error" }, 500);
   }
 }
 
-// -----------------------
-// PATCH /api/carschein
-// Update only completedTasks
-// -----------------------
+/* =========================================================
+   PATCH /api/carschein  (Update completedTasks only)
+========================================================= */
 export async function PATCH(req) {
   try {
     await connectDB();
 
-    const session = await getServerSession(authOptions);
-    if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
+    const session = await requireAuth();
+    if (!session) return json({ error: "Unauthorized" }, 401);
 
     const body = await req.json();
     const { id, completedTasks } = body;
 
     if (!id || !Array.isArray(completedTasks)) {
-      return jsonResponse({ error: "Missing id or completedTasks array" }, 400);
+      return json({ error: "Missing id or completedTasks array" }, 400);
     }
 
     const updated = await CarSchein.findByIdAndUpdate(
       id,
       { completedTasks: normalizeCompletedTasks(completedTasks) },
       { new: true }
-    ).lean();
+    )
+      .populate("soldContactId", "customerName phone street postalCode city")
+      .lean();
 
-    if (!updated) return jsonResponse({ error: "Not found" }, 404);
-
-    return jsonResponse(updated, 200);
+    if (!updated) return json({ error: "Not found" }, 404);
+    return json(updated, 200);
   } catch (err) {
     console.error("PATCH /api/carschein error:", err);
-    return jsonResponse({ error: err.message }, 500);
+    return json({ error: err.message || "Server error" }, 500);
   }
 }

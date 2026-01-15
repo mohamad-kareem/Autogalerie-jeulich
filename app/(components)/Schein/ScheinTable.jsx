@@ -16,11 +16,11 @@ import {
   FiRotateCcw,
   FiRotateCw,
   FiDownload,
-  FiCheckCircle,
   FiAlertTriangle,
 } from "react-icons/fi";
 import ScheinForm from "./ScheinForm";
 import WarrantyReklamationButton from "@/app/(components)/Schein/WarrantyReklamationButton";
+import StageManagerButton from "@/app/(components)/Schein/StageManagerButton";
 const PAGE_SIZE = 15;
 
 export default function ScheinTable({
@@ -662,7 +662,7 @@ export default function ScheinTable({
                 <th className="px-3 py-2">Fahrzeug</th>
                 <th className="px-16 py-2">FIN</th>
                 <th className="px-3 py-2 text-right">Gewährleistung</th>
-
+                <th className="px-3 py-2 text-right">Phase</th>
                 <th className="px-11 py-2 text-right">Aktionen</th>
               </tr>
             </thead>
@@ -676,10 +676,10 @@ export default function ScheinTable({
               {loading ? (
                 [...Array(6)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    {Array.from({ length: 4 }).map((__, j) => (
-                      <td key={j} className="px-3 py-3 ">
+                    {Array.from({ length: 5 }).map((__, j) => (
+                      <td key={j} className="px-3 py-3">
                         <div
-                          className={`h-4 w-20 rounded transition-colors duration-300  ${
+                          className={`h-4 w-20 rounded transition-colors duration-300 ${
                             darkMode ? "bg-gray-700" : "bg-gray-200"
                           }`}
                         />
@@ -689,7 +689,7 @@ export default function ScheinTable({
                 ))
               ) : totalItems === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-3 py-8 text-center">
+                  <td colSpan={5} className="px-3 py-8 text-center">
                     <div className="mx-auto max-w-md">
                       <div
                         className={`mb-1 text-sm font-medium transition-colors duration-300  ${
@@ -722,34 +722,6 @@ export default function ScheinTable({
                         >
                           {schein.carName}
                         </span>
-
-                        {/* SOLD */}
-                        {schein.keySold && (
-                          <>
-                            {/* Mobile: icon only (NO BORDER) */}
-                            <span
-                              title="Verkauft"
-                              className={`inline-flex md:hidden items-center justify-center rounded-full p-1.5 transition-colors duration-300 ${
-                                darkMode
-                                  ? "bg-green-900/40 text-green-200"
-                                  : "bg-green-50 text-green-700"
-                              }`}
-                            >
-                              <FiCheckCircle size={14} />
-                            </span>
-
-                            {/* Desktop/Tablet: text badge */}
-                            <span
-                              className={`hidden md:inline-flex items-center rounded-full px-2 py-[1px] text-[11px] font-semibold ${
-                                darkMode
-                                  ? "bg-green-900 text-green-100"
-                                  : "bg-green-100 text-green-700"
-                              }`}
-                            >
-                              Verkauft
-                            </span>
-                          </>
-                        )}
 
                         {/* FUEL */}
                         {schein.fuelNeeded && (
@@ -805,6 +777,16 @@ export default function ScheinTable({
                           schein={schein}
                           darkMode={darkMode}
                           onUpdated={onUpdateSchein} // so table updates after saving
+                        />
+                      </div>
+                    </td>
+                    {/* ✅ Stage / Pipeline */}
+                    <td className="px-3 py-2 text-right">
+                      <div className="flex justify-end">
+                        <StageManagerButton
+                          schein={schein}
+                          darkMode={darkMode}
+                          onUpdated={onUpdateSchein}
                         />
                       </div>
                     </td>
