@@ -1189,7 +1189,7 @@ export default function ScheinTable({
       {/* Image Preview Modal */}
       {showPreviewModal && (
         <div className="fixed inset-0 bg-gray-700/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full shadow-xl">
+          <div className="bg-white rounded-lg max-w-4xl w-full shadow-xl max-h-[85vh] flex flex-col">
             <div className="p-2 border-b flex justify-between items-center gap-2">
               <span className="text-sm font-medium truncate">
                 Schein Vorschau
@@ -1226,11 +1226,11 @@ export default function ScheinTable({
                 </button>
               </div>
             </div>
-            <div className="p-4 flex items-center justify-center">
+            <div className="p-2 md:p-3 flex-1 overflow-hidden flex items-center justify-center">
               <img
                 src={modalImageUrl}
                 alt="Vorschau"
-                className="max-w-full max-h-[70vh] object-contain"
+                className="max-w-full object-contain max-h-[70vh]  lg:max-h-[100vh]"
                 style={{
                   transform: `rotate(${imageRotation}deg)`,
                   transition: "transform 150ms ease-in-out",
