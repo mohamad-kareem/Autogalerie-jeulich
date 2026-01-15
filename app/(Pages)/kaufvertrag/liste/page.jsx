@@ -66,7 +66,7 @@ export default function KaufvertragListe() {
   });
 
   const [currentPage, setCurrentPage] = useState(1);
-  const contractsPerPage = 20;
+  const contractsPerPage = 25;
 
   const [selectedIds, setSelectedIds] = useState([]);
 

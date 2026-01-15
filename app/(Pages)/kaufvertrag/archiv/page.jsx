@@ -70,7 +70,7 @@ export default function ArchivPage() {
   });
 
   const [currentPage, setCurrentPage] = useState(1);
-  const contractsPerPage = 20;
+  const contractsPerPage = 25;
 
   // selection for bulk actions
   const [selectedIds, setSelectedIds] = useState([]);
