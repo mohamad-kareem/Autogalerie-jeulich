@@ -476,7 +476,7 @@ export default function StageManagerButton({
                           platz: { ...p.platz, note: e.target.value },
                         }))
                       }
-                      placeholder='z. B. "Im Büro (Boora)" / "Platz A3"'
+                      placeholder='z. B.  "Platz A3"'
                     />
                   </div>
                 )}
