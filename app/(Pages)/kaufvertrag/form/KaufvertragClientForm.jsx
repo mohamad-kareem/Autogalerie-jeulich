@@ -173,20 +173,25 @@ export default function KaufvertragClientForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ✅ Validation for required fields
-    if (!form.phone.trim() || !form.email.trim()) {
+    // ✅ Validation
+    if (!form.phone?.trim() || !form.email?.trim()) {
       toast.error(
         "Bitte füllen Sie Telefon und E-Mail aus, bevor Sie fortfahren."
       );
       return;
     }
 
+    // ✅ Clean payload
     const cleanedForm = {
       ...form,
-      agreements: (form.agreements || []).filter((line) => line.trim() !== ""),
-      total: Number.isFinite(form.total) ? Number(form.total) : 0,
+      agreements: Array.isArray(form.agreements)
+        ? form.agreements.map((l) => String(l || "").trim()).filter(Boolean)
+        : [],
+      total: Number.isFinite(Number(form.total)) ? Number(form.total) : 0,
       downPayment:
-        form.downPayment === "" || form.downPayment === undefined
+        form.downPayment === "" ||
+        form.downPayment === undefined ||
+        form.downPayment === null
           ? 0
           : Number(form.downPayment),
     };
@@ -202,7 +207,41 @@ export default function KaufvertragClientForm() {
         toast.error("Diese Rechnungsnummer existiert bereits.");
         return;
       }
-      if (!res.ok) throw new Error("Fehler beim Speichern");
+
+      // try to parse server error message if noted
+      let savedContract = null;
+      try {
+        savedContract = await res.clone().json();
+      } catch {}
+
+      if (!res.ok) {
+        const msg = savedContract?.error || "Fehler beim Speichern";
+        throw new Error(msg);
+      }
+
+      // ✅ IMPORTANT: update CarSchein sold + soldAt so Garantie shows the date
+      // (updates by FIN/VIN)
+      if (cleanedForm.vin?.trim()) {
+        const soldRes = await fetch("/api/carschein/sold", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            finNumber: cleanedForm.vin.trim(),
+            soldAt: cleanedForm.invoiceDate || null,
+          }),
+        });
+
+        // Don't block contract saving if this fails, but show a warning
+        if (!soldRes.ok) {
+          let soldErr = null;
+          try {
+            soldErr = await soldRes.json();
+          } catch {}
+          toast.error(
+            soldErr?.error || "Konnte Schein nicht als verkauft setzen."
+          );
+        }
+      }
 
       toast.success("Kaufvertrag wurde erfolgreich gespeichert!");
 
@@ -214,9 +253,12 @@ export default function KaufvertragClientForm() {
       setRawDownPayment("€ 0,00");
     } catch (err) {
       console.error(err);
-      toast.error("Fehler beim Speichern des Formulars.");
+      toast.error(
+        `Fehler: ${err.message || "Fehler beim Speichern des Formulars."}`
+      );
     }
   };
+
   function AlawieHeader() {
     return (
       <div className="flex flex-col sm:flex-row justify-between items-center border p-2 sm:p-7 bg-black text-white print:flex-row print:justify-between print:items-center print:p-2 print:px-6">
