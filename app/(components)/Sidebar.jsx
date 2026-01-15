@@ -361,7 +361,11 @@ export default function Sidebar({
         </div>
 
         {/* Nav */}
-        <div className="flex-1 overflow-y-auto custom-scroll min-h-0 overscroll-contain">
+        <div
+          className={`overflow-y-auto custom-scroll overscroll-contain ${
+            isMobile ? "flex-none" : "flex-1 min-h-0"
+          }`}
+        >
           <nav className="py-4">
             <div className="space-y-1">
               {filteredNavItems.map((item) => (
@@ -380,9 +384,9 @@ export default function Sidebar({
 
         {/* Profile bottom */}
         <div
-          className={`flex-shrink-0 border-t p-2 ${
+          className={`border-t p-2 ${
             darkMode ? "border-gray-700" : "border-gray-200"
-          }`}
+          } ${isMobile ? "" : "flex-shrink-0"}`}
         >
           <button
             onClick={() => setShowSettings(true)}
@@ -390,8 +394,8 @@ export default function Sidebar({
               darkMode ? "hover:bg-gray-700/30" : "hover:bg-gray-50"
             }`}
           >
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center overflow-hidden">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center overflow-hidden flex-shrink-0">
                 {localUser?.image ? (
                   <img
                     src={localUser.image}
