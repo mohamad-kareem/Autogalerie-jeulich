@@ -22,7 +22,7 @@ import {
 import ScheinForm from "./ScheinForm";
 import WarrantyReklamationButton from "@/app/(components)/Schein/WarrantyReklamationButton";
 import StageManagerButton from "@/app/(components)/Schein/StageManagerButton";
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 25;
 
 export default function ScheinTable({
   scheins,
@@ -536,10 +536,16 @@ export default function ScheinTable({
     setSelectedSchein(schein);
     setModalImageUrl(schein.imageUrl);
 
-    const isSmallScreen =
-      typeof window !== "undefined" && window.innerWidth < 768;
+    // ✅ correct mobile detection even when viewport is forced to desktop
+    const isTouchDevice =
+      typeof window !== "undefined" &&
+      ("ontouchstart" in window ||
+        navigator.maxTouchPoints > 0 ||
+        window.matchMedia("(pointer: coarse)").matches);
 
-    setImageRotation(isSmallScreen ? 0 : 270);
+    // ✅ On touch devices: no rotation (looks like phone screenshot orientation)
+    // ✅ On desktop: keep your 270° rotation
+    setImageRotation(isTouchDevice ? 0 : 270);
 
     setShowPreviewModal(true);
   };
