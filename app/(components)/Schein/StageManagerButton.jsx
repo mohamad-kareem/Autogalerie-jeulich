@@ -42,7 +42,7 @@ function badgeClass(stage, darkMode) {
 
   if (s === "SOLD")
     return `${base} ${text} ${
-      darkMode ? "bg-green-900 text-green-100" : "bg-green-200"
+      darkMode ? "bg-green-800 text-green-100" : "bg-green-200"
     }`;
 
   if (s === "TUEV")
