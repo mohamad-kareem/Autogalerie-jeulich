@@ -37,7 +37,7 @@ function badgeClass(stage, darkMode) {
   const base =
     "inline-flex items-center justify-center rounded-full cursor-pointer px-3 py-1.5 text-[11px] font-semibold leading-none whitespace-nowrap";
 
-  // ✅ light mode: always black text for contrast
+  // light mode: always black-ish for contrast
   const text = darkMode ? "" : "text-gray-900";
 
   if (s === "SOLD")
@@ -84,14 +84,16 @@ function niceAddress(c) {
 /* -----------------------------------------
    UI helpers
 ------------------------------------------ */
-function StageCard({ s, active, darkMode, onClick }) {
+function StageCard({ s, active, darkMode, onClick, compact = false }) {
   const Ico = s.icon || FiLayers;
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-xl border px-3 h-12 w-full flex items-center gap-2 text-left transition-colors duration-200 ${
+      className={`rounded-xl border px-3 w-full flex items-center gap-2 text-left transition-colors duration-200 ${
+        compact ? "h-11" : "h-12"
+      } ${
         active
           ? darkMode
             ? "border-sky-500/60 bg-sky-900/30 text-white"
@@ -102,7 +104,9 @@ function StageCard({ s, active, darkMode, onClick }) {
       }`}
     >
       <span
-        className={`inline-flex h-8 w-8 items-center justify-center rounded-lg shrink-0 ${
+        className={`inline-flex items-center justify-center rounded-lg shrink-0 ${
+          compact ? "h-7 w-7" : "h-8 w-8"
+        } ${
           active
             ? darkMode
               ? "bg-gray-600 text-white"
@@ -112,10 +116,14 @@ function StageCard({ s, active, darkMode, onClick }) {
             : "bg-gray-100 text-gray-700"
         }`}
       >
-        <Ico size={14} />
+        <Ico size={compact ? 13 : 14} />
       </span>
 
-      <span className="min-w-0 flex-1 text-[12px] font-semibold leading-none truncate">
+      <span
+        className={`min-w-0 flex-1 font-semibold leading-none truncate ${
+          compact ? "text-[11px]" : "text-[12px]"
+        }`}
+      >
         {s.label}
       </span>
     </button>
@@ -125,11 +133,9 @@ function StageCard({ s, active, darkMode, onClick }) {
 function SoldRow({ icon, children }) {
   return (
     <div className="flex items-start gap-2">
-      {/* icon directly beside text (no box) */}
       <span className="mt-[2px] inline-flex shrink-0 items-center justify-center">
         {icon}
       </span>
-
       <div className="min-w-0">{children}</div>
     </div>
   );
@@ -183,7 +189,6 @@ export default function StageManagerButton({
     () => STAGES.find((x) => x.id === stage) || STAGES[0],
     [stage]
   );
-  const StageIcon = stageInfo.icon || FiLayers;
 
   // Table label: show TÜV status (Bestanden/Nicht bestanden)
   const tableStageLabel = useMemo(() => {
@@ -245,7 +250,7 @@ export default function StageManagerButton({
 
   return (
     <>
-      {/* Table UI: icon + badge (both clickable) */}
+      {/* Table UI: badge clickable */}
       <div className="inline-flex items-center">
         <button
           type="button"
@@ -269,7 +274,10 @@ export default function StageManagerButton({
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4">
           <div
-            className={`w-full max-w-4xl overflow-hidden rounded-2xl shadow-2xl border transition-colors duration-300 ${
+            className={`w-full max-w-4xl overflow-hidden rounded-2xl shadow-2xl border transition-colors duration-300
+            flex flex-col
+            max-h-[92dvh] h-[92dvh] sm:h-auto sm:max-h-[85vh]
+            ${
               darkMode
                 ? "bg-gray-800 border-gray-700"
                 : "bg-white border-gray-200"
@@ -312,23 +320,23 @@ export default function StageManagerButton({
               </button>
             </div>
 
-            {/* Body */}
-            <div className="px-4 sm:px-6 py-4">
+            {/* Body (scrollable) */}
+            <div className="px-4 sm:px-6 py-4 flex-1 overflow-y-auto">
               {/* Stage selector:
-                  - mobile: horizontal scroll
+                  - mobile: 2-column grid (no horizontal scroll)
                   - desktop: 5 columns
               */}
-              <div className="sm:hidden -mx-4 px-4 overflow-x-auto">
-                <div className="flex gap-2 min-w-max">
+              <div className="sm:hidden">
+                <div className="grid grid-cols-2 gap-2">
                   {STAGES.map((s) => (
-                    <div key={s.id} className="w-[220px]">
-                      <StageCard
-                        s={s}
-                        active={stage === s.id}
-                        darkMode={darkMode}
-                        onClick={() => setStage(s.id)}
-                      />
-                    </div>
+                    <StageCard
+                      key={s.id}
+                      s={s}
+                      active={stage === s.id}
+                      darkMode={darkMode}
+                      onClick={() => setStage(s.id)}
+                      compact
+                    />
                   ))}
                 </div>
               </div>
@@ -612,7 +620,7 @@ export default function StageManagerButton({
               </div>
             </div>
 
-            {/* Footer */}
+            {/* Footer (kept visible) */}
             <div
               className={`flex items-center justify-end gap-2 border-t px-4 sm:px-6 py-3 transition-colors duration-300 ${
                 darkMode ? "border-gray-700" : "border-gray-200"
