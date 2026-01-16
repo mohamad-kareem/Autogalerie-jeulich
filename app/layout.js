@@ -44,11 +44,11 @@ export const metadata = {
  * Tune initialScale:
  * - bigger UI: 0.40
  * - smaller UI: 0.30
- */
+ 
 export const viewport = {
   width: 1200,
   initialScale: 0.6,
-};
+};*/
 
 export default function RootLayout({ children }) {
   return (
