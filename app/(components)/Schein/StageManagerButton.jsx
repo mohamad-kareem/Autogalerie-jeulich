@@ -541,82 +541,94 @@ export default function StageManagerButton({
                         : "border-gray-200 bg-white"
                     }`}
                   >
-                    {soldContact ? (
-                      <div className="space-y-4">
+                    {schein?.keySold ? (
+                      soldContact ? (
+                        <div className="space-y-4">
+                          <div
+                            className={`text-xs font-semibold text-left ${
+                              darkMode ? "text-gray-200" : "text-gray-900"
+                            }`}
+                          >
+                            Käuferdaten
+                          </div>
+
+                          <SoldRow
+                            icon={
+                              <FiUser
+                                size={16}
+                                className={
+                                  darkMode ? "text-gray-300" : "text-gray-600"
+                                }
+                              />
+                            }
+                          >
+                            <div
+                              className={`text-sm font-semibold truncate ${
+                                darkMode ? "text-gray-100" : "text-gray-900"
+                              }`}
+                            >
+                              {soldContact.customerName || "—"}
+                            </div>
+                          </SoldRow>
+
+                          <SoldRow
+                            icon={
+                              <FiMapPin size={16} className="text-red-500" />
+                            }
+                          >
+                            <div
+                              className={`text-[13px] leading-snug ${
+                                darkMode ? "text-gray-400" : "text-gray-600"
+                              }`}
+                            >
+                              {niceAddress(soldContact) || "—"}
+                            </div>
+                          </SoldRow>
+
+                          <SoldRow
+                            icon={
+                              <FiPhone size={16} className="text-green-500" />
+                            }
+                          >
+                            {soldContact.phone ? (
+                              <a
+                                href={`tel:${String(soldContact.phone).replace(
+                                  /\s+/g,
+                                  ""
+                                )}`}
+                                className={`text-sm font-semibold underline-offset-2 hover:underline ${
+                                  darkMode ? "text-gray-100" : "text-gray-900"
+                                }`}
+                              >
+                                {soldContact.phone}
+                              </a>
+                            ) : (
+                              <div
+                                className={`text-sm font-semibold ${
+                                  darkMode ? "text-gray-100" : "text-gray-900"
+                                }`}
+                              >
+                                —
+                              </div>
+                            )}
+                          </SoldRow>
+                        </div>
+                      ) : (
                         <div
-                          className={`text-xs font-semibold text-left ${
-                            darkMode ? "text-gray-200" : "text-gray-900"
+                          className={`text-sm text-left ${
+                            darkMode ? "text-gray-400" : "text-gray-600"
                           }`}
                         >
-                          Käuferdaten
+                          Verkauft (keine Käuferdaten gespeichert)
                         </div>
-
-                        <SoldRow
-                          icon={
-                            <FiUser
-                              size={16}
-                              className={
-                                darkMode ? "text-gray-300" : "text-gray-600"
-                              }
-                            />
-                          }
-                        >
-                          <div
-                            className={`text-sm font-semibold truncate ${
-                              darkMode ? "text-gray-100" : "text-gray-900"
-                            }`}
-                          >
-                            {soldContact.customerName || "—"}
-                          </div>
-                        </SoldRow>
-
-                        <SoldRow
-                          icon={<FiMapPin size={16} className="text-red-500" />}
-                        >
-                          <div
-                            className={`text-[13px] leading-snug ${
-                              darkMode ? "text-gray-400" : "text-gray-600"
-                            }`}
-                          >
-                            {niceAddress(soldContact) || "—"}
-                          </div>
-                        </SoldRow>
-
-                        <SoldRow
-                          icon={
-                            <FiPhone size={16} className="text-green-500" />
-                          }
-                        >
-                          {soldContact.phone ? (
-                            <a
-                              href={`tel:${String(soldContact.phone).replace(
-                                /\s+/g,
-                                ""
-                              )}`}
-                              className={`text-sm font-semibold underline-offset-2 hover:underline ${
-                                darkMode ? "text-gray-100" : "text-gray-900"
-                              }`}
-                            >
-                              {soldContact.phone}
-                            </a>
-                          ) : (
-                            <div
-                              className={`text-sm font-semibold ${
-                                darkMode ? "text-gray-100" : "text-gray-900"
-                              }`}
-                            >
-                              —
-                            </div>
-                          )}
-                        </SoldRow>
-                      </div>
+                      )
                     ) : (
                       <div
                         className={`text-sm text-left ${
                           darkMode ? "text-gray-400" : "text-gray-600"
                         }`}
                       >
-                        Nbe3et abel ma nbalesh neshte8el bel system lgdeed.
+                        Nicht verkauft
                       </div>
                     )}
                   </div>
