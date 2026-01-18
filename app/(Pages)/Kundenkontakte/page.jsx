@@ -58,7 +58,7 @@ export default function ContactCustomersPage() {
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
+      "(prefers-color-scheme: dark)",
     ).matches;
     const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
     setDarkMode(isDark);
@@ -113,7 +113,7 @@ export default function ContactCustomersPage() {
         [i.customerName, i.phone, i.carName, i.vin, i.city]
           .join(" ")
           .toLowerCase()
-          .includes(s)
+          .includes(s),
       );
     }
 
@@ -156,7 +156,7 @@ export default function ContactCustomersPage() {
 
   const pageItems = useMemo(
     () => getPageItems(currentPage, totalPages),
-    [currentPage, totalPages]
+    [currentPage, totalPages],
   );
 
   const requestSort = (key) => {
@@ -191,7 +191,7 @@ export default function ContactCustomersPage() {
       setItems((prev) =>
         editingId
           ? prev.map((i) => (i._id === saved._id ? saved : i))
-          : [saved, ...prev]
+          : [saved, ...prev],
       );
 
       setForm(emptyForm);
@@ -245,8 +245,8 @@ export default function ContactCustomersPage() {
     try {
       await Promise.all(
         selectedIds.map((id) =>
-          fetch(`/api/contact-customers/${id}`, { method: "DELETE" })
-        )
+          fetch(`/api/contact-customers/${id}`, { method: "DELETE" }),
+        ),
       );
       setItems((prev) => prev.filter((i) => !selectedIds.includes(i._id)));
       setSelectedIds([]);
@@ -258,7 +258,7 @@ export default function ContactCustomersPage() {
   const toggleSelectOne = (id) => {
     // Available to all users now
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   };
 
@@ -405,7 +405,7 @@ export default function ContactCustomersPage() {
                     <button
                       onClick={() => {
                         const selectedContact = currentItems.find(
-                          (item) => item._id === selectedIds[0]
+                          (item) => item._id === selectedIds[0],
                         );
                         if (selectedContact) startEdit(selectedContact);
                       }}
@@ -488,12 +488,13 @@ export default function ContactCustomersPage() {
                     Telefon
                   </th>
                   <th
-                    className={`px-3 py-2 text-left whitespace-nowrap hidden md:table-cell transition-colors duration-300 ${
+                    className={`px-3 py-2 text-left whitespace-nowrap transition-colors duration-300 ${
                       darkMode ? "text-slate-400" : "text-slate-500"
                     }`}
                   >
                     Adresse
                   </th>
+
                   <th
                     className={`px-16 py-2 text-left whitespace-nowrap sm:table-cell transition-colors duration-300 ${
                       darkMode ? "text-slate-400" : "text-slate-500"
@@ -646,7 +647,7 @@ export default function ContactCustomersPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap hidden md:table-cell">
+                        <td className="px-3 py-2 whitespace-nowrap">
                           {contact.street || contact.city ? (
                             <div className="flex items-center gap-2">
                               <FiMapPin
@@ -689,6 +690,7 @@ export default function ContactCustomersPage() {
                             </span>
                           )}
                         </td>
+
                         <td
                           className={`px-8 py-2 text-[11px] sm:text-sm text-left whitespace-nowrap font-mono sm:table-cell transition-colors duration-300 ${
                             darkMode ? "text-slate-400" : "text-slate-500"
@@ -768,13 +770,13 @@ export default function ContactCustomersPage() {
                             ? "border-slate-400 text-slate-200 font-medium"
                             : "border-blue-600 text-blue-700 font-medium"
                           : darkMode
-                          ? "border-slate-600 text-slate-400 hover:bg-slate-700"
-                          : "border-slate-300 text-slate-600 hover:bg-slate-100"
+                            ? "border-slate-600 text-slate-400 hover:bg-slate-700"
+                            : "border-slate-300 text-slate-600 hover:bg-slate-100"
                       }`}
                     >
                       {item}
                     </button>
-                  )
+                  ),
                 )}
 
                 <button
