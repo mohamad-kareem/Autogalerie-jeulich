@@ -75,7 +75,8 @@ export default function Hero() {
           <div className="flex flex-col gap-6 sm:gap-8">
             {/* 1) Badge + Headline */}
             <div className="text-center sm:text-left space-y-6">
-              <div className="flex justify-center sm:justify-start">
+              {/* Desktop badge only (mobile badge goes on image) */}
+              <div className="hidden sm:flex justify-center sm:justify-start">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3 py-1 backdrop-blur">
                   <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
                   <span className="text-[10px] sm:text-[11px] font-medium tracking-[0.25em] text-slate-200 uppercase whitespace-nowrap">
@@ -108,7 +109,7 @@ export default function Hero() {
 
             {/* 2) Image (MOBILE card only) */}
             <div className="sm:hidden">
-              <div className="relative h-[40vh] min-h-[280px] w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 shadow-2xl shadow-black/40">
+              <div className="relative h-[40vh] min-h-[250px] w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 shadow-2xl shadow-black/40">
                 <Image
                   src={back}
                   alt="Sportwagen auf einer Straße bei Sonnenuntergang"
@@ -119,6 +120,16 @@ export default function Hero() {
                 />
                 <div className="absolute inset-0 bg-black/25" />
                 <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-950/90 to-transparent" />
+
+                {/* Mobile badge (top-left on image) */}
+                <div className="absolute left-3 top-3 z-20">
+                  <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-black/45 px-3 py-1 backdrop-blur">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                    <span className="text-[10px] font-medium tracking-[0.25em] text-slate-200 uppercase whitespace-nowrap">
+                      Autogalerie&nbsp;– Jülich
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -128,16 +139,17 @@ export default function Hero() {
               Standort.
             </p>
 
-            {/* 3) CTAs */}
-            <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-start">
+            {/* 3) CTAs (mobile side-by-side) */}
+            <div className="flex w-full flex-nowrap items-center justify-center gap-3 sm:justify-start">
               <Link
                 href="/gebrauchtwagen"
                 className="
-                  inline-flex items-center justify-center
-                  rounded-full bg-white px-7 py-2.5
+                  inline-flex w-1/2 sm:w-auto items-center justify-center
+                  rounded-full bg-white px-5 py-2.5
                   text-sm md:text-base font-semibold text-black
                   shadow-md transition
                   hover:bg-slate-200
+                  whitespace-nowrap
                 "
               >
                 Fahrzeuge ansehen
@@ -146,11 +158,12 @@ export default function Hero() {
               <Link
                 href="/kontakt"
                 className="
-                  inline-flex items-center justify-center
-                  rounded-full border border-white/60 px-5 py-2.5
+                  inline-flex w-1/2 sm:w-auto items-center justify-center
+                  rounded-full border border-white/60 px-4 py-2.5
                   text-sm md:text-base font-semibold text-white
                   transition
                   hover:border-blue-400 hover:text-blue-200
+                  whitespace-nowrap
                 "
               >
                 Beratung vereinbaren
