@@ -36,16 +36,15 @@ export default function Hero() {
 
     const timer = setTimeout(handleType, typingSpeed);
     return () => clearTimeout(timer);
-  }, [text, isDeleting, loopNum, typingSpeed, fullText]);
+  }, [text, isDeleting, loopNum, typingSpeed]);
 
   return (
     <section
       className="
         relative mt-15 sm:mt-16 w-full overflow-hidden
-        min-h-screen
-        text-white
-        bg-gradient-to-b from-slate-950/95 to-slate-900/85
+        min-h-screen text-white
         flex items-center
+        bg-slate-950
       "
     >
       {/* Desktop background image */}
@@ -75,7 +74,7 @@ export default function Hero() {
           <div className="flex flex-col gap-6 sm:gap-8">
             {/* 1) Badge + Headline */}
             <div className="text-center sm:text-left space-y-6">
-              {/* Desktop badge only (mobile badge goes on image) */}
+              {/* Desktop badge only */}
               <div className="hidden sm:flex justify-center sm:justify-start">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3 py-1 backdrop-blur">
                   <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
@@ -119,9 +118,9 @@ export default function Hero() {
                   sizes="100vw"
                 />
                 <div className="absolute inset-0 bg-black/25" />
-                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-950/90 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-950/95 to-transparent" />
 
-                {/* Mobile badge (top-left on image) */}
+                {/* Mobile badge */}
                 <div className="absolute left-3 top-3 z-20">
                   <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-black/45 px-3 py-1 backdrop-blur">
                     <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
@@ -133,13 +132,13 @@ export default function Hero() {
               </div>
             </div>
 
-            {/* Desktop description (keeps desktop spacing nice) */}
+            {/* Desktop description */}
             <p className="hidden sm:block max-w-xl text-slate-200 text-sm md:text-base">
               Auswahl, Qualität und Service auf Konzernniveau – an einem
               Standort.
             </p>
 
-            {/* 3) CTAs (mobile side-by-side) */}
+            {/* 3) CTAs */}
             <div className="flex w-full flex-nowrap items-center justify-center gap-3 sm:justify-start">
               <Link
                 href="/gebrauchtwagen"
@@ -147,8 +146,7 @@ export default function Hero() {
                   inline-flex w-1/2 sm:w-auto items-center justify-center
                   rounded-full bg-white px-5 py-2.5
                   text-sm md:text-base font-semibold text-black
-                  shadow-md transition
-                  hover:bg-slate-200
+                  shadow-md transition hover:bg-slate-200
                   whitespace-nowrap
                 "
               >
@@ -161,8 +159,7 @@ export default function Hero() {
                   inline-flex w-1/2 sm:w-auto items-center justify-center
                   rounded-full border border-white/60 px-4 py-2.5
                   text-sm md:text-base font-semibold text-white
-                  transition
-                  hover:border-blue-400 hover:text-blue-200
+                  transition hover:border-blue-400 hover:text-blue-200
                   whitespace-nowrap
                 "
               >
@@ -172,9 +169,9 @@ export default function Hero() {
 
             {/* 4) Rest */}
             <div className="space-y-6">
+              {/* Mobile description */}
               <p className="sm:hidden mx-auto max-w-xl text-center text-sm text-slate-200">
-                Auswahl, Qualität und Service auf Konzernniveau – an einem
-                Standort.
+                Auswahl, Qualität und Service auf Konzernniveau
               </p>
 
               <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] sm:text-xs md:text-sm text-slate-200 sm:justify-start">
