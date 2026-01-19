@@ -66,10 +66,9 @@ export default function WarrantyReklamationButton({
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [soldAtInput, setSoldAtInput] = useState("");
   const [recs, setRecs] = useState([]);
 
-  // Neue Reklamation
+  // new reclamation
   const [recDate, setRecDate] = useState(() => toDateInputValue(new Date()));
   const [recWhere, setRecWhere] = useState("");
   const [recWhat, setRecWhat] = useState("");
@@ -79,12 +78,11 @@ export default function WarrantyReklamationButton({
 
   useEffect(() => {
     if (!open) return;
-    setSoldAtInput(toDateInputValue(schein?.soldAt));
     setRecs(Array.isArray(schein?.reclamations) ? schein.reclamations : []);
   }, [open, schein]);
 
   const styles = useMemo(() => {
-    const input =
+    const baseInput =
       `w-full rounded-md border px-2.5 text-sm focus:outline-none focus:ring-1 transition ` +
       (darkMode
         ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-gray-400 focus:ring-gray-400/20"
@@ -102,13 +100,9 @@ export default function WarrantyReklamationButton({
       title: darkMode ? "text-white" : "text-gray-900",
       muted: darkMode ? "text-gray-400" : "text-gray-500",
 
-      // compact input heights
-      input: `${input} h-8 sm:h-9`,
-      // compact buttons
+      input: `${baseInput} h-8 sm:h-9`,
       btn: "inline-flex items-center justify-center gap-1.5 rounded-md px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition",
-      card: `rounded-xl border ${
-        darkMode ? "border-gray-700" : "border-gray-200"
-      }`,
+      card: `rounded-xl border ${darkMode ? "border-gray-700" : "border-gray-200"}`,
       cardSoft: darkMode ? "bg-gray-800/50" : "bg-gray-50",
       cardPlain: darkMode ? "bg-gray-800/25" : "bg-white",
     };
@@ -129,12 +123,7 @@ export default function WarrantyReklamationButton({
       return toast.error("Kosten sind ungültig.");
     }
 
-    const newRec = {
-      date: recDate, // YYYY-MM-DD
-      where,
-      what,
-      cost: costNum,
-    };
+    const newRec = { date: recDate, where, what, cost: costNum };
 
     setRecs((prev) => [newRec, ...prev]);
 
@@ -154,9 +143,9 @@ export default function WarrantyReklamationButton({
     try {
       setSaving(true);
 
+      // ✅ soldAt is NOT editable and NOT sent
       const payload = {
         id: schein._id,
-        soldAt: soldAtInput ? soldAtInput : null,
         reclamations: recs,
       };
 
@@ -177,7 +166,15 @@ export default function WarrantyReklamationButton({
     } finally {
       setSaving(false);
     }
-  }, [schein?._id, soldAtInput, recs, onUpdated]);
+  }, [schein?._id, recs, onUpdated]);
+
+  const soldDateText = useMemo(() => {
+    if (!schein?.keySold) return "—";
+    if (!schein?.soldAt) return "—";
+    const d = new Date(schein.soldAt);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("de-DE");
+  }, [schein?.keySold, schein?.soldAt]);
 
   return (
     <>
@@ -192,8 +189,8 @@ export default function WarrantyReklamationButton({
               ? "text-green-400 hover:bg-green-900/25 hover:text-green-300"
               : "text-green-600 hover:bg-green-50 hover:text-green-700"
             : darkMode
-            ? "text-gray-400 hover:bg-gray-700 hover:text-white"
-            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              ? "text-gray-400 hover:bg-gray-700 hover:text-white"
+              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
         }`}
       >
         <FiShield size={16} />
@@ -230,67 +227,79 @@ export default function WarrantyReklamationButton({
             {/* Body */}
             <div className="px-4 sm:px-5 py-3 sm:py-4 space-y-3 sm:space-y-4">
               {/* Status */}
-              <div className={`${styles.card} p-3 sm:p-4 ${styles.cardSoft}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="mt-2 flex items-center gap-2">
-                      {warranty.status === "active" ? (
-                        <FiCheckCircle className="text-green-500" />
-                      ) : warranty.status === "expired" ? (
-                        <FiAlertTriangle className="text-red-500" />
-                      ) : (
-                        <FiAlertTriangle
-                          className={
-                            darkMode ? "text-gray-500" : "text-gray-400"
-                          }
-                        />
-                      )}
+              {/* Status */}
+              <div className="flex items-center justify-between gap-3">
+                {/* Left: icon + compact label (no wrapping) */}
+                <div className="min-w-0 flex items-center gap-2">
+                  <span className="flex-shrink-0">
+                    {warranty.status === "active" ? (
+                      <FiCheckCircle className="text-green-500" />
+                    ) : warranty.status === "expired" ? (
+                      <FiAlertTriangle className="text-red-500" />
+                    ) : (
+                      <FiAlertTriangle
+                        className={darkMode ? "text-gray-500" : "text-gray-400"}
+                      />
+                    )}
+                  </span>
 
-                      <div className="min-w-0">
-                        <div className={`text-sm font-medium ${styles.title}`}>
-                          {warranty.label}
-                        </div>
-                        {warranty.status === "missing_date" && (
-                          <div className={`text-[11px] ${styles.muted}`}>
-                            Bitte Verkaufsdatum eintragen
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                  <div className="min-w-0 flex items-center gap-2">
+                    <span
+                      className={`min-w-0 truncate text-[13px] sm:text-sm font-semibold ${styles.title}`}
+                    >
+                      {warranty.status === "active"
+                        ? "Garantie aktiv"
+                        : warranty.status === "expired"
+                          ? "Garantie abgelaufen"
+                          : warranty.label}
+                    </span>
+
+                    {/* ✅ pill keeps it compact + aligned */}
+                    {warranty.status === "active" && (
+                      <span
+                        className={`flex-shrink-0 rounded-md border px-2 py-[2px] text-[11px] sm:text-[14px] font-semibold leading-none ${
+                          darkMode
+                            ? "border-green-800/40 bg-green-900/25 text-green-200"
+                            : "border-green-200 bg-green-50 text-green-700"
+                        }`}
+                      >
+                        {warranty.remainingDays} Tage übrig
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex-shrink-0 w-[120px] sm:w-[140px]">
+                  <div
+                    className={`mb-0.5 flex justify-center text-[11px] font-semibold ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}
+                  >
+                    Verkaufsdatum
                   </div>
 
-                  <div className="w-40 sm:w-44">
-                    <label
-                      className={`block text-[11px] font-medium ${styles.muted}`}
-                    >
-                      Verkaufsdatum
-                    </label>
-                    <input
-                      type="date"
-                      value={soldAtInput}
-                      onChange={(e) => setSoldAtInput(e.target.value)}
-                      className={styles.input}
-                      disabled={!schein?.keySold}
-                      title={
-                        !schein?.keySold ? "Nur bei „verkauft“ relevant" : ""
-                      }
-                    />
+                  <div
+                    className={`h-7 sm:h-8 w-full rounded-md border px-2 flex items-center justify-center text-[11px] sm:text-[12px] font-semibold ${
+                      darkMode
+                        ? "bg-gray-800 border-gray-700 text-gray-100"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  >
+                    {soldDateText}
                   </div>
                 </div>
               </div>
 
               {/* Add Reklamation */}
               <div className={`${styles.card} p-3 sm:p-4 ${styles.cardPlain}`}>
-                {/* ✅ Title on the RIGHT */}
-                <div className="flex items-center ">
+                <div className="flex items-center">
                   <div
-                    className={`text-[11px] sm:text-xs font-semibold ${styles.title} text-right`}
+                    className={`text-[11px] sm:text-xs font-semibold ${styles.title}`}
                   >
                     Reklamation hinzufügen
                   </div>
                 </div>
 
-                {/* Compact responsive grid */}
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   {/* Datum */}
                   <div>
@@ -319,7 +328,7 @@ export default function WarrantyReklamationButton({
                       value={recCost}
                       onChange={(e) => setRecCost(e.target.value)}
                       className={styles.input}
-                      placeholder="z. B. 200 Euro"
+                      placeholder="z. B. 200"
                       inputMode="decimal"
                     />
                   </div>
@@ -391,7 +400,7 @@ export default function WarrantyReklamationButton({
                     Keine Reklamationen gespeichert.
                   </div>
                 ) : (
-                  <div className="mt-2 space-y-2 max-h-52 sm:max-h-56 overflow-y-auto pr-1">
+                  <div className="mt-2 space-y-2 max-h-52 sm:max-h-56 overflow-y-auto pr-1 custom-scroll">
                     {recs.map((r, idx) => {
                       const dateText = r?.date
                         ? new Date(r.date).toLocaleDateString("de-DE")
