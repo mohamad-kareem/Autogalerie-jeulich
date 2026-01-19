@@ -24,7 +24,7 @@ import {
   FiSettings,
   FiUser,
 } from "react-icons/fi";
-import { FaCar } from "react-icons/fa";
+import { FaCarSide } from "react-icons/fa";
 
 import ProfileEditModal from "@/app/(components)/admin/ProfileEditModal";
 
@@ -147,10 +147,10 @@ export default function Sidebar({
       },
       {
         href: "/Fahrzeugverwaltung",
-        icon: <FaCar />,
+        icon: <FaCarSide />,
         label: "Fahrzeugverwaltung",
         badge: null,
-        color: "text-orange-400",
+        color: "text-blue-500",
       },
       {
         href: "/Rotkennzeichen",
@@ -164,7 +164,7 @@ export default function Sidebar({
         icon: <FiClock />,
         label: "Stempeluhr",
         badge: null,
-        color: "text-sky-400",
+        color: "text-orange-400",
       },
       {
         href: "/kaufvertrag/auswahl",

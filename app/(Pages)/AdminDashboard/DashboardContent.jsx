@@ -13,7 +13,7 @@ import {
   FiClock,
 } from "react-icons/fi";
 import { useSidebar } from "@/app/(components)/SidebarContext";
-
+import { FaCarSide } from "react-icons/fa";
 /* ─────────────────────────────────────────
    Helper functions for Termine / appointments
    ───────────────────────────────────────── */
@@ -392,9 +392,14 @@ const DashboardContent = ({
                       />
                     </span>
                     <span className="whitespace-nowrap">
-                      <span className="sm:hidden">
-                        {fuelAlertScheins.length} leerem Tank
+                      {/* Mobile */}
+                      <span className="sm:hidden inline-flex items-center gap-1.5">
+                        <span>{fuelAlertScheins.length}</span>
+                        <FaCarSide className="h-4 w-4" />
+                        <span>leerem Tank</span>
                       </span>
+
+                      {/* Desktop */}
                       <span className="hidden sm:inline">
                         {fuelAlertScheins.length}{" "}
                         {fuelAlertScheins.length === 1
@@ -419,9 +424,14 @@ const DashboardContent = ({
                   >
                     <TuvLogo size={26} className="shrink-0" />
                     <span className="whitespace-nowrap">
-                      <span className="sm:hidden">
-                        {tuevScheins.length} in TÜV
+                      {/* Mobile */}
+                      <span className="sm:hidden inline-flex items-center gap-1.5">
+                        <span>{tuevScheins.length}</span>
+                        <FaCarSide className="h-4 w-4" />
+                        <span>in TÜV</span>
                       </span>
+
+                      {/* Desktop */}
                       <span className="hidden sm:inline">
                         {tuevScheins.length}{" "}
                         {tuevScheins.length === 1 ? "Fahrzeug" : "Fahrzeuge"} in
