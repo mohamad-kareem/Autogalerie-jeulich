@@ -4,7 +4,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
-  FiAlertTriangle,
   FiCheckSquare,
   FiSquare,
   FiDroplet,
@@ -12,10 +11,6 @@ import {
   FiX,
   FiFileText,
   FiClock,
-  FiChevronRight,
-  FiCheckCircle,
-  FiXCircle,
-  FiSearch,
 } from "react-icons/fi";
 import { useSidebar } from "@/app/(components)/SidebarContext";
 
@@ -47,7 +42,7 @@ function parseAppointmentFromTitle(title) {
   if (dateMatch) {
     const day = parseInt(dateMatch[1], 10);
     const month = parseInt(dateMatch[2], 10) - 1;
-    let year = dateMatch[3]
+    const year = dateMatch[3]
       ? parseInt(
           dateMatch[3].length === 2 ? "20" + dateMatch[3] : dateMatch[3],
           10,
@@ -62,7 +57,7 @@ function parseAppointmentFromTitle(title) {
         const targetIndex = i;
 
         const d = new Date(now);
-        let diff = (targetIndex - todayIndex + 7) % 7;
+        const diff = (targetIndex - todayIndex + 7) % 7;
 
         d.setDate(now.getDate() + diff);
         date = d;
@@ -77,8 +72,7 @@ function parseAppointmentFromTitle(title) {
   const timeMatch = lower.match(
     /(\d{1,2})\s*[:\.]\s*(\d{2})|\b(\d{1,2})\s*uhr\b/,
   );
-
-  if (!timeMatch) return null; // ❌ no time → not a Termin
+  if (!timeMatch) return null; // no time → not a Termin
 
   let hours;
   let minutes;
@@ -103,15 +97,11 @@ function parseAppointmentFromTitle(title) {
 function extractUpcomingAppointments(board) {
   if (!board || !board.columns || !board.tasks) return [];
 
-  const columns = board.columns;
-  const tasks = board.tasks;
-
-  const terminsColumn = Object.values(columns).find(
+  const terminsColumn = Object.values(board.columns).find(
     (col) =>
       typeof col?.title === "string" &&
       col.title.toLowerCase().includes("termin"),
   );
-
   if (!terminsColumn) return [];
 
   const now = new Date();
@@ -120,8 +110,8 @@ function extractUpcomingAppointments(board) {
   const appointments = [];
 
   (terminsColumn.taskIds || []).forEach((taskId) => {
-    const t = tasks[taskId];
-    if (!t || !t.title) return;
+    const t = board.tasks[taskId];
+    if (!t?.title) return;
 
     const parsed = parseAppointmentFromTitle(t.title);
     if (!parsed) return;
@@ -141,22 +131,15 @@ function extractUpcomingAppointments(board) {
 }
 
 // TÜV Logo Component
-const TuvLogo = ({ size = 30, className = "" }) => (
+const TuvLogo = ({ size = 28, className = "" }) => (
   <div className={`flex items-center justify-center ${className}`}>
     <div
       className="relative flex items-center justify-center"
       style={{ width: size, height: size }}
     >
-      {/* Main blue circle */}
-      <div className="absolute inset-0 rounded-full bg-blue-600"></div>
-
-      {/* White ring */}
-      <div className="absolute inset-[1px] rounded-full bg-white"></div>
-
-      {/* Inner blue circle */}
-      <div className="absolute inset-[2px] rounded-full bg-blue-600"></div>
-
-      {/* TÜV text */}
+      <div className="absolute inset-0 rounded-full bg-blue-600" />
+      <div className="absolute inset-[1px] rounded-full bg-white" />
+      <div className="absolute inset-[2px] rounded-full bg-blue-600" />
       <div className="relative z-10 flex flex-col items-center mt-1">
         <span
           className="text-white font-bold leading-none"
@@ -181,7 +164,6 @@ const DashboardContent = ({
 }) => {
   const [visibleScheins, setVisibleScheins] = useState(soldScheins || []);
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
-
   const [darkMode, setDarkMode] = useState(false);
 
   const [showFuelModal, setShowFuelModal] = useState(false);
@@ -221,8 +203,7 @@ const DashboardContent = ({
         if (!res.ok) throw new Error("Failed to load board for Termine");
         const json = await res.json();
         const board = json.board || {};
-        const appointments = extractUpcomingAppointments(board);
-        setUpcomingAppointments(appointments);
+        setUpcomingAppointments(extractUpcomingAppointments(board));
       } catch (err) {
         console.error("Fehler beim Laden der Kundentermine:", err);
         setUpcomingAppointments([]);
@@ -273,7 +254,6 @@ const DashboardContent = ({
       });
 
       if (!res.ok) throw new Error("Failed to save tasks");
-
       const updatedSchein = await res.json();
 
       setVisibleScheins((prev) =>
@@ -320,7 +300,6 @@ const DashboardContent = ({
     [visibleScheins],
   );
 
-  // ✅ TÜV list (stage === "TUEV")
   const tuevScheins = useMemo(
     () =>
       (visibleScheins || []).filter(
@@ -355,6 +334,12 @@ const DashboardContent = ({
   const mainBgClass = darkMode ? "bg-gray-900" : "bg-slate-50";
   const textClass = darkMode ? "text-gray-100" : "text-slate-900";
 
+  // Compact top buttons (mobile), keep desktop unchanged
+  const topPillBase =
+    "inline-flex items-center gap-2 rounded-md font-medium shadow-sm transition-colors whitespace-nowrap";
+  const topPillPad = "px-2.5 py-1.5 sm:px-3 sm:py-2"; // compact on mobile, same-ish on desktop
+  const topPillText = "text-[11px] sm:text-xs";
+
   return (
     <div
       className={`${mainBgClass} ${textClass} transition-colors duration-300 min-h-full flex`}
@@ -369,7 +354,7 @@ const DashboardContent = ({
                 : "border-slate-200 bg-white/90"
             }`}
           >
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 w-full">
               <button
                 onClick={openSidebar}
                 className="md:hidden p-2 rounded-md hover:bg-gray-700/40 transition-colors"
@@ -382,20 +367,21 @@ const DashboardContent = ({
                 />
               </button>
 
-              <div className="flex items-center gap-2 flex-wrap">
+              {/* ✅ Mobile alignment fix: no wrap, compact, side-by-side */}
+              <div className="flex items-center gap-2 flex-nowrap w-full overflow-x-auto sm:overflow-visible">
                 {/* Fuel alert button */}
                 {fuelAlertScheins.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setShowFuelModal(true)}
-                    className={`inline-flex items-center gap-2 px-3 py-2 text-xs font-medium shadow-sm transition-colors rounded-md ${
+                    className={`${topPillBase} ${topPillPad} ${topPillText} ${
                       darkMode
                         ? "bg-amber-900/30 text-amber-200 hover:bg-amber-800/40 border border-amber-800/30"
                         : "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200"
                     }`}
                   >
                     <span
-                      className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${
+                      className={`inline-flex h-6 w-6 sm:h-6 sm:w-6 items-center justify-center rounded-md ${
                         darkMode ? "bg-amber-800/50" : "bg-amber-100"
                       }`}
                     >
@@ -405,30 +391,42 @@ const DashboardContent = ({
                         }`}
                       />
                     </span>
-                    <span className="text-xs">
-                      {fuelAlertScheins.length}{" "}
-                      {fuelAlertScheins.length === 1 ? "Fahrzeug" : "Fahrzeuge"}{" "}
-                      mit leerem Tank
+                    <span className="whitespace-nowrap">
+                      <span className="sm:hidden">
+                        {fuelAlertScheins.length} leerem Tank
+                      </span>
+                      <span className="hidden sm:inline">
+                        {fuelAlertScheins.length}{" "}
+                        {fuelAlertScheins.length === 1
+                          ? "Fahrzeug"
+                          : "Fahrzeuge"}{" "}
+                        mit leerem Tank
+                      </span>
                     </span>
                   </button>
                 )}
 
-                {/* ✅ TÜV alert button with TÜV logo */}
+                {/* TÜV alert button */}
                 {tuevScheins.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setShowTuevModal(true)}
-                    className={`inline-flex items-center gap-2 px-3 py-[0.30rem] text-xs font-medium shadow-sm transition-colors rounded-md ${
+                    className={`${topPillBase} ${topPillPad} ${topPillText} ${
                       darkMode
                         ? "bg-blue-900/30 text-blue-200 hover:bg-blue-800/40 border border-blue-800/30"
                         : "bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200"
                     }`}
                   >
-                    <TuvLogo />
-                    <span className="text-xs">
-                      {tuevScheins.length}{" "}
-                      {tuevScheins.length === 1 ? "Fahrzeug" : "Fahrzeuge"} in
-                      TÜV
+                    <TuvLogo size={26} className="shrink-0" />
+                    <span className="whitespace-nowrap">
+                      <span className="sm:hidden">
+                        {tuevScheins.length} in TÜV
+                      </span>
+                      <span className="hidden sm:inline">
+                        {tuevScheins.length}{" "}
+                        {tuevScheins.length === 1 ? "Fahrzeug" : "Fahrzeuge"} in
+                        TÜV
+                      </span>
                     </span>
                   </button>
                 )}
@@ -846,14 +844,18 @@ const DashboardContent = ({
             >
               {/* Header */}
               <div
-                className={`px-6 py-4 border-b ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+                className={`px-6 py-4 border-b ${
+                  darkMode ? "border-gray-700" : "border-gray-200"
+                }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <TuvLogo />
                     <div>
                       <h3
-                        className={`text-base font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+                        className={`text-base font-semibold ${
+                          darkMode ? "text-white" : "text-gray-900"
+                        }`}
                       >
                         TÜV-Prüfungen
                       </h3>
@@ -861,7 +863,11 @@ const DashboardContent = ({
                   </div>
                   <button
                     onClick={() => setShowTuevModal(false)}
-                    className={`p-1.5 rounded ${darkMode ? "hover:bg-gray-700 text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+                    className={`p-1.5 rounded ${
+                      darkMode
+                        ? "hover:bg-gray-700 text-gray-400"
+                        : "hover:bg-gray-100 text-gray-500"
+                    }`}
                   >
                     <FiX size={18} />
                   </button>
@@ -873,44 +879,62 @@ const DashboardContent = ({
                 <table className="w-full">
                   <thead>
                     <tr
-                      className={`text-left text-xs font-medium border-b ${darkMode ? "border-gray-700 text-gray-400" : "border-gray-200 text-gray-600"}`}
+                      className={`text-left text-xs font-medium border-b ${
+                        darkMode
+                          ? "border-gray-700 text-gray-400"
+                          : "border-gray-200 text-gray-600"
+                      }`}
                     >
-                      <th className="py-3 pl-6">Fahrzeug</th>
-                      <th className="py-3 px-14">FIN</th>
+                      <th className="py-3 pl-4 sm:pl-6">Fahrzeug</th>
+
+                      {/* ✅ Hide FIN on mobile only */}
+                      <th className="hidden sm:table-cell py-3 px-14">FIN</th>
+
                       <th className="py-3">Besitzer</th>
-                      <th className="py-3 pr-6 text-right">Status</th>
+                      <th className="py-3 pr-4 sm:pr-6 text-right">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {tuevScheins.map((car, index) => {
+                    {tuevScheins.map((car) => {
                       const passed = !!car?.stageMeta?.tuev?.passed;
-                      const issue = car?.stageMeta?.tuev?.issue || "";
 
                       return (
                         <tr
                           key={car._id}
-                          className={`border-b ${darkMode ? "border-gray-700 hover:bg-gray-750" : "border-gray-100 hover:bg-gray-50"}`}
+                          className={`border-b ${
+                            darkMode
+                              ? "border-gray-700 hover:bg-gray-750"
+                              : "border-gray-100 hover:bg-gray-50"
+                          }`}
                         >
-                          <td className="py-3 pl-6">
+                          <td className="py-3 pl-4 sm:pl-6">
                             <div className="font-medium text-sm">
                               {car.carName || "Unbekannt"}
                             </div>
                           </td>
-                          <td className="py-3">
+
+                          {/* ✅ Hide FIN on mobile only */}
+                          <td className="hidden sm:table-cell py-3">
                             <div
-                              className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}
+                              className={`text-sm ${
+                                darkMode ? "text-gray-300" : "text-gray-700"
+                              }`}
                             >
                               {car.finNumber || "–"}
                             </div>
                           </td>
+
                           <td className="py-3">
                             <div
-                              className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}
+                              className={`text-sm ${
+                                darkMode ? "text-gray-300" : "text-gray-700"
+                              }`}
                             >
                               {car.owner || "–"}
                             </div>
                           </td>
-                          <td className="py-3 pr-6">
+
+                          <td className="py-3 pr-4 sm:pr-6">
                             <div className="flex justify-end items-center gap-2">
                               <div
                                 className={`text-xs px-2.5 py-1 rounded ${
@@ -936,7 +960,9 @@ const DashboardContent = ({
 
               {/* Summary and Action */}
               <div
-                className={`px-6 py-4 border-t ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+                className={`px-6 py-4 border-t ${
+                  darkMode ? "border-gray-700" : "border-gray-200"
+                }`}
               >
                 <div className="flex items-center justify-end">
                   <div className="flex items-center gap-3">
@@ -986,35 +1012,49 @@ const DashboardContent = ({
             >
               {/* Header */}
               <div
-                className={`px-6 py-4 border-b ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+                className={`px-6 py-4 border-b ${
+                  darkMode ? "border-gray-700" : "border-gray-200"
+                }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`p-2 rounded ${darkMode ? "bg-amber-900/30" : "bg-amber-100"}`}
+                      className={`p-2 rounded ${
+                        darkMode ? "bg-amber-900/30" : "bg-amber-100"
+                      }`}
                     >
                       <FiDroplet
-                        className={`h-5 w-5 ${darkMode ? "text-amber-300" : "text-amber-600"}`}
+                        className={`h-5 w-5 ${
+                          darkMode ? "text-amber-300" : "text-amber-600"
+                        }`}
                       />
                     </div>
                     <div>
                       <h3
-                        className={`text-base font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+                        className={`text-base font-semibold ${
+                          darkMode ? "text-white" : "text-gray-900"
+                        }`}
                       >
                         Tankalarm
                       </h3>
                       <p
-                        className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                        className={`text-xs ${
+                          darkMode ? "text-gray-400" : "text-gray-500"
+                        }`}
                       >
                         {fuelAlertScheins.length} Fahrzeug
                         {fuelAlertScheins.length !== 1 ? "e" : ""} benötig
-                        {tuevScheins.length !== 1 ? "en" : "t"} Auftanken
+                        {fuelAlertScheins.length !== 1 ? "en" : "t"} Auftanken
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setShowFuelModal(false)}
-                    className={`p-1.5 rounded ${darkMode ? "hover:bg-gray-700 text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+                    className={`p-1.5 rounded ${
+                      darkMode
+                        ? "hover:bg-gray-700 text-gray-400"
+                        : "hover:bg-gray-100 text-gray-500"
+                    }`}
                   >
                     <FiX size={18} />
                   </button>
@@ -1026,40 +1066,59 @@ const DashboardContent = ({
                 <table className="w-full">
                   <thead>
                     <tr
-                      className={`text-left text-xs font-medium border-b ${darkMode ? "border-gray-700 text-gray-400" : "border-gray-200 text-gray-600"}`}
+                      className={`text-left text-xs font-medium border-b ${
+                        darkMode
+                          ? "border-gray-700 text-gray-400"
+                          : "border-gray-200 text-gray-600"
+                      }`}
                     >
-                      <th className="py-3 pl-6">Fahrzeug</th>
-                      <th className="py-3 px-13">FIN</th>
+                      <th className="py-3 pl-4 sm:pl-6">Fahrzeug</th>
+
+                      {/* ✅ Hide FIN on mobile only */}
+                      <th className="hidden sm:table-cell py-3 px-14">FIN</th>
+
                       <th className="py-3">Besitzer</th>
-                      <th className="py-3 pr-6 text-center">Status</th>
+                      <th className="py-3 pr-4 sm:pr-6 text-center">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {fuelAlertScheins.map((car, index) => (
+                    {fuelAlertScheins.map((car) => (
                       <tr
                         key={car._id}
-                        className={`border-b ${darkMode ? "border-gray-700 hover:bg-gray-750" : "border-gray-100 hover:bg-gray-50"}`}
+                        className={`border-b ${
+                          darkMode
+                            ? "border-gray-700 hover:bg-gray-750"
+                            : "border-gray-100 hover:bg-gray-50"
+                        }`}
                       >
-                        <td className="py-3 pl-6">
+                        <td className="py-3 pl-4 sm:pl-6">
                           <div className="font-medium text-sm">
                             {car.carName || "Unbekannt"}
                           </div>
                         </td>
-                        <td className="py-3">
+
+                        {/* ✅ Hide FIN on mobile only */}
+                        <td className="hidden sm:table-cell py-3">
                           <div
-                            className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}
+                            className={`text-sm ${
+                              darkMode ? "text-gray-300" : "text-gray-700"
+                            }`}
                           >
                             {car.finNumber || "–"}
                           </div>
                         </td>
+
                         <td className="py-3">
                           <div
-                            className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}
+                            className={`text-sm ${
+                              darkMode ? "text-gray-300" : "text-gray-700"
+                            }`}
                           >
                             {car.owner || "–"}
                           </div>
                         </td>
-                        <td className="py-3 pr-6">
+
+                        <td className="py-3 pr-4 sm:pr-6">
                           <div className="flex justify-center">
                             <div
                               className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded ${
@@ -1081,7 +1140,9 @@ const DashboardContent = ({
 
               {/* Summary and Action */}
               <div
-                className={`px-6 py-4 border-t ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+                className={`px-6 py-4 border-t ${
+                  darkMode ? "border-gray-700" : "border-gray-200"
+                }`}
               >
                 <div className="flex items-center justify-end">
                   <div className="flex items-center gap-3">

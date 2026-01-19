@@ -24,6 +24,7 @@ import {
   FiSettings,
   FiUser,
 } from "react-icons/fi";
+import { FaCar } from "react-icons/fa";
 
 import ProfileEditModal from "@/app/(components)/admin/ProfileEditModal";
 
@@ -146,8 +147,8 @@ export default function Sidebar({
       },
       {
         href: "/Fahrzeugverwaltung",
-        icon: <FiCamera />,
-        label: "Fahrzeugscheine",
+        icon: <FaCar />,
+        label: "Fahrzeugverwaltung",
         badge: null,
         color: "text-orange-400",
       },
