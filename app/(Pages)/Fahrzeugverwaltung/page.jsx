@@ -40,7 +40,7 @@ export default function CarScheinPage() {
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
+      "(prefers-color-scheme: dark)",
     ).matches;
 
     const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
@@ -94,7 +94,7 @@ export default function CarScheinPage() {
 
   const toggleOwner = (owner) => {
     setSelectedOwners((prev) =>
-      prev.includes(owner) ? prev.filter((o) => o !== owner) : [...prev, owner]
+      prev.includes(owner) ? prev.filter((o) => o !== owner) : [...prev, owner],
     );
   };
 
@@ -105,7 +105,7 @@ export default function CarScheinPage() {
 
   const handleUpdateSchein = (updatedDoc) => {
     setScheins((prev) =>
-      prev.map((doc) => (doc._id === updatedDoc._id ? updatedDoc : doc))
+      prev.map((doc) => (doc._id === updatedDoc._id ? updatedDoc : doc)),
     );
   };
 
@@ -155,7 +155,7 @@ export default function CarScheinPage() {
           <h1
             className={`text-lg sm:text-xl font-bold transition-colors duration-300 ${textPrimary}`}
           >
-            Fahrzeugschein-Verwaltung
+            Fahrzeugverwaltung
           </h1>
         </header>
 

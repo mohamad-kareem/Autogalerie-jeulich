@@ -33,7 +33,7 @@ export default function NavBar() {
     "/forms",
     "/excel",
     "/schlussel",
-    "/Auto-scheins",
+    "/Fahrzeugverwaltung",
     "/PersonalData",
     "/Plate",
     "/Reg",
@@ -52,14 +52,14 @@ export default function NavBar() {
   ];
 
   const isAdminRoute = adminRoutes.some((route) =>
-    pathname?.toLowerCase().startsWith(route.toLowerCase())
+    pathname?.toLowerCase().startsWith(route.toLowerCase()),
   );
 
   // 🔹 Routes where the floating dropdown should be completely hidden
   const hideDropdownRoutes = ["/schlussel"];
 
   const hideDropdown = hideDropdownRoutes.some((route) =>
-    pathname?.toLowerCase().startsWith(route.toLowerCase())
+    pathname?.toLowerCase().startsWith(route.toLowerCase()),
   );
 
   useEffect(() => {

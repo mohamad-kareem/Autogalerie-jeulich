@@ -91,7 +91,7 @@ export default function Sidebar({
       "/Zeiterfassungsverwaltung",
       "/excel",
     ],
-    []
+    [],
   );
 
   const isAdmin = localUser?.role === "admin";
@@ -145,7 +145,7 @@ export default function Sidebar({
         color: "text-purple-400",
       },
       {
-        href: "/Auto-scheins",
+        href: "/Fahrzeugverwaltung",
         icon: <FiCamera />,
         label: "Fahrzeugscheine",
         badge: null,
@@ -208,7 +208,7 @@ export default function Sidebar({
         color: "text-rose-400",
       },
     ],
-    [unreadCount]
+    [unreadCount],
   );
 
   const filteredNavItems = useMemo(() => {

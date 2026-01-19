@@ -3,10 +3,8 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   FiAlertTriangle,
-  FiCheck,
   FiCheckSquare,
   FiSquare,
   FiDroplet,
@@ -14,9 +12,13 @@ import {
   FiX,
   FiFileText,
   FiClock,
+  FiChevronRight,
+  FiCheckCircle,
+  FiXCircle,
+  FiSearch,
 } from "react-icons/fi";
-import { motion, AnimatePresence } from "framer-motion";
 import { useSidebar } from "@/app/(components)/SidebarContext";
+
 /* ─────────────────────────────────────────
    Helper functions for Termine / appointments
    ───────────────────────────────────────── */
@@ -30,16 +32,6 @@ const WEEKDAYS = [
   "freitag",
   "samstag",
 ];
-
-function getNextWeekdayDate(targetIndex) {
-  const now = new Date();
-  const current = now.getDay(); // 0 = Sonntag, ... 6 = Samstag
-  let diff = (targetIndex - current + 7) % 7;
-  if (diff === 0) diff = 7; // always "next" occurrence
-  const d = new Date(now);
-  d.setDate(now.getDate() + diff);
-  return d;
-}
 
 function parseAppointmentFromTitle(title) {
   if (!title) return null;
@@ -58,7 +50,7 @@ function parseAppointmentFromTitle(title) {
     let year = dateMatch[3]
       ? parseInt(
           dateMatch[3].length === 2 ? "20" + dateMatch[3] : dateMatch[3],
-          10
+          10,
         )
       : currentYear;
 
@@ -83,22 +75,18 @@ function parseAppointmentFromTitle(title) {
   if (!date) return null;
 
   const timeMatch = lower.match(
-    /(\d{1,2})\s*[:\.]\s*(\d{2})|\b(\d{1,2})\s*uhr\b/
+    /(\d{1,2})\s*[:\.]\s*(\d{2})|\b(\d{1,2})\s*uhr\b/,
   );
 
-  if (!timeMatch) {
-    return null; // ❌ no time → not a Termin
-  }
+  if (!timeMatch) return null; // ❌ no time → not a Termin
 
   let hours;
   let minutes;
 
   if (timeMatch[1] && timeMatch[2]) {
-    // 14:30 or 9.30
     hours = parseInt(timeMatch[1], 10);
     minutes = parseInt(timeMatch[2], 10);
   } else if (timeMatch[3]) {
-    // 14 Uhr
     hours = parseInt(timeMatch[3], 10);
     minutes = 0;
   }
@@ -109,10 +97,7 @@ function parseAppointmentFromTitle(title) {
     date.setDate(date.getDate() + 7);
   }
 
-  return {
-    title,
-    date,
-  };
+  return { title, date };
 }
 
 function extractUpcomingAppointments(board) {
@@ -124,7 +109,7 @@ function extractUpcomingAppointments(board) {
   const terminsColumn = Object.values(columns).find(
     (col) =>
       typeof col?.title === "string" &&
-      col.title.toLowerCase().includes("termin")
+      col.title.toLowerCase().includes("termin"),
   );
 
   if (!terminsColumn) return [];
@@ -155,6 +140,35 @@ function extractUpcomingAppointments(board) {
   return appointments;
 }
 
+// TÜV Logo Component
+const TuvLogo = ({ size = 30, className = "" }) => (
+  <div className={`flex items-center justify-center ${className}`}>
+    <div
+      className="relative flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
+      {/* Main blue circle */}
+      <div className="absolute inset-0 rounded-full bg-blue-600"></div>
+
+      {/* White ring */}
+      <div className="absolute inset-[1px] rounded-full bg-white"></div>
+
+      {/* Inner blue circle */}
+      <div className="absolute inset-[2px] rounded-full bg-blue-600"></div>
+
+      {/* TÜV text */}
+      <div className="relative z-10 flex flex-col items-center mt-1">
+        <span
+          className="text-white font-bold leading-none"
+          style={{ fontSize: size * 0.35 }}
+        >
+          TÜV
+        </span>
+      </div>
+    </div>
+  </div>
+);
+
 /* ─────────────────────────────────────────
    Dashboard Component
    ───────────────────────────────────────── */
@@ -165,31 +179,33 @@ const DashboardContent = ({
   soldScheins,
   onDismissSchein,
 }) => {
-  const pathname = usePathname();
   const [visibleScheins, setVisibleScheins] = useState(soldScheins || []);
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+
   const [darkMode, setDarkMode] = useState(false);
+
   const [showFuelModal, setShowFuelModal] = useState(false);
+  const [showTuevModal, setShowTuevModal] = useState(false);
+
   const [showTasksModal, setShowTasksModal] = useState(false);
   const [selectedScheinTasks, setSelectedScheinTasks] = useState(null);
   const [taskCheckboxes, setTaskCheckboxes] = useState({});
   const [savingTasks, setSavingTasks] = useState(false);
+
   const { openSidebar } = useSidebar();
+
   // Initialize dark mode
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
+      "(prefers-color-scheme: dark)",
     ).matches;
 
     const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
     setDarkMode(isDark);
 
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    if (isDark) document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
   }, []);
 
   // whenever parent updates list
@@ -216,24 +232,10 @@ const DashboardContent = ({
     fetchAppointments();
   }, []);
 
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-
-    if (newDarkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  };
-
   // Open tasks modal
   const openTasksModal = (schein) => {
     setSelectedScheinTasks(schein);
 
-    // Initialize checkboxes based on completedTasks
     const initialCheckboxes = {};
     if (Array.isArray(schein.notes)) {
       schein.notes.forEach((note, index) => {
@@ -245,15 +247,10 @@ const DashboardContent = ({
     setShowTasksModal(true);
   };
 
-  // Handle checkbox change
   const handleTaskCheckboxChange = (index) => {
-    setTaskCheckboxes((prev) => ({
-      ...prev,
-      [index]: !prev[index],
-    }));
+    setTaskCheckboxes((prev) => ({ ...prev, [index]: !prev[index] }));
   };
 
-  // Save completed tasks
   const handleSaveTasks = async () => {
     if (!selectedScheinTasks?._id) return;
 
@@ -262,9 +259,7 @@ const DashboardContent = ({
       const completedTasks = [];
       if (Array.isArray(selectedScheinTasks.notes)) {
         selectedScheinTasks.notes.forEach((note, index) => {
-          if (taskCheckboxes[index] === true) {
-            completedTasks.push(note);
-          }
+          if (taskCheckboxes[index] === true) completedTasks.push(note);
         });
       }
 
@@ -273,7 +268,7 @@ const DashboardContent = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: selectedScheinTasks._id,
-          completedTasks: completedTasks,
+          completedTasks,
         }),
       });
 
@@ -285,8 +280,8 @@ const DashboardContent = ({
         prev.map((s) =>
           s._id === updatedSchein._id
             ? { ...s, completedTasks: updatedSchein.completedTasks }
-            : s
-        )
+            : s,
+        ),
       );
 
       setShowTasksModal(false);
@@ -298,58 +293,46 @@ const DashboardContent = ({
     }
   };
 
-  // Get active (incomplete) tasks count
   const getActiveTasksCount = (schein) => {
     if (!Array.isArray(schein.notes)) return 0;
-
     const completedTasks = schein.completedTasks || [];
     return schein.notes.filter((note) => !completedTasks.includes(note)).length;
   };
 
   /* ─────────────────────────────────────────
-     Dashboard data derived from visibleScheins
+     Derived dashboard data
      ───────────────────────────────────────── */
 
   const soldOnlyScheins = useMemo(
     () =>
       (visibleScheins || []).filter(
-        (schein) => schein.keySold === true && schein.dashboardHidden !== true
+        (schein) => schein.keySold === true && schein.dashboardHidden !== true,
       ),
-    [visibleScheins]
+    [visibleScheins],
   );
 
   const fuelAlertScheins = useMemo(
     () =>
       (visibleScheins || []).filter(
         (schein) =>
-          schein.fuelNeeded === true && schein.dashboardHidden !== true
+          schein.fuelNeeded === true && schein.dashboardHidden !== true,
       ),
-    [visibleScheins]
+    [visibleScheins],
+  );
+
+  // ✅ TÜV list (stage === "TUEV")
+  const tuevScheins = useMemo(
+    () =>
+      (visibleScheins || []).filter(
+        (schein) => schein?.stage === "TUEV" && schein.dashboardHidden !== true,
+      ),
+    [visibleScheins],
   );
 
   const formatSoldDate = (schein) => {
     const dateValue = schein.soldAt || schein.updatedAt || schein.createdAt;
     if (!dateValue) return "–";
     return new Date(dateValue).toLocaleDateString("de-DE");
-  };
-
-  const formatAppointmentDateTime = (date) => {
-    try {
-      return (
-        date.toLocaleDateString("de-DE", {
-          weekday: "short",
-          day: "2-digit",
-          month: "2-digit",
-        }) +
-        " • " +
-        date.toLocaleTimeString("de-DE", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      );
-    } catch {
-      return "";
-    }
   };
 
   const handleDismissSchein = async (id) => {
@@ -359,15 +342,10 @@ const DashboardContent = ({
       await fetch("/api/carschein", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id,
-          dashboardHidden: true,
-        }),
+        body: JSON.stringify({ id, dashboardHidden: true }),
       });
 
-      if (onDismissSchein) {
-        onDismissSchein(id);
-      }
+      onDismissSchein?.(id);
     } catch (err) {
       console.error("Fehler beim Ausblenden auf dem Dashboard:", err);
     }
@@ -382,9 +360,8 @@ const DashboardContent = ({
       className={`${mainBgClass} ${textClass} transition-colors duration-300 min-h-full flex`}
     >
       <div className="flex flex-1">
-        {/* Main area - Full width since sidebar is removed */}
         <div className="flex flex-1 flex-col">
-          {/* Top bar - Mobile optimized */}
+          {/* Top bar */}
           <header
             className={`sticky top-0 z-30 flex h-16 items-center justify-between border-b px-3 sm:px-6 lg:px-4 backdrop-blur transition-colors duration-300 ${
               darkMode
@@ -393,7 +370,6 @@ const DashboardContent = ({
             }`}
           >
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* Fuel alert - now opens modal */}
               <button
                 onClick={openSidebar}
                 className="md:hidden p-2 rounded-md hover:bg-gray-700/40 transition-colors"
@@ -405,25 +381,27 @@ const DashboardContent = ({
                   }`}
                 />
               </button>
-              <div className="flex items-center">
+
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Fuel alert button */}
                 {fuelAlertScheins.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setShowFuelModal(true)}
-                    className={`inline-flex items-center gap-1 sm:gap-1 border px-2 py-1 sm:px-3 sm:py-1 text-xs font-medium shadow-sm transition-colors ${
+                    className={`inline-flex items-center gap-2 px-3 py-2 text-xs font-medium shadow-sm transition-colors rounded-md ${
                       darkMode
-                        ? "border-amber-900 bg-amber-900/50 text-amber-200 hover:bg-amber-800 hover:border-amber-600"
-                        : "border-amber-200 bg-amber-50/90 text-amber-800 hover:bg-amber-100 hover:border-amber-300"
+                        ? "bg-amber-900/30 text-amber-200 hover:bg-amber-800/40 border border-amber-800/30"
+                        : "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200"
                     }`}
                   >
                     <span
-                      className={`inline-flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full flex-shrink-0 ${
-                        darkMode ? "bg-amber-800" : "bg-amber-100"
+                      className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${
+                        darkMode ? "bg-amber-800/50" : "bg-amber-100"
                       }`}
                     >
-                      <FiAlertTriangle
-                        className={`h-3 w-3 sm:h-4 sm:w-4 ${
-                          darkMode ? "text-amber-400" : "text-amber-500"
+                      <FiDroplet
+                        className={`h-3.5 w-3.5 ${
+                          darkMode ? "text-amber-300" : "text-amber-500"
                         }`}
                       />
                     </span>
@@ -434,13 +412,33 @@ const DashboardContent = ({
                     </span>
                   </button>
                 )}
+
+                {/* ✅ TÜV alert button with TÜV logo */}
+                {tuevScheins.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowTuevModal(true)}
+                    className={`inline-flex items-center gap-2 px-3 py-[0.30rem] text-xs font-medium shadow-sm transition-colors rounded-md ${
+                      darkMode
+                        ? "bg-blue-900/30 text-blue-200 hover:bg-blue-800/40 border border-blue-800/30"
+                        : "bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200"
+                    }`}
+                  >
+                    <TuvLogo />
+                    <span className="text-xs">
+                      {tuevScheins.length}{" "}
+                      {tuevScheins.length === 1 ? "Fahrzeug" : "Fahrzeuge"} in
+                      TÜV
+                    </span>
+                  </button>
+                )}
               </div>
             </div>
           </header>
 
-          {/* Main content - Mobile optimized */}
+          {/* Main content */}
           <main className="flex-1 px-6 sm:px-6 py-3 sm:py-4 space-y-4 sm:space-y-6">
-            {/* Verkauft-Karten - Mobile responsive grid */}
+            {/* Sold cards */}
             {soldOnlyScheins.length > 0 ? (
               <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
                 {soldOnlyScheins.map((schein) => (
@@ -452,10 +450,8 @@ const DashboardContent = ({
                         : "bg-white border-gray-300 hover:border-gray-400 hover:shadow-sm"
                     }`}
                   >
-                    {/* Status bar */}
                     <div className="h-1 bg-slate-500" />
 
-                    {/* Header */}
                     <div
                       className={`p-2 sm:p-3 border-b ${
                         darkMode ? "border-gray-700" : "border-gray-100"
@@ -469,23 +465,25 @@ const DashboardContent = ({
                         >
                           {schein.carName || "Unbekannt"}
                         </h3>
+
                         <button
                           onClick={() => handleDismissSchein(schein._id)}
                           title="Entfernen"
                           aria-label="Entfernen"
                           className={`ml-1 sm:ml-2 flex-shrink-0 rounded-full p-1.5
-    opacity-0 group-hover:opacity-100
-    transition-all duration-200
-    ${
-      darkMode
-        ? "bg-gray-700/40 hover:bg-yellow-600/30 text-gray-300 hover:text-yellow-300"
-        : "bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-yellow-600"
-    }
-    hover:scale-110`}
+                            opacity-0 group-hover:opacity-100
+                            transition-all duration-200
+                            ${
+                              darkMode
+                                ? "bg-gray-700/40 hover:bg-yellow-600/30 text-gray-300 hover:text-yellow-300"
+                                : "bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-yellow-600"
+                            }
+                            hover:scale-110`}
                         >
                           <FiX className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </button>
                       </div>
+
                       <p
                         className={`text-[11px] sm:text-xs mt-0.5 ${
                           darkMode ? "text-gray-400" : "text-gray-500"
@@ -495,7 +493,6 @@ const DashboardContent = ({
                       </p>
                     </div>
 
-                    {/* Compact details */}
                     <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
                       <div className="flex justify-center items-center text-[14px] sm:text-base">
                         <span
@@ -513,6 +510,7 @@ const DashboardContent = ({
                           {schein.keyNumber || "–"}
                         </span>
                       </div>
+
                       <div className="flex justify-center items-center text-[14px] sm:text-base">
                         <span
                           className={
@@ -529,6 +527,7 @@ const DashboardContent = ({
                           {schein.owner || "–"}
                         </span>
                       </div>
+
                       <div className="flex justify-center items-center text-[14px] sm:text-base">
                         <span
                           className={
@@ -547,7 +546,6 @@ const DashboardContent = ({
                       </div>
                     </div>
 
-                    {/* Footer */}
                     <div
                       className={`px-2 sm:px-3 py-1.5 sm:py-2 border-t flex justify-between items-center ${
                         darkMode
@@ -562,8 +560,8 @@ const DashboardContent = ({
                               ? "text-yellow-300"
                               : "text-yellow-600"
                             : darkMode
-                            ? "text-gray-400"
-                            : "text-gray-600"
+                              ? "text-gray-400"
+                              : "text-gray-600"
                         }`}
                       >
                         {(() => {
@@ -576,7 +574,7 @@ const DashboardContent = ({
 
                       <button
                         onClick={() => openTasksModal(schein)}
-                        className={`text-[12px] sm:text-xs font-medium hover:text-slate-300 transition-colors ${
+                        className={`text-[12px] sm:text-xs font-medium transition-colors ${
                           darkMode
                             ? "text-slate-400 hover:text-slate-300"
                             : "text-slate-600 hover:text-slate-700"
@@ -595,11 +593,7 @@ const DashboardContent = ({
                     darkMode ? "bg-gray-700" : "bg-gray-100"
                   }`}
                 >
-                  <FiFileText
-                    className={`h-4 w-4 sm:h-5 sm:w-5 ${
-                      darkMode ? "text-gray-400" : "text-gray-400"
-                    }`}
-                  />
+                  <FiFileText className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                 </div>
                 <h3
                   className={`text-sm font-semibold mb-1 ${
@@ -611,7 +605,7 @@ const DashboardContent = ({
               </div>
             )}
 
-            {/* Bevorstehende Kundentermine */}
+            {/* Upcoming appointments */}
             {upcomingAppointments.length > 0 && (
               <section className="mt-4 sm:mt-6">
                 <div className="mb-2 sm:mb-3 flex items-center gap-2 sm:gap-3">
@@ -691,7 +685,6 @@ const DashboardContent = ({
               } border`}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal Header */}
               <div
                 className={`flex items-center justify-between border-b px-5 py-4 ${
                   darkMode ? "border-gray-700" : "border-gray-200"
@@ -725,8 +718,7 @@ const DashboardContent = ({
                 </button>
               </div>
 
-              {/* Modal Body */}
-              <div className="px-5 py-4 max-h-[65vh] overflow-y-auto">
+              <div className="px-5 py-4 max-h-[65vh] overflow-y-auto custom-scroll">
                 {Array.isArray(selectedScheinTasks.notes) &&
                 selectedScheinTasks.notes.length > 0 ? (
                   <div className="space-y-3">
@@ -743,8 +735,8 @@ const DashboardContent = ({
                             taskCheckboxes[index]
                               ? "text-blue-600"
                               : darkMode
-                              ? "text-gray-500"
-                              : "text-gray-400"
+                                ? "text-gray-500"
+                                : "text-gray-400"
                           }`}
                         >
                           {taskCheckboxes[index] ? (
@@ -761,8 +753,8 @@ const DashboardContent = ({
                                   ? "text-gray-400 line-through"
                                   : "text-gray-900 line-through"
                                 : darkMode
-                                ? "text-gray-200"
-                                : "text-gray-900"
+                                  ? "text-gray-200"
+                                  : "text-gray-900"
                             }`}
                           >
                             {note}
@@ -778,11 +770,7 @@ const DashboardContent = ({
                         darkMode ? "bg-gray-700" : "bg-gray-100"
                       }`}
                     >
-                      <FiFileText
-                        className={`h-6 w-6 ${
-                          darkMode ? "text-gray-400" : "text-gray-400"
-                        }`}
-                      />
+                      <FiFileText className="h-6 w-6 text-gray-400" />
                     </div>
                     <p
                       className={`text-sm ${
@@ -795,7 +783,6 @@ const DashboardContent = ({
                 )}
               </div>
 
-              {/* Modal Footer */}
               <div
                 className={`flex items-center justify-between border-t px-5 py-4 ${
                   darkMode ? "border-gray-700" : "border-gray-200"
@@ -841,141 +828,285 @@ const DashboardContent = ({
         </>
       )}
 
-      {/* Fuel Alert Modal */}
-      {showFuelModal && fuelAlertScheins.length > 0 && (
+      {/* Professional TÜV Modal */}
+      {showTuevModal && tuevScheins.length > 0 && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowFuelModal(false)}
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowTuevModal(false)}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
-              className={`w-full max-w-lg rounded-xl shadow-2xl border ${
+              className={`w-full max-w-lg rounded-lg shadow-xl ${
                 darkMode
-                  ? "bg-gray-900 border-gray-700"
-                  : "bg-white border-gray-200"
+                  ? "bg-gray-800 border border-gray-700"
+                  : "bg-white border border-gray-200"
               }`}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div
-                className={`flex items-center justify-between px-5 py-3 border-b ${
-                  darkMode ? "border-gray-700" : "border-gray-200"
-                }`}
+                className={`px-6 py-4 border-b ${darkMode ? "border-gray-700" : "border-gray-200"}`}
               >
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                      darkMode ? "bg-amber-900/60" : "bg-amber-50"
-                    }`}
-                  >
-                    <FiDroplet
-                      className={darkMode ? "text-amber-300" : "text-amber-500"}
-                    />
-                  </span>
-                  <div>
-                    <h3
-                      className={`text-sm sm:text-base font-semibold ${
-                        darkMode ? "text-white" : "text-gray-900"
-                      }`}
-                    >
-                      Fahrzeuge mit leerem Tank
-                    </h3>
-                    <p
-                      className={`text-[11px] sm:text-xs ${
-                        darkMode ? "text-gray-400" : "text-gray-500"
-                      }`}
-                    >
-                      {fuelAlertScheins.length}{" "}
-                      {fuelAlertScheins.length === 1
-                        ? "Fahrzeug benötigt"
-                        : "Fahrzeuge benötigen"}{" "}
-                      Benzin / Diesel.
-                    </p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <TuvLogo />
+                    <div>
+                      <h3
+                        className={`text-base font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+                      >
+                        TÜV-Prüfungen
+                      </h3>
+                    </div>
                   </div>
+                  <button
+                    onClick={() => setShowTuevModal(false)}
+                    className={`p-1.5 rounded ${darkMode ? "hover:bg-gray-700 text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+                  >
+                    <FiX size={18} />
+                  </button>
                 </div>
               </div>
 
-              {/* Body */}
-              <div className="px-5 py-4 max-h-[60vh] overflow-y-auto space-y-2">
-                {fuelAlertScheins.map((car) => (
-                  <div
-                    key={car._id}
-                    className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border px-3 py-2.5 text-sm ${
-                      darkMode
-                        ? "bg-gray-800/80 border-gray-700"
-                        : "bg-gray-50 border-gray-200"
-                    }`}
-                  >
-                    <div className="flex flex-col gap-0.5">
-                      <div
-                        className={`font-semibold ${
-                          darkMode ? "text-white" : "text-gray-900"
-                        }`}
-                      >
-                        {car.carName || "Unbekanntes Fahrzeug"}
-                      </div>
-                      <div
-                        className={`text-[11px]  ${
-                          darkMode ? "text-gray-400" : "text-gray-600"
-                        }`}
-                      >
-                        FIN:{" "}
-                        <span className="font-medium">
-                          {car.finNumber || "–"}
-                        </span>
-                      </div>
-                      <div
-                        className={`text-[11px] ${
-                          darkMode ? "text-gray-400" : "text-gray-600"
-                        }`}
-                      >
-                        Besitzer:{" "}
-                        <span className="font-medium">{car.owner || "–"}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-end sm:items-center gap-2 sm:flex-col sm:gap-1 sm:text-right">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                          darkMode
-                            ? "bg-amber-900/60 text-amber-200"
-                            : "bg-amber-100 text-amber-800"
-                        }`}
-                      >
-                        <FiAlertTriangle className="h-3 w-3" />
-                        Tank leer
-                      </span>
-                      <Link
-                        href="/Auto-scheins"
-                        className={`text-[11px] underline decoration-dotted ${
-                          darkMode
-                            ? "text-slate-300 hover:text-slate-100"
-                            : "text-slate-700 hover:text-slate-900"
-                        }`}
-                      >
-                        In Fahrzeugscheinen öffnen
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+              {/* Vehicle List */}
+              <div className="max-h-[60vh] overflow-y-auto custom-scroll">
+                <table className="w-full">
+                  <thead>
+                    <tr
+                      className={`text-left text-xs font-medium border-b ${darkMode ? "border-gray-700 text-gray-400" : "border-gray-200 text-gray-600"}`}
+                    >
+                      <th className="py-3 pl-6">Fahrzeug</th>
+                      <th className="py-3 px-14">FIN</th>
+                      <th className="py-3">Besitzer</th>
+                      <th className="py-3 pr-6 text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tuevScheins.map((car, index) => {
+                      const passed = !!car?.stageMeta?.tuev?.passed;
+                      const issue = car?.stageMeta?.tuev?.issue || "";
+
+                      return (
+                        <tr
+                          key={car._id}
+                          className={`border-b ${darkMode ? "border-gray-700 hover:bg-gray-750" : "border-gray-100 hover:bg-gray-50"}`}
+                        >
+                          <td className="py-3 pl-6">
+                            <div className="font-medium text-sm">
+                              {car.carName || "Unbekannt"}
+                            </div>
+                          </td>
+                          <td className="py-3">
+                            <div
+                              className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}
+                            >
+                              {car.finNumber || "–"}
+                            </div>
+                          </td>
+                          <td className="py-3">
+                            <div
+                              className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}
+                            >
+                              {car.owner || "–"}
+                            </div>
+                          </td>
+                          <td className="py-3 pr-6">
+                            <div className="flex justify-end items-center gap-2">
+                              <div
+                                className={`text-xs px-2.5 py-1 rounded ${
+                                  passed
+                                    ? darkMode
+                                      ? "bg-green-900/40 text-green-300 border border-green-800/30"
+                                      : "bg-green-100 text-green-800 border border-green-200"
+                                    : darkMode
+                                      ? "bg-red-900/40 text-red-300 border border-red-800/30"
+                                      : "bg-red-100 text-red-800 border border-red-200"
+                                }`}
+                              >
+                                {passed ? "Bestanden" : "Ausstehend"}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
 
-              {/* Footer */}
+              {/* Summary and Action */}
               <div
-                className={`flex justify-end border-t px-5 py-3 ${
-                  darkMode ? "border-gray-700" : "border-gray-200"
-                }`}
+                className={`px-6 py-4 border-t ${darkMode ? "border-gray-700" : "border-gray-200"}`}
               >
-                <button
-                  onClick={() => setShowFuelModal(false)}
-                  className={`px-4 py-2 text-sm rounded-md ${
-                    darkMode
-                      ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  Schließen
-                </button>
+                <div className="flex items-center justify-end">
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href="/Fahrzeugverwaltung"
+                      className={`text-xs px-3 py-2 rounded border transition-colors ${
+                        darkMode
+                          ? "border-gray-600 text-gray-300 hover:bg-gray-700"
+                          : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      Alle anzeigen
+                    </Link>
+                    <button
+                      onClick={() => setShowTuevModal(false)}
+                      className={`text-xs px-3 py-2 rounded ${
+                        darkMode
+                          ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      Schließen
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Professional Fuel Modal */}
+      {showFuelModal && fuelAlertScheins.length > 0 && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowFuelModal(false)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className={`w-full max-w-lg rounded-lg shadow-xl ${
+                darkMode
+                  ? "bg-gray-800 border border-gray-700"
+                  : "bg-white border border-gray-200"
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div
+                className={`px-6 py-4 border-b ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`p-2 rounded ${darkMode ? "bg-amber-900/30" : "bg-amber-100"}`}
+                    >
+                      <FiDroplet
+                        className={`h-5 w-5 ${darkMode ? "text-amber-300" : "text-amber-600"}`}
+                      />
+                    </div>
+                    <div>
+                      <h3
+                        className={`text-base font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+                      >
+                        Tankalarm
+                      </h3>
+                      <p
+                        className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                      >
+                        {fuelAlertScheins.length} Fahrzeug
+                        {fuelAlertScheins.length !== 1 ? "e" : ""} benötig
+                        {tuevScheins.length !== 1 ? "en" : "t"} Auftanken
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowFuelModal(false)}
+                    className={`p-1.5 rounded ${darkMode ? "hover:bg-gray-700 text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+                  >
+                    <FiX size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Vehicle List */}
+              <div className="max-h-[60vh] overflow-y-auto custom-scroll">
+                <table className="w-full">
+                  <thead>
+                    <tr
+                      className={`text-left text-xs font-medium border-b ${darkMode ? "border-gray-700 text-gray-400" : "border-gray-200 text-gray-600"}`}
+                    >
+                      <th className="py-3 pl-6">Fahrzeug</th>
+                      <th className="py-3 px-13">FIN</th>
+                      <th className="py-3">Besitzer</th>
+                      <th className="py-3 pr-6 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fuelAlertScheins.map((car, index) => (
+                      <tr
+                        key={car._id}
+                        className={`border-b ${darkMode ? "border-gray-700 hover:bg-gray-750" : "border-gray-100 hover:bg-gray-50"}`}
+                      >
+                        <td className="py-3 pl-6">
+                          <div className="font-medium text-sm">
+                            {car.carName || "Unbekannt"}
+                          </div>
+                        </td>
+                        <td className="py-3">
+                          <div
+                            className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}
+                          >
+                            {car.finNumber || "–"}
+                          </div>
+                        </td>
+                        <td className="py-3">
+                          <div
+                            className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}
+                          >
+                            {car.owner || "–"}
+                          </div>
+                        </td>
+                        <td className="py-3 pr-6">
+                          <div className="flex justify-center">
+                            <div
+                              className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded ${
+                                darkMode
+                                  ? "bg-amber-900/40 text-amber-300 border border-amber-800/30"
+                                  : "bg-amber-100 text-amber-800 border border-amber-200"
+                              }`}
+                            >
+                              <FiDroplet size={12} />
+                              <span>Leer</span>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Summary and Action */}
+              <div
+                className={`px-6 py-4 border-t ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+              >
+                <div className="flex items-center justify-end">
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href="/Fahrzeugverwaltung"
+                      className={`text-xs px-3 py-2 rounded border transition-colors ${
+                        darkMode
+                          ? "border-gray-600 text-gray-300 hover:bg-gray-700"
+                          : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      Alle anzeigen
+                    </Link>
+                    <button
+                      onClick={() => setShowFuelModal(false)}
+                      className={`text-xs px-3 py-2 rounded ${
+                        darkMode
+                          ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      Schließen
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

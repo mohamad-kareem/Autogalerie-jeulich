@@ -17,7 +17,7 @@ export default withAuth(
       "/kaufvertrag/archiv",
     ];
     const isAdminOnly = adminOnlyPaths.some((path) =>
-      pathname.startsWith(path)
+      pathname.startsWith(path),
     );
 
     if (isAdminOnly && role !== "admin") {
@@ -33,7 +33,7 @@ export default withAuth(
     callbacks: {
       authorized: ({ token }) => !!token,
     },
-  }
+  },
 );
 
 export const config = {
@@ -56,7 +56,7 @@ export const config = {
     "/kaufvertrag/auswahl/:path*",
     "/kaufvertrag/form/:path*",
     "/kaufvertrag/:id/:path*",
-    "/Auto-scheins/:path*",
+    "/Fahrzeugverwaltung/:path*",
     "/Autoteil/:path*",
     "/aufgabenboard/:path*",
     "/translator/:path*",
