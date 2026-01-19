@@ -41,7 +41,7 @@ export default function Hero() {
   return (
     <section
       className="
-        relative mt-12 sm:mt-16 w-full overflow-hidden
+        relative mt-6 sm:mt-16 w-full overflow-hidden
         min-h-screen text-white
         flex items-center
         bg-slate-950
