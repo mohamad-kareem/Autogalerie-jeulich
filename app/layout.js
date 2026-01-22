@@ -71,6 +71,7 @@ export default function RootLayout({ children }) {
         />
 
         <SessionWrapper>
+          <NavBar />
           <LayoutWrapper>{children}</LayoutWrapper>
           <PageLogger />
         </SessionWrapper>

@@ -4,7 +4,6 @@ import NavBar from "./(components)/Nav/NavBar";
 export default function Home() {
   return (
     <div>
-      <NavBar />
       <Complete />
     </div>
   );
