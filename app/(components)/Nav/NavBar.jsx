@@ -496,7 +496,7 @@ function UserDropdown({ user, avatarUrl, open, setOpen, dropdownRef }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.97 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="absolute right-0 mt-3 w-[290px] sm:w-[320px] rounded-2xl border border-slate-800/70 bg-slate-950/92   backdrop-blur-xl overflow-hidden"
+              className="absolute right-0 mt-3 w-[290px] sm:w-[320px] rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-2xl"
             >
               <div className="px-4 py-4 text-white border-b border-slate-800/70 bg-white/5 backdrop-blur-xl">
                 <div className="flex items-center gap-3">
