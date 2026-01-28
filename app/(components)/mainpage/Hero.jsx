@@ -65,7 +65,7 @@ export default function Hero() {
           className="
             mx-auto w-full max-w-7xl
             px-4
-             pb-15
+             pb-19
             sm:pt-12 sm:pb-16
             lg:pt-16 lg:pb-20
             2xl:px-0
@@ -73,7 +73,7 @@ export default function Hero() {
         >
           <div className="flex flex-col gap-6 sm:gap-8">
             {/* 1) Badge + Headline */}
-            <div className="text-center sm:text-left space-y-6">
+            <div className="text-center sm:text-left space-y-6 -mt-8 sm:-mt-8">
               {/* Desktop badge only */}
               <div className="hidden sm:flex justify-center sm:justify-start">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3 py-1 backdrop-blur">
