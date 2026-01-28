@@ -59,7 +59,7 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
 
       if (!dbResponse.ok) {
         throw new Error(
-          "Datenbankfehler: Anfrage konnte nicht gespeichert werden"
+          "Datenbankfehler: Anfrage konnte nicht gespeichert werden",
         );
       }
 
@@ -78,7 +78,7 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
         throw new Error(
           dbResult.success
             ? "Anfrage gespeichert, aber E-Mail konnte nicht versendet werden"
-            : "E-Mail konnte nicht versendet werden"
+            : "E-Mail konnte nicht versendet werden",
         );
       }
 
@@ -100,12 +100,12 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
 
       if (error.message.includes("gespeichert")) {
         toast.success(
-          "Ihre Anfrage wurde gespeichert, aber die Bestätigung konnte nicht versendet werden"
+          "Ihre Anfrage wurde gespeichert, aber die Bestätigung konnte nicht versendet werden",
         );
       } else {
         toast.error(
           error.message ||
-            "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut."
+            "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
         );
       }
     } finally {

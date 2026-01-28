@@ -76,7 +76,7 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center px-2 transition-all duration-300 ${
+      className={`fixed inset-0 z-1000000 flex items-center justify-center px-2 transition-all duration-300 ${
         isVisible ? "bg-black/60" : "bg-black/0"
       }`}
       onClick={handleOverlayClick}

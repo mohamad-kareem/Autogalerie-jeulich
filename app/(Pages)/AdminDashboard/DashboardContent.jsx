@@ -14,6 +14,8 @@ import {
 } from "react-icons/fi";
 import { useSidebar } from "@/app/(components)/SidebarContext";
 import { FaCarSide } from "react-icons/fa";
+import DashboardNotesPanel from "@/app/(components)/helpers/DashboardNotesPanel";
+
 /* ─────────────────────────────────────────
    Helper functions for Termine / appointments
    ───────────────────────────────────────── */
@@ -151,10 +153,6 @@ const TuvLogo = ({ size = 28, className = "" }) => (
     </div>
   </div>
 );
-
-/* ─────────────────────────────────────────
-   Dashboard Component
-   ───────────────────────────────────────── */
 
 const DashboardContent = ({
   user,
@@ -337,7 +335,7 @@ const DashboardContent = ({
   // Compact top buttons (mobile), keep desktop unchanged
   const topPillBase =
     "inline-flex items-center gap-2 rounded-md font-medium shadow-sm transition-colors whitespace-nowrap";
-  const topPillPad = "px-2.5 py-1.5 sm:px-3 sm:py-2"; // compact on mobile, same-ish on desktop
+  const topPillPad = "px-2.5 py-1.5 sm:px-3 sm:py-2";
   const topPillText = "text-[11px] sm:text-xs";
 
   return (
@@ -361,13 +359,10 @@ const DashboardContent = ({
                 aria-label="Menü öffnen"
               >
                 <FiMenu
-                  className={`h-5 w-5 ${
-                    darkMode ? "text-white" : "text-gray-700"
-                  }`}
+                  className={`h-5 w-5 ${darkMode ? "text-white" : "text-gray-700"}`}
                 />
               </button>
 
-              {/* ✅ Mobile alignment fix: no wrap, compact, side-by-side */}
               <div className="flex items-center gap-2 flex-nowrap w-full overflow-x-auto sm:overflow-visible">
                 {/* Fuel alert button */}
                 {fuelAlertScheins.length > 0 && (
@@ -381,25 +376,22 @@ const DashboardContent = ({
                     }`}
                   >
                     <span
-                      className={`inline-flex h-6 w-6 sm:h-6 sm:w-6 items-center justify-center rounded-md ${
+                      className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${
                         darkMode ? "bg-amber-800/50" : "bg-amber-100"
                       }`}
                     >
                       <FiDroplet
-                        className={`h-3.5 w-3.5 ${
-                          darkMode ? "text-amber-300" : "text-amber-500"
-                        }`}
+                        className={`h-3.5 w-3.5 ${darkMode ? "text-amber-300" : "text-amber-500"}`}
                       />
                     </span>
+
                     <span className="whitespace-nowrap">
-                      {/* Mobile */}
                       <span className="sm:hidden inline-flex items-center gap-1.5">
                         <span>{fuelAlertScheins.length}</span>
                         <FaCarSide className="h-4 w-4" />
                         <span>leerem Tank</span>
                       </span>
 
-                      {/* Desktop */}
                       <span className="hidden sm:inline">
                         {fuelAlertScheins.length}{" "}
                         {fuelAlertScheins.length === 1
@@ -424,14 +416,12 @@ const DashboardContent = ({
                   >
                     <TuvLogo size={26} className="shrink-0" />
                     <span className="whitespace-nowrap">
-                      {/* Mobile */}
                       <span className="sm:hidden inline-flex items-center gap-1.5">
                         <span>{tuevScheins.length}</span>
                         <FaCarSide className="h-4 w-4" />
                         <span>in TÜV</span>
                       </span>
 
-                      {/* Desktop */}
                       <span className="hidden sm:inline">
                         {tuevScheins.length}{" "}
                         {tuevScheins.length === 1 ? "Fahrzeug" : "Fahrzeuge"} in
@@ -444,236 +434,242 @@ const DashboardContent = ({
             </div>
           </header>
 
-          {/* Main content */}
-          <main className="flex-1 px-6 sm:px-6 py-3 sm:py-4 space-y-4 sm:space-y-6">
-            {/* Sold cards */}
-            {soldOnlyScheins.length > 0 ? (
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
-                {soldOnlyScheins.map((schein) => (
-                  <div
-                    key={schein._id}
-                    className={`group relative border hover:shadow-lg transition-all duration-200 ${
-                      darkMode
-                        ? "bg-gray-800 border-gray-600 hover:border-gray-500"
-                        : "bg-white border-gray-300 hover:border-gray-400 hover:shadow-sm"
-                    }`}
-                  >
-                    <div className="h-1 bg-slate-500" />
-
-                    <div
-                      className={`p-2 sm:p-3 border-b ${
-                        darkMode ? "border-gray-700" : "border-gray-100"
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <h3
-                          className={`text-sm sm:text-base font-semibold break-words leading-tight min-h-[1rem] sm:min-h-[1.5rem] line-clamp-2 ${
-                            darkMode ? "text-white" : "text-gray-900"
-                          }`}
-                        >
-                          {schein.carName || "Unbekannt"}
-                        </h3>
-
-                        <button
-                          onClick={() => handleDismissSchein(schein._id)}
-                          title="Entfernen"
-                          aria-label="Entfernen"
-                          className={`ml-1 sm:ml-2 flex-shrink-0 rounded-full p-1.5
-                            opacity-0 group-hover:opacity-100
-                            transition-all duration-200
-                            ${
-                              darkMode
-                                ? "bg-gray-700/40 hover:bg-yellow-600/30 text-gray-300 hover:text-yellow-300"
-                                : "bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-yellow-600"
-                            }
-                            hover:scale-110`}
-                        >
-                          <FiX className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        </button>
-                      </div>
-
-                      <p
-                        className={`text-[11px] sm:text-xs mt-0.5 ${
-                          darkMode ? "text-gray-400" : "text-gray-500"
-                        }`}
-                      >
-                        Verkauft am {formatSoldDate(schein)}
-                      </p>
-                    </div>
-
-                    <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
-                      <div className="flex justify-center items-center text-[14px] sm:text-base">
-                        <span
-                          className={
-                            darkMode ? "text-gray-400" : "text-gray-600"
-                          }
-                        >
-                          Schlüssel:
-                        </span>
-                        <span
-                          className={`font-medium ml-1 sm:ml-2 truncate max-w-[30px] sm:max-w-[80px] ${
-                            darkMode ? "text-white" : "text-gray-900"
-                          }`}
-                        >
-                          {schein.keyNumber || "–"}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-center items-center text-[14px] sm:text-base">
-                        <span
-                          className={
-                            darkMode ? "text-gray-400" : "text-gray-600"
-                          }
-                        >
-                          Besitzer:
-                        </span>
-                        <span
-                          className={`font-medium ml-1 sm:ml-2 truncate max-w-[60px] sm:max-w-[80px] ${
-                            darkMode ? "text-white" : "text-gray-900"
-                          }`}
-                        >
-                          {schein.owner || "–"}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-center items-center text-[14px] sm:text-base">
-                        <span
-                          className={
-                            darkMode ? "text-gray-400" : "text-gray-600"
-                          }
-                        >
-                          FIN:
-                        </span>
-                        <span
-                          className={`font-medium ml-1 sm:mr-14 sm:max-w-[80px] ${
-                            darkMode ? "text-white" : "text-gray-900"
-                          }`}
-                        >
-                          {schein.finNumber || "–"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div
-                      className={`px-2 sm:px-3 py-1.5 sm:py-2 border-t flex justify-between items-center ${
-                        darkMode
-                          ? "border-gray-700 bg-gray-750"
-                          : "border-gray-100 bg-gray-50"
-                      }`}
-                    >
-                      <span
-                        className={`text-[12px] sm:text-xs font-medium ${
-                          getActiveTasksCount(schein) === 0
-                            ? darkMode
-                              ? "text-yellow-300"
-                              : "text-yellow-600"
-                            : darkMode
-                              ? "text-gray-400"
-                              : "text-gray-600"
-                        }`}
-                      >
-                        {(() => {
-                          const active = getActiveTasksCount(schein);
-                          return active === 0
-                            ? "Bereit zur Abholung"
-                            : `${active} aktive Aufgaben`;
-                        })()}
-                      </span>
-
-                      <button
-                        onClick={() => openTasksModal(schein)}
-                        className={`text-[12px] sm:text-xs font-medium transition-colors ${
+          {/* ✅ OPTION A: main area + right sticky notes (desktop only) */}
+          <div className="flex-1 px-3 sm:px-6 py-3 sm:py-4">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(260px,300px)] gap-4 sm:gap-6 items-start">
+              {/* Left content */}
+              <main className="space-y-4 sm:space-y-6">
+                {/* Sold cards */}
+                {soldOnlyScheins.length > 0 ? (
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
+                    {soldOnlyScheins.map((schein) => (
+                      <div
+                        key={schein._id}
+                        className={`group relative border hover:shadow-lg transition-all duration-200 ${
                           darkMode
-                            ? "text-slate-400 hover:text-slate-300"
-                            : "text-slate-600 hover:text-slate-700"
+                            ? "bg-gray-800 border-gray-600 hover:border-gray-500"
+                            : "bg-white border-gray-300 hover:border-gray-400 hover:shadow-sm"
                         }`}
                       >
-                        Einzelheiten
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center py-8 sm:py-12 text-center">
-                <div
-                  className={`mb-2 sm:mb-3 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-lg ${
-                    darkMode ? "bg-gray-700" : "bg-gray-100"
-                  }`}
-                >
-                  <FiFileText className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-                </div>
-                <h3
-                  className={`text-sm font-semibold mb-1 ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  Aktuell keine verkauften Fahrzeuge
-                </h3>
-              </div>
-            )}
+                        <div className="h-1 bg-slate-500" />
 
-            {/* Upcoming appointments */}
-            {upcomingAppointments.length > 0 && (
-              <section className="mt-4 sm:mt-6">
-                <div className="mb-2 sm:mb-3 flex items-center gap-2 sm:gap-3">
-                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-gradient-to-br from-slate-500 to-slate-600">
-                    <FiClock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                  </div>
-                  <div>
-                    <h2
-                      className={`text-sm sm:text-base font-semibold ${
-                        darkMode ? "text-white" : "text-gray-900"
-                      }`}
-                    >
-                      Bevorstehende Kundentermine
-                    </h2>
-                    <p
-                      className={`text-xs ${
-                        darkMode ? "text-gray-400" : "text-gray-500"
-                      }`}
-                    >
-                      {upcomingAppointments.length} Termin
-                      {upcomingAppointments.length !== 1 ? "e" : ""} in den
-                      nächsten 72 Stunden
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className={`border rounded-lg hover:border-slate-500 transition-all duration-200 w-full max-w-sm ${
-                    darkMode
-                      ? "bg-gray-800 border-slate-700"
-                      : "bg-white border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <div className="p-2 sm:p-3">
-                    <div className="space-y-2 sm:space-y-3">
-                      {upcomingAppointments.map((appt) => (
                         <div
-                          key={appt.id}
-                          className="flex items-start gap-2 sm:gap-3"
+                          className={`p-2 sm:p-3 border-b ${darkMode ? "border-gray-700" : "border-gray-100"}`}
                         >
-                          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-                            <div className="flex-shrink-0 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-slate-400 rounded-full mt-1 sm:mt-1.5" />
-                            <div className="min-w-0 flex-1">
-                              <p
-                                className={`text-xs sm:text-sm font-medium truncate ${
-                                  darkMode ? "text-white" : "text-gray-900"
-                                }`}
-                              >
-                                {appt.title}
-                              </p>
-                            </div>
+                          <div className="flex justify-between items-start">
+                            <h3
+                              className={`text-sm sm:text-base font-semibold break-words leading-tight min-h-[1rem] sm:min-h-[1.5rem] line-clamp-2 ${
+                                darkMode ? "text-white" : "text-gray-900"
+                              }`}
+                            >
+                              {schein.carName || "Unbekannt"}
+                            </h3>
+
+                            <button
+                              onClick={() => handleDismissSchein(schein._id)}
+                              title="Entfernen"
+                              aria-label="Entfernen"
+                              className={`ml-1 sm:ml-2 flex-shrink-0 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 ${
+                                darkMode
+                                  ? "bg-gray-700/40 hover:bg-yellow-600/30 text-gray-300 hover:text-yellow-300"
+                                  : "bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-yellow-600"
+                              } hover:scale-110`}
+                            >
+                              <FiX className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                            </button>
+                          </div>
+
+                          <p
+                            className={`text-[11px] sm:text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                          >
+                            Verkauft am {formatSoldDate(schein)}
+                          </p>
+                        </div>
+
+                        <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
+                          <div className="flex justify-center items-center text-[14px] sm:text-base">
+                            <span
+                              className={
+                                darkMode ? "text-gray-400" : "text-gray-600"
+                              }
+                            >
+                              Schlüssel:
+                            </span>
+                            <span
+                              className={`font-medium ml-1 sm:ml-2 truncate max-w-[30px] sm:max-w-[80px] ${
+                                darkMode ? "text-white" : "text-gray-900"
+                              }`}
+                            >
+                              {schein.keyNumber || "–"}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-center items-center text-[14px] sm:text-base">
+                            <span
+                              className={
+                                darkMode ? "text-gray-400" : "text-gray-600"
+                              }
+                            >
+                              Besitzer:
+                            </span>
+                            <span
+                              className={`font-medium ml-1 sm:ml-2 truncate max-w-[60px] sm:max-w-[80px] ${
+                                darkMode ? "text-white" : "text-gray-900"
+                              }`}
+                            >
+                              {schein.owner || "–"}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-center items-center text-[14px] sm:text-base">
+                            <span
+                              className={
+                                darkMode ? "text-gray-400" : "text-gray-600"
+                              }
+                            >
+                              FIN:
+                            </span>
+                            <span
+                              className={`font-medium ml-1 sm:mr-14 sm:max-w-[80px] ${darkMode ? "text-white" : "text-gray-900"}`}
+                            >
+                              {schein.finNumber || "–"}
+                            </span>
                           </div>
                         </div>
-                      ))}
-                    </div>
+
+                        <div
+                          className={`px-2 sm:px-3 py-1.5 sm:py-2 border-t flex justify-between items-center ${
+                            darkMode
+                              ? "border-gray-700 bg-gray-750"
+                              : "border-gray-100 bg-gray-50"
+                          }`}
+                        >
+                          <span
+                            className={`text-[12px] sm:text-xs font-medium ${
+                              getActiveTasksCount(schein) === 0
+                                ? darkMode
+                                  ? "text-yellow-300"
+                                  : "text-yellow-600"
+                                : darkMode
+                                  ? "text-gray-400"
+                                  : "text-gray-600"
+                            }`}
+                          >
+                            {(() => {
+                              const active = getActiveTasksCount(schein);
+                              return active === 0
+                                ? "Bereit zur Abholung"
+                                : `${active} aktive Aufgaben`;
+                            })()}
+                          </span>
+
+                          <button
+                            onClick={() => openTasksModal(schein)}
+                            className={`text-[12px] sm:text-xs font-medium transition-colors ${
+                              darkMode
+                                ? "text-slate-400 hover:text-slate-300"
+                                : "text-slate-600 hover:text-slate-700"
+                            }`}
+                          >
+                            Einzelheiten
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                ) : (
+                  <div className="flex flex-col items-center py-8 sm:py-12 text-center">
+                    <div
+                      className={`mb-2 sm:mb-3 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-lg ${
+                        darkMode ? "bg-gray-700" : "bg-gray-100"
+                      }`}
+                    >
+                      <FiFileText className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+                    </div>
+                    <h3
+                      className={`text-sm font-semibold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}
+                    >
+                      Aktuell keine verkauften Fahrzeuge
+                    </h3>
+                  </div>
+                )}
+
+                {/* Upcoming appointments */}
+                {upcomingAppointments.length > 0 && (
+                  <section className="mt-4 sm:mt-6">
+                    <div className="mb-2 sm:mb-3 flex items-center gap-2 sm:gap-3">
+                      <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-gradient-to-br from-slate-500 to-slate-600">
+                        <FiClock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+                      </div>
+                      <div>
+                        <h2
+                          className={`text-sm sm:text-base font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+                        >
+                          Bevorstehende Kundentermine
+                        </h2>
+                        <p
+                          className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                        >
+                          {upcomingAppointments.length} Termin
+                          {upcomingAppointments.length !== 1 ? "e" : ""} in den
+                          nächsten 72 Stunden
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`border rounded-lg hover:border-slate-500 transition-all duration-200 w-full max-w-sm ${
+                        darkMode
+                          ? "bg-gray-800 border-slate-700"
+                          : "bg-white border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="p-2 sm:p-3">
+                        <div className="space-y-2 sm:space-y-3">
+                          {upcomingAppointments.map((appt) => (
+                            <div
+                              key={appt.id}
+                              className="flex items-start gap-2 sm:gap-3"
+                            >
+                              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                                <div className="flex-shrink-0 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-slate-400 rounded-full mt-1 sm:mt-1.5" />
+                                <div className="min-w-0 flex-1">
+                                  <p
+                                    className={`text-xs sm:text-sm font-medium truncate ${darkMode ? "text-white" : "text-gray-900"}`}
+                                  >
+                                    {appt.title}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                )}
+              </main>
+
+              {/* Right sticky notes (desktop only) */}
+              {/* Notes (mobile/tablet) */}
+              <div className="lg:hidden mt-4">
+                <DashboardNotesPanel
+                  darkMode={darkMode}
+                  createdBy={user?.name || user?.email || ""}
+                />
+              </div>
+
+              {/* Notes (desktop sticky) */}
+              <aside className="hidden lg:block">
+                <div className="sticky top-[84px]">
+                  <DashboardNotesPanel
+                    darkMode={darkMode}
+                    createdBy={user?.name || user?.email || ""}
+                  />
                 </div>
-              </section>
-            )}
-          </main>
+              </aside>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -686,41 +682,27 @@ const DashboardContent = ({
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
-              className={`w-full max-w-lg rounded-xl shadow-2xl ${
-                darkMode
-                  ? "bg-gray-800 border-gray-700"
-                  : "bg-white border-gray-200"
-              } border`}
+              className={`w-full max-w-lg rounded-xl shadow-2xl ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border`}
               onClick={(e) => e.stopPropagation()}
             >
               <div
-                className={`flex items-center justify-between border-b px-5 py-4 ${
-                  darkMode ? "border-gray-700" : "border-gray-200"
-                }`}
+                className={`flex items-center justify-between border-b px-5 py-4 ${darkMode ? "border-gray-700" : "border-gray-200"}`}
               >
                 <div>
                   <h3
-                    className={`text-base font-semibold ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}
+                    className={`text-base font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
                   >
                     {selectedScheinTasks.carName || "Unbekanntes Fahrzeug"}
                   </h3>
                   <p
-                    className={`text-xs mt-0.5 ${
-                      darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}
+                    className={`text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}
                   >
                     Aufgaben verwalten
                   </p>
                 </div>
                 <button
                   onClick={() => setShowTasksModal(false)}
-                  className={`p-2 rounded-full ${
-                    darkMode
-                      ? "text-gray-400 hover:bg-gray-700 hover:text-gray-300"
-                      : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                  }`}
+                  className={`p-2 rounded-full ${darkMode ? "text-gray-400 hover:bg-gray-700 hover:text-gray-300" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"}`}
                 >
                   <FiX size={20} />
                 </button>
@@ -733,9 +715,7 @@ const DashboardContent = ({
                     {selectedScheinTasks.notes.map((note, index) => (
                       <div
                         key={index}
-                        className={`flex items-start gap-3 p-3 rounded-lg ${
-                          darkMode ? "hover:bg-gray-700/50" : "hover:bg-gray-50"
-                        }`}
+                        className={`flex items-start gap-3 p-3 rounded-lg ${darkMode ? "hover:bg-gray-700/50" : "hover:bg-gray-50"}`}
                       >
                         <button
                           onClick={() => handleTaskCheckboxChange(index)}
@@ -774,16 +754,12 @@ const DashboardContent = ({
                 ) : (
                   <div className="py-10 text-center">
                     <div
-                      className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${
-                        darkMode ? "bg-gray-700" : "bg-gray-100"
-                      }`}
+                      className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${darkMode ? "bg-gray-700" : "bg-gray-100"}`}
                     >
                       <FiFileText className="h-6 w-6 text-gray-400" />
                     </div>
                     <p
-                      className={`text-sm ${
-                        darkMode ? "text-gray-400" : "text-gray-500"
-                      }`}
+                      className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}
                     >
                       Keine Aufgaben für dieses Fahrzeug vorhanden.
                     </p>
@@ -792,15 +768,11 @@ const DashboardContent = ({
               </div>
 
               <div
-                className={`flex items-center justify-between border-t px-5 py-4 ${
-                  darkMode ? "border-gray-700" : "border-gray-200"
-                }`}
+                className={`flex items-center justify-between border-t px-5 py-4 ${darkMode ? "border-gray-700" : "border-gray-200"}`}
               >
                 <div>
                   <p
-                    className={`text-xs ${
-                      darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}
+                    className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
                   >
                     {Object.values(taskCheckboxes).filter(Boolean).length} von{" "}
                     {selectedScheinTasks.notes?.length || 0} Aufgaben erledigt
@@ -852,20 +824,15 @@ const DashboardContent = ({
               }`}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header */}
               <div
-                className={`px-6 py-4 border-b ${
-                  darkMode ? "border-gray-700" : "border-gray-200"
-                }`}
+                className={`px-6 py-4 border-b ${darkMode ? "border-gray-700" : "border-gray-200"}`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <TuvLogo />
                     <div>
                       <h3
-                        className={`text-base font-semibold ${
-                          darkMode ? "text-white" : "text-gray-900"
-                        }`}
+                        className={`text-base font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
                       >
                         TÜV-Prüfungen
                       </h3>
@@ -873,18 +840,13 @@ const DashboardContent = ({
                   </div>
                   <button
                     onClick={() => setShowTuevModal(false)}
-                    className={`p-1.5 rounded ${
-                      darkMode
-                        ? "hover:bg-gray-700 text-gray-400"
-                        : "hover:bg-gray-100 text-gray-500"
-                    }`}
+                    className={`p-1.5 rounded ${darkMode ? "hover:bg-gray-700 text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
                   >
                     <FiX size={18} />
                   </button>
                 </div>
               </div>
 
-              {/* Vehicle List */}
               <div className="max-h-[60vh] overflow-y-auto custom-scroll">
                 <table className="w-full">
                   <thead>
@@ -896,10 +858,7 @@ const DashboardContent = ({
                       }`}
                     >
                       <th className="py-3 pl-4 sm:pl-6">Fahrzeug</th>
-
-                      {/* ✅ Hide FIN on mobile only */}
                       <th className="hidden sm:table-cell py-3 px-14">FIN</th>
-
                       <th className="py-3">Besitzer</th>
                       <th className="py-3 pr-4 sm:pr-6 text-right">Status</th>
                     </tr>
@@ -907,15 +866,10 @@ const DashboardContent = ({
                   <tbody>
                     {tuevScheins.map((car) => {
                       const passed = !!car?.stageMeta?.tuev?.passed;
-
                       return (
                         <tr
                           key={car._id}
-                          className={`border-b ${
-                            darkMode
-                              ? "border-gray-700 hover:bg-gray-750"
-                              : "border-gray-100 hover:bg-gray-50"
-                          }`}
+                          className={`border-b ${darkMode ? "border-gray-700 hover:bg-gray-750" : "border-gray-100 hover:bg-gray-50"}`}
                         >
                           <td className="py-3 pl-4 sm:pl-6">
                             <div className="font-medium text-sm">
@@ -923,12 +877,9 @@ const DashboardContent = ({
                             </div>
                           </td>
 
-                          {/* ✅ Hide FIN on mobile only */}
                           <td className="hidden sm:table-cell py-3">
                             <div
-                              className={`text-sm ${
-                                darkMode ? "text-gray-300" : "text-gray-700"
-                              }`}
+                              className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}
                             >
                               {car.finNumber || "–"}
                             </div>
@@ -936,9 +887,7 @@ const DashboardContent = ({
 
                           <td className="py-3">
                             <div
-                              className={`text-sm ${
-                                darkMode ? "text-gray-300" : "text-gray-700"
-                              }`}
+                              className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}
                             >
                               {car.owner || "–"}
                             </div>
@@ -968,11 +917,8 @@ const DashboardContent = ({
                 </table>
               </div>
 
-              {/* Summary and Action */}
               <div
-                className={`px-6 py-4 border-t ${
-                  darkMode ? "border-gray-700" : "border-gray-200"
-                }`}
+                className={`px-6 py-4 border-t ${darkMode ? "border-gray-700" : "border-gray-200"}`}
               >
                 <div className="flex items-center justify-end">
                   <div className="flex items-center gap-3">
@@ -988,11 +934,7 @@ const DashboardContent = ({
                     </Link>
                     <button
                       onClick={() => setShowTuevModal(false)}
-                      className={`text-xs px-3 py-2 rounded ${
-                        darkMode
-                          ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
+                      className={`text-xs px-3 py-2 rounded ${darkMode ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                     >
                       Schließen
                     </button>
@@ -1020,37 +962,26 @@ const DashboardContent = ({
               }`}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header */}
               <div
-                className={`px-6 py-4 border-b ${
-                  darkMode ? "border-gray-700" : "border-gray-200"
-                }`}
+                className={`px-6 py-4 border-b ${darkMode ? "border-gray-700" : "border-gray-200"}`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`p-2 rounded ${
-                        darkMode ? "bg-amber-900/30" : "bg-amber-100"
-                      }`}
+                      className={`p-2 rounded ${darkMode ? "bg-amber-900/30" : "bg-amber-100"}`}
                     >
                       <FiDroplet
-                        className={`h-5 w-5 ${
-                          darkMode ? "text-amber-300" : "text-amber-600"
-                        }`}
+                        className={`h-5 w-5 ${darkMode ? "text-amber-300" : "text-amber-600"}`}
                       />
                     </div>
                     <div>
                       <h3
-                        className={`text-base font-semibold ${
-                          darkMode ? "text-white" : "text-gray-900"
-                        }`}
+                        className={`text-base font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
                       >
                         Tankalarm
                       </h3>
                       <p
-                        className={`text-xs ${
-                          darkMode ? "text-gray-400" : "text-gray-500"
-                        }`}
+                        className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
                       >
                         {fuelAlertScheins.length} Fahrzeug
                         {fuelAlertScheins.length !== 1 ? "e" : ""} benötig
@@ -1060,18 +991,13 @@ const DashboardContent = ({
                   </div>
                   <button
                     onClick={() => setShowFuelModal(false)}
-                    className={`p-1.5 rounded ${
-                      darkMode
-                        ? "hover:bg-gray-700 text-gray-400"
-                        : "hover:bg-gray-100 text-gray-500"
-                    }`}
+                    className={`p-1.5 rounded ${darkMode ? "hover:bg-gray-700 text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
                   >
                     <FiX size={18} />
                   </button>
                 </div>
               </div>
 
-              {/* Vehicle List */}
               <div className="max-h-[60vh] overflow-y-auto custom-scroll">
                 <table className="w-full">
                   <thead>
@@ -1083,10 +1009,7 @@ const DashboardContent = ({
                       }`}
                     >
                       <th className="py-3 pl-4 sm:pl-6">Fahrzeug</th>
-
-                      {/* ✅ Hide FIN on mobile only */}
                       <th className="hidden sm:table-cell py-3 px-14">FIN</th>
-
                       <th className="py-3">Besitzer</th>
                       <th className="py-3 pr-4 sm:pr-6 text-center">Status</th>
                     </tr>
@@ -1095,11 +1018,7 @@ const DashboardContent = ({
                     {fuelAlertScheins.map((car) => (
                       <tr
                         key={car._id}
-                        className={`border-b ${
-                          darkMode
-                            ? "border-gray-700 hover:bg-gray-750"
-                            : "border-gray-100 hover:bg-gray-50"
-                        }`}
+                        className={`border-b ${darkMode ? "border-gray-700 hover:bg-gray-750" : "border-gray-100 hover:bg-gray-50"}`}
                       >
                         <td className="py-3 pl-4 sm:pl-6">
                           <div className="font-medium text-sm">
@@ -1107,12 +1026,9 @@ const DashboardContent = ({
                           </div>
                         </td>
 
-                        {/* ✅ Hide FIN on mobile only */}
                         <td className="hidden sm:table-cell py-3">
                           <div
-                            className={`text-sm ${
-                              darkMode ? "text-gray-300" : "text-gray-700"
-                            }`}
+                            className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}
                           >
                             {car.finNumber || "–"}
                           </div>
@@ -1120,9 +1036,7 @@ const DashboardContent = ({
 
                         <td className="py-3">
                           <div
-                            className={`text-sm ${
-                              darkMode ? "text-gray-300" : "text-gray-700"
-                            }`}
+                            className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}
                           >
                             {car.owner || "–"}
                           </div>
@@ -1148,11 +1062,8 @@ const DashboardContent = ({
                 </table>
               </div>
 
-              {/* Summary and Action */}
               <div
-                className={`px-6 py-4 border-t ${
-                  darkMode ? "border-gray-700" : "border-gray-200"
-                }`}
+                className={`px-6 py-4 border-t ${darkMode ? "border-gray-700" : "border-gray-200"}`}
               >
                 <div className="flex items-center justify-end">
                   <div className="flex items-center gap-3">
@@ -1168,11 +1079,7 @@ const DashboardContent = ({
                     </Link>
                     <button
                       onClick={() => setShowFuelModal(false)}
-                      className={`text-xs px-3 py-2 rounded ${
-                        darkMode
-                          ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
+                      className={`text-xs px-3 py-2 rounded ${darkMode ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                     >
                       Schließen
                     </button>
