@@ -466,7 +466,7 @@ function UserDropdown({ user, avatarUrl, open, setOpen, dropdownRef }) {
           className={cx(
             "flex h-10 w-10 items-center justify-center rounded-full border-[1.5px] shadow-lg backdrop-blur-md transition-all",
             open
-              ? "border-blue-500 bg-white/95 ring-2 ring-blue-200"
+              ? "border-blue-500 bg-white/95 "
               : "border-white/40 bg-white/10 hover:border-blue-400 hover:bg-white/15",
           )}
           aria-label="Benutzermenü öffnen"
