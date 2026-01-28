@@ -65,7 +65,7 @@ export default function Hero() {
           className="
             mx-auto w-full max-w-7xl
             px-4
-            pt-8 pb-12
+             pb-15
             sm:pt-12 sm:pb-16
             lg:pt-16 lg:pb-20
             2xl:px-0

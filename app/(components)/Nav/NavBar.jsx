@@ -23,7 +23,6 @@ import {
 
 import Logo from "../../(assets)/logo1111.png";
 import { Menus } from "../../utils/NavData";
-
 import SimpleContactFormModal from "@/app/(components)/helpers/SimpleContactFormModal";
 
 /* -----------------------------
@@ -82,7 +81,7 @@ function DesktopMenu({ menu, scrolled }) {
       <Link
         href={menu.href || "#"}
         className={cx(
-          "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition",
+          "group inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition",
           scrolled
             ? "text-slate-200 hover:text-white hover:bg-white/10"
             : "text-slate-100 hover:text-white hover:bg-white/10",
@@ -114,7 +113,6 @@ function DesktopMenu({ menu, scrolled }) {
               exit="hidden"
               variants={dropdownVariants}
             >
-              {/* Fahrzeuge dropdown (compact + bold hover) */}
               {isFahrzeuge ? (
                 <div className="inline-block rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden">
                   <div className="flex flex-col gap-1 p-2">
@@ -131,7 +129,7 @@ function DesktopMenu({ menu, scrolled }) {
                           className={cx(
                             "inline-flex w-fit items-center rounded-lg px-5 py-2 text-sm font-semibold transition",
                             "text-slate-900",
-                            "hover:bg-slate-800 hover:text-white",
+                            "hover:bg-slate-900 hover:text-white",
                             "focus:outline-none focus:ring-2 focus:ring-blue-500/30",
                           )}
                         >
@@ -177,40 +175,39 @@ function DesktopMenu({ menu, scrolled }) {
 }
 
 /* -----------------------------
-  Mobile Drawer (Professional like your image)
-  - Accordion blocks
-  - Clean separators
-  - Logo (not car icon)
+  Mobile Drawer (elegant + modern)
+  - No “box per link”
+  - Clean list with separators + soft hover
+  - Only ONE X (inside drawer header)
 ------------------------------ */
 function MobileDrawer({ menus, isOpen, setIsOpen, onOpenContact, isLoggedIn }) {
+  const pathname = usePathname();
   const [activeIndex, setActiveIndex] = useState(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mountedRef = useRef(false);
 
   const close = () => {
     setIsOpen(false);
     setActiveIndex(null);
-    document.body.style.overflow = "auto";
-  };
-
-  const toggle = () => {
-    setIsOpen((v) => !v);
-    setActiveIndex(null);
-    document.body.style.overflow = !isOpen ? "hidden" : "auto";
   };
 
   useEffect(() => {
+    mountedRef.current = true;
+  }, []);
+
+  // lock scroll when open
+  useEffect(() => {
+    if (!mountedRef.current) return;
+    document.body.style.overflow = isOpen ? "hidden" : "auto";
     return () => {
       document.body.style.overflow = "auto";
     };
-  }, []);
+  }, [isOpen]);
 
   const subMenuVariants = {
     enter: {
       height: "auto",
       opacity: 1,
-      transition: { duration: 0.22, ease: "easeOut" },
+      transition: { duration: 0.2, ease: "easeOut" },
     },
     exit: {
       height: 0,
@@ -219,26 +216,27 @@ function MobileDrawer({ menus, isOpen, setIsOpen, onOpenContact, isLoggedIn }) {
     },
   };
 
-  if (!mounted) return null;
-
   return (
     <div className="print:hidden lg:hidden">
-      {/* Trigger */}
-      <button
-        onClick={toggle}
-        className={cx(
-          "fixed top-4 z-[9999] p-2.5 rounded-xl",
-          "bg-white/10 backdrop-blur-md border border-white/20 shadow-lg hover:bg-white/20 transition-all duration-300",
-          isLoggedIn ? "right-20" : "right-4",
-        )}
-        aria-label="Menü"
-      >
-        {isOpen ? (
-          <X size={20} className="text-white" />
-        ) : (
-          <Menu size={20} className="text-white" />
-        )}
-      </button>
+      {/* Trigger (only hamburger; hidden when drawer is open so there is no “second X”) */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className={cx(
+            // align with navbar (h-16 => 64px) => center at 32px
+            "fixed top-8 -translate-y-1/2 z-[9999]",
+            // smaller button
+            "h-10 w-10 p-0 rounded-xl",
+            "flex items-center justify-center",
+            "bg-white/10 backdrop-blur-md border border-white/20 shadow-lg",
+            "hover:bg-white/20 transition-all duration-300",
+            isLoggedIn ? "right-16" : "right-4",
+          )}
+          aria-label="Menü öffnen"
+        >
+          <Menu className="h-[18px] w-[18px] text-white" />
+        </button>
+      )}
 
       {/* Overlay */}
       <AnimatePresence>
@@ -247,169 +245,213 @@ function MobileDrawer({ menus, isOpen, setIsOpen, onOpenContact, isLoggedIn }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/45 z-[998] backdrop-blur-sm"
+            className="fixed inset-0 bg-black/55 z-[998] backdrop-blur-sm"
             onClick={close}
           />
         )}
       </AnimatePresence>
 
       {/* Drawer */}
-      <motion.aside
-        initial={{ x: "-100%" }}
-        animate={{ x: isOpen ? "0%" : "-100%" }}
-        exit={{ x: "-100%" }}
-        transition={{ type: "spring", stiffness: 320, damping: 32 }}
-        className="fixed left-0 top-0 w-[86vw] max-w-sm h-[100dvh] z-[999] overflow-y-auto
-                   bg-gradient-to-b from-slate-950 to-slate-900 text-white shadow-2xl border-r border-slate-800/70"
-      >
-        <div className="h-full pt-5 pb-8">
-          {/* Header (Logo + brand) */}
-          <div className="px-5">
-            <div className="flex items-center justify-between">
-              <Link
-                href="/"
-                onClick={close}
-                className="flex items-center gap-3"
-              >
-                <div className="relative h-10 w-10">
-                  <Image
-                    src={Logo}
-                    alt="Autogalerie Jülich"
-                    priority
-                    className="h-10 w-10 object-contain"
-                  />
+      <AnimatePresence>
+        {isOpen && (
+          <motion.aside
+            initial={{ x: "-100%" }}
+            animate={{ x: "0%" }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+            className="fixed left-0 top-0 w-[88vw] max-w-sm h-[100dvh] z-[999] overflow-y-auto
+                       bg-gradient-to-b from-slate-950 to-slate-900 text-white shadow-2xl border-r border-slate-800/70"
+          >
+            <div className="h-full pt-5 pb-8">
+              {/* Header */}
+              <div className="px-5">
+                <div className="flex items-center justify-between">
+                  <Link
+                    href="/"
+                    onClick={close}
+                    className="flex items-center gap-3"
+                  >
+                    <div className="relative h-10 w-10">
+                      <Image
+                        src={Logo}
+                        alt="Autogalerie Jülich"
+                        priority
+                        className="h-10 w-10 object-contain"
+                      />
+                    </div>
+                    <div className="leading-tight">
+                      <div className="text-sm font-semibold text-white">
+                        Autogalerie{" "}
+                        <span className="text-blue-400">Jülich</span>
+                      </div>
+                      <div className="text-[11px] text-slate-300">Menü</div>
+                    </div>
+                  </Link>
+
+                  {/* Only X here */}
+                  <button
+                    onClick={close}
+                    className="p-2 rounded-xl bg-white/10 border border-white/15 hover:bg-white/15 transition"
+                    aria-label="Schließen"
+                  >
+                    <X className="h-5 w-5 text-white" />
+                  </button>
                 </div>
-                <div className="leading-tight">
-                  <div className="text-sm font-semibold text-white">
-                    Autogalerie <span className="text-blue-400">Jülich</span>
-                  </div>
-                  <div className="text-[11px] text-slate-300">Navigation</div>
-                </div>
-              </Link>
 
-              <button
-                onClick={close}
-                className="p-2 rounded-xl bg-white/10 border border-white/15 hover:bg-white/15 transition"
-                aria-label="Schließen"
-              >
-                <X className="h-5 w-5 text-white" />
-              </button>
-            </div>
+                <div className="mt-4 h-px bg-white/10" />
+              </div>
 
-            <div className="mt-4 h-px bg-white/10" />
-          </div>
+              {/* List */}
+              <div className="mt-3 px-2">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
+                  {menus.map(({ name, href, subMenu }, i) => {
+                    const hasSubMenu =
+                      Array.isArray(subMenu) && subMenu.length > 0;
+                    const isActive = activeIndex === i;
 
-          {/* Menu list (like your screenshot) */}
-          <ul className="mt-3 px-4">
-            {menus.map(({ name, href, subMenu }, i) => {
-              const hasSubMenu = Array.isArray(subMenu) && subMenu.length > 0;
-              const isActive = activeIndex === i;
+                    // active state (when no submenu)
+                    const isCurrent =
+                      !hasSubMenu &&
+                      href &&
+                      (pathname === href ||
+                        pathname
+                          ?.toLowerCase()
+                          .startsWith(String(href).toLowerCase()));
 
-              return (
-                <li key={name} className="py-1.5">
-                  {hasSubMenu ? (
-                    <div className="rounded-2xl border border-white/10 overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => setActiveIndex(isActive ? null : i)}
-                        className="w-full flex items-center justify-between px-4 py-3"
+                    return (
+                      <div
+                        key={name}
+                        className="border-b border-white/10 last:border-b-0"
                       >
-                        <span className="text-[15px] font-semibold text-slate-100">
-                          {name}
-                        </span>
-                        <ChevronDown
-                          className={cx(
-                            "h-5 w-5 transition-transform duration-300",
-                            isActive
-                              ? "rotate-180 text-blue-300"
-                              : "text-slate-300",
-                          )}
-                        />
-                      </button>
+                        {hasSubMenu ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setActiveIndex(isActive ? null : i)
+                              }
+                              className={cx(
+                                "w-full px-4 py-3.5 flex items-center justify-between",
+                                "hover:bg-white/6 transition",
+                              )}
+                            >
+                              <span className="text-[15px] font-semibold text-slate-100">
+                                {name}
+                              </span>
+                              <ChevronDown
+                                className={cx(
+                                  "h-5 w-5 transition-transform duration-300",
+                                  isActive
+                                    ? "rotate-180 text-blue-300"
+                                    : "text-slate-300",
+                                )}
+                              />
+                            </button>
 
-                      <AnimatePresence>
-                        {isActive && (
-                          <motion.div
-                            initial="exit"
-                            animate="enter"
-                            exit="exit"
-                            variants={subMenuVariants}
-                            className="overflow-hidden"
-                          >
-                            <div className="px-3 pb-3">
-                              <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
-                                {subMenu.map((sub) => (
-                                  <Link
-                                    key={sub.name}
-                                    href={sub.href || "#"}
-                                    onClick={close}
-                                    className="block px-4 py-3 hover:bg-white/10 transition"
-                                  >
-                                    <div className="flex items-center justify-between gap-3">
-                                      <div className="min-w-0">
-                                        <div className="text-[14px] font-semibold text-slate-100 truncate">
-                                          {sub.name}
-                                        </div>
-                                        {sub.desc && (
-                                          <div className="mt-0.5 text-[12px] text-slate-400">
-                                            {sub.desc}
+                            <AnimatePresence initial={false}>
+                              {isActive && (
+                                <motion.div
+                                  initial="exit"
+                                  animate="enter"
+                                  exit="exit"
+                                  variants={subMenuVariants}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="pb-2">
+                                    {subMenu.map((sub) => {
+                                      const subActive =
+                                        sub.href &&
+                                        (pathname === sub.href ||
+                                          pathname
+                                            ?.toLowerCase()
+                                            .startsWith(
+                                              String(sub.href).toLowerCase(),
+                                            ));
+
+                                      return (
+                                        <Link
+                                          key={sub.name}
+                                          href={sub.href || "#"}
+                                          onClick={close}
+                                          className={cx(
+                                            "mx-3 my-1 flex items-center justify-between gap-3 rounded-xl px-3 py-3",
+                                            "bg-white/[0.02] hover:bg-white/10 transition",
+                                            subActive
+                                              ? "ring-1 ring-blue-500/35"
+                                              : "",
+                                          )}
+                                        >
+                                          <div className="min-w-0">
+                                            <div className="text-[14px] font-semibold text-slate-100 truncate">
+                                              {sub.name}
+                                            </div>
+                                            {sub.desc && (
+                                              <div className="mt-0.5 text-[12px] text-slate-400 line-clamp-2">
+                                                {sub.desc}
+                                              </div>
+                                            )}
                                           </div>
-                                        )}
-                                      </div>
-                                      <ArrowRight className="h-4 w-4 text-slate-400 shrink-0" />
-                                    </div>
-                                  </Link>
-                                ))}
-                              </div>
-                            </div>
-                          </motion.div>
+                                          <ArrowRight className="h-4 w-4 text-slate-400 shrink-0" />
+                                        </Link>
+                                      );
+                                    })}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </>
+                        ) : (
+                          <Link
+                            href={href || "#"}
+                            onClick={close}
+                            className={cx(
+                              "px-4 py-3.5 flex items-center justify-between",
+                              "hover:bg-white/6 transition",
+                            )}
+                          >
+                            <span
+                              className={cx(
+                                "text-[15px] font-semibold",
+                                isCurrent ? "text-blue-300" : "text-slate-100",
+                              )}
+                            >
+                              {name}
+                            </span>
+                            <ArrowRight className="h-4 w-4 text-slate-400 shrink-0" />
+                          </Link>
                         )}
-                      </AnimatePresence>
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl border border-white/10 overflow-hidden">
-                      <Link
-                        href={href || "#"}
-                        onClick={close}
-                        className="block px-4 py-3 text-[15px] font-semibold text-slate-100 hover:bg-white/10 transition"
-                      >
-                        {name}
-                      </Link>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-          {/* CTA (opens modal, not /kontakt) */}
-          <div className="px-5 mt-4">
-            <button
-              type="button"
-              onClick={() => {
-                close();
-                onOpenContact();
-              }}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-2xl
-                         bg-blue-600 px-4 py-3 text-sm font-semibold text-white
-                         hover:bg-blue-700 transition shadow-lg shadow-black/20"
-            >
-              <Calendar className="h-4 w-4" />
-              Termin vereinbaren
-            </button>
-
-            <div className="mt-3 text-center text-[11px] text-slate-500">
-              Autogalerie Jülich System
+              {/* CTA */}
+              <div className="px-5 mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    close();
+                    onOpenContact();
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-2xl
+                             bg-blue-600 px-4 py-3 text-sm font-semibold text-white
+                             hover:bg-blue-700 transition shadow-lg shadow-black/20"
+                >
+                  <Calendar className="h-4 w-4" />
+                  Termin vereinbaren
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      </motion.aside>
+          </motion.aside>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 /* -----------------------------
-  User Dropdown (same logic)
+  User Dropdown
 ------------------------------ */
 function UserDropdown({ user, avatarUrl, open, setOpen, dropdownRef }) {
   return (
@@ -454,11 +496,11 @@ function UserDropdown({ user, avatarUrl, open, setOpen, dropdownRef }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.97 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="absolute right-0 mt-3 w-[290px] sm:w-[320px] rounded-2xl border border-slate-800/70 bg-slate-950/92 shadow-2xl shadow-black/50 backdrop-blur-xl overflow-hidden"
+              className="absolute right-0 mt-3 w-[290px] sm:w-[320px] rounded-2xl border border-slate-800/70 bg-slate-950/92   backdrop-blur-xl overflow-hidden"
             >
-              <div className="px-4 py-4 text-white border-b border-slate-800/70 bg-white/5">
+              <div className="px-4 py-4 text-white border-b border-slate-800/70 bg-white/5 backdrop-blur-xl">
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full border border-white/15 bg-white/10 overflow-hidden flex items-center justify-center">
+                  <div className="h-12 w-12 rounded-full border border-white/15 bg-white/10 overflow-hidden flex items-center justify-center ">
                     {avatarUrl ? (
                       <Image
                         src={avatarUrl}
@@ -491,7 +533,7 @@ function UserDropdown({ user, avatarUrl, open, setOpen, dropdownRef }) {
                 <Link
                   href="/AdminDashboard"
                   onClick={() => setOpen(false)}
-                  className="flex items-center px-4 py-2.5 text-sm text-slate-200 hover:bg-white/5 hover:text-blue-300 transition-colors group"
+                  className="flex items-center backdrop-blur-xl px-4 py-2.5 text-sm text-slate-200 hover:bg-white/5 hover:text-blue-300 transition-colors group"
                 >
                   <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-900/30 group-hover:bg-blue-900/45">
                     <Settings className="w-4 h-4 text-blue-300" />
@@ -539,10 +581,10 @@ export default function NavBar() {
 
   const [user, setUser] = useState(session?.user || null);
 
-  // ✅ Contact modal
+  // Contact modal
   const [contactOpen, setContactOpen] = useState(false);
 
-  // ✅ Mobile drawer
+  // Mobile drawer
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const dropdownRef = useRef(null);
@@ -636,14 +678,12 @@ export default function NavBar() {
   const isLoggedIn = !!session;
 
   const openContact = () => {
-    // close mobile drawer if open, then open modal
     setMobileOpen(false);
     setContactOpen(true);
   };
 
   return (
     <>
-      {/* ✅ Contact Modal */}
       <SimpleContactFormModal
         isOpen={contactOpen}
         onClose={() => setContactOpen(false)}
@@ -677,14 +717,14 @@ export default function NavBar() {
       <header
         className={cx(
           "print:hidden sticky top-0 z-50 transition-all duration-300",
-          "bg-gradient-to-b from-slate-950/95 to-slate-900/90  backdrop-blur-xl shadow-2xl border-b border-slate-800/70",
+          "bg-gradient-to-b from-slate-950/95 to-slate-900/90 backdrop-blur-xl shadow-2xl border-b border-slate-800/70",
         )}
       >
         <nav className="mx-auto max-w-7xl px-4">
           <div className="flex h-16 items-center justify-between">
             {/* Logo + Title */}
             <div>
-              <Link href="/" className="flex items-center gap-3">
+              <Link href="/" className="flex items-center gap-3 min-w-0">
                 <div className="relative h-10 w-10">
                   <Image
                     src={Logo}
@@ -693,11 +733,10 @@ export default function NavBar() {
                     className="h-10 w-10 object-contain"
                   />
                 </div>
-                <div className="leading-tight">
-                  <div className="text-base sm:text-lg font-playfair font-bold tracking-[0.1em] uppercase text-white">
+                <div className="leading-tight min-w-0">
+                  <div className="truncate text-[13px] sm:text-lg font-playfair font-bold uppercase text-white tracking-[0.06em] sm:tracking-[0.1em]">
                     Autogalerie <span className="text-blue-400">Jülich</span>
                   </div>
-                  <div className="text-xs text-slate-300">Premium Autohaus</div>
                 </div>
               </Link>
             </div>
@@ -716,7 +755,6 @@ export default function NavBar() {
                 </ul>
               </div>
 
-              {/* ✅ OPEN MODAL (not /kontakt) */}
               <button
                 type="button"
                 onClick={openContact}
@@ -726,7 +764,7 @@ export default function NavBar() {
               </button>
             </div>
 
-            {/* Mobile drawer (professional) */}
+            {/* Mobile drawer */}
             <div className="lg:hidden">
               <MobileDrawer
                 menus={Menus}
