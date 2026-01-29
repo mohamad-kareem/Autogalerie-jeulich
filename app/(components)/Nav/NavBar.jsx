@@ -176,9 +176,6 @@ function DesktopMenu({ menu, scrolled }) {
 
 /* -----------------------------
   Mobile Drawer (elegant + modern)
-  - No “box per link”
-  - Clean list with separators + soft hover
-  - Only ONE X (inside drawer header)
 ------------------------------ */
 function MobileDrawer({ menus, isOpen, setIsOpen, onOpenContact, isLoggedIn }) {
   const pathname = usePathname();
@@ -218,14 +215,12 @@ function MobileDrawer({ menus, isOpen, setIsOpen, onOpenContact, isLoggedIn }) {
 
   return (
     <div className="print:hidden lg:hidden">
-      {/* Trigger (only hamburger; hidden when drawer is open so there is no “second X”) */}
+      {/* Trigger */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
           className={cx(
-            // align with navbar (h-16 => 64px) => center at 32px
             "fixed top-8 -translate-y-1/2 z-[9999]",
-            // smaller button
             "h-10 w-10 p-0 rounded-xl",
             "flex items-center justify-center",
             "bg-white/10 backdrop-blur-md border border-white/20 shadow-lg",
@@ -288,7 +283,6 @@ function MobileDrawer({ menus, isOpen, setIsOpen, onOpenContact, isLoggedIn }) {
                     </div>
                   </Link>
 
-                  {/* Only X here */}
                   <button
                     onClick={close}
                     className="p-2 rounded-xl bg-white/10 border border-white/15 hover:bg-white/15 transition"
@@ -309,7 +303,6 @@ function MobileDrawer({ menus, isOpen, setIsOpen, onOpenContact, isLoggedIn }) {
                       Array.isArray(subMenu) && subMenu.length > 0;
                     const isActive = activeIndex === i;
 
-                    // active state (when no submenu)
                     const isCurrent =
                       !hasSubMenu &&
                       href &&
@@ -691,7 +684,7 @@ export default function NavBar() {
 
       {/* Top bar */}
       <div className="print:hidden bg-slate-950/75 backdrop-blur-md border-b border-slate-800/70 text-slate-100">
-        <div className="mx-auto max-w-7xl px-4">
+        <div className="mx-auto max-w-screen-2xl px-4 xl:px-8">
           <div className="flex flex-col gap-2 py-2 text-sm md:flex-row md:items-center md:justify-start">
             <div className="flex items-center gap-3">
               <span className="inline-flex items-center gap-2">
@@ -720,52 +713,49 @@ export default function NavBar() {
           "bg-gradient-to-b from-slate-950/95 to-slate-900/90 backdrop-blur-xl shadow-2xl border-b border-slate-800/70",
         )}
       >
-        <nav className="mx-auto max-w-7xl px-4">
-          <div className="flex h-16 items-center justify-between">
+        <nav className="mx-auto max-w-screen-2xl px-4 xl:px-8">
+          <div className="flex h-16 items-center gap-4">
             {/* Logo + Title */}
-            <div>
-              <Link href="/" className="flex items-center gap-3 min-w-0">
-                <div className="relative h-10 w-10">
-                  <Image
-                    src={Logo}
-                    alt="Autogalerie Jülich"
-                    priority
-                    className="h-10 w-10 object-contain"
-                  />
-                </div>
-                <div className="leading-tight min-w-0">
-                  <div className="truncate text-[13px] sm:text-lg font-playfair font-bold uppercase text-white tracking-[0.06em] sm:tracking-[0.1em]">
-                    Autogalerie <span className="text-blue-400">Jülich</span>
-                  </div>
-                </div>
-              </Link>
-            </div>
-
-            {/* Desktop nav + CTA */}
-            <div className="hidden lg:flex items-center gap-4 mr-12">
-              <div className="hidden lg:flex items-center gap-2">
-                <ul className="flex items-center">
-                  {Menus.map((menu) => (
-                    <DesktopMenu
-                      key={menu.name}
-                      menu={menu}
-                      scrolled={scrolled}
-                    />
-                  ))}
-                </ul>
+            <Link href="/" className="flex items-center gap-3 min-w-0 shrink-0">
+              <div className="relative h-10 w-10">
+                <Image
+                  src={Logo}
+                  alt="Autogalerie Jülich"
+                  priority
+                  className="h-10 w-10 object-contain"
+                />
               </div>
+
+              <div className="leading-tight min-w-0">
+                <div className="truncate text-[13px] sm:text-lg font-playfair font-bold uppercase text-white tracking-[0.06em] sm:tracking-[0.1em]">
+                  Autogalerie <span className="text-blue-400">Jülich</span>
+                </div>
+              </div>
+            </Link>
+
+            {/* Desktop nav + CTA beside each other (wide, right-aligned) */}
+            <div className="hidden lg:flex flex-1 items-center justify-end gap-6">
+              <ul className="flex items-center gap-1 xl:gap-2 2xl:gap-3">
+                {Menus.map((menu) => (
+                  <DesktopMenu
+                    key={menu.name}
+                    menu={menu}
+                    scrolled={scrolled}
+                  />
+                ))}
+              </ul>
 
               <button
                 type="button"
                 onClick={openContact}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition"
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shrink-0"
               >
                 Termin vereinbaren
               </button>
             </div>
 
             {/* Mobile drawer */}
-            <div className="lg:hidden">
+            <div className="lg:hidden ml-auto">
               <MobileDrawer
                 menus={Menus}
                 isOpen={mobileOpen}
