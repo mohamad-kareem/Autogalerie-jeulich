@@ -156,7 +156,7 @@ function renderDescription(description, isMobile = false) {
   return lines.map((line, index) => {
     if (
       /^Mail\s*:|^WhatsApp\s*:|^WIR BIETEN|^Finanzierung|^Inzahlungnahme|^Zulassungsservice|^Auslieferungsservice/i.test(
-        line
+        line,
       )
     ) {
       return (
@@ -215,7 +215,7 @@ const SpecCard = ({ icon, title, items, isMobile = false }) => {
         item.value !== "Nein" &&
         item.value !== undefined &&
         item.value !== null &&
-        item.value !== ""
+        item.value !== "",
     ) || [];
 
   if (visibleItems.length === 0) return null;
@@ -288,7 +288,7 @@ const ImageSlider = ({ images = [], car = {}, isMobile = false }) => {
   const [fullscreenImage, setFullscreenImage] = useState(null);
 
   const imageUrls = (images || []).map((img) =>
-    typeof img === "string" ? img : img?.ref
+    typeof img === "string" ? img : img?.ref,
   );
 
   const hasImages = imageUrls.length > 0;
@@ -1170,7 +1170,7 @@ function CarDetailContent({ car }) {
         className={`relative z-10 mx-auto w-full max-w-full ${
           isMobile
             ? "px-3 pb-8 pt-4"
-            : "max-w-[1500px] px-4 pb-16 pt-24 sm:px-6 lg:px-8"
+            : "max-w-[1500px] px-4 pb-16 pt-8 sm:px-6 lg:px-8"
         }`}
       >
         {/* HERO SECTION */}

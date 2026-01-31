@@ -155,7 +155,7 @@ export default function UsedCarsPage() {
     return (
       Math.ceil(
         Math.max(...cars.map((car) => car.price?.consumerPriceGross || 0)) /
-          10000
+          10000,
       ) * 10000 || 100000
     );
   }, [cars]);
@@ -174,21 +174,21 @@ export default function UsedCarsPage() {
       prev.includes(carId)
         ? prev.filter((id) => id !== carId)
         : prev.length < 3
-        ? [...prev, carId]
-        : prev
+          ? [...prev, carId]
+          : prev,
     );
   };
 
   const selectedCars = useMemo(
     () => cars.filter((car) => selectedForComparison.includes(car._id)),
-    [cars, selectedForComparison]
+    [cars, selectedForComparison],
   );
 
   const handleCompareNavigate = () => {
     if (selectedForComparison.length >= 2) {
       localStorage.setItem(
         "carComparison",
-        JSON.stringify(selectedForComparison)
+        JSON.stringify(selectedForComparison),
       );
       const query = selectedForComparison.map((id) => `id=${id}`).join("&");
       router.push(`/vergleich?${query}`);
@@ -196,7 +196,7 @@ export default function UsedCarsPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-slate-50 pt-18">
+    <div className="relative min-h-screen bg-slate-950 text-slate-50 pt-8">
       {/* FIXED COMPARISON BAR */}
       {comparisonMode && (
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-800 bg-slate-950/95 backdrop-blur-md">
@@ -260,7 +260,7 @@ export default function UsedCarsPage() {
       )}
 
       {/* MAIN CONTENT */}
-      <div className="mx-auto w-full max-w-[1500px] px-4 pb-20 pt-6 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1500px] px-4  sm:px-6 lg:px-8">
         {/* PAGE HEADER: title left, buttons right on same line */}
         <header className="mb-4 sm:mb-6 lg:mb-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -443,7 +443,7 @@ export default function UsedCarsPage() {
                           </p>
                           <p className="whitespace-nowrap text-sm font-semibold text-slate-50">
                             {parseFloat(
-                              car.price.consumerPriceGross
+                              car.price.consumerPriceGross,
                             ).toLocaleString("de-DE", {
                               style: "currency",
                               currency: car.price.currency || "EUR",
@@ -562,15 +562,15 @@ export default function UsedCarsPage() {
                                     "Content-Type": "application/json",
                                   },
                                   body: JSON.stringify({ sold: !car.sold }),
-                                }
+                                },
                               );
 
                               if (res.ok) {
                                 const updated = await res.json();
                                 setCars((prev) =>
                                   prev.map((c) =>
-                                    c._id === updated._id ? updated : c
-                                  )
+                                    c._id === updated._id ? updated : c,
+                                  ),
                                 );
                               }
                             }}
