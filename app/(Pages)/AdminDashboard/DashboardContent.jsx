@@ -15,6 +15,7 @@ import {
 import { useSidebar } from "@/app/(components)/SidebarContext";
 import { FaCarSide } from "react-icons/fa";
 import DashboardNotesPanel from "@/app/(components)/helpers/DashboardNotesPanel";
+import WeeklyTimeSchedule from "@/app/(components)/helpers/WeeklyTimeSchedule";
 
 /* ─────────────────────────────────────────
    Helper functions for Termine / appointments
@@ -669,6 +670,10 @@ const DashboardContent = ({
                 </div>
               </aside>
             </div>
+            <WeeklyTimeSchedule
+              darkMode={darkMode}
+              createdBy={user?.name || user?.email || ""}
+            />{" "}
           </div>
         </div>
       </div>
