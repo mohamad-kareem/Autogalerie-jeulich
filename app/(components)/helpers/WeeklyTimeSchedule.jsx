@@ -452,7 +452,7 @@ export default function WeeklyTimeSchedule({
         </div>
 
         <div
-          className={`rounded-lg border ${borderColor} overflow-hidden shadow-sm ${gridBg}`}
+          className={` border ${borderColor} overflow-hidden shadow-sm ${gridBg}`}
           ref={containerRef}
         >
           <div className="flex">
@@ -739,7 +739,7 @@ export default function WeeklyTimeSchedule({
                     <div
                       key={ev._id}
                       className={cx(
-                        "absolute border shadow-sm group overflow-hidden rounded",
+                        "absolute border shadow-sm group overflow-hidden ",
                         v.border,
                         v.bg,
                         dragging?.id === ev._id || resizing?.id === ev._id
