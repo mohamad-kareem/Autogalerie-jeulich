@@ -53,27 +53,18 @@ const COLOR_OPTIONS = [
 
 function variantClass(variant, darkMode) {
   const map = {
-    // ✅ RED = "Urgent / Hot"
     red: {
-      // glassy background
       bg: darkMode ? "bg-rose-500/10" : "bg-rose-500/12",
-      // neon border
       border: darkMode ? "border-rose-400/35" : "border-rose-500/30",
-      // text
       text: darkMode ? "text-rose-200" : "text-rose-900",
-      // optional: nice glow on hover (use if you want)
       hover: darkMode ? "hover:bg-rose-500/16" : "hover:bg-rose-500/18",
     },
-
-    // ✅ YELLOW = "Attention / Important"
     yellow: {
       bg: darkMode ? "bg-amber-400/10" : "bg-amber-400/14",
       border: darkMode ? "border-amber-300/35" : "border-amber-500/30",
       text: darkMode ? "text-amber-100" : "text-amber-900",
       hover: darkMode ? "hover:bg-amber-400/16" : "hover:bg-amber-400/18",
     },
-
-    // ✅ GREEN = "Confirmed / Good"
     green: {
       bg: darkMode ? "bg-emerald-400/10" : "bg-emerald-400/14",
       border: darkMode ? "border-emerald-300/35" : "border-emerald-500/30",
@@ -145,10 +136,9 @@ export default function WeeklyTimeSchedule({
   const colorDropdownRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // ✅ debounced server updates per event
   const saveTimersRef = useRef(new Map());
 
-  const colW = 100 / DAYS.length; // ✅ full fill width (no gutter)
+  const colW = 100 / DAYS.length;
   const gridHeightPx = VISIBLE_HOURS * HOUR_HEIGHT;
 
   const visibleHours = useMemo(
@@ -156,7 +146,6 @@ export default function WeeklyTimeSchedule({
     [],
   );
 
-  // Load from DB
   useEffect(() => {
     let alive = true;
     setLoading(true);
@@ -172,7 +161,6 @@ export default function WeeklyTimeSchedule({
     };
   }, [createdBy]);
 
-  // Close on outside click
   useEffect(() => {
     function onDown(e) {
       if (
@@ -198,7 +186,6 @@ export default function WeeklyTimeSchedule({
   }, [creating, showColor]);
 
   function scheduleServerSave(id, patch) {
-    // merge patches within debounce window
     const map = saveTimersRef.current;
     const existing = map.get(id);
     if (existing?.timer) clearTimeout(existing.timer);
@@ -209,7 +196,6 @@ export default function WeeklyTimeSchedule({
       try {
         await apiUpdate(id, mergedPatch);
       } catch {
-        // optional: rollback could be added
       } finally {
         map.delete(id);
       }
@@ -240,7 +226,6 @@ export default function WeeklyTimeSchedule({
 
     setNewTitle("");
     setNewColor("green");
-
     setShowColor(false);
 
     requestAnimationFrame(() => {
@@ -273,7 +258,6 @@ export default function WeeklyTimeSchedule({
       variant: newColor,
     };
 
-    // optimistic placeholder
     const tempId = `tmp_${Date.now()}`;
     const optimistic = { _id: tempId, ...payload };
 
@@ -281,7 +265,6 @@ export default function WeeklyTimeSchedule({
     setCreating(null);
     setNewTitle("");
     setNewColor("green");
-
     setShowColor(false);
 
     apiCreate(payload)
@@ -289,7 +272,6 @@ export default function WeeklyTimeSchedule({
         setEvents((prev) => prev.map((x) => (x._id === tempId ? real : x)));
       })
       .catch(() => {
-        // revert on fail
         setEvents((prev) => prev.filter((x) => x._id !== tempId));
       });
   }
@@ -376,7 +358,6 @@ export default function WeeklyTimeSchedule({
         ),
       );
 
-      // debounce server save
       if (!String(dragging.id).startsWith("tmp_")) {
         scheduleServerSave(dragging.id, {
           day: newDay,
@@ -439,7 +420,6 @@ export default function WeeklyTimeSchedule({
     }
   }
 
-  // auto-grow textarea
   function autoGrow(el) {
     if (!el) return;
     const max = CREATE_EDITOR_MIN_HEIGHT - 36 - 40;
@@ -447,18 +427,25 @@ export default function WeeklyTimeSchedule({
     el.style.height = `${Math.min(el.scrollHeight, max)}px`;
   }
 
+  // FIXED COLOR SCHEME FOR BETTER CONTRAST
   const shell = darkMode ? "bg-gray-900" : "bg-gray-50";
   const gridBg = darkMode ? "bg-gray-800" : "bg-white";
-  const borderColor = darkMode ? "border-gray-700" : "border-gray-200";
-  const dayHeaderBg = darkMode ? "bg-gray-800" : "bg-gray-100";
-  const textMuted = darkMode ? "text-gray-400" : "text-gray-500";
+  const borderColor = darkMode ? "border-gray-700" : "border-gray-300";
+  const dayHeaderBg = darkMode ? "bg-gray-800" : "bg-gray-200";
+  const dayHeaderText = darkMode ? "text-white" : "text-gray-800";
+  const timeHeaderBg = darkMode ? "bg-gray-800" : "bg-gray-200";
+  const timeHeaderText = darkMode ? "text-gray-300" : "text-gray-700";
+  const hourText = darkMode ? "text-gray-400" : "text-gray-600";
+  const textMuted = darkMode ? "text-gray-400" : "text-gray-600";
 
   return (
     <div className={`min-h-screen ${shell} pt-8`}>
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h1
+              className={`text-xl font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+            >
               Wochenplan
             </h1>
           </div>
@@ -470,11 +457,11 @@ export default function WeeklyTimeSchedule({
         >
           <div className="flex">
             {/* Time column */}
-            <div className="w-16 flex-shrink-0 border-r border-gray-200 dark:border-gray-700">
+            <div className="w-16 flex-shrink-0 border-r border-gray-300 dark:border-gray-700">
               <div
-                className={`h-10 ${dayHeaderBg} flex items-center justify-center border-b ${borderColor}`}
+                className={`h-10 ${timeHeaderBg} flex items-center justify-center border-b ${borderColor}`}
               >
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                <span className={`text-xs font-medium ${timeHeaderText}`}>
                   ZEIT
                 </span>
               </div>
@@ -487,7 +474,7 @@ export default function WeeklyTimeSchedule({
                     style={{ top: (hour - START_HOUR) * HOUR_HEIGHT }}
                   >
                     <div
-                      className={`text-xs ${textMuted} w-full text-center py-2`}
+                      className={`text-xs ${hourText} w-full text-center py-2`}
                     >
                       {hour}:00
                     </div>
@@ -504,7 +491,7 @@ export default function WeeklyTimeSchedule({
                     key={day.key}
                     className={`flex-1 h-10 ${dayHeaderBg} border-r ${borderColor} last:border-r-0 flex items-center justify-center`}
                   >
-                    <div className="font-medium text-gray-900 dark:text-white">
+                    <div className={`font-medium ${dayHeaderText}`}>
                       {day.label}
                     </div>
                   </div>
@@ -542,8 +529,8 @@ export default function WeeklyTimeSchedule({
                     className={cx(
                       "absolute z-[5] pointer-events-none border",
                       darkMode
-                        ? "border-white/10 bg-white/5"
-                        : "border-black/10 bg-black/5",
+                        ? "border-white/20 bg-white/10"
+                        : "border-gray-400/30 bg-gray-400/10",
                     )}
                     style={{
                       left: `${DAYS.findIndex((d) => d.key === hoverSlot.day) * colW}%`,
@@ -558,7 +545,7 @@ export default function WeeklyTimeSchedule({
                   />
                 )}
 
-                {/* ✅ creating editor – FULL WIDTH, NO GUTTER */}
+                {/* creating editor */}
                 {creating &&
                   (() => {
                     const dayIndex = DAYS.findIndex(
@@ -586,7 +573,7 @@ export default function WeeklyTimeSchedule({
                       >
                         <div
                           className={cx(
-                            "h-full overflow-hidden border",
+                            "h-full overflow-hidden border rounded",
                             darkMode
                               ? "border-blue-500/50 bg-gray-800"
                               : "border-blue-400 bg-white",
@@ -595,13 +582,13 @@ export default function WeeklyTimeSchedule({
                           {/* header */}
                           <div
                             className={cx(
-                              "h-9 flex items-center justify-between",
+                              "h-9 flex items-center justify-between px-2",
                               darkMode
-                                ? "border-b border-white/10"
-                                : "border-b border-black/10",
+                                ? "border-b border-gray-700"
+                                : "border-b border-gray-200",
                             )}
                           >
-                            <div className="flex items-center gap-2 pl-2">
+                            <div className="flex items-center gap-2">
                               <div className="relative" ref={colorDropdownRef}>
                                 <button
                                   type="button"
@@ -609,8 +596,8 @@ export default function WeeklyTimeSchedule({
                                   className={cx(
                                     "h-7 px-2 rounded border text-xs flex items-center gap-1",
                                     darkMode
-                                      ? "border-gray-600 hover:bg-gray-700"
-                                      : "border-gray-300 hover:bg-gray-100",
+                                      ? "border-gray-600 hover:bg-gray-700 text-gray-200"
+                                      : "border-gray-300 hover:bg-gray-100 text-gray-700",
                                   )}
                                 >
                                   <div
@@ -629,7 +616,7 @@ export default function WeeklyTimeSchedule({
                                     className={cx(
                                       "absolute top-full left-0 mt-1 py-1 rounded shadow-lg z-50 min-w-[150px]",
                                       darkMode
-                                        ? "bg-gray-700 border border-gray-600"
+                                        ? "bg-gray-800 border border-gray-700"
                                         : "bg-white border border-gray-200",
                                     )}
                                   >
@@ -644,7 +631,7 @@ export default function WeeklyTimeSchedule({
                                         className={cx(
                                           "w-full px-3 py-2 text-sm flex items-center gap-2",
                                           darkMode
-                                            ? "text-gray-200 hover:bg-gray-600"
+                                            ? "text-gray-200 hover:bg-gray-700"
                                             : "text-gray-700 hover:bg-gray-100",
                                         )}
                                       >
@@ -661,7 +648,7 @@ export default function WeeklyTimeSchedule({
                                 )}
                               </div>
 
-                              <div className={cx("text-[11px]", textMuted)}>
+                              <div className={`text-[11px] ${textMuted}`}>
                                 {fmtTime(creating.startMin)}–
                                 {fmtTime(creating.endMin)}
                               </div>
@@ -673,21 +660,20 @@ export default function WeeklyTimeSchedule({
                                 setCreating(null);
                                 setNewTitle("");
                                 setNewColor("green");
-
                                 setShowColor(false);
                               }}
                               className={cx(
-                                "h-7 w-7 mr-1 rounded flex items-center justify-center",
+                                "h-7 w-7 rounded flex items-center justify-center",
                                 darkMode
-                                  ? "hover:bg-gray-700"
-                                  : "hover:bg-gray-100",
+                                  ? "hover:bg-gray-700 text-gray-300"
+                                  : "hover:bg-gray-100 text-gray-600",
                               )}
                             >
                               <FiX className="w-3 h-3" />
                             </button>
                           </div>
 
-                          {/* body – no outer padding, only textarea internal */}
+                          {/* body */}
                           <div className="flex flex-col h-[calc(100%-36px)]">
                             <div className="flex-1">
                               <textarea
@@ -700,7 +686,7 @@ export default function WeeklyTimeSchedule({
                                 onInput={(e) => autoGrow(e.target)}
                                 className={cx(
                                   "w-full h-full border-0 outline-none resize-none",
-                                  "text-sm leading-snug px-2 py-2",
+                                  "text-sm leading-snug px-3 py-3",
                                   darkMode
                                     ? "bg-gray-800 text-white placeholder-gray-400"
                                     : "bg-white text-gray-900 placeholder-gray-500",
@@ -712,10 +698,10 @@ export default function WeeklyTimeSchedule({
 
                             <div
                               className={cx(
-                                "h-10 flex items-center justify-end",
+                                "h-10 flex items-center justify-end px-3",
                                 darkMode
-                                  ? "border-t border-white/10"
-                                  : "border-t border-black/10",
+                                  ? "border-t border-gray-700"
+                                  : "border-t border-gray-200",
                               )}
                             >
                               <button
@@ -723,7 +709,7 @@ export default function WeeklyTimeSchedule({
                                 onClick={saveNewEvent}
                                 disabled={!newTitle.trim()}
                                 className={cx(
-                                  "mr-2 h-8 px-3 rounded text-sm font-medium transition-colors",
+                                  "h-8 px-3 rounded text-sm font-medium transition-colors",
                                   newTitle.trim()
                                     ? "bg-blue-600 hover:bg-blue-700 text-white"
                                     : "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed",
@@ -738,7 +724,7 @@ export default function WeeklyTimeSchedule({
                     );
                   })()}
 
-                {/* ✅ existing events – FULL WIDTH, NO GUTTER */}
+                {/* existing events */}
                 {events.map((ev) => {
                   const dayIndex = DAYS.findIndex((d) => d.key === ev.day);
                   if (dayIndex === -1) return null;
@@ -753,7 +739,7 @@ export default function WeeklyTimeSchedule({
                     <div
                       key={ev._id}
                       className={cx(
-                        "absolute border shadow-sm group overflow-hidden",
+                        "absolute border shadow-sm group overflow-hidden rounded",
                         v.border,
                         v.bg,
                         dragging?.id === ev._id || resizing?.id === ev._id
@@ -772,12 +758,11 @@ export default function WeeklyTimeSchedule({
                         className="relative h-full cursor-move"
                         onMouseDown={(e) => startDrag(e, ev)}
                       >
-                        {/* ✅ minimal padding so more text fits */}
-                        <div className="px-1 py-1.5">
+                        <div className="px-3 py-2">
                           <div
                             className={cx(
                               "text-xs font-medium leading-snug",
-                              "whitespace-pre-wrap break-words", // ✅ new lines + wrapping
+                              "whitespace-pre-wrap break-words",
                               v.text,
                             )}
                             style={{ wordBreak: "break-word" }}
@@ -786,7 +771,6 @@ export default function WeeklyTimeSchedule({
                           </div>
                         </div>
 
-                        {/* ✅ delete button overlays (does NOT take width) */}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -794,19 +778,20 @@ export default function WeeklyTimeSchedule({
                             removeEvent(ev._id);
                           }}
                           className={cx(
-                            "absolute top-1.5 right-1",
+                            "absolute top-1.5 right-1.5",
                             "opacity-0 group-hover:opacity-100",
-                            "p-0.5 rounded",
+                            "p-1 rounded",
                             "hover:bg-white/20 dark:hover:bg-black/25 transition",
+                            darkMode ? "text-gray-300" : "text-gray-600",
                           )}
                           title="Löschen"
                         >
-                          <FiX className="w-3 h-3" />
+                          <FiTrash2 className="w-3 h-3" />
                         </button>
                       </div>
 
                       <div
-                        className="absolute bottom-0 left-0 right-0 h-1.5 cursor-ns-resize hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                        className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize hover:bg-black/10 dark:hover:bg-white/10 transition-colors rounded-b"
                         onMouseDown={(e) => startResize(e, ev)}
                       >
                         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30">
@@ -844,9 +829,7 @@ export default function WeeklyTimeSchedule({
           {COLOR_OPTIONS.map((c) => (
             <div key={c.id} className="flex items-center gap-1">
               <div className={`w-2 h-2 rounded-full ${c.dot}`} />
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {c.name}
-              </span>
+              <span className={`text-xs ${textMuted}`}>{c.name}</span>
             </div>
           ))}
         </div>
