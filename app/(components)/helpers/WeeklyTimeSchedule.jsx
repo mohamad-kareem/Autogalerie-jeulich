@@ -529,7 +529,7 @@ export default function WeeklyTimeSchedule({
           {!isMobile ? (
             <div className="flex w-full">
               {/* Time column */}
-              <div className="w-16 flex-shrink-0 border-r border-gray-300 dark:border-gray-300">
+              <div className="w-16 flex-shrink-0 border-r border-gray-300 dark:border-gray-700">
                 <div
                   className={`h-10 ${timeHeaderBg} flex items-center justify-center border-b ${borderColor}`}
                 >
