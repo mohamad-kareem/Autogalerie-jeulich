@@ -904,9 +904,9 @@ export default function WeeklyTimeSchedule({
             </div>
           ) : (
             // Mobile View
-            <div className="flex flex-col">
+            <div className="flex flex-col ">
               {/* Mobile header with time and day */}
-              <div className="flex border-b border-gray-300 dark:border-gray-700">
+              <div className="flex border-b border-gray-300 dark:border-gray-700 ">
                 <div className="w-16 flex-shrink-0">
                   <div
                     className={`h-10 ${timeHeaderBg} flex items-center justify-center`}
@@ -929,7 +929,7 @@ export default function WeeklyTimeSchedule({
 
               {/* Mobile grid */}
               <div
-                className="relative overflow-y-auto"
+                className="relative overflow-y-hidden "
                 style={{
                   height: Math.min(gridHeightPx + 60, window.innerHeight * 0.6),
                 }}
@@ -1083,48 +1083,6 @@ export default function WeeklyTimeSchedule({
                     );
                   })()}
                 </div>
-              </div>
-
-              {/* Mobile add button */}
-              <div
-                className={cx(
-                  "p-4 border-t",
-                  borderColor,
-                  darkMode ? "bg-gray-800" : "bg-gray-100",
-                )}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    const now = new Date();
-                    const startMin = snapMinutes(
-                      now.getHours() * 60 + now.getMinutes(),
-                    );
-                    setCreating({
-                      day: activeDay,
-                      startMin: clamp(
-                        startMin,
-                        START_HOUR * 60,
-                        END_HOUR * 60 - MIN_EVENT_MIN,
-                      ),
-                      endMin: clamp(
-                        startMin + MIN_EVENT_MIN,
-                        startMin + MIN_EVENT_MIN,
-                        END_HOUR * 60,
-                      ),
-                    });
-                    setShowMobileEditor(true);
-                  }}
-                  className={cx(
-                    "w-full py-3 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-colors",
-                    darkMode
-                      ? "bg-blue-600 hover:bg-blue-700 text-white"
-                      : "bg-blue-500 hover:bg-blue-600 text-white",
-                  )}
-                >
-                  <FiPlus className="w-4 h-4" />
-                  Termin hinzufügen
-                </button>
               </div>
             </div>
           )}
