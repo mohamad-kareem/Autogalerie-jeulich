@@ -113,7 +113,10 @@ async function apiDelete(id) {
   return true;
 }
 
-export default function WeeklyTimeSchedule({ darkMode = false }) {
+export default function WeeklyTimeSchedule({
+  darkMode = false,
+  className = "",
+}) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -431,26 +434,31 @@ export default function WeeklyTimeSchedule({ darkMode = false }) {
   const textMuted = darkMode ? "text-gray-400" : "text-gray-600";
 
   return (
-    <div className={`min-h-screen ${shell} pt-8`}>
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <h1
-              className={`text-xl font-semibold ${
+    <section className={cx("w-full mt-6", shell, className)}>
+      <div className="w-full">
+        <div className="mb-3">
+          <div className="flex items-center justify-between">
+            <h2
+              className={`text-lg sm:text-xl font-semibold ${
                 darkMode ? "text-white" : "text-gray-900"
               }`}
             >
               Wochenplan
-            </h1>
+            </h2>
             {loading && <div className={`text-xs ${textMuted}`}>Lädt…</div>}
           </div>
         </div>
 
+        {/* ✅ Full width container */}
         <div
-          className={`border ${borderColor} overflow-hidden shadow-sm ${gridBg}`}
+          className={cx(
+            "w-full border overflow-hidden shadow-sm",
+            borderColor,
+            gridBg,
+          )}
           ref={containerRef}
         >
-          <div className="flex">
+          <div className="flex w-full">
             {/* Time column */}
             <div className="w-16 flex-shrink-0 border-r border-gray-300 dark:border-gray-700">
               <div
@@ -479,7 +487,7 @@ export default function WeeklyTimeSchedule({ darkMode = false }) {
             </div>
 
             {/* Days */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex">
                 {DAYS.map((day) => (
                   <div
@@ -525,7 +533,9 @@ export default function WeeklyTimeSchedule({ darkMode = false }) {
                         : "border-gray-400/30 bg-gray-400/10",
                     )}
                     style={{
-                      left: `${DAYS.findIndex((d) => d.key === hoverSlot.day) * colW}%`,
+                      left: `${
+                        DAYS.findIndex((d) => d.key === hoverSlot.day) * colW
+                      }%`,
                       width: `${colW}%`,
                       top: minutesToY(hoverSlot.startMin),
                       height: Math.max(
@@ -817,15 +827,15 @@ export default function WeeklyTimeSchedule({ darkMode = false }) {
         </div>
 
         {/* legend */}
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           {COLOR_OPTIONS.map((c) => (
-            <div key={c.id} className="flex items-center gap-1">
+            <div key={c.id} className="flex items-center gap-1.5">
               <div className={`w-2 h-2 rounded-full ${c.dot}`} />
               <span className={`text-xs ${textMuted}`}>{c.name}</span>
             </div>
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
