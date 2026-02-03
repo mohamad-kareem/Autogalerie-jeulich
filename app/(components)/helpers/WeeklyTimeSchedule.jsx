@@ -72,13 +72,13 @@ function variantClass(variant, darkMode) {
       hover: darkMode ? "hover:bg-emerald-400/16" : "hover:bg-emerald-400/18",
     },
   };
-
   return map[variant] || map.green;
 }
 
-async function apiGet(createdBy) {
-  const qs = createdBy ? `?createdBy=${encodeURIComponent(createdBy)}` : "";
-  const res = await fetch(`/api/schedule${qs}`, { cache: "no-store" });
+/* ---------------- API (GLOBAL) ---------------- */
+
+async function apiGet() {
+  const res = await fetch(`/api/schedule`, { cache: "no-store" });
   const data = await res.json();
   if (!data?.ok) throw new Error(data?.error || "Failed to load");
   return data.items || [];
@@ -113,10 +113,7 @@ async function apiDelete(id) {
   return true;
 }
 
-export default function WeeklyTimeSchedule({
-  darkMode = false,
-  createdBy = "",
-}) {
+export default function WeeklyTimeSchedule({ darkMode = false }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -149,7 +146,7 @@ export default function WeeklyTimeSchedule({
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    apiGet(createdBy)
+    apiGet()
       .then((items) => {
         if (!alive) return;
         setEvents(items);
@@ -159,7 +156,7 @@ export default function WeeklyTimeSchedule({
     return () => {
       alive = false;
     };
-  }, [createdBy]);
+  }, []);
 
   useEffect(() => {
     function onDown(e) {
@@ -223,7 +220,6 @@ export default function WeeklyTimeSchedule({
     );
 
     setCreating({ day: dayKey, startMin, endMin });
-
     setNewTitle("");
     setNewColor("green");
     setShowColor(false);
@@ -250,7 +246,6 @@ export default function WeeklyTimeSchedule({
     if (!creating || !newTitle.trim()) return;
 
     const payload = {
-      createdBy: createdBy || "",
       day: creating.day,
       startMin: creating.startMin,
       endMin: creating.endMin,
@@ -415,9 +410,7 @@ export default function WeeklyTimeSchedule({
     if (String(id).startsWith("tmp_")) return;
     try {
       await apiDelete(id);
-    } catch {
-      // optional: refetch if needed
-    }
+    } catch {}
   }
 
   function autoGrow(el) {
@@ -427,7 +420,6 @@ export default function WeeklyTimeSchedule({
     el.style.height = `${Math.min(el.scrollHeight, max)}px`;
   }
 
-  // FIXED COLOR SCHEME FOR BETTER CONTRAST
   const shell = darkMode ? "bg-gray-900" : "bg-gray-50";
   const gridBg = darkMode ? "bg-gray-800" : "bg-white";
   const borderColor = darkMode ? "border-gray-700" : "border-gray-300";
@@ -444,15 +436,18 @@ export default function WeeklyTimeSchedule({
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <h1
-              className={`text-xl font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+              className={`text-xl font-semibold ${
+                darkMode ? "text-white" : "text-gray-900"
+              }`}
             >
               Wochenplan
             </h1>
+            {loading && <div className={`text-xs ${textMuted}`}>Lädt…</div>}
           </div>
         </div>
 
         <div
-          className={` border ${borderColor} overflow-hidden shadow-sm ${gridBg}`}
+          className={`border ${borderColor} overflow-hidden shadow-sm ${gridBg}`}
           ref={containerRef}
         >
           <div className="flex">
@@ -513,10 +508,7 @@ export default function WeeklyTimeSchedule({
                   <div
                     key={day.key}
                     className={`absolute top-0 bottom-0 border-r ${borderColor} last:border-r-0`}
-                    style={{
-                      left: `${index * colW}%`,
-                      width: `${colW}%`,
-                    }}
+                    style={{ left: `${index * colW}%`, width: `${colW}%` }}
                     onClick={(e) => handleGridClick(day.key, e)}
                     onMouseMove={(e) => handleDayMouseMove(day.key, e)}
                     onMouseLeave={() => setHoverSlot(null)}
@@ -739,7 +731,7 @@ export default function WeeklyTimeSchedule({
                     <div
                       key={ev._id}
                       className={cx(
-                        "absolute border shadow-sm group overflow-hidden ",
+                        "absolute border shadow-sm group overflow-hidden",
                         v.border,
                         v.bg,
                         dragging?.id === ev._id || resizing?.id === ev._id
@@ -804,8 +796,8 @@ export default function WeeklyTimeSchedule({
 
                 {/* current time line */}
                 {(() => {
-                  const nowMin =
-                    new Date().getHours() * 60 + new Date().getMinutes();
+                  const now = new Date();
+                  const nowMin = now.getHours() * 60 + now.getMinutes();
                   const within =
                     nowMin >= START_HOUR * 60 && nowMin <= END_HOUR * 60;
                   if (!within) return null;

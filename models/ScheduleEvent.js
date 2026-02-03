@@ -2,11 +2,11 @@ import mongoose from "mongoose";
 
 const ScheduleEventSchema = new mongoose.Schema(
   {
-    createdBy: { type: String, default: "" }, // optional (admin email/id)
     day: {
       type: String,
       enum: ["mon", "tue", "wed", "thu", "fri", "sat"],
       required: true,
+      index: true,
     },
     startMin: { type: Number, required: true }, // minutes in day
     endMin: { type: Number, required: true }, // minutes in day
@@ -15,10 +15,14 @@ const ScheduleEventSchema = new mongoose.Schema(
       type: String,
       enum: ["red", "yellow", "green"],
       default: "green",
+      index: true,
     },
   },
   { timestamps: true },
 );
+
+// Helpful compound index for sorting + faster queries
+ScheduleEventSchema.index({ day: 1, startMin: 1 });
 
 export default mongoose.models.ScheduleEvent ||
   mongoose.model("ScheduleEvent", ScheduleEventSchema);

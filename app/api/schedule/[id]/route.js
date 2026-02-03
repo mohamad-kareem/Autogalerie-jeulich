@@ -7,10 +7,8 @@ function bad(msg, status = 400) {
   return NextResponse.json({ ok: false, error: msg }, { status });
 }
 
-// ✅ Allowed futuristic variants
 const ALLOWED_VARIANTS = new Set(["red", "yellow", "green"]);
 
-// ✅ Optional: map old variants to new ones
 function normalizeVariant(v) {
   if (!v) return v;
   const x = String(v).toLowerCase();
@@ -48,14 +46,13 @@ export async function PUT(req, { params }) {
 
     if (patch.startMin !== undefined && !Number.isFinite(patch.startMin))
       return bad("Invalid startMin");
-
     if (patch.endMin !== undefined && !Number.isFinite(patch.endMin))
       return bad("Invalid endMin");
 
     if (patch.title !== undefined && !patch.title)
       return bad("Title cannot be empty");
 
-    // safety check if both exist
+    // If both exist in patch
     if (
       patch.startMin !== undefined &&
       patch.endMin !== undefined &&
@@ -64,7 +61,7 @@ export async function PUT(req, { params }) {
       return bad("endMin must be > startMin");
     }
 
-    // ✅ also protect if only endMin provided (must still be > startMin)
+    // If only endMin changed -> compare with current startMin
     if (patch.endMin !== undefined && patch.startMin === undefined) {
       const current = await ScheduleEvent.findById(id).lean();
       if (!current) return bad("Not found", 404);
@@ -72,6 +69,7 @@ export async function PUT(req, { params }) {
         return bad("endMin must be > startMin");
     }
 
+    // If only startMin changed -> compare with current endMin
     if (patch.startMin !== undefined && patch.endMin === undefined) {
       const current = await ScheduleEvent.findById(id).lean();
       if (!current) return bad("Not found", 404);

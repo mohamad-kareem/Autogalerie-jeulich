@@ -9,12 +9,11 @@ function bad(msg, status = 400) {
 // ✅ Allowed futuristic variants
 const ALLOWED_VARIANTS = new Set(["red", "yellow", "green"]);
 
-// ✅ Optional: map old variants to new ones (so old frontend/data won't break)
+// ✅ Map old variants to new ones (old frontend/data won’t break)
 function normalizeVariant(v) {
   if (!v) return "green";
   const x = String(v).toLowerCase();
 
-  // old -> new mapping
   if (x === "blue") return "green";
   if (x === "emerald") return "green";
   if (x === "amber") return "yellow";
@@ -22,15 +21,12 @@ function normalizeVariant(v) {
   return x;
 }
 
-export async function GET(req) {
+export async function GET() {
   try {
     await connectDB();
 
-    const { searchParams } = new URL(req.url);
-    const createdBy = (searchParams.get("createdBy") || "").trim();
-
-    const filter = createdBy ? { createdBy } : {};
-    const items = await ScheduleEvent.find(filter)
+    // ✅ GLOBAL: fetch everything
+    const items = await ScheduleEvent.find({})
       .sort({ day: 1, startMin: 1 })
       .lean();
 
@@ -45,15 +41,10 @@ export async function POST(req) {
     await connectDB();
     const body = await req.json();
 
-    const createdBy = (body.createdBy || "").trim();
     const day = body.day;
-
     const startMin = Number(body.startMin);
     const endMin = Number(body.endMin);
-
     const title = (body.title || "").trim();
-
-    // ✅ new default + mapping
     const variant = normalizeVariant(body.variant);
 
     if (!day) return bad("Missing day");
@@ -62,12 +53,10 @@ export async function POST(req) {
     if (!title) return bad("Title is required");
     if (endMin <= startMin) return bad("endMin must be > startMin");
 
-    // ✅ validate variant
     if (!ALLOWED_VARIANTS.has(variant))
       return bad("Invalid variant (use red/yellow/green)");
 
     const doc = await ScheduleEvent.create({
-      createdBy,
       day,
       startMin,
       endMin,
