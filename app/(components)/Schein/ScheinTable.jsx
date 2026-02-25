@@ -110,7 +110,7 @@ export default function ScheinTable({
               ">": "&gt;",
               '"': "&quot;",
               "'": "&#039;",
-            }[c])
+            })[c],
         );
 
       // Date formatting for "Erfasst am"
@@ -1182,7 +1182,7 @@ export default function ScheinTable({
       {/* Image Preview Modal */}
       {showPreviewModal && (
         <div className="fixed inset-0 bg-gray-700/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full shadow-xl max-h-[85vh] flex flex-col">
+          <div className="bg-white rounded-lg max-w-5xl w-full shadow-xl max-h-[95vh] flex flex-col">
             <div className="p-2 border-b flex justify-between items-center gap-2">
               <span className="text-sm font-medium truncate">
                 Schein Vorschau
@@ -1219,7 +1219,7 @@ export default function ScheinTable({
                 </button>
               </div>
             </div>
-            <div className="p-2 md:p-3 flex-1 overflow-hidden flex items-center justify-center">
+            <div className="p-2 md:p-3 flex-1 overflow-auto flex items-center justify-center">
               <img
                 src={modalImageUrl}
                 alt="Vorschau"
@@ -1317,8 +1317,8 @@ export default function ScheinTable({
                         keyForm.keyCount === 1
                           ? "bg-blue-600 text-white border-blue-600"
                           : darkMode
-                          ? "bg-gray-700 text-gray-300 border-gray-600"
-                          : "bg-white text-gray-700 border-gray-300"
+                            ? "bg-gray-700 text-gray-300 border-gray-600"
+                            : "bg-white text-gray-700 border-gray-300"
                       }`}
                     >
                       1
@@ -1330,8 +1330,8 @@ export default function ScheinTable({
                         keyForm.keyCount === 2
                           ? "bg-blue-600 text-white border-blue-600"
                           : darkMode
-                          ? "bg-gray-700 text-gray-300 border-gray-600"
-                          : "bg-white text-gray-700 border-gray-300"
+                            ? "bg-gray-700 text-gray-300 border-gray-600"
+                            : "bg-white text-gray-700 border-gray-300"
                       }`}
                     >
                       2
