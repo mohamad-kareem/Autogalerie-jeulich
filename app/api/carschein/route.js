@@ -35,37 +35,29 @@ function toStr(v) {
 function toBool(v) {
   return !!v;
 }
-function toNumOrDefault(v, def) {
+function toNum(v) {
   const n = Number(v);
-  return Number.isFinite(n) ? n : def;
+  return Number.isFinite(n) ? n : null;
 }
 function ensureValidDateOrNull(value) {
   if (!value) return null;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
 }
-
+function normalizeStage(stage, fallback = "WERKSTATT") {
+  const s = toStr(stage).toUpperCase();
+  return STAGES.includes(s) ? s : fallback;
+}
 function normalizeNotes(notes) {
   if (Array.isArray(notes)) {
-    return notes
-      .filter(Boolean)
-      .map((n) => toStr(n))
-      .filter(Boolean);
+    return notes.map(toStr).filter(Boolean);
   }
-  return toStr(notes)
-    .split("\n")
-    .map((n) => toStr(n))
-    .filter(Boolean);
+  return toStr(notes).split("\n").map(toStr).filter(Boolean);
 }
-
 function normalizeCompletedTasks(completedTasks) {
   if (!Array.isArray(completedTasks)) return [];
-  return completedTasks
-    .filter(Boolean)
-    .map((n) => toStr(n))
-    .filter(Boolean);
+  return completedTasks.map(toStr).filter(Boolean);
 }
-
 function normalizeReclamations(reclamations) {
   if (!Array.isArray(reclamations)) return [];
   return reclamations.map((r) => ({
@@ -75,15 +67,9 @@ function normalizeReclamations(reclamations) {
     cost:
       r?.cost === null || r?.cost === undefined || r?.cost === ""
         ? null
-        : toNumOrDefault(r.cost, null),
+        : toNum(r.cost),
   }));
 }
-
-function normalizeStage(stage, fallback = "WERKSTATT") {
-  const s = toStr(stage).toUpperCase();
-  return STAGES.includes(s) ? s : fallback;
-}
-
 function normalizeStageMeta(meta) {
   const m = meta && typeof meta === "object" ? meta : {};
   return {
@@ -92,10 +78,7 @@ function normalizeStageMeta(meta) {
       what: toStr(m?.werkstatt?.what),
     },
     platz: { note: toStr(m?.platz?.note) },
-    tuev: {
-      passed: toBool(m?.tuev?.passed),
-      issue: toStr(m?.tuev?.issue),
-    },
+    tuev: { passed: toBool(m?.tuev?.passed), issue: toStr(m?.tuev?.issue) },
   };
 }
 
@@ -127,6 +110,24 @@ async function findSoldContactIdByFin(finNumber) {
     .lean();
 
   return byVin?._id || null;
+}
+
+/* -----------------------
+   Dead record checker (server)
+   sold + removed (keyNumber empty/– and keyCount 0/null) OR dashboardHidden
+------------------------ */
+function isDeadSoldRecord(doc) {
+  const sold = !!doc?.keySold || doc?.stage === "SOLD";
+  if (!sold) return false;
+
+  const keyNumber = toStr(doc?.keyNumber);
+  const keyCount = toNum(doc?.keyCount);
+
+  const looksRemoved =
+    (!keyNumber || keyNumber === "–") && (keyCount === 0 || keyCount === null);
+  const hidden = !!doc?.dashboardHidden;
+
+  return looksRemoved || hidden;
 }
 
 /* =========================================================
@@ -181,7 +182,9 @@ export async function POST(req) {
       completedTasks,
 
       keyNumber: toStr(body.keyNumber),
-      keyCount: Number.isFinite(body.keyCount) ? body.keyCount : 2,
+      keyCount: Number.isFinite(Number(body.keyCount))
+        ? Number(body.keyCount)
+        : 2,
       keyColor: toStr(body.keyColor) || "#000000",
       keySold,
       keyNote: toStr(body.keyNote),
@@ -210,15 +213,18 @@ export async function POST(req) {
 }
 
 /* =========================================================
-   GET /api/carschein?page=1&limit=10  (List)
+   GET /api/carschein?page=1&limit=10&hideDead=1
 ========================================================= */
 export async function GET(req) {
   try {
     await connectDB();
 
     const { searchParams } = new URL(req.url);
+
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
     const limit = Math.max(parseInt(searchParams.get("limit") || "10", 10), 1);
+    const hideDead = searchParams.get("hideDead") === "1";
+
     const skip = (page - 1) * limit;
 
     const [total, docs] = await Promise.all([
@@ -231,8 +237,13 @@ export async function GET(req) {
         .lean(),
     ]);
 
+    // ✅ Server-side cleanup filter if hideDead=1
+    const finalDocs = hideDead
+      ? docs.filter((d) => !isDeadSoldRecord(d))
+      : docs;
+
     const totalPages = Math.max(1, Math.ceil(total / limit));
-    return json({ docs, page, totalPages, total }, 200);
+    return json({ docs: finalDocs, page, totalPages, total }, 200);
   } catch (err) {
     console.error("GET /api/carschein error:", err);
     return json({ error: err.message || "Server error" }, 500);
@@ -240,7 +251,8 @@ export async function GET(req) {
 }
 
 /* =========================================================
-   DELETE /api/carschein?id=...
+   DELETE /api/carschein?id=...  OR  /api/carschein?finNumber=...
+   ✅ This is the piece you need for “cascade delete”
 ========================================================= */
 export async function DELETE(req) {
   try {
@@ -250,14 +262,56 @@ export async function DELETE(req) {
     if (!session) return json({ error: "Unauthorized" }, 401);
 
     const { searchParams } = new URL(req.url);
+
     const id = searchParams.get("id");
-    if (!id) return json({ error: "Missing id" }, 400);
+    const finNumber = toStr(searchParams.get("finNumber"));
 
-    const doc = await CarSchein.findById(id).select("_id publicId").lean();
-    if (!doc) return json({ error: "Not found" }, 404);
+    // ✅ delete by id (existing)
+    if (id) {
+      const doc = await CarSchein.findById(id).select("_id publicId").lean();
+      if (!doc) return json({ error: "Not found" }, 404);
 
-    await CarSchein.findByIdAndDelete(id);
-    return json({ success: true }, 200);
+      // optional: cleanup cloudinary
+      if (doc.publicId) {
+        try {
+          await cloudinary.uploader.destroy(doc.publicId);
+        } catch (e) {
+          console.warn("Cloudinary delete failed:", e?.message);
+        }
+      }
+
+      await CarSchein.findByIdAndDelete(id);
+      return json({ success: true, mode: "id" }, 200);
+    }
+
+    // ✅ delete by FIN (NEW)
+    if (finNumber) {
+      const docs = await CarSchein.find({ finNumber })
+        .select("_id publicId")
+        .lean();
+
+      // optional cloudinary cleanup
+      for (const d of docs) {
+        if (!d.publicId) continue;
+        try {
+          await cloudinary.uploader.destroy(d.publicId);
+        } catch (e) {
+          console.warn("Cloudinary delete failed:", e?.message);
+        }
+      }
+
+      const res = await CarSchein.deleteMany({ finNumber });
+      return json(
+        {
+          success: true,
+          mode: "finNumber",
+          deletedCount: res?.deletedCount || 0,
+        },
+        200,
+      );
+    }
+
+    return json({ error: "Missing id or finNumber" }, 400);
   } catch (err) {
     console.error("DELETE /api/carschein error:", err);
     return json({ error: err.message || "Server error" }, 500);
@@ -285,7 +339,6 @@ export async function PUT(req) {
     if (body.finNumber !== undefined) {
       const nextFin = toStr(body.finNumber);
       const prevFin = toStr(current.finNumber);
-
       if (nextFin && nextFin !== prevFin) {
         const exists = await finExists(nextFin, id);
         if (exists)
@@ -298,7 +351,7 @@ export async function PUT(req) {
       try {
         await cloudinary.uploader.destroy(body.oldPublicId);
       } catch (err) {
-        console.warn("Cloudinary delete failed:", err.message);
+        console.warn("Cloudinary delete failed:", err?.message);
       }
     }
 
@@ -321,7 +374,9 @@ export async function PUT(req) {
     // Key
     if (body.keyNumber !== undefined) update.keyNumber = toStr(body.keyNumber);
     if (body.keyCount !== undefined)
-      update.keyCount = toNumOrDefault(body.keyCount, 2);
+      update.keyCount = Number.isFinite(Number(body.keyCount))
+        ? Number(body.keyCount)
+        : 2;
     if (body.keyColor !== undefined)
       update.keyColor = toStr(body.keyColor) || "#000000";
     if (body.keyNote !== undefined) update.keyNote = toStr(body.keyNote);
@@ -333,17 +388,14 @@ export async function PUT(req) {
       update.rotKennzeichen = toBool(body.rotKennzeichen);
 
     // Stage + meta
-    if (body.stage !== undefined) {
+    if (body.stage !== undefined)
       update.stage = normalizeStage(body.stage, current.stage || "WERKSTATT");
-    }
-    if (body.stageMeta !== undefined) {
+    if (body.stageMeta !== undefined)
       update.stageMeta = normalizeStageMeta(body.stageMeta);
-    }
 
     // Reclamations
-    if (body.reclamations !== undefined) {
+    if (body.reclamations !== undefined)
       update.reclamations = normalizeReclamations(body.reclamations);
-    }
 
     // dashboardHidden behavior (clears key fields)
     if (body.dashboardHidden !== undefined) {
@@ -358,32 +410,27 @@ export async function PUT(req) {
       }
     }
 
-    // keySold + soldAt logic (keep your behavior)
+    // keySold + soldAt logic
     if (body.keySold !== undefined) {
       const newKeySold = toBool(body.keySold);
       const wasSold = toBool(current.keySold);
 
       update.keySold = newKeySold;
 
-      if (!wasSold && newKeySold) {
+      if (!wasSold && newKeySold)
         update.soldAt = ensureValidDateOrNull(body.soldAt) || new Date();
-      }
-      if (wasSold && !newKeySold) {
-        update.soldAt = null;
-      }
+      if (wasSold && !newKeySold) update.soldAt = null;
     }
 
-    if (body.soldAt !== undefined) {
+    if (body.soldAt !== undefined)
       update.soldAt = ensureValidDateOrNull(body.soldAt);
-    }
 
-    // ✅ SOLD behavior (FIN ONLY, no carName)
+    // ✅ SOLD behavior (FIN ONLY)
     const nextStage = update.stage ?? current.stage;
     if (nextStage === "SOLD") {
       update.keySold = true;
       update.soldAt = current.soldAt || new Date();
 
-      // set soldContactId only once if missing
       if (!current.soldContactId) {
         const fin = update.finNumber ?? current.finNumber;
         update.soldContactId = await findSoldContactIdByFin(fin);
@@ -421,7 +468,7 @@ export async function PATCH(req) {
     const updated = await CarSchein.findByIdAndUpdate(
       id,
       { completedTasks: normalizeCompletedTasks(completedTasks) },
-      { new: true }
+      { new: true },
     )
       .populate("soldContactId", "customerName phone street postalCode city")
       .lean();
