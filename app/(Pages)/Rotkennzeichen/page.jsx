@@ -28,6 +28,9 @@ import {
 } from "docx";
 import { saveAs } from "file-saver";
 
+/* -----------------------
+   Helpers
+------------------------ */
 function hexToEmoji(hex) {
   if (!hex) return "⚪";
   const c = String(hex).toLowerCase();
@@ -74,6 +77,7 @@ function makeCid() {
   return `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+// DB ISO/Z → local datetime-local string
 function toLocalInputValue(dateValue) {
   if (!dateValue) return "";
   const d = new Date(dateValue);
@@ -84,6 +88,14 @@ function toLocalInputValue(dateValue) {
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
   return `${y}-${m}-${day}T${hh}:${mm}`;
+}
+
+// ✅ datetime-local (local time) → ISO UTC string for API
+function localInputToISO(value) {
+  if (!value) return null;
+  const d = new Date(value); // interpreted as local time in the browser
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
 }
 
 export default function CarLocationsPage() {
@@ -308,7 +320,10 @@ export default function CarLocationsPage() {
       routeSummary: "",
       driverInfo: "",
     };
+
+    // ✅ push to end (newest is last)
     setRows((prev) => [...prev, newRow]);
+
     setEditCid(cid);
     setSelectedCids([cid]);
   };
@@ -316,9 +331,10 @@ export default function CarLocationsPage() {
   const saveRow = async (row) => {
     const cid = row._cid;
 
+    // ✅ send ISO UTC strings (fix +1 hour)
     const payload = {
-      startDateTime: row.startDateTime || null,
-      endDateTime: row.endDateTime || null,
+      startDateTime: localInputToISO(row.startDateTime),
+      endDateTime: localInputToISO(row.endDateTime),
       vehicleType: row.vehicleType || "",
       manufacturer: row.manufacturer || "",
       vehicleId: row.vehicleId || "",
@@ -431,7 +447,9 @@ export default function CarLocationsPage() {
         new TableRow({
           children: [
             new TableCell({ children: [new Paragraph("Lfd.")] }),
-            new TableCell({ children: [new Paragraph("Datum Beginn / Ende")] }),
+            new TableCell({
+              children: [new Paragraph("Datum Beginn / Ende")],
+            }),
             new TableCell({ children: [new Paragraph("Art")] }),
             new TableCell({ children: [new Paragraph("Herst.")] }),
             new TableCell({ children: [new Paragraph("FZ-Ident.Nr")] }),
@@ -445,7 +463,9 @@ export default function CarLocationsPage() {
         tableRows.push(
           new TableRow({
             children: [
-              new TableCell({ children: [new Paragraph(String(index + 1))] }),
+              new TableCell({
+                children: [new Paragraph(String(index + 1))],
+              }),
               new TableCell({
                 children: [
                   new Paragraph(
@@ -562,12 +582,16 @@ export default function CarLocationsPage() {
 
             <div>
               <h2
-                className={`text-sm font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}
+                className={`text-sm font-semibold ${
+                  darkMode ? "text-white" : "text-slate-900"
+                }`}
               >
                 Rotbuch
               </h2>
               <p
-                className={`text-xs ${darkMode ? "text-slate-400" : "text-slate-600"}`}
+                className={`text-xs ${
+                  darkMode ? "text-slate-400" : "text-slate-600"
+                }`}
               >
                 {redCarsWithImages.length} Fahrzeuge mit Rotkennzeichen
               </p>
@@ -579,10 +603,14 @@ export default function CarLocationsPage() {
           {redCarsWithImages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center py-12">
               <FiBook
-                className={`w-16 h-16 mb-4 ${darkMode ? "text-slate-700" : "text-slate-300"}`}
+                className={`w-16 h-16 mb-4 ${
+                  darkMode ? "text-slate-700" : "text-slate-300"
+                }`}
               />
               <p
-                className={`text-sm ${darkMode ? "text-slate-400" : "text-slate-600"}`}
+                className={`text-sm ${
+                  darkMode ? "text-slate-400" : "text-slate-600"
+                }`}
               >
                 Keine Fahrzeuge mit Rotkennzeichen gefunden
               </p>
@@ -598,7 +626,7 @@ export default function CarLocationsPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 ">
               {redCarsWithImages.map((car) => (
                 <div
                   key={car.id}
@@ -621,10 +649,14 @@ export default function CarLocationsPage() {
                         />
                       ) : (
                         <div
-                          className={`h-full w-full flex items-center justify-center ${darkMode ? "bg-slate-700" : "bg-slate-200"}`}
+                          className={`h-full w-full flex items-center justify-center ${
+                            darkMode ? "bg-slate-700" : "bg-slate-200"
+                          }`}
                         >
                           <FiBook
-                            className={`w-8 h-8 ${darkMode ? "text-slate-600" : "text-slate-400"}`}
+                            className={`w-8 h-8 ${
+                              darkMode ? "text-slate-600" : "text-slate-400"
+                            }`}
                           />
                         </div>
                       )}
@@ -632,7 +664,9 @@ export default function CarLocationsPage() {
 
                     <div className="flex-1 min-w-0">
                       <h3
-                        className={`text-sm font-semibold truncate ${darkMode ? "text-white" : "text-slate-900"}`}
+                        className={`text-sm font-semibold truncate ${
+                          darkMode ? "text-white" : "text-slate-900"
+                        }`}
                       >
                         {car.carName}
                       </h3>
@@ -646,14 +680,13 @@ export default function CarLocationsPage() {
                         >
                           FIN: {car.finNumber || "–"}
                         </span>
-                        <span className="text-xs">
-                          {hexToEmoji(car.keyColor)}
-                        </span>
                       </div>
 
                       {car.matchedCar && (
                         <p
-                          className={`text-xs truncate mt-1 ${darkMode ? "text-slate-400" : "text-slate-600"}`}
+                          className={`text-xs truncate mt-1 ${
+                            darkMode ? "text-slate-400" : "text-slate-600"
+                          }`}
                         >
                           {car.matchedCar.make || ""}{" "}
                           {car.matchedCar.model || ""}
@@ -675,7 +708,9 @@ export default function CarLocationsPage() {
       className={`relative min-h-screen ${bgClass} px-2 py-3 sm:px-4 lg:px-6`}
     >
       <div
-        className={`max-w-screen-2xl mx-auto ${showRotbuch && !isMobile ? "pr-[380px] lg:pr-[420px]" : ""}`}
+        className={`max-w-screen-2xl mx-auto ${
+          showRotbuch && !isMobile ? "pr-[380px] lg:pr-[420px]" : ""
+        }`}
       >
         <header className="mb-3 sm:mb-4 lg:mb-5 flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex items-center gap-3">
@@ -712,7 +747,9 @@ export default function CarLocationsPage() {
               <select
                 value={monthFilter}
                 onChange={(e) => setMonthFilter(e.target.value)}
-                className={`bg-transparent text-[11px] sm:text-xs focus:outline-none ${darkMode ? "text-slate-200" : "text-slate-700"}`}
+                className={`monthSelect bg-transparent text-[11px] sm:text-xs focus:outline-none ${
+                  darkMode ? "text-slate-200" : "text-slate-700"
+                }`}
               >
                 <option value="1">Januar</option>
                 <option value="2">Februar</option>
@@ -777,7 +814,9 @@ export default function CarLocationsPage() {
           className={`rounded-lg border ${borderColor} ${cardBg} shadow-sm overflow-hidden`}
         >
           <div
-            className={`w-full overflow-x-auto custom-scroll ${showRotbuch ? "overflow-y-auto max-h-[calc(100vh-220px)]" : ""}`}
+            className={`w-full overflow-x-auto custom-scroll ${
+              showRotbuch ? "overflow-y-auto max-h-[calc(100vh-220px)]" : ""
+            }`}
           >
             <table className="w-full border-collapse text-[11px] sm:text-xs">
               <thead
@@ -1151,6 +1190,23 @@ export default function CarLocationsPage() {
         .kv-checkbox.dark:checked::after {
           border-right-color: #f9fafb;
           border-bottom-color: #f9fafb;
+        }
+        :global(.monthSelect) {
+          color-scheme: ${darkMode ? "dark" : "light"};
+        }
+
+        :global(.monthSelect option) {
+          background-color: ${darkMode
+            ? "#0f172a"
+            : "#ffffff"}; /* slate-900 / white */
+          color: ${darkMode
+            ? "#e2e8f0"
+            : "#0f172a"}; /* slate-200 / slate-900 */
+        }
+
+        :global(.monthSelect optgroup) {
+          background-color: ${darkMode ? "#0f172a" : "#ffffff"};
+          color: ${darkMode ? "#e2e8f0" : "#0f172a"};
         }
       `}</style>
     </div>

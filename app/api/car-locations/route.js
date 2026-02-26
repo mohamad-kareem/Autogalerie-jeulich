@@ -22,12 +22,23 @@ function normalizeDoc(doc) {
   return { ...doc, _id: idToString(doc._id) };
 }
 
+function toDateOrNull(v) {
+  if (!v) return null;
+
+  // ✅ if client sends ISO "....Z" => safe everywhere (UTC)
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 export async function GET() {
   try {
     await connectDB();
+
+    // ✅ FIX #2: oldest first (new entries appear LAST)
     const docs = await CarLocation.find()
-      .sort({ startDateTime: -1, createdAt: -1 })
+      .sort({ startDateTime: 1, createdAt: 1 })
       .lean();
+
     return jsonResponse(
       { docs: Array.isArray(docs) ? docs.map(normalizeDoc) : [] },
       200,
@@ -47,8 +58,9 @@ export async function POST(req) {
     const body = await req.json();
 
     const doc = await CarLocation.create({
-      startDateTime: body.startDateTime ? new Date(body.startDateTime) : null,
-      endDateTime: body.endDateTime ? new Date(body.endDateTime) : null,
+      // ✅ FIX #1: accept ISO UTC from client
+      startDateTime: toDateOrNull(body.startDateTime),
+      endDateTime: toDateOrNull(body.endDateTime),
       vehicleType: body.vehicleType || "",
       manufacturer: body.manufacturer || "",
       vehicleId: body.vehicleId || "",
@@ -74,8 +86,8 @@ export async function PUT(req) {
     if (!body?.id) return jsonResponse({ error: "Missing id" }, 400);
 
     const updateFields = {
-      startDateTime: body.startDateTime ? new Date(body.startDateTime) : null,
-      endDateTime: body.endDateTime ? new Date(body.endDateTime) : null,
+      startDateTime: toDateOrNull(body.startDateTime),
+      endDateTime: toDateOrNull(body.endDateTime),
       vehicleType: body.vehicleType || "",
       manufacturer: body.manufacturer || "",
       vehicleId: body.vehicleId || "",
@@ -86,6 +98,7 @@ export async function PUT(req) {
     const updated = await CarLocation.findByIdAndUpdate(body.id, updateFields, {
       new: true,
     }).lean();
+
     if (!updated) return jsonResponse({ error: "Not found" }, 404);
 
     return jsonResponse(normalizeDoc(updated), 200);
