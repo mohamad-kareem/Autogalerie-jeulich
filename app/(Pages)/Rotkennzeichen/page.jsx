@@ -309,10 +309,29 @@ export default function CarLocationsPage() {
 
   const addNewRow = () => {
     const cid = makeCid();
+
+    // ✅ create a date inside the currently selected month
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = Number(monthFilter); // 1..12
+
+    // pick "today's day" if it exists in that month, otherwise use last day of month
+    const lastDayOfSelectedMonth = new Date(y, m, 0).getDate(); // month is 1..12 here
+    const safeDay = Math.min(now.getDate(), lastDayOfSelectedMonth);
+
+    const preset = new Date(
+      y,
+      m - 1,
+      safeDay,
+      now.getHours(),
+      now.getMinutes(),
+    );
+    const presetLocal = toLocalInputValue(preset);
+
     const newRow = {
       _id: "",
       _cid: cid,
-      startDateTime: "",
+      startDateTime: presetLocal, // ✅ IMPORTANT
       endDateTime: "",
       vehicleType: "PKW",
       manufacturer: "",
@@ -321,9 +340,7 @@ export default function CarLocationsPage() {
       driverInfo: "",
     };
 
-    // ✅ push to end (newest is last)
     setRows((prev) => [...prev, newRow]);
-
     setEditCid(cid);
     setSelectedCids([cid]);
   };
