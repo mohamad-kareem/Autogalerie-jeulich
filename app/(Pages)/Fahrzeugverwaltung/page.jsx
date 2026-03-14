@@ -21,7 +21,7 @@ import {
 } from "react-icons/fi";
 
 const LIMIT = 100;
-const OWNERS = ["Karim", "Alawie"];
+const OWNERS = ["Karim"];
 
 export default function CarScheinPage() {
   const { data: session, status } = useSession();
