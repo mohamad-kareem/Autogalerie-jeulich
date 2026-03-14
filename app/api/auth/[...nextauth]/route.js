@@ -12,23 +12,28 @@ export const authOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
+
       async authorize(credentials) {
         await connectDB();
 
-        const email = credentials?.email?.toLowerCase();
+        const email = credentials?.email?.toLowerCase()?.trim();
         const password = credentials?.password;
 
         console.log("🔐 Login attempt:", email);
 
-        const admin = await Admin.findOne({ email }).select("+password");
-
-        if (!admin) {
-          console.log("❌ No admin found for email:", email);
+        if (!email || !password) {
           throw new Error("Invalid credentials");
         }
 
-        console.log("🧪 Hashed password from DB:", admin.password);
-        console.log("🧪 Input password:", password);
+        const admin = await Admin.findOne({
+          email,
+          active: true,
+        }).select("+password");
+
+        if (!admin) {
+          console.log("❌ No active user found for email:", email);
+          throw new Error("Invalid credentials");
+        }
 
         const isValid = await admin.comparePassword(password);
 
@@ -51,22 +56,59 @@ export const authOptions = {
       },
     }),
   ],
+
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+    maxAge: 30 * 24 * 60 * 60,
   },
+
   callbacks: {
     async jwt({ token, user }) {
+      // First login
       if (user) {
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
-        token.role = user.role; // ✅ make sure this is here
+        token.role = user.role;
         token.isAdmin = user.role === "admin";
+        token.invalidUser = false;
       }
+
+      // Re-check user in DB on every JWT callback
+      if (token?.id) {
+        await connectDB();
+
+        const dbUser = await Admin.findById(token.id)
+          .select("_id name email role active")
+          .lean();
+
+        // If user was deleted or deactivated
+        if (!dbUser || dbUser.active === false) {
+          token.invalidUser = true;
+          return token;
+        }
+
+        // Refresh token values from DB
+        token.name = dbUser.name;
+        token.email = dbUser.email;
+        token.role = dbUser.role;
+        token.isAdmin = dbUser.role === "admin";
+        token.invalidUser = false;
+      }
+
       return token;
     },
+
     async session({ session, token }) {
+      if (token.invalidUser) {
+        return {
+          ...session,
+          invalidUser: true,
+          user: null,
+        };
+      }
+
+      session.invalidUser = false;
       session.user = {
         id: token.id,
         name: token.name,
@@ -74,15 +116,19 @@ export const authOptions = {
         role: token.role,
         isAdmin: token.isAdmin,
       };
+
       return session;
     },
   },
+
   pages: {
     signIn: "/login",
     error: "/login",
   },
+
   secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);
+
 export { handler as GET, handler as POST };
