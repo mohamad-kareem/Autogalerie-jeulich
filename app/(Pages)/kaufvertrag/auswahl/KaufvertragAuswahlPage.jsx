@@ -6,29 +6,32 @@ import { motion } from "framer-motion";
 import { CheckCircle, FileText, ChevronRight, User } from "lucide-react";
 import { useSidebar } from "@/app/(components)/SidebarContext";
 import { FiMenu } from "react-icons/fi";
+
 export default function KaufvertragAuswahlPage({ carId }) {
   const router = useRouter();
   const [selected, setSelected] = useState("");
   const { openSidebar } = useSidebar();
+
   const handleContinue = () => {
     if (!selected) {
       alert("Bitte wählen Sie eine Option aus");
       return;
     }
+
     const qp = new URLSearchParams();
     qp.set("issuer", selected);
-    if (carId) qp.set("carId", carId);
+
+    if (carId) {
+      qp.set("carId", carId);
+    }
+
     router.push(`/kaufvertrag/form?${qp.toString()}`);
   };
 
-  const options = [
-    { value: "karim", label: "Hussein Karim", role: "Inhaber" },
-    { value: "alawie", label: "Jibrail Alawie", role: "Inhaber" },
-  ];
+  const options = [{ value: "karim", label: "Hussein Karim", role: "Inhaber" }];
 
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      {/* Mobile hamburger */}
       <button
         onClick={openSidebar}
         className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-colors duration-300"
@@ -43,8 +46,7 @@ export default function KaufvertragAuswahlPage({ carId }) {
         transition={{ duration: 0.3 }}
         className="max-w-md w-full bg-slate-800 rounded-xl shadow-lg border border-slate-700 overflow-hidden"
       >
-        {/* Header */}
-        <div className="bg-slate-750 p-6 text-center border-b border-slate-700">
+        <div className="p-6 text-center border-b border-slate-700">
           <div className="flex items-center justify-center gap-3 mb-3">
             <div className="bg-blue-500/20 p-2 rounded-lg">
               <FileText className="w-6 h-6 text-blue-400" />
@@ -58,7 +60,6 @@ export default function KaufvertragAuswahlPage({ carId }) {
           </p>
         </div>
 
-        {/* Options */}
         <div className="p-6 space-y-4">
           {options.map((opt) => (
             <div
@@ -78,6 +79,7 @@ export default function KaufvertragAuswahlPage({ carId }) {
                 >
                   <User className="h-5 w-5 text-white" />
                 </div>
+
                 <div>
                   <h3 className="text-base font-medium text-white">
                     {opt.label}
@@ -85,6 +87,7 @@ export default function KaufvertragAuswahlPage({ carId }) {
                   <p className="text-sm text-slate-400">{opt.role}</p>
                 </div>
               </div>
+
               {selected === opt.value && (
                 <CheckCircle className="w-5 h-5 text-blue-400 flex-shrink-0" />
               )}
@@ -92,7 +95,6 @@ export default function KaufvertragAuswahlPage({ carId }) {
           ))}
         </div>
 
-        {/* Continue button */}
         <div className="p-6 pt-4">
           <button
             onClick={handleContinue}
