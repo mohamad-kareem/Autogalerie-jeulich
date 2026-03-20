@@ -173,6 +173,9 @@ export default function CarLocationsPage() {
                 carName: d.carName || "",
                 finNumber: d.finNumber || "",
                 keyColor: d.keyColor || null,
+                stage: d.stage || "",
+                keySold: !!d.keySold,
+                soldAt: d.soldAt || null,
               }))
           : [];
 
@@ -221,6 +224,7 @@ export default function CarLocationsPage() {
     return carOptions
       .map((car) => {
         const fin = normalizeFin(car.finNumber);
+
         const matchedCar = allCars.find((c) => {
           const carFin = normalizeFin(c.finNumber || c.vin || c.vinNumber);
           return carFin && carFin === fin;
@@ -236,7 +240,14 @@ export default function CarLocationsPage() {
           imageUrl = first?.ref || first?.url || null;
         }
 
-        return { ...car, imageUrl, matchedCar: matchedCar || null };
+        const isSold = car.stage === "SOLD" || car.keySold === true;
+
+        return {
+          ...car,
+          imageUrl,
+          matchedCar: matchedCar || null,
+          isSold,
+        };
       })
       .filter((car) => car.carName && car.carName.trim() !== "");
   }, [carOptions, allCars]);
@@ -687,7 +698,7 @@ export default function CarLocationsPage() {
                       >
                         {car.carName}
                       </h3>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full ${
                             darkMode
@@ -697,6 +708,18 @@ export default function CarLocationsPage() {
                         >
                           FIN: {car.finNumber || "–"}
                         </span>
+
+                        {car.isSold && (
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              darkMode
+                                ? "bg-emerald-900/40 text-emerald-300 border border-emerald-700/60"
+                                : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                            }`}
+                          >
+                            Verkauft
+                          </span>
+                        )}
                       </div>
 
                       {car.matchedCar && (
@@ -832,7 +855,7 @@ export default function CarLocationsPage() {
         >
           <div
             className={`w-full overflow-x-auto custom-scroll ${
-              showRotbuch ? "overflow-y-auto max-h-[calc(100vh-220px)]" : ""
+              showRotbuch ? "overflow-y-auto max-h-[calc(110vh-220px)]" : ""
             }`}
           >
             <table className="w-full border-collapse text-[11px] sm:text-xs">

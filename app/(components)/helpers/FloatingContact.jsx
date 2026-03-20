@@ -1,17 +1,54 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   FiPhone,
   FiMail,
   FiMessageCircle,
   FiChevronLeft,
 } from "react-icons/fi";
+import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import SimpleContactFormModal from "./SimpleContactFormModal";
 
 export default function FloatingContact() {
+  const { data: session } = useSession();
+  const pathname = usePathname();
+
   const [showForm, setShowForm] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+
+  const PUBLIC_ROUTES = useMemo(
+    () => [
+      "/",
+      "/login",
+      "/forgotpassword",
+      "/finanzierung",
+      "/Datenschutz",
+      "/Autoverkaufen",
+      "/garantie",
+      "/gebrauchtwagen",
+      "/impressum",
+      "/kontakt",
+      "/vergleich",
+      "/TrackVisitors76546633",
+    ],
+    [],
+  );
+
+  const isPublicRoute = useMemo(() => {
+    return PUBLIC_ROUTES.some(
+      (route) => pathname === route || pathname.startsWith(route + "/"),
+    );
+  }, [pathname, PUBLIC_ROUTES]);
+
+  const isLoggedIn = !!session?.user;
+
+  // Hide on all logged-in pages
+  // Show only on public pages when user is not logged in
+  if (isLoggedIn || !isPublicRoute) {
+    return null;
+  }
 
   const handleContactClick = () => {
     setShowForm(true);
@@ -27,14 +64,12 @@ export default function FloatingContact() {
         print:hidden"
       >
         <div className="relative">
-          {/* Compact floating rail */}
           <div
             className="flex flex-row justify-center bg-slate-900/95 border border-slate-700/70
             backdrop-blur-md w-fit rounded-2xl
             md:flex-col md:items-center md:rounded-l-2xl
             text-slate-100 shadow-2xl overflow-hidden"
           >
-            {/* Toggle button */}
             <button
               onClick={() => setIsOpen((v) => !v)}
               aria-label="Kontaktbereich öffnen"
@@ -45,7 +80,7 @@ export default function FloatingContact() {
                 className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
               />
             </button>
-            {/* Telefon */}
+
             <a
               href="tel:+4924619163780"
               className="p-2.5 hover:bg-slate-800/90 transition-colors duration-200 flex items-center justify-center"
@@ -53,7 +88,7 @@ export default function FloatingContact() {
             >
               <FiPhone size={18} />
             </a>
-            {/* E-Mail / Kontaktformular */}
+
             <button
               onClick={handleContactClick}
               className="p-2.5 hover:bg-slate-800/90 transition-colors duration-200 flex items-center justify-center"
@@ -61,7 +96,7 @@ export default function FloatingContact() {
             >
               <FiMail size={18} />
             </button>
-            {/* WhatsApp */}
+
             <a
               href="https://wa.me/4915234205041"
               target="_blank"
@@ -73,7 +108,6 @@ export default function FloatingContact() {
             </a>
           </div>
 
-          {/* Kontakt-Panel */}
           <div
             className={`absolute bg-white shadow-2xl overflow-hidden transform transition-all duration-250 ease-out
             left-1/2 -translate-x-1/2 bottom-full mb-1 w-80
@@ -84,19 +118,17 @@ export default function FloatingContact() {
                 : "translate-y-3 md:translate-x-3 opacity-0 scale-95 pointer-events-none"
             }`}
           >
-            {/* Header */}
             <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-slate-50 px-3 py-2.5 border-b border-slate-700/60">
               <h3 className="font-medium text-sm tracking-wide text-center uppercase">
                 Kontakt
               </h3>
             </div>
 
-            {/* Inhalt */}
             <div className="p-4 space-y-3 text-sm text-slate-700">
-              <p className="  text-xs sm:text-base text-slate-600 text-center">
+              <p className="text-xs sm:text-base text-slate-600 text-center">
                 Wir sind gerne für Sie da
               </p>
-              <div className=" bg-slate-200 border-b-2 "></div>
+              <div className="bg-slate-200 border-b-2"></div>
 
               <div className="space-y-1.5">
                 <p className="flex flex-col gap-0.5">
@@ -141,7 +173,7 @@ export default function FloatingContact() {
               <div className="pt-1 flex justify-center">
                 <button
                   onClick={handleContactClick}
-                  className="inline-flex items-center gap-1.5  bg-slate-900 text-slate-50 px-4 py-1.5 text-xs font-medium shadow-md hover:bg-slate-800 transition-all hover:shadow-lg hover:-translate-y-[1px]"
+                  className="inline-flex items-center gap-1.5 bg-slate-900 text-slate-50 px-4 py-1.5 text-xs font-medium shadow-md hover:bg-slate-800 transition-all hover:shadow-lg hover:-translate-y-[1px]"
                 >
                   <FiMail size={14} />
                   <span>Kontaktformular öffnen</span>
@@ -152,7 +184,6 @@ export default function FloatingContact() {
         </div>
       </div>
 
-      {/* Kontakt-Modal */}
       <SimpleContactFormModal
         isOpen={showForm}
         onClose={() => setShowForm(false)}
