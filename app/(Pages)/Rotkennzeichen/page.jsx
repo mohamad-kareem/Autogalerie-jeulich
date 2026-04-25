@@ -115,8 +115,9 @@ export default function CarLocationsPage() {
   const [selectedCids, setSelectedCids] = useState([]);
 
   const currentMonth = String(new Date().getMonth() + 1);
-  const [monthFilter, setMonthFilter] = useState(currentMonth);
-
+  const [monthFrom, setMonthFrom] = useState(currentMonth);
+  const [monthTo, setMonthTo] = useState(currentMonth);
+  const [openCarSelectCid, setOpenCarSelectCid] = useState(null);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -146,7 +147,7 @@ export default function CarLocationsPage() {
   useEffect(() => {
     setSelectedCids([]);
     setEditCid(null);
-  }, [monthFilter]);
+  }, [monthFrom, monthTo]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -254,13 +255,18 @@ export default function CarLocationsPage() {
 
   const filteredRows = useMemo(() => {
     return rows.filter((r) => {
-      if (!r.startDateTime) return String(monthFilter) === String(currentMonth);
+      if (!r.startDateTime) return false;
+
       const d = new Date(r.startDateTime);
       if (Number.isNaN(d.getTime())) return false;
+
       const m = d.getMonth() + 1;
-      return String(m) === String(monthFilter);
+      const from = Number(monthFrom);
+      const to = Number(monthTo);
+
+      return m >= from && m <= to;
     });
-  }, [rows, monthFilter, currentMonth]);
+  }, [rows, monthFrom, monthTo]);
 
   const filteredCids = useMemo(
     () => filteredRows.map((r) => r._cid).filter(Boolean),
@@ -324,7 +330,7 @@ export default function CarLocationsPage() {
     // ✅ create a date inside the currently selected month
     const now = new Date();
     const y = now.getFullYear();
-    const m = Number(monthFilter); // 1..12
+    const m = Number(monthFrom);
 
     // pick "today's day" if it exists in that month, otherwise use last day of month
     const lastDayOfSelectedMonth = new Date(y, m, 0).getDate(); // month is 1..12 here
@@ -534,7 +540,9 @@ export default function CarLocationsPage() {
                 text: "Fahrtenbuch",
                 heading: HeadingLevel.HEADING1,
               }),
-              new Paragraph({ text: `Monat: ${monthFilter}` }),
+              new Paragraph({
+                text: `Zeitraum: Monat ${monthFrom} bis ${monthTo}`,
+              }),
               new Paragraph(""),
               table,
             ],
@@ -543,7 +551,7 @@ export default function CarLocationsPage() {
       });
 
       const blob = await Packer.toBlob(doc);
-      saveAs(blob, `Fahrtenbuch_${monthFilter}.docx`);
+      saveAs(blob, `Fahrtenbuch_${monthFrom}_bis_${monthTo}.docx`);
       toast.success("Word-Datei wurde erstellt.");
     } catch (e) {
       console.error(e);
@@ -774,21 +782,50 @@ export default function CarLocationsPage() {
           </div>
 
           <div className="flex items-center flex-wrap gap-2">
+            {/* Month Range */}
             <div
-              className={`flex items-center gap-1 rounded-md border px-2 py-[5px] text-[11px] sm:text-xs ${
+              className={`flex items-center gap-2 rounded-lg border px-3 py-[6px] shadow-sm transition ${
                 darkMode
                   ? "bg-slate-900 border-slate-700 text-slate-300"
-                  : "bg-slate-50 border-slate-300 text-slate-600"
+                  : "bg-white border-slate-300 text-slate-600"
               }`}
             >
               <FiCalendar
-                className={`text-xs ${darkMode ? "text-slate-400" : "text-slate-500"}`}
+                className={`text-sm ${darkMode ? "text-slate-400" : "text-slate-500"}`}
               />
+
               <select
-                value={monthFilter}
-                onChange={(e) => setMonthFilter(e.target.value)}
-                className={`monthSelect bg-transparent text-[11px] sm:text-xs focus:outline-none ${
-                  darkMode ? "text-slate-200" : "text-slate-700"
+                value={monthFrom}
+                onChange={(e) => setMonthFrom(e.target.value)}
+                className={`monthSelect min-w-[92px] bg-transparent text-[12px] focus:outline-none ${
+                  darkMode ? "text-slate-100" : "text-slate-700"
+                }`}
+              >
+                <option value="1">Januar</option>
+                <option value="2">Februar</option>
+                <option value="3">März</option>
+                <option value="4">April</option>
+                <option value="5">Mai</option>
+                <option value="6">Juni</option>
+                <option value="7">Juli</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">Oktober</option>
+                <option value="11">November</option>
+                <option value="12">Dezember</option>
+              </select>
+
+              <span
+                className={`text-[11px] ${darkMode ? "text-slate-500" : "text-slate-400"}`}
+              >
+                bis
+              </span>
+
+              <select
+                value={monthTo}
+                onChange={(e) => setMonthTo(e.target.value)}
+                className={`monthSelect min-w-[92px] bg-transparent text-[12px] focus:outline-none ${
+                  darkMode ? "text-slate-100" : "text-slate-700"
                 }`}
               >
                 <option value="1">Januar</option>
@@ -806,45 +843,48 @@ export default function CarLocationsPage() {
               </select>
             </div>
 
+            {/* Rotbuch */}
             <button
               onClick={() => setShowRotbuch((v) => !v)}
-              className={`inline-flex items-center gap-1 rounded-md border px-2 py-[5px] text-[11px] sm:text-xs ${
+              className={`inline-flex items-center gap-1 rounded-lg border px-3 py-[6px] text-[12px] shadow-sm transition ${
                 showRotbuch
                   ? darkMode
                     ? "bg-red-900/50 border-red-700 text-red-300"
-                    : "bg-red-100 border-red-300 text-red-700"
+                    : "bg-red-50 border-red-300 text-red-700"
                   : darkMode
                     ? "bg-slate-900 border-slate-700 text-slate-300 hover:border-red-500 hover:text-red-300"
-                    : "bg-slate-50 border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-600"
+                    : "bg-white border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-600"
               }`}
             >
-              <FiBook className="text-xs" />
+              <FiBook className="text-sm" />
               <span>Rotbuch</span>
             </button>
 
+            {/* Delete */}
             {someSelected && (
               <button
                 onClick={deleteSelected}
-                className={`inline-flex items-center gap-1 rounded-md border px-2 py-[5px] text-[11px] sm:text-xs ${
+                className={`inline-flex items-center gap-1 rounded-lg border px-3 py-[6px] text-[12px] shadow-sm transition ${
                   darkMode
                     ? "bg-slate-900 border-slate-700 text-red-300 hover:border-red-500"
-                    : "bg-slate-50 border-slate-300 text-red-600 hover:border-red-400"
+                    : "bg-white border-slate-300 text-red-600 hover:border-red-400"
                 }`}
               >
-                <FiTrash2 className="text-xs" />
+                <FiTrash2 className="text-sm" />
                 <span>Löschen ({selectedCids.length})</span>
               </button>
             )}
 
+            {/* Export */}
             <button
               onClick={exportToWord}
-              className={`inline-flex items-center gap-1 rounded-md border px-2 py-[5px] text-[11px] sm:text-xs ${
+              className={`inline-flex items-center gap-1 rounded-lg border px-3 py-[6px] text-[12px] shadow-sm transition ${
                 darkMode
-                  ? "bg-slate-900 border-slate-700 text-slate-300"
-                  : "bg-slate-50 border-slate-300 text-slate-600"
+                  ? "bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500"
+                  : "bg-white border-slate-300 text-slate-600 hover:border-slate-400"
               }`}
             >
-              <FiDownload className="text-xs" />
+              <FiDownload className="text-sm" />
               <span>Word</span>
             </button>
           </div>
@@ -1012,24 +1052,68 @@ export default function CarLocationsPage() {
 
                         <td className="px-3 text-center py-[5px] align-middle border-r border-slate-600/10">
                           {isEditing ? (
-                            <select
-                              value={row.manufacturer || ""}
-                              onChange={(e) =>
-                                updateRowField(
-                                  cid,
-                                  "manufacturer",
-                                  e.target.value,
-                                )
-                              }
-                              className={`w-full rounded-none border px-2 py-1 text-[11px] sm:text-xs ${inputBg}`}
-                            >
-                              <option value="">– auswählen –</option>
-                              {sortedOptions.map((opt) => (
-                                <option key={opt.id} value={opt.carName}>
-                                  {hexToEmoji(opt.keyColor)} {opt.carName}
-                                </option>
-                              ))}
-                            </select>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={row.manufacturer || ""}
+                                onChange={(e) =>
+                                  updateRowField(
+                                    cid,
+                                    "manufacturer",
+                                    e.target.value,
+                                  )
+                                }
+                                onFocus={() => setOpenCarSelectCid(cid)}
+                                placeholder="Auswählen oder manuell eingeben"
+                                className={`w-full rounded-none border px-2 py-1 pr-8 text-[11px] sm:text-xs ${inputBg}`}
+                              />
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setOpenCarSelectCid(
+                                    openCarSelectCid === cid ? null : cid,
+                                  )
+                                }
+                                className={`absolute right-1 top-1/2 -translate-y-1/2 text-xs px-1 ${
+                                  darkMode ? "text-slate-300" : "text-slate-600"
+                                }`}
+                              >
+                                ▼
+                              </button>
+
+                              {openCarSelectCid === cid && (
+                                <div
+                                  className={`absolute left-0 bottom-full z-50 mt-1 max-h-none overflow-visible rounded-md border shadow-lg ${
+                                    darkMode
+                                      ? "bg-slate-900 border-slate-700 text-slate-100"
+                                      : "bg-white border-slate-300 text-slate-900"
+                                  }`}
+                                >
+                                  {sortedOptions.map((opt) => (
+                                    <button
+                                      key={opt.id}
+                                      type="button"
+                                      onClick={() => {
+                                        updateRowField(
+                                          cid,
+                                          "manufacturer",
+                                          opt.carName,
+                                        );
+                                        setOpenCarSelectCid(null);
+                                      }}
+                                      className={`block w-full px-2 py-1.5 text-left text-[11px] sm:text-xs ${
+                                        darkMode
+                                          ? "hover:bg-slate-800"
+                                          : "hover:bg-slate-100"
+                                      }`}
+                                    >
+                                      {hexToEmoji(opt.keyColor)} {opt.carName}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           ) : (
                             <span
                               className={`text-[11px] sm:text-xs truncate block ${textPrimary}`}
