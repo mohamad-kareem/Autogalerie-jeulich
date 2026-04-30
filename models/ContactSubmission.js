@@ -2,19 +2,65 @@ import mongoose from "mongoose";
 
 const ContactSubmissionSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true },
-    phone: { type: String },
-    subject: { type: String, required: true },
-    message: { type: String, required: true },
-    date: { type: Date },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
-    carName: { type: String },
-    carLink: { type: String },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
 
-    readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "Admin" }],
+    phone: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    subject: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    message: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    date: {
+      type: Date,
+      default: null,
+    },
+
+    carId: {
+      type: String,
+      default: "",
+    },
+
+    carName: {
+      type: String,
+      default: "",
+    },
+
+    carLink: {
+      type: String,
+      default: "",
+    },
+
+    readBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Admin",
+      },
+    ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const ContactSubmission =

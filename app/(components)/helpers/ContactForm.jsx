@@ -1,55 +1,62 @@
 "use client";
+
 import React, { useState } from "react";
 import { FiSend } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 
 const ContactForm = ({ car, onSuccess, isMobile = false }) => {
-  // Helper function to format registration date
   const formatRegistration = (value) => {
     if (!value || value.length !== 6) return "EZ unbekannt";
+
     const year = value.slice(0, 4);
     const month = value.slice(4, 6);
+
     return `${month}/${year}`;
   };
 
-  // Default message template
-  const defaultMessage = `Ich interessiere mich für den ${car.make} ${
-    car.modelDescription || car.model
-  } (${formatRegistration(car.firstRegistration)}, ${car.mileage || 0} km)...`;
+  const carTitle = `${car.make} ${car.modelDescription || car.model}`;
 
-  // Form state
-  const [formData, setFormData] = useState({
+  const defaultMessage = `Ich interessiere mich für den ${carTitle} (${formatRegistration(
+    car.firstRegistration,
+  )}, ${car.mileage || 0} km)...`;
+
+  const initialFormData = {
     name: "",
     email: "",
     phone: "",
     subject: "",
     message: defaultMessage,
     date: "",
-  });
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Handle form field changes
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle form submission
+  const [formData, setFormData] = useState(initialFormData);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
 
     try {
       const submissionData = {
         ...formData,
         carId: car._id,
-        carName: `${car.make} ${car.modelDescription || car.model}`,
+        carName: carTitle,
         carLink: typeof window !== "undefined" ? window.location.href : "",
       };
 
-      // Step 1: Save to database
-      const dbResponse = await fetch("/api/submit", {
+      const res = await fetch("/api/submissions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -57,69 +64,42 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
         body: JSON.stringify(submissionData),
       });
 
-      if (!dbResponse.ok) {
-        throw new Error(
-          "Datenbankfehler: Anfrage konnte nicht gespeichert werden",
-        );
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Anfrage konnte nicht gesendet werden");
       }
 
-      const dbResult = await dbResponse.json();
-
-      // Step 2: Send email
-      const emailResponse = await fetch("/api/email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(submissionData),
-      });
-
-      if (!emailResponse.ok) {
-        throw new Error(
-          dbResult.success
-            ? "Anfrage gespeichert, aber E-Mail konnte nicht versendet werden"
-            : "E-Mail konnte nicht versendet werden",
-        );
+      if (data.emailSent === false) {
+        console.warn("Anfrage gespeichert, aber E-Mail wurde nicht gesendet.");
       }
 
       toast.success("Ihre Anfrage wurde erfolgreich übermittelt!");
 
-      // Reset form
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        subject: "",
-        message: defaultMessage,
-        date: "",
-      });
+      setFormData(initialFormData);
 
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Submission error:", error);
 
-      if (error.message.includes("gespeichert")) {
-        toast.success(
-          "Ihre Anfrage wurde gespeichert, aber die Bestätigung konnte nicht versendet werden",
-        );
-      } else {
-        toast.error(
-          error.message ||
-            "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
-        );
-      }
+      toast.error(
+        error.message ||
+          "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Shared styles
   const labelClass = `block ${
     isMobile ? "text-[11px]" : "text-xs"
   } font-medium text-gray-700 mb-1`;
+
   const fieldBase =
-    "w-full rounded-md border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500";
+    "w-full rounded-md border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed";
+
   const fieldPadding = isMobile ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-sm";
+
   const fieldClass = `${fieldBase} ${fieldPadding}`;
 
   const buttonSize = isMobile ? "py-1.5 text-xs" : "py-2 text-sm";
@@ -129,10 +109,8 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
       onSubmit={handleSubmit}
       className={`mx-auto ${isMobile ? "space-y-2 max-w-xs" : "space-y-3"}`}
     >
-      {/* Hidden car ID field */}
       <input type="hidden" name="car" value={car._id} />
 
-      {/* Name + Email - side by side on desktop, stacked on mobile */}
       <div
         className={`grid grid-cols-1 ${
           isMobile ? "gap-1.5" : "md:grid-cols-2 md:gap-3 gap-2"
@@ -146,9 +124,11 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
             value={formData.name}
             onChange={handleChange}
             required
+            disabled={isSubmitting}
             className={fieldClass}
           />
         </div>
+
         <div>
           <label className={labelClass}>E-Mail*</label>
           <input
@@ -157,12 +137,12 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
             value={formData.email}
             onChange={handleChange}
             required
+            disabled={isSubmitting}
             className={fieldClass}
           />
         </div>
       </div>
 
-      {/* Phone + Date */}
       <div className={isMobile ? "space-y-1.5" : "space-y-2"}>
         <div>
           <label className={labelClass}>Telefon</label>
@@ -171,9 +151,11 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
             name="phone"
             value={formData.phone}
             onChange={handleChange}
+            disabled={isSubmitting}
             className={fieldClass}
           />
         </div>
+
         <div>
           <label className={labelClass}>Wunschdatum & Uhrzeit</label>
           <input
@@ -181,12 +163,12 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
             name="date"
             value={formData.date}
             onChange={handleChange}
+            disabled={isSubmitting}
             className={fieldClass}
           />
         </div>
       </div>
 
-      {/* Subject */}
       <div>
         <label className={labelClass}>Betreff*</label>
         <select
@@ -194,6 +176,7 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
           value={formData.subject}
           onChange={handleChange}
           required
+          disabled={isSubmitting}
           className={fieldClass}
         >
           <option value="">Bitte wählen</option>
@@ -205,7 +188,6 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
         </select>
       </div>
 
-      {/* Message */}
       <div>
         <label className={labelClass}>Nachricht*</label>
         <textarea
@@ -214,25 +196,24 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
           value={formData.message}
           onChange={handleChange}
           required
+          disabled={isSubmitting}
           className={`${fieldBase} ${
             isMobile ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-sm"
           } resize-vertical`}
         />
       </div>
 
-      {/* Submit button */}
       <div>
         <button
           type="submit"
           disabled={isSubmitting}
-          className={`w-full bg-gradient-to-r from-slate-600 to-slate-700 hover:from-blue-700 hover:to-blue-800 text-white ${buttonSize} rounded-md font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70`}
+          className={`w-full bg-gradient-to-r from-slate-600 to-slate-700 hover:from-blue-700 hover:to-blue-800 text-white ${buttonSize} rounded-md font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed`}
         >
           <FiSend className={isMobile ? "w-3.5 h-3.5" : "w-4 h-4"} />
           {isSubmitting ? "Wird gesendet..." : "Nachricht senden"}
         </button>
       </div>
 
-      {/* Form footer */}
       <p
         className={`${
           isMobile ? "text-[9px]" : "text-[10px]"

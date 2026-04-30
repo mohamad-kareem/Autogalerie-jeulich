@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+
 import { FiXCircle, FiMessageSquare, FiMenu } from "react-icons/fi";
 import { FaCar } from "react-icons/fa";
 import { motion } from "framer-motion";
@@ -13,7 +13,6 @@ import SubmissionsTable from "./SubmissionsTable";
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
-  const router = useRouter();
 
   const [viewMode, setViewMode] = useState("submissions"); // "submissions" | "cars"
   const [unreadCount, setUnreadCount] = useState(0);
@@ -23,7 +22,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
+      "(prefers-color-scheme: dark)",
     ).matches;
 
     const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
@@ -148,8 +147,8 @@ export default function AdminDashboard() {
                   ? "bg-slate-600 text-white shadow"
                   : "bg-slate-700 text-white shadow"
                 : darkMode
-                ? "text-slate-300 hover:bg-gray-800"
-                : "text-slate-600 hover:bg-slate-100"
+                  ? "text-slate-300 hover:bg-gray-800"
+                  : "text-slate-600 hover:bg-slate-100"
             }`}
           >
             <FiMessageSquare className="text-sm" />
@@ -175,8 +174,8 @@ export default function AdminDashboard() {
                   ? "bg-slate-600 text-white shadow"
                   : "bg-slate-700 text-white shadow"
                 : darkMode
-                ? "text-slate-300 hover:bg-gray-800"
-                : "text-slate-600 hover:bg-slate-100"
+                  ? "text-slate-300 hover:bg-gray-800"
+                  : "text-slate-600 hover:bg-slate-100"
             }`}
           >
             <FaCar className="text-sm" />

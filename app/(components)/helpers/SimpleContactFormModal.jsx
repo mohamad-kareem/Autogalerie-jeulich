@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FiSend,
   FiX,
@@ -12,14 +12,16 @@ import {
 } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 
+const initialFormData = {
+  name: "",
+  email: "",
+  phone: "",
+  subject: "",
+  message: "",
+};
+
 export default function SimpleContactFormModal({ isOpen, onClose }) {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    subject: "",
-    message: "",
-  });
+  const [formData, setFormData] = useState(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -31,35 +33,53 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
       setIsVisible(false);
       document.body.style.overflow = "unset";
     }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, [isOpen]);
 
-  const handleChange = (e) =>
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("/api/submit", {
+      const res = await fetch("/api/submissions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) throw new Error("Submission failed");
+      const data = await res.json();
 
-      await fetch("/api/email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Submission failed");
+      }
+
+      if (data.emailSent === false) {
+        console.warn("Anfrage gespeichert, aber E-Mail wurde nicht gesendet.");
+      }
 
       toast.success("Ihre Nachricht wurde erfolgreich gesendet!");
-      setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+
+      setFormData(initialFormData);
       onClose();
     } catch (error) {
-      console.error(error);
+      console.error("Contact form submit error:", error);
       toast.error("Fehler beim Senden. Bitte versuchen Sie es erneut.");
     } finally {
       setIsSubmitting(false);
@@ -67,7 +87,7 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
   };
 
   const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
+    if (e.target === e.currentTarget && !isSubmitting) {
       onClose();
     }
   };
@@ -76,42 +96,43 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
 
   return (
     <div
-      className={`fixed inset-0 z-1000000 flex items-center justify-center px-2 transition-all duration-300 ${
+      className={`fixed inset-0 z-[1000000] flex items-center justify-center px-2 transition-all duration-300 ${
         isVisible ? "bg-black/60" : "bg-black/0"
       }`}
       onClick={handleOverlayClick}
     >
       <div
-        className={`bg-white rounded-lg shadow-xl w-full max-w-xs md:max-w-md transform transition-all duration-300 ${
+        className={`w-full max-w-xs transform rounded-lg bg-white shadow-xl transition-all duration-300 md:max-w-md ${
           isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
         }`}
       >
-        {/* Header */}
-        <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-slate-50 p-3 md:p-4 rounded-t-lg border-b border-slate-700/60">
+        <div className="rounded-t-lg border-b border-slate-700/60 bg-gradient-to-r from-slate-900 to-slate-800 p-3 text-slate-50 md:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm md:text-lg font-semibold">
+              <h2 className="text-sm font-semibold md:text-lg">
                 Kontaktieren Sie uns
               </h2>
-              <p className="text-slate-200/80 text-[10px] md:text-xs mt-0.5">
+              <p className="mt-0.5 text-[10px] text-slate-200/80 md:text-xs">
                 Antwort innerhalb von 12h
               </p>
             </div>
+
             <button
+              type="button"
               onClick={onClose}
-              className="text-slate-200/80 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
+              disabled={isSubmitting}
+              className="rounded-full p-1 text-slate-200/80 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Schließen"
             >
               <FiX size={18} />
             </button>
           </div>
         </div>
 
-        {/* Form */}
         <form
           onSubmit={handleSubmit}
-          className="p-3 md:p-4 space-y-2.5 text-xs md:text-sm"
+          className="space-y-2.5 p-3 text-xs md:p-4 md:text-sm"
         >
-          {/* Name */}
           <div className="relative">
             <FiUser
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -122,13 +143,13 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
               name="name"
               placeholder="Name"
               required
+              disabled={isSubmitting}
               value={formData.name}
               onChange={handleChange}
-              className="w-full border border-slate-200 rounded pl-8 pr-2 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-slate-900 focus:border-slate-900/60"
+              className="w-full rounded border border-slate-200 py-1.5 pl-8 pr-2 text-xs focus:border-slate-900/60 focus:ring-1 focus:ring-slate-900 disabled:bg-slate-100 disabled:opacity-70 md:py-2 md:text-sm"
             />
           </div>
 
-          {/* Email */}
           <div className="relative">
             <FiMail
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -139,13 +160,13 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
               name="email"
               placeholder="Ihre E-Mail"
               required
+              disabled={isSubmitting}
               value={formData.email}
               onChange={handleChange}
-              className="w-full border border-slate-200 rounded pl-8 pr-2 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-slate-900 focus:border-slate-900/60"
+              className="w-full rounded border border-slate-200 py-1.5 pl-8 pr-2 text-xs focus:border-slate-900/60 focus:ring-1 focus:ring-slate-900 disabled:bg-slate-100 disabled:opacity-70 md:py-2 md:text-sm"
             />
           </div>
 
-          {/* Phone */}
           <div className="relative">
             <FiPhone
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -155,13 +176,13 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
               type="tel"
               name="phone"
               placeholder="Telefon"
+              disabled={isSubmitting}
               value={formData.phone}
               onChange={handleChange}
-              className="w-full border border-slate-200 rounded pl-8 pr-2 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-slate-900 focus:border-slate-900/60"
+              className="w-full rounded border border-slate-200 py-1.5 pl-8 pr-2 text-xs focus:border-slate-900/60 focus:ring-1 focus:ring-slate-900 disabled:bg-slate-100 disabled:opacity-70 md:py-2 md:text-sm"
             />
           </div>
 
-          {/* Subject */}
           <div className="relative">
             <FiFileText
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -170,9 +191,10 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
             <select
               name="subject"
               required
+              disabled={isSubmitting}
               value={formData.subject}
               onChange={handleChange}
-              className="w-full border border-slate-200 rounded pl-8 pr-6 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-slate-900 focus:border-slate-900/60 appearance-none bg-white"
+              className="w-full appearance-none rounded border border-slate-200 bg-white py-1.5 pl-8 pr-6 text-xs focus:border-slate-900/60 focus:ring-1 focus:ring-slate-900 disabled:bg-slate-100 disabled:opacity-70 md:py-2 md:text-sm"
             >
               <option value="">Betreff auswählen</option>
               <option value="Allgemeine Anfrage">Allgemeine Anfrage</option>
@@ -183,9 +205,10 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
               <option value="Inzahlungnahme">Inzahlungnahme</option>
               <option value="Service-Termin">Service-Termin</option>
             </select>
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+
+            <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
               <svg
-                className="w-3 h-3 text-slate-400"
+                className="h-3 w-3 text-slate-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -200,7 +223,6 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Message */}
           <div className="relative">
             <FiMessageSquare
               className="absolute left-3 top-3 text-slate-400"
@@ -210,25 +232,24 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
               name="message"
               placeholder="Nachricht"
               required
+              disabled={isSubmitting}
               value={formData.message}
               onChange={handleChange}
               rows={5}
-              className="w-full border border-slate-200 rounded pl-8 pr-2 py-1.5 md:py-2 text-xs md:text-sm focus:ring-1 focus:ring-slate-900 focus:border-slate-900/60 resize-none"
+              className="w-full resize-none rounded border border-slate-200 py-1.5 pl-8 pr-2 text-xs focus:border-slate-900/60 focus:ring-1 focus:ring-slate-900 disabled:bg-slate-100 disabled:opacity-70 md:py-2 md:text-sm"
             />
           </div>
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-slate-50 py-2 md:py-2.5 rounded font-medium flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow text-xs md:text-sm"
+            className="flex w-full items-center justify-center gap-2 rounded bg-gradient-to-r from-slate-900 to-slate-800 py-2 text-xs font-medium text-slate-50 shadow-sm transition-all duration-200 hover:from-slate-800 hover:to-slate-700 hover:shadow disabled:cursor-not-allowed disabled:opacity-50 md:py-2.5 md:text-sm"
           >
             <FiSend size={14} />
             {isSubmitting ? "Wird gesendet..." : "Senden"}
           </button>
 
-          {/* Privacy */}
-          <p className="text-[10px] md:text-[11px] text-slate-500 text-center">
+          <p className="text-center text-[10px] text-slate-500 md:text-[11px]">
             Ihre Daten werden vertraulich behandelt.
           </p>
         </form>
