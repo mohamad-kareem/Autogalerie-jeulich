@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -17,7 +17,6 @@ import {
   FiChevronRight,
   FiMenu,
   FiX,
-  FiCamera,
   FiMapPin,
   FiHome,
   FiLayout,
@@ -29,8 +28,8 @@ import { FaCarSide } from "react-icons/fa";
 import ProfileEditModal from "@/app/(components)/admin/ProfileEditModal";
 
 export default function Sidebar({
-  user, // optional
-  unreadCount = 0,
+  user,
+  unreadCount: unreadCountProp = 0,
   darkMode = false,
   isMinimized = false,
   mobileOpen = false,
@@ -43,14 +42,17 @@ export default function Sidebar({
 
   const [localUser, setLocalUser] = useState(user || session?.user || null);
   const [showSettings, setShowSettings] = useState(false);
+  const [sidebarUnreadCount, setSidebarUnreadCount] = useState(unreadCountProp);
 
-  // ✅ sync local user when user prop/session changes
+  useEffect(() => {
+    setSidebarUnreadCount(unreadCountProp || 0);
+  }, [unreadCountProp]);
+
   useEffect(() => {
     if (user) setLocalUser(user);
     else if (session?.user) setLocalUser(session.user);
   }, [user, session]);
 
-  // ✅ fetch full admin profile like navbar does (to always get image)
   useEffect(() => {
     const fetchAdmin = async () => {
       const id =
@@ -62,8 +64,6 @@ export default function Sidebar({
         localUser?.id;
 
       if (!id) return;
-
-      // already has image? skip fetch
       if (localUser?.image) return;
 
       try {
@@ -84,6 +84,40 @@ export default function Sidebar({
     fetchAdmin();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id, session?.user?._id, user?._id, user?.id]);
+
+  const fetchUnreadCount = useCallback(async () => {
+    const userId =
+      session?.user?.id ||
+      session?.user?._id ||
+      localUser?.id ||
+      localUser?._id;
+
+    if (!userId) return;
+
+    try {
+      const res = await fetch(`/api/submissions?userId=${userId}`, {
+        cache: "no-store",
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setSidebarUnreadCount(data.unreadCount || 0);
+      }
+    } catch (error) {
+      console.error("Sidebar unread count error:", error);
+    }
+  }, [session?.user?.id, session?.user?._id, localUser?.id, localUser?._id]);
+
+  useEffect(() => {
+    fetchUnreadCount();
+
+    const interval = setInterval(() => {
+      fetchUnreadCount();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
   const adminOnlyRoutes = useMemo(
     () => [
@@ -107,8 +141,6 @@ export default function Sidebar({
         badge: null,
         color: "text-blue-400",
       },
-
-      // ✅ Startseite added
       {
         href: "/",
         icon: <FiHome />,
@@ -116,7 +148,6 @@ export default function Sidebar({
         badge: null,
         color: "text-violet-500",
       },
-
       {
         href: "/aufgabenboard",
         icon: <FiGrid />,
@@ -184,14 +215,14 @@ export default function Sidebar({
         href: "/Kundenkontakte",
         icon: <FiUsers />,
         label: "Kundenkontakte",
-        badge: unreadCount > 0 ? unreadCount : null,
+        badge: null,
         color: "text-green-400",
       },
       {
         href: "/Posteingang",
         icon: <FiInbox />,
         label: "Posteingang",
-        badge: unreadCount > 0 ? unreadCount : null,
+        badge: sidebarUnreadCount > 0 ? sidebarUnreadCount : null,
         color: "text-pink-400",
       },
       {
@@ -209,7 +240,7 @@ export default function Sidebar({
         color: "text-rose-400",
       },
     ],
-    [unreadCount],
+    [sidebarUnreadCount],
   );
 
   const filteredNavItems = useMemo(() => {
@@ -240,13 +271,21 @@ export default function Sidebar({
     return (
       <Link href={href} className="block">
         <div
-          className={`flex items-center py-2.5 rounded-lg transition-all duration-200 group ${
+          className={`relative flex items-center py-2.5 rounded-lg transition-all duration-200 group ${
             isMinimized && !mobileOpen
               ? "justify-center px-3 mx-1"
               : "px-3 mx-2"
           } ${active ? itemActive : itemHover}`}
         >
-          <div className={`text-lg ${color}`}>{icon}</div>
+          <div className={`relative text-lg ${color}`}>
+            {icon}
+
+            {badge && isMinimized && !mobileOpen && (
+              <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                {badge > 99 ? "99+" : badge}
+              </span>
+            )}
+          </div>
 
           {(!isMinimized || mobileOpen) && (
             <span className="ml-3 text-sm font-medium truncate flex-1">
@@ -256,7 +295,7 @@ export default function Sidebar({
 
           {badge && (!isMinimized || mobileOpen) && (
             <span
-              className={`ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-full min-w-[1.25rem] text-center ${
+              className={`ml-2 min-w-[1.25rem] rounded-full px-1.5 py-0.5 text-center text-xs font-semibold ${
                 active
                   ? darkMode
                     ? "bg-gray-600 text-white"
@@ -264,7 +303,7 @@ export default function Sidebar({
                   : "bg-red-500 text-white"
               }`}
             >
-              {badge}
+              {badge > 99 ? "99+" : badge}
             </span>
           )}
         </div>
@@ -291,8 +330,8 @@ export default function Sidebar({
           )}
 
           {badge && (!isMinimized || mobileOpen) && (
-            <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-full min-w-[1.25rem] text-center bg-red-500 text-white">
-              {badge}
+            <span className="ml-2 min-w-[1.25rem] rounded-full bg-red-500 px-1.5 py-0.5 text-center text-xs font-semibold text-white">
+              {badge > 99 ? "99+" : badge}
             </span>
           )}
         </div>
@@ -300,11 +339,9 @@ export default function Sidebar({
     );
   }
 
-  // ✅ reused content for desktop & mobile (clean)
   function SidebarInner({ isMobile = false }) {
     return (
       <div className="flex h-full flex-col">
-        {/* Header */}
         <div
           className={`flex-shrink-0 px-4 border-b ${
             darkMode ? "border-gray-700" : "border-gray-200"
@@ -312,8 +349,9 @@ export default function Sidebar({
         >
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={isMobile ? onToggleMobile : onToggleMinimize}
-              className={`flex items-center justify-center rounded-lg h-7 w-7 flex-shrink-0 transition-colors ${
+              className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
                 darkMode
                   ? "bg-gray-600 hover:bg-gray-600"
                   : "bg-gray-200 hover:bg-gray-300"
@@ -343,14 +381,14 @@ export default function Sidebar({
             {(!isMinimized || isMobile) && (
               <div className="min-w-0 flex-1">
                 <p
-                  className={`text-sm font-semibold truncate ${
+                  className={`truncate text-sm font-semibold ${
                     darkMode ? "text-white" : "text-gray-900"
                   }`}
                 >
                   Autogalerie Jülich
                 </p>
                 <p
-                  className={`text-xs truncate ${
+                  className={`truncate text-xs ${
                     darkMode ? "text-gray-400" : "text-gray-500"
                   }`}
                 >
@@ -361,7 +399,6 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* Nav */}
         <div className="flex-1 overflow-y-auto custom-scroll min-h-0 overscroll-contain">
           <nav className="py-4">
             <div className="space-y-1">
@@ -379,20 +416,20 @@ export default function Sidebar({
           </nav>
         </div>
 
-        {/* Profile bottom */}
         <div
           className={`flex-shrink-0 border-t p-2 ${
             darkMode ? "border-gray-700" : "border-gray-200"
           }`}
         >
           <button
+            type="button"
             onClick={() => setShowSettings(true)}
-            className={`flex items-center w-full p-2 rounded-lg transition-colors ${
+            className={`flex w-full items-center rounded-lg p-2 transition-colors ${
               darkMode ? "hover:bg-gray-700/30" : "hover:bg-gray-50"
             }`}
           >
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center overflow-hidden">
+              <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-tr from-blue-500 to-purple-600">
                 {localUser?.image ? (
                   <img
                     src={localUser.image}
@@ -405,16 +442,16 @@ export default function Sidebar({
               </div>
 
               {(!isMinimized || isMobile) && (
-                <div className="text-left min-w-0">
+                <div className="min-w-0 text-left">
                   <p
-                    className={`text-sm font-medium truncate ${
+                    className={`truncate text-sm font-medium ${
                       darkMode ? "text-white" : "text-gray-900"
                     }`}
                   >
                     {localUser?.name || "Benutzer"}
                   </p>
                   <p
-                    className={`text-xs truncate ${
+                    className={`truncate text-xs ${
                       darkMode ? "text-gray-400" : "text-gray-500"
                     }`}
                   >
@@ -431,7 +468,6 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Desktop */}
       <aside
         className={`hidden md:flex flex-col fixed left-0 top-0 h-screen border-r transition-all duration-300 ${baseBg} ${
           isMinimized ? "w-16" : "w-64"
@@ -441,13 +477,13 @@ export default function Sidebar({
         <SidebarInner />
       </aside>
 
-      {/* Mobile */}
       {mobileOpen && (
         <>
           <div
             className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
             onClick={onToggleMobile}
           />
+
           <aside
             className={`fixed inset-y-0 left-0 z-50 w-64 border-r shadow-xl md:hidden transition-transform duration-300 ${baseBg}`}
           >
@@ -456,7 +492,6 @@ export default function Sidebar({
         </>
       )}
 
-      {/* Settings Modal */}
       {showSettings && (
         <ProfileEditModal
           user={{
@@ -480,7 +515,6 @@ export default function Sidebar({
         />
       )}
 
-      {/* Spacer */}
       <div className={`hidden md:block ${isMinimized ? "w-16" : "w-64"}`} />
     </>
   );
