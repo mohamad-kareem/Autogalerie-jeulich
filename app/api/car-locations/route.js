@@ -19,29 +19,42 @@ function idToString(id) {
 
 function normalizeDoc(doc) {
   if (!doc) return doc;
-  return { ...doc, _id: idToString(doc._id) };
+
+  return {
+    ...doc,
+    _id: idToString(doc._id),
+    plateNumber: doc.plateNumber || "DN-06919",
+  };
 }
 
-function toDateOrNull(v) {
-  if (!v) return null;
+function toDateOrNull(value) {
+  if (!value) return null;
 
-  // ✅ if client sends ISO "....Z" => safe everywhere (UTC)
-  const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? null : d;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function normalizePlateNumber(value) {
+  const plate = String(value || "").trim().toUpperCase();
+
+  if (plate === "DN-06921") return "DN-06921";
+
+  return "DN-06919";
 }
 
 export async function GET() {
   try {
     await connectDB();
 
-    // ✅ FIX #2: oldest first (new entries appear LAST)
     const docs = await CarLocation.find()
       .sort({ startDateTime: 1, createdAt: 1 })
       .lean();
 
     return jsonResponse(
-      { docs: Array.isArray(docs) ? docs.map(normalizeDoc) : [] },
-      200,
+      {
+        docs: Array.isArray(docs) ? docs.map(normalizeDoc) : [],
+      },
+      200
     );
   } catch (err) {
     console.error("GET /api/car-locations error:", err);
@@ -52,13 +65,17 @@ export async function GET() {
 export async function POST(req) {
   try {
     await connectDB();
+
     const session = await getServerSession(authOptions);
-    if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
+    if (!session) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
 
     const body = await req.json();
 
     const doc = await CarLocation.create({
-      // ✅ FIX #1: accept ISO UTC from client
+      plateNumber: normalizePlateNumber(body.plateNumber),
+
       startDateTime: toDateOrNull(body.startDateTime),
       endDateTime: toDateOrNull(body.endDateTime),
       vehicleType: body.vehicleType || "",
@@ -69,6 +86,7 @@ export async function POST(req) {
     });
 
     const obj = doc?.toObject ? doc.toObject() : doc;
+
     return jsonResponse(normalizeDoc(obj), 201);
   } catch (err) {
     console.error("POST /api/car-locations error:", err);
@@ -79,13 +97,21 @@ export async function POST(req) {
 export async function PUT(req) {
   try {
     await connectDB();
+
     const session = await getServerSession(authOptions);
-    if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
+    if (!session) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
 
     const body = await req.json();
-    if (!body?.id) return jsonResponse({ error: "Missing id" }, 400);
+
+    if (!body?.id) {
+      return jsonResponse({ error: "Missing id" }, 400);
+    }
 
     const updateFields = {
+      plateNumber: normalizePlateNumber(body.plateNumber),
+
       startDateTime: toDateOrNull(body.startDateTime),
       endDateTime: toDateOrNull(body.endDateTime),
       vehicleType: body.vehicleType || "",
@@ -95,11 +121,15 @@ export async function PUT(req) {
       driverInfo: body.driverInfo || "",
     };
 
-    const updated = await CarLocation.findByIdAndUpdate(body.id, updateFields, {
-      new: true,
-    }).lean();
+    const updated = await CarLocation.findByIdAndUpdate(
+      body.id,
+      updateFields,
+      { new: true }
+    ).lean();
 
-    if (!updated) return jsonResponse({ error: "Not found" }, 404);
+    if (!updated) {
+      return jsonResponse({ error: "Not found" }, 404);
+    }
 
     return jsonResponse(normalizeDoc(updated), 200);
   } catch (err) {
@@ -111,17 +141,27 @@ export async function PUT(req) {
 export async function DELETE(req) {
   try {
     await connectDB();
+
     const session = await getServerSession(authOptions);
-    if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
+    if (!session) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
-    if (!id) return jsonResponse({ error: "Missing id" }, 400);
+
+    if (!id) {
+      return jsonResponse({ error: "Missing id" }, 400);
+    }
 
     const doc = await CarLocation.findById(id).select("_id").lean();
-    if (!doc) return jsonResponse({ error: "Not found" }, 404);
+
+    if (!doc) {
+      return jsonResponse({ error: "Not found" }, 404);
+    }
 
     await CarLocation.findByIdAndDelete(id);
+
     return jsonResponse({ success: true }, 200);
   } catch (err) {
     console.error("DELETE /api/car-locations error:", err);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FiCalendar,
   FiEdit2,
@@ -31,9 +31,11 @@ import { saveAs } from "file-saver";
 /* -----------------------
    Helpers
 ------------------------ */
+
 function hexToEmoji(hex) {
   if (!hex) return "⚪";
   const c = String(hex).toLowerCase();
+
   if (c.includes("ff0000")) return "🔴";
   if (c.includes("00ff00")) return "🟢";
   if (c.includes("0000ff")) return "🔵";
@@ -41,13 +43,16 @@ function hexToEmoji(hex) {
   if (c.includes("ff8800") || c.includes("ffa500")) return "🟠";
   if (c.includes("000000")) return "⚫";
   if (c.includes("ffffff")) return "⚪";
+
   return "🔘";
 }
 
 function formatDateRange(startStr, endStr) {
   if (!startStr && !endStr) return "-";
+
   const start = startStr ? new Date(startStr) : null;
   const end = endStr ? new Date(endStr) : null;
+
   if (!start || Number.isNaN(start.getTime())) return "-";
 
   const datePart = start.toLocaleDateString("de-DE");
@@ -56,7 +61,9 @@ function formatDateRange(startStr, endStr) {
     minute: "2-digit",
   });
 
-  if (!end || Number.isNaN(end.getTime())) return `${datePart} ${startTime}`;
+  if (!end || Number.isNaN(end.getTime())) {
+    return `${datePart} ${startTime}`;
+  }
 
   const endTime = end.toLocaleTimeString("de-DE", {
     hour: "2-digit",
@@ -77,24 +84,27 @@ function makeCid() {
   return `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-// DB ISO/Z → local datetime-local string
 function toLocalInputValue(dateValue) {
   if (!dateValue) return "";
+
   const d = new Date(dateValue);
   if (Number.isNaN(d.getTime())) return "";
+
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
+
   return `${y}-${m}-${day}T${hh}:${mm}`;
 }
 
-// ✅ datetime-local (local time) → ISO UTC string for API
 function localInputToISO(value) {
   if (!value) return null;
-  const d = new Date(value); // interpreted as local time in the browser
+
+  const d = new Date(value);
   if (Number.isNaN(d.getTime())) return null;
+
   return d.toISOString();
 }
 
@@ -105,6 +115,7 @@ export default function CarLocationsPage() {
 
   const [showRotbuch, setShowRotbuch] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
   const { openSidebar } = useSidebar();
 
   const [rows, setRows] = useState([]);
@@ -117,29 +128,82 @@ export default function CarLocationsPage() {
   const currentMonth = String(new Date().getMonth() + 1);
   const [monthFrom, setMonthFrom] = useState(currentMonth);
   const [monthTo, setMonthTo] = useState(currentMonth);
+
+  const PLATES = ["DN-06919", "DN-06921"];
+  const [activePlate, setActivePlate] = useState("DN-06919");
+
   const [openCarSelectCid, setOpenCarSelectCid] = useState(null);
+  const [carDropdownStyle, setCarDropdownStyle] = useState(null);
+
   const mountedRef = useRef(true);
+  const carInputRefs = useRef({});
+
+  const updateCarDropdownPosition = useCallback((cid) => {
+    const el = carInputRefs.current[cid];
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    const spaceBelow = viewportHeight - rect.bottom - 12;
+    const spaceAbove = rect.top - 12;
+
+    const openDown = spaceBelow >= 240 || spaceBelow >= spaceAbove;
+
+    const maxHeight = Math.max(
+      160,
+      Math.min(340, openDown ? spaceBelow : spaceAbove),
+    );
+
+    const safeLeft = Math.max(8, rect.left);
+    const safeWidth = Math.min(rect.width, viewportWidth - safeLeft - 8);
+
+    setCarDropdownStyle({
+      position: "fixed",
+      left: safeLeft,
+      width: safeWidth,
+      maxHeight,
+      zIndex: 9999,
+      top: openDown ? rect.bottom + 6 : "auto",
+      bottom: openDown ? "auto" : viewportHeight - rect.top + 6,
+    });
+  }, []);
+
+  const closeCarDropdown = useCallback(() => {
+    setOpenCarSelectCid(null);
+    setCarDropdownStyle(null);
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
+
     return () => {
       mountedRef.current = false;
     };
   }, []);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
     checkMobile();
+
     window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+
+    return () => {
+      window.removeEventListener("resize", checkMobile);
+    };
   }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches;
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
     const isDark = saved === "dark" || (!saved && prefersDark);
+
     setDarkMode(isDark);
     document.documentElement.classList.toggle("dark", isDark);
   }, []);
@@ -147,7 +211,8 @@ export default function CarLocationsPage() {
   useEffect(() => {
     setSelectedCids([]);
     setEditCid(null);
-  }, [monthFrom, monthTo]);
+    closeCarDropdown();
+  }, [monthFrom, monthTo, closeCarDropdown]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -183,9 +248,11 @@ export default function CarLocationsPage() {
         const mapped = Array.isArray(locData?.docs)
           ? locData.docs.map((item) => {
               const _id = String(item._id || "");
+
               return {
                 _id,
                 _cid: _id || makeCid(),
+                plateNumber: item.plateNumber || "DN-06919",
                 startDateTime: item.startDateTime
                   ? toLocalInputValue(item.startDateTime)
                   : "",
@@ -217,6 +284,45 @@ export default function CarLocationsPage() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (!openCarSelectCid) return;
+
+    updateCarDropdownPosition(openCarSelectCid);
+
+    const handleReposition = () => {
+      updateCarDropdownPosition(openCarSelectCid);
+    };
+
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
+
+    return () => {
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
+    };
+  }, [openCarSelectCid, updateCarDropdownPosition]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!openCarSelectCid) return;
+
+      const inputEl = carInputRefs.current[openCarSelectCid];
+
+      if (inputEl && inputEl.contains(event.target)) return;
+
+      const dropdownEl = document.querySelector("[data-car-dropdown='true']");
+      if (dropdownEl && dropdownEl.contains(event.target)) return;
+
+      closeCarDropdown();
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openCarSelectCid, closeCarDropdown]);
+
   const sortedOptions = useMemo(() => {
     return [...carOptions].sort((a, b) => a.carName.localeCompare(b.carName));
   }, [carOptions]);
@@ -232,6 +338,7 @@ export default function CarLocationsPage() {
         });
 
         let imageUrl = null;
+
         if (
           matchedCar &&
           Array.isArray(matchedCar.images) &&
@@ -255,6 +362,9 @@ export default function CarLocationsPage() {
 
   const filteredRows = useMemo(() => {
     return rows.filter((r) => {
+      const rowPlate = r.plateNumber || "DN-06919";
+
+      if (rowPlate !== activePlate) return false;
       if (!r.startDateTime) return false;
 
       const d = new Date(r.startDateTime);
@@ -266,21 +376,23 @@ export default function CarLocationsPage() {
 
       return m >= from && m <= to;
     });
-  }, [rows, monthFrom, monthTo]);
+  }, [rows, monthFrom, monthTo, activePlate]);
 
-  const filteredCids = useMemo(
-    () => filteredRows.map((r) => r._cid).filter(Boolean),
-    [filteredRows],
-  );
+  const filteredCids = useMemo(() => {
+    return filteredRows.map((r) => r._cid).filter(Boolean);
+  }, [filteredRows]);
 
   const allSelected = useMemo(() => {
     if (!filteredCids.length) return false;
+
     const set = new Set(selectedCids);
+
     return filteredCids.every((cid) => set.has(cid));
   }, [filteredCids, selectedCids]);
 
   const someSelected = useMemo(() => {
     const set = new Set(selectedCids);
+
     return filteredCids.some((cid) => set.has(cid));
   }, [filteredCids, selectedCids]);
 
@@ -291,9 +403,12 @@ export default function CarLocationsPage() {
       );
       return;
     }
+
     setSelectedCids((prev) => {
       const set = new Set(prev);
+
       filteredCids.forEach((cid) => set.add(cid));
+
       return Array.from(set);
     });
   };
@@ -311,29 +426,37 @@ export default function CarLocationsPage() {
 
         if (field === "manufacturer") {
           const found = sortedOptions.find((o) => o.carName === value);
-          const fullName = found ? found.carName : value || "";
+
           return {
             ...r,
-            manufacturer: fullName,
+            manufacturer: found ? found.carName : value || "",
             vehicleId: found ? found.finNumber : r.vehicleId,
           };
         }
 
-        return { ...r, [field]: value };
+        return {
+          ...r,
+          [field]: value,
+        };
       }),
     );
+  };
+
+  const openCarDropdown = (cid) => {
+    setOpenCarSelectCid(cid);
+    requestAnimationFrame(() => {
+      updateCarDropdownPosition(cid);
+    });
   };
 
   const addNewRow = () => {
     const cid = makeCid();
 
-    // ✅ create a date inside the currently selected month
     const now = new Date();
     const y = now.getFullYear();
     const m = Number(monthFrom);
 
-    // pick "today's day" if it exists in that month, otherwise use last day of month
-    const lastDayOfSelectedMonth = new Date(y, m, 0).getDate(); // month is 1..12 here
+    const lastDayOfSelectedMonth = new Date(y, m, 0).getDate();
     const safeDay = Math.min(now.getDate(), lastDayOfSelectedMonth);
 
     const preset = new Date(
@@ -343,12 +466,14 @@ export default function CarLocationsPage() {
       now.getHours(),
       now.getMinutes(),
     );
+
     const presetLocal = toLocalInputValue(preset);
 
     const newRow = {
       _id: "",
       _cid: cid,
-      startDateTime: presetLocal, // ✅ IMPORTANT
+      plateNumber: activePlate,
+      startDateTime: presetLocal,
       endDateTime: "",
       vehicleType: "PKW",
       manufacturer: "",
@@ -360,13 +485,14 @@ export default function CarLocationsPage() {
     setRows((prev) => [...prev, newRow]);
     setEditCid(cid);
     setSelectedCids([cid]);
+    closeCarDropdown();
   };
 
   const saveRow = async (row) => {
     const cid = row._cid;
 
-    // ✅ send ISO UTC strings (fix +1 hour)
     const payload = {
+      plateNumber: row.plateNumber || activePlate,
       startDateTime: localInputToISO(row.startDateTime),
       endDateTime: localInputToISO(row.endDateTime),
       vehicleType: row.vehicleType || "",
@@ -381,11 +507,14 @@ export default function CarLocationsPage() {
 
       const res = await fetch("/api/car-locations", {
         method: row._id ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(row._id ? { id: row._id, ...payload } : payload),
       });
 
       const data = await res.json();
+
       if (!res.ok) {
         toast.error(data?.error || "Speichern fehlgeschlagen");
         return;
@@ -396,9 +525,11 @@ export default function CarLocationsPage() {
       setRows((prev) =>
         prev.map((r) => {
           if (r._cid !== cid) return r;
+
           return {
             ...r,
             _id: savedId,
+            plateNumber: data?.plateNumber ?? r.plateNumber ?? activePlate,
             startDateTime: data?.startDateTime
               ? toLocalInputValue(data.startDateTime)
               : r.startDateTime || "",
@@ -415,6 +546,7 @@ export default function CarLocationsPage() {
       );
 
       setEditCid(null);
+      closeCarDropdown();
       toast.success("Gespeichert");
     } catch (e) {
       console.error(e);
@@ -430,16 +562,23 @@ export default function CarLocationsPage() {
     if (!row._id) {
       setRows((prev) => prev.filter((r) => r._cid !== row._cid));
       setSelectedCids((prev) => prev.filter((cid) => cid !== row._cid));
+
       if (editCid === row._cid) setEditCid(null);
+
+      closeCarDropdown();
       return;
     }
 
     try {
       const res = await fetch(
         `/api/car-locations?id=${encodeURIComponent(row._id)}`,
-        { method: "DELETE" },
+        {
+          method: "DELETE",
+        },
       );
+
       const data = await res.json();
+
       if (!res.ok) {
         toast.error(data?.error || "Löschen fehlgeschlagen");
         return;
@@ -447,8 +586,10 @@ export default function CarLocationsPage() {
 
       setRows((prev) => prev.filter((r) => r._cid !== row._cid));
       setSelectedCids((prev) => prev.filter((cid) => cid !== row._cid));
+
       if (editCid === row._cid) setEditCid(null);
 
+      closeCarDropdown();
       toast.success("Eintrag gelöscht");
     } catch (e) {
       console.error(e);
@@ -459,6 +600,7 @@ export default function CarLocationsPage() {
   const deleteSelected = async () => {
     const set = new Set(selectedCids);
     const targets = filteredRows.filter((r) => set.has(r._cid));
+
     if (!targets.length) return;
 
     if (!confirm(`${targets.length} Einträge wirklich löschen?`)) return;
@@ -480,15 +622,27 @@ export default function CarLocationsPage() {
       tableRows.push(
         new TableRow({
           children: [
-            new TableCell({ children: [new Paragraph("Lfd.")] }),
+            new TableCell({
+              children: [new Paragraph("Lfd.")],
+            }),
             new TableCell({
               children: [new Paragraph("Datum Beginn / Ende")],
             }),
-            new TableCell({ children: [new Paragraph("Art")] }),
-            new TableCell({ children: [new Paragraph("Herst.")] }),
-            new TableCell({ children: [new Paragraph("FZ-Ident.Nr")] }),
-            new TableCell({ children: [new Paragraph("Fahrstrecke")] }),
-            new TableCell({ children: [new Paragraph("Fahrer")] }),
+            new TableCell({
+              children: [new Paragraph("Art")],
+            }),
+            new TableCell({
+              children: [new Paragraph("Herst.")],
+            }),
+            new TableCell({
+              children: [new Paragraph("FZ-Ident.Nr")],
+            }),
+            new TableCell({
+              children: [new Paragraph("Fahrstrecke")],
+            }),
+            new TableCell({
+              children: [new Paragraph("Fahrer")],
+            }),
           ],
         }),
       );
@@ -510,9 +664,13 @@ export default function CarLocationsPage() {
               new TableCell({
                 children: [new Paragraph(row.vehicleType || "-")],
               }),
-              new TableCell({
-                children: [new Paragraph(row.manufacturer || "-")],
-              }),
+        new TableCell({
+  children: [
+    new Paragraph(
+      (row.manufacturer || "-").trim().split(" ")[0] || "-"
+    ),
+  ],
+}),
               new TableCell({
                 children: [new Paragraph(row.vehicleId || "-")],
               }),
@@ -528,7 +686,10 @@ export default function CarLocationsPage() {
       });
 
       const table = new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
+        width: {
+          size: 100,
+          type: WidthType.PERCENTAGE,
+        },
         rows: tableRows,
       });
 
@@ -541,6 +702,9 @@ export default function CarLocationsPage() {
                 heading: HeadingLevel.HEADING1,
               }),
               new Paragraph({
+                text: `Kennzeichen: ${activePlate}`,
+              }),
+              new Paragraph({
                 text: `Zeitraum: Monat ${monthFrom} bis ${monthTo}`,
               }),
               new Paragraph(""),
@@ -551,7 +715,9 @@ export default function CarLocationsPage() {
       });
 
       const blob = await Packer.toBlob(doc);
-      saveAs(blob, `Fahrtenbuch_${monthFrom}_bis_${monthTo}.docx`);
+
+      saveAs(blob, `Fahrtenbuch_${activePlate}_${monthFrom}_bis_${monthTo}.docx`);
+
       toast.success("Word-Datei wurde erstellt.");
     } catch (e) {
       console.error(e);
@@ -572,16 +738,6 @@ export default function CarLocationsPage() {
   const buttonPrimary = darkMode
     ? "bg-slate-700 hover:bg-slate-600 text-slate-50"
     : "bg-slate-700 hover:bg-slate-800 text-white";
-
-  if (loading) {
-    return (
-      <div
-        className={`flex items-center justify-center h-screen transition-colors duration-300 ${bgClass}`}
-      >
-        <div className="h-11 w-11 rounded-full animate-spin border-[3px] border-transparent border-t-slate-500 border-b-slate-500" />
-      </div>
-    );
-  }
 
   const columnCount = 8;
 
@@ -624,6 +780,7 @@ export default function CarLocationsPage() {
               >
                 Rotbuch
               </h2>
+
               <p
                 className={`text-xs ${
                   darkMode ? "text-slate-400" : "text-slate-600"
@@ -643,6 +800,7 @@ export default function CarLocationsPage() {
                   darkMode ? "text-slate-700" : "text-slate-300"
                 }`}
               />
+
               <p
                 className={`text-sm ${
                   darkMode ? "text-slate-400" : "text-slate-600"
@@ -650,6 +808,7 @@ export default function CarLocationsPage() {
               >
                 Keine Fahrzeuge mit Rotkennzeichen gefunden
               </p>
+
               <button
                 onClick={() => setShowRotbuch(false)}
                 className={`mt-4 px-4 py-2 rounded-md text-sm ${
@@ -662,7 +821,7 @@ export default function CarLocationsPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 ">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
               {redCarsWithImages.map((car) => (
                 <div
                   key={car.id}
@@ -706,6 +865,7 @@ export default function CarLocationsPage() {
                       >
                         {car.carName}
                       </h3>
+
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full ${
@@ -751,6 +911,16 @@ export default function CarLocationsPage() {
     );
   };
 
+  if (loading) {
+    return (
+      <div
+        className={`flex items-center justify-center h-screen transition-colors duration-300 ${bgClass}`}
+      >
+        <div className="h-11 w-11 rounded-full animate-spin border-[3px] border-transparent border-t-slate-500 border-b-slate-500" />
+      </div>
+    );
+  }
+
   return (
     <div
       className={`relative min-h-screen ${bgClass} px-2 py-3 sm:px-4 lg:px-6`}
@@ -773,94 +943,146 @@ export default function CarLocationsPage() {
             >
               <FiMenu className="h-4 w-4" />
             </button>
-
-            <h1
-              className={`text-sm sm:text-base lg:text-xl font-semibold tracking-tight ${textPrimary}`}
-            >
-              Fahrtenbuch
-            </h1>
           </div>
 
           <div className="flex items-center flex-wrap gap-2">
-            {/* Month Range */}
+            <div className="flex items-center gap-2">
+              {PLATES.map((plate) => (
+                <button
+                  key={plate}
+                  onClick={() => {
+                    setActivePlate(plate);
+                    setSelectedCids([]);
+                    setEditCid(null);
+                    closeCarDropdown();
+                  }}
+             className={`relative flex h-[34px] overflow-hidden rounded-[4px] border-2 shadow-sm transition ${
+  activePlate === plate
+    ? "scale-[1.03] border-red-600 ring-2 ring-red-300 opacity-100 blur-0"
+    : "border-slate-300 hover:border-red-400 opacity-45 blur-[0.4px] grayscale hover:opacity-80 hover:blur-0"
+}`}
+                >
+                  <span className="flex h-full w-[26px] flex-col items-center justify-center bg-blue-700">
+                    <svg
+                      viewBox="0 0 100 100"
+                      className="w-[14px] h-[14px]"
+                      fill="gold"
+                    >
+                      {[...Array(12)].map((_, i) => {
+                        const angle = (i * 360) / 12;
+                        const x =
+                          50 + 30 * Math.cos((angle * Math.PI) / 180);
+                        const y =
+                          50 + 30 * Math.sin((angle * Math.PI) / 180);
+
+                        return <circle key={i} cx={x} cy={y} r="3" />;
+                      })}
+                    </svg>
+
+                    <span className="text-[9px] font-semibold text-white leading-none mt-[1px]">
+                      D
+                    </span>
+                  </span>
+
+                  <span className="flex h-full items-center bg-white px-3 font-mono text-[18px] font-bold tracking-[2px] text-red-600">
+                    {plate.replace("-", " ")}
+                  </span>
+                </button>
+              ))}
+            </div>
+
             <div
-              className={`flex items-center gap-2 rounded-lg border px-3 py-[6px] shadow-sm transition ${
+              className={`inline-flex items-center overflow-hidden rounded-lg border shadow-sm ${
                 darkMode
-                  ? "bg-slate-900 border-slate-700 text-slate-300"
-                  : "bg-white border-slate-300 text-slate-600"
+                  ? "bg-slate-900 border-slate-700"
+                  : "bg-white border-slate-300"
               }`}
             >
-              <FiCalendar
-                className={`text-sm ${darkMode ? "text-slate-400" : "text-slate-500"}`}
-              />
-
-              <select
-                value={monthFrom}
-                onChange={(e) => setMonthFrom(e.target.value)}
-                className={`monthSelect min-w-[92px] bg-transparent text-[12px] focus:outline-none ${
-                  darkMode ? "text-slate-100" : "text-slate-700"
+              <div
+                className={`flex items-center gap-1.5 px-2.5 py-[6px] border-r ${
+                  darkMode ? "border-slate-700" : "border-slate-200"
                 }`}
               >
-                <option value="1">Januar</option>
-                <option value="2">Februar</option>
-                <option value="3">März</option>
-                <option value="4">April</option>
-                <option value="5">Mai</option>
-                <option value="6">Juni</option>
-                <option value="7">Juli</option>
-                <option value="8">August</option>
-                <option value="9">September</option>
-                <option value="10">Oktober</option>
-                <option value="11">November</option>
-                <option value="12">Dezember</option>
-              </select>
+                <FiCalendar
+                  className={`text-[13px] ${
+                    darkMode ? "text-slate-400" : "text-slate-500"
+                  }`}
+                />
+
+                <select
+                  value={monthFrom}
+                  onChange={(e) => setMonthFrom(e.target.value)}
+                  className={`monthSelect bg-transparent text-[12px] font-medium focus:outline-none cursor-pointer ${
+                    darkMode ? "text-slate-100" : "text-slate-700"
+                  }`}
+                >
+                  <option value="1">Jan</option>
+                  <option value="2">Feb</option>
+                  <option value="3">Mär</option>
+                  <option value="4">Apr</option>
+                  <option value="5">Mai</option>
+                  <option value="6">Jun</option>
+                  <option value="7">Jul</option>
+                  <option value="8">Aug</option>
+                  <option value="9">Sep</option>
+                  <option value="10">Okt</option>
+                  <option value="11">Nov</option>
+                  <option value="12">Dez</option>
+                </select>
+              </div>
 
               <span
-                className={`text-[11px] ${darkMode ? "text-slate-500" : "text-slate-400"}`}
+                className={`px-2 text-[10px] font-semibold uppercase tracking-wide ${
+                  darkMode ? "text-slate-500" : "text-slate-400"
+                }`}
               >
                 bis
               </span>
 
-              <select
-                value={monthTo}
-                onChange={(e) => setMonthTo(e.target.value)}
-                className={`monthSelect min-w-[92px] bg-transparent text-[12px] focus:outline-none ${
-                  darkMode ? "text-slate-100" : "text-slate-700"
+              <div
+                className={`flex items-center gap-1.5 px-2.5 py-[6px] border-l ${
+                  darkMode ? "border-slate-700" : "border-slate-200"
                 }`}
               >
-                <option value="1">Januar</option>
-                <option value="2">Februar</option>
-                <option value="3">März</option>
-                <option value="4">April</option>
-                <option value="5">Mai</option>
-                <option value="6">Juni</option>
-                <option value="7">Juli</option>
-                <option value="8">August</option>
-                <option value="9">September</option>
-                <option value="10">Oktober</option>
-                <option value="11">November</option>
-                <option value="12">Dezember</option>
-              </select>
+                <select
+                  value={monthTo}
+                  onChange={(e) => setMonthTo(e.target.value)}
+                  className={`monthSelect bg-transparent text-[12px] font-medium focus:outline-none cursor-pointer ${
+                    darkMode ? "text-slate-100" : "text-slate-700"
+                  }`}
+                >
+                  <option value="1">Jan</option>
+                  <option value="2">Feb</option>
+                  <option value="3">Mär</option>
+                  <option value="4">Apr</option>
+                  <option value="5">Mai</option>
+                  <option value="6">Jun</option>
+                  <option value="7">Jul</option>
+                  <option value="8">Aug</option>
+                  <option value="9">Sep</option>
+                  <option value="10">Okt</option>
+                  <option value="11">Nov</option>
+                  <option value="12">Dez</option>
+                </select>
+              </div>
             </div>
 
-            {/* Rotbuch */}
             <button
               onClick={() => setShowRotbuch((v) => !v)}
-              className={`inline-flex items-center gap-1 rounded-lg border px-3 py-[6px] text-[12px] shadow-sm transition ${
+              className={`inline-flex h-[34px] items-center gap-1.5 rounded-lg border px-3 text-[12px] font-medium shadow-sm transition ${
                 showRotbuch
                   ? darkMode
-                    ? "bg-red-900/50 border-red-700 text-red-300"
+                    ? "bg-red-900/40 border-red-700 text-red-300"
                     : "bg-red-50 border-red-300 text-red-700"
                   : darkMode
                     ? "bg-slate-900 border-slate-700 text-slate-300 hover:border-red-500 hover:text-red-300"
                     : "bg-white border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-600"
               }`}
             >
-              <FiBook className="text-sm" />
-              <span>Rotbuch</span>
+              <FiBook className="text-[14px]" />
+              Rotbuch
             </button>
 
-            {/* Delete */}
             {someSelected && (
               <button
                 onClick={deleteSelected}
@@ -875,17 +1097,16 @@ export default function CarLocationsPage() {
               </button>
             )}
 
-            {/* Export */}
             <button
               onClick={exportToWord}
-              className={`inline-flex items-center gap-1 rounded-lg border px-3 py-[6px] text-[12px] shadow-sm transition ${
+              className={`inline-flex h-[34px] items-center gap-1.5 rounded-lg border px-3 text-[12px] font-medium shadow-sm transition ${
                 darkMode
-                  ? "bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500"
-                  : "bg-white border-slate-300 text-slate-600 hover:border-slate-400"
+                  ? "bg-slate-900 border-slate-700 text-slate-300 hover:border-blue-500 hover:text-blue-300"
+                  : "bg-white border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600"
               }`}
             >
-              <FiDownload className="text-sm" />
-              <span>Word</span>
+              <FiDownload className="text-[14px]" />
+              Word
             </button>
           </div>
         </header>
@@ -900,10 +1121,14 @@ export default function CarLocationsPage() {
           >
             <table className="w-full border-collapse text-[11px] sm:text-xs">
               <thead
-                className={`sticky top-0 z-10 ${darkMode ? "bg-slate-900" : "bg-slate-100"} border-b ${borderColor}`}
+                className={`sticky top-0 z-10 ${
+                  darkMode ? "bg-slate-900" : "bg-slate-100"
+                } border-b ${borderColor}`}
               >
                 <tr
-                  className={`uppercase tracking-[0.07em] ${darkMode ? "text-slate-400" : "text-slate-500"}`}
+                  className={`uppercase tracking-[0.07em] ${
+                    darkMode ? "text-slate-400" : "text-slate-500"
+                  }`}
                 >
                   <th className="w-8 px-3 py-2 border-r border-slate-600/10 text-center">
                     <input
@@ -914,24 +1139,31 @@ export default function CarLocationsPage() {
                       aria-label="Alle auswählen"
                     />
                   </th>
+
                   <th className="w-10 px-2 py-2 border-r border-slate-600/10 text-center">
                     Nr.
                   </th>
+
                   <th className="min-w-[180px] px-3 py-2 border-r border-slate-600/10 text-center">
                     Datum/Uhrzeit
                   </th>
+
                   <th className="w-[80px] px-3 py-2 border-r border-slate-600/10 text-center">
                     Art
                   </th>
+
                   <th className="min-w-[140px] px-3 py-2 border-r border-slate-600/10 text-center">
                     Herst.
                   </th>
+
                   <th className="min-w-[120px] px-3 py-2 border-r border-slate-600/10 text-center">
                     FZ-Nr
                   </th>
+
                   <th className="min-w-[180px] px-6 py-2 border-r border-slate-600/10 text-center">
                     Fahrstrecke
                   </th>
+
                   <th className="min-w-[180px] px-3 py-2 border-r border-slate-600/10 text-left">
                     Fahrer
                   </th>
@@ -939,13 +1171,17 @@ export default function CarLocationsPage() {
               </thead>
 
               <tbody
-                className={`${darkMode ? "divide-slate-800" : "divide-slate-200"}`}
+                className={`${
+                  darkMode ? "divide-slate-800" : "divide-slate-200"
+                }`}
               >
                 {filteredRows.length === 0 ? (
                   <tr>
                     <td
                       colSpan={columnCount}
-                      className={`px-3 py-8 text-center text-xs ${darkMode ? "text-slate-300" : "text-slate-600"}`}
+                      className={`px-3 py-8 text-center text-xs ${
+                        darkMode ? "text-slate-300" : "text-slate-600"
+                      }`}
                     >
                       Keine Einträge für diesen Monat.
                     </td>
@@ -1001,6 +1237,7 @@ export default function CarLocationsPage() {
                                 }
                                 className={`w-full rounded-none border px-2 py-1 text-[11px] sm:text-xs ${inputBg}`}
                               />
+
                               <input
                                 type="datetime-local"
                                 value={row.endDateTime || ""}
@@ -1054,6 +1291,11 @@ export default function CarLocationsPage() {
                           {isEditing ? (
                             <div className="relative">
                               <input
+                                ref={(el) => {
+                                  if (el) {
+                                    carInputRefs.current[cid] = el;
+                                  }
+                                }}
                                 type="text"
                                 value={row.manufacturer || ""}
                                 onChange={(e) =>
@@ -1063,64 +1305,86 @@ export default function CarLocationsPage() {
                                     e.target.value,
                                   )
                                 }
-                                onFocus={() => setOpenCarSelectCid(cid)}
+                                onFocus={() => openCarDropdown(cid)}
                                 placeholder="Auswählen oder manuell eingeben"
                                 className={`w-full rounded-none border px-2 py-1 pr-8 text-[11px] sm:text-xs ${inputBg}`}
                               />
 
                               <button
                                 type="button"
-                                onClick={() =>
-                                  setOpenCarSelectCid(
-                                    openCarSelectCid === cid ? null : cid,
-                                  )
-                                }
+                                onClick={() => {
+                                  if (openCarSelectCid === cid) {
+                                    closeCarDropdown();
+                                  } else {
+                                    openCarDropdown(cid);
+                                  }
+                                }}
                                 className={`absolute right-1 top-1/2 -translate-y-1/2 text-xs px-1 ${
-                                  darkMode ? "text-slate-300" : "text-slate-600"
+                                  darkMode
+                                    ? "text-slate-300"
+                                    : "text-slate-600"
                                 }`}
                               >
                                 ▼
                               </button>
 
-                              {openCarSelectCid === cid && (
-                                <div
-                                  className={`absolute left-0 bottom-full z-50 mt-1 max-h-none overflow-visible rounded-md border shadow-lg ${
-                                    darkMode
-                                      ? "bg-slate-900 border-slate-700 text-slate-100"
-                                      : "bg-white border-slate-300 text-slate-900"
-                                  }`}
-                                >
-                                  {sortedOptions.map((opt) => (
-                                    <button
-                                      key={opt.id}
-                                      type="button"
-                                      onClick={() => {
-                                        updateRowField(
-                                          cid,
-                                          "manufacturer",
-                                          opt.carName,
-                                        );
-                                        setOpenCarSelectCid(null);
-                                      }}
-                                      className={`block w-full px-2 py-1.5 text-left text-[11px] sm:text-xs ${
-                                        darkMode
-                                          ? "hover:bg-slate-800"
-                                          : "hover:bg-slate-100"
-                                      }`}
-                                    >
-                                      {hexToEmoji(opt.keyColor)} {opt.carName}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
+                              {openCarSelectCid === cid &&
+                                carDropdownStyle && (
+                                  <div
+                                    data-car-dropdown="true"
+                                    style={carDropdownStyle}
+                                    className={`overflow-y-auto rounded-md border shadow-2xl custom-scroll ${
+                                      darkMode
+                                        ? "bg-slate-900 border-slate-700 text-slate-100"
+                                        : "bg-white border-slate-300 text-slate-900"
+                                    }`}
+                                  >
+                                    {sortedOptions.length === 0 ? (
+                                      <div
+                                        className={`px-2 py-2 text-left text-[11px] sm:text-xs ${
+                                          darkMode
+                                            ? "text-slate-400"
+                                            : "text-slate-500"
+                                        }`}
+                                      >
+                                        Keine Fahrzeuge gefunden
+                                      </div>
+                                    ) : (
+                                      sortedOptions.map((opt) => (
+                                        <button
+                                          key={opt.id}
+                                          type="button"
+                                          onMouseDown={(e) =>
+                                            e.preventDefault()
+                                          }
+                                          onClick={() => {
+                                            updateRowField(
+                                              cid,
+                                              "manufacturer",
+                                              opt.carName,
+                                            );
+                                            closeCarDropdown();
+                                          }}
+                                          className={`block w-full px-2 py-1.5 text-left text-[11px] sm:text-xs ${
+                                            darkMode
+                                              ? "hover:bg-slate-800"
+                                              : "hover:bg-slate-100"
+                                          }`}
+                                        >
+                                          {hexToEmoji(opt.keyColor)}{" "}
+                                          {opt.carName}
+                                        </button>
+                                      ))
+                                    )}
+                                  </div>
+                                )}
                             </div>
                           ) : (
                             <span
                               className={`text-[11px] sm:text-xs truncate block ${textPrimary}`}
                             >
-                              {(row.manufacturer || "-")
-                                .trim()
-                                .split(/\s+/)[0] || "-"}
+                              {(row.manufacturer || "-").trim().split(/\s+/)[0] ||
+                                "-"}
                             </span>
                           )}
                         </td>
@@ -1131,7 +1395,11 @@ export default function CarLocationsPage() {
                               type="text"
                               value={row.vehicleId || ""}
                               onChange={(e) =>
-                                updateRowField(cid, "vehicleId", e.target.value)
+                                updateRowField(
+                                  cid,
+                                  "vehicleId",
+                                  e.target.value,
+                                )
                               }
                               className={`w-full rounded-none border px-2 py-1 text-[11px] sm:text-xs font-mono tracking-wide ${inputBg}`}
                               placeholder="FZ-Nr"
@@ -1185,6 +1453,7 @@ export default function CarLocationsPage() {
                                 className={`w-full rounded-none border px-2 py-1 text-[11px] sm:text-xs ${inputBg}`}
                                 placeholder="Fahrer"
                               />
+
                               <div className="flex items-center gap-1.5 shrink-0">
                                 <button
                                   onClick={() => saveRow(row)}
@@ -1204,7 +1473,10 @@ export default function CarLocationsPage() {
                                 </button>
 
                                 <button
-                                  onClick={() => setEditCid(null)}
+                                  onClick={() => {
+                                    setEditCid(null);
+                                    closeCarDropdown();
+                                  }}
                                   className={`h-7 w-7 flex items-center justify-center rounded-md border ${
                                     darkMode
                                       ? "border-slate-600 bg-slate-800 text-red-300 hover:bg-slate-700"
@@ -1227,7 +1499,10 @@ export default function CarLocationsPage() {
                               {isSelected && (
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   <button
-                                    onClick={() => setEditCid(cid)}
+                                    onClick={() => {
+                                      setEditCid(cid);
+                                      closeCarDropdown();
+                                    }}
                                     className={`h-7 w-7 flex items-center justify-center rounded-md border ${
                                       darkMode
                                         ? "border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700"
@@ -1288,18 +1563,22 @@ export default function CarLocationsPage() {
           display: inline-block;
           border-radius: 0;
         }
+
         .kv-checkbox.dark {
           border-color: #6b7280;
           background-color: #111827;
         }
+
         .kv-checkbox:checked {
           border-color: #4b5563;
           background-color: #e5e7eb;
         }
+
         .kv-checkbox.dark:checked {
           border-color: #9ca3af;
           background-color: #1f2937;
         }
+
         .kv-checkbox:checked::after {
           content: "";
           position: absolute;
@@ -1311,21 +1590,19 @@ export default function CarLocationsPage() {
           border-bottom: 2px solid #374151;
           transform: rotate(45deg);
         }
+
         .kv-checkbox.dark:checked::after {
           border-right-color: #f9fafb;
           border-bottom-color: #f9fafb;
         }
+
         :global(.monthSelect) {
           color-scheme: ${darkMode ? "dark" : "light"};
         }
 
         :global(.monthSelect option) {
-          background-color: ${darkMode
-            ? "#0f172a"
-            : "#ffffff"}; /* slate-900 / white */
-          color: ${darkMode
-            ? "#e2e8f0"
-            : "#0f172a"}; /* slate-200 / slate-900 */
+          background-color: ${darkMode ? "#0f172a" : "#ffffff"};
+          color: ${darkMode ? "#e2e8f0" : "#0f172a"};
         }
 
         :global(.monthSelect optgroup) {
