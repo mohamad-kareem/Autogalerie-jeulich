@@ -47,6 +47,49 @@ function hexToEmoji(hex) {
   return "🔘";
 }
 
+function hasInvalidDateRange(row) {
+  const start = row.startDateTime ? new Date(row.startDateTime) : null;
+  const end = row.endDateTime ? new Date(row.endDateTime) : null;
+
+  if (!start || !end) return false;
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()))
+    return false;
+
+  return end <= start;
+}
+
+function hasTimeOverlap(currentRow, allRows) {
+  const currentStart = new Date(currentRow.startDateTime);
+  const currentEnd = new Date(currentRow.endDateTime);
+
+  if (
+    Number.isNaN(currentStart.getTime()) ||
+    Number.isNaN(currentEnd.getTime())
+  ) {
+    return false;
+  }
+
+  return allRows.some((row) => {
+    if (row._cid === currentRow._cid) return false;
+    if (
+      (row.plateNumber || "DN-06919") !== (currentRow.plateNumber || "DN-06919")
+    ) {
+      return false;
+    }
+
+    if (!row.startDateTime || !row.endDateTime) return false;
+
+    const rowStart = new Date(row.startDateTime);
+    const rowEnd = new Date(row.endDateTime);
+
+    if (Number.isNaN(rowStart.getTime()) || Number.isNaN(rowEnd.getTime())) {
+      return false;
+    }
+
+    return currentStart < rowEnd && currentEnd > rowStart;
+  });
+}
+
 function formatDateRange(startStr, endStr) {
   if (!startStr && !endStr) return "-";
 
@@ -200,7 +243,9 @@ export default function CarLocationsPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
 
     const isDark = saved === "dark" || (!saved && prefersDark);
 
@@ -491,6 +536,22 @@ export default function CarLocationsPage() {
   const saveRow = async (row) => {
     const cid = row._cid;
 
+    if (!row.startDateTime || !row.endDateTime) {
+      toast.error("Bitte Start- und Endzeit eingeben.");
+      return;
+    }
+
+    if (hasInvalidDateRange(row)) {
+      toast.error("Die Endzeit muss nach der Startzeit liegen.");
+      return;
+    }
+
+    if (hasTimeOverlap(row, rows)) {
+      toast.error(
+        "Zeitüberschneidung: Dieses Fahrzeug/Kennzeichen ist in diesem Zeitraum bereits unterwegs.",
+      );
+      return;
+    }
     const payload = {
       plateNumber: row.plateNumber || activePlate,
       startDateTime: localInputToISO(row.startDateTime),
@@ -664,13 +725,13 @@ export default function CarLocationsPage() {
               new TableCell({
                 children: [new Paragraph(row.vehicleType || "-")],
               }),
-        new TableCell({
-  children: [
-    new Paragraph(
-      (row.manufacturer || "-").trim().split(" ")[0] || "-"
-    ),
-  ],
-}),
+              new TableCell({
+                children: [
+                  new Paragraph(
+                    (row.manufacturer || "-").trim().split(" ")[0] || "-",
+                  ),
+                ],
+              }),
               new TableCell({
                 children: [new Paragraph(row.vehicleId || "-")],
               }),
@@ -716,7 +777,10 @@ export default function CarLocationsPage() {
 
       const blob = await Packer.toBlob(doc);
 
-      saveAs(blob, `Fahrtenbuch_${activePlate}_${monthFrom}_bis_${monthTo}.docx`);
+      saveAs(
+        blob,
+        `Fahrtenbuch_${activePlate}_${monthFrom}_bis_${monthTo}.docx`,
+      );
 
       toast.success("Word-Datei wurde erstellt.");
     } catch (e) {
@@ -956,11 +1020,11 @@ export default function CarLocationsPage() {
                     setEditCid(null);
                     closeCarDropdown();
                   }}
-             className={`relative flex h-[34px] overflow-hidden rounded-[4px] border-2 shadow-sm transition ${
-  activePlate === plate
-    ? "scale-[1.03] border-red-600 ring-2 ring-red-300 opacity-100 blur-0"
-    : "border-slate-300 hover:border-red-400 opacity-45 blur-[0.4px] grayscale hover:opacity-80 hover:blur-0"
-}`}
+                  className={`relative flex h-[34px] overflow-hidden rounded-[4px] border-2 shadow-sm transition ${
+                    activePlate === plate
+                      ? "scale-[1.03] border-red-600 ring-2 ring-red-300 opacity-100 blur-0"
+                      : "border-slate-300 hover:border-red-400 opacity-45 blur-[0.4px] grayscale hover:opacity-80 hover:blur-0"
+                  }`}
                 >
                   <span className="flex h-full w-[26px] flex-col items-center justify-center bg-blue-700">
                     <svg
@@ -970,10 +1034,8 @@ export default function CarLocationsPage() {
                     >
                       {[...Array(12)].map((_, i) => {
                         const angle = (i * 360) / 12;
-                        const x =
-                          50 + 30 * Math.cos((angle * Math.PI) / 180);
-                        const y =
-                          50 + 30 * Math.sin((angle * Math.PI) / 180);
+                        const x = 50 + 30 * Math.cos((angle * Math.PI) / 180);
+                        const y = 50 + 30 * Math.sin((angle * Math.PI) / 180);
 
                         return <circle key={i} cx={x} cy={y} r="3" />;
                       })}
@@ -1320,71 +1382,66 @@ export default function CarLocationsPage() {
                                   }
                                 }}
                                 className={`absolute right-1 top-1/2 -translate-y-1/2 text-xs px-1 ${
-                                  darkMode
-                                    ? "text-slate-300"
-                                    : "text-slate-600"
+                                  darkMode ? "text-slate-300" : "text-slate-600"
                                 }`}
                               >
                                 ▼
                               </button>
 
-                              {openCarSelectCid === cid &&
-                                carDropdownStyle && (
-                                  <div
-                                    data-car-dropdown="true"
-                                    style={carDropdownStyle}
-                                    className={`overflow-y-auto rounded-md border shadow-2xl custom-scroll ${
-                                      darkMode
-                                        ? "bg-slate-900 border-slate-700 text-slate-100"
-                                        : "bg-white border-slate-300 text-slate-900"
-                                    }`}
-                                  >
-                                    {sortedOptions.length === 0 ? (
-                                      <div
-                                        className={`px-2 py-2 text-left text-[11px] sm:text-xs ${
+                              {openCarSelectCid === cid && carDropdownStyle && (
+                                <div
+                                  data-car-dropdown="true"
+                                  style={carDropdownStyle}
+                                  className={`overflow-y-auto rounded-md border shadow-2xl custom-scroll ${
+                                    darkMode
+                                      ? "bg-slate-900 border-slate-700 text-slate-100"
+                                      : "bg-white border-slate-300 text-slate-900"
+                                  }`}
+                                >
+                                  {sortedOptions.length === 0 ? (
+                                    <div
+                                      className={`px-2 py-2 text-left text-[11px] sm:text-xs ${
+                                        darkMode
+                                          ? "text-slate-400"
+                                          : "text-slate-500"
+                                      }`}
+                                    >
+                                      Keine Fahrzeuge gefunden
+                                    </div>
+                                  ) : (
+                                    sortedOptions.map((opt) => (
+                                      <button
+                                        key={opt.id}
+                                        type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => {
+                                          updateRowField(
+                                            cid,
+                                            "manufacturer",
+                                            opt.carName,
+                                          );
+                                          closeCarDropdown();
+                                        }}
+                                        className={`block w-full px-2 py-1.5 text-left text-[11px] sm:text-xs ${
                                           darkMode
-                                            ? "text-slate-400"
-                                            : "text-slate-500"
+                                            ? "hover:bg-slate-800"
+                                            : "hover:bg-slate-100"
                                         }`}
                                       >
-                                        Keine Fahrzeuge gefunden
-                                      </div>
-                                    ) : (
-                                      sortedOptions.map((opt) => (
-                                        <button
-                                          key={opt.id}
-                                          type="button"
-                                          onMouseDown={(e) =>
-                                            e.preventDefault()
-                                          }
-                                          onClick={() => {
-                                            updateRowField(
-                                              cid,
-                                              "manufacturer",
-                                              opt.carName,
-                                            );
-                                            closeCarDropdown();
-                                          }}
-                                          className={`block w-full px-2 py-1.5 text-left text-[11px] sm:text-xs ${
-                                            darkMode
-                                              ? "hover:bg-slate-800"
-                                              : "hover:bg-slate-100"
-                                          }`}
-                                        >
-                                          {hexToEmoji(opt.keyColor)}{" "}
-                                          {opt.carName}
-                                        </button>
-                                      ))
-                                    )}
-                                  </div>
-                                )}
+                                        {hexToEmoji(opt.keyColor)} {opt.carName}
+                                      </button>
+                                    ))
+                                  )}
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <span
                               className={`text-[11px] sm:text-xs truncate block ${textPrimary}`}
                             >
-                              {(row.manufacturer || "-").trim().split(/\s+/)[0] ||
-                                "-"}
+                              {(row.manufacturer || "-")
+                                .trim()
+                                .split(/\s+/)[0] || "-"}
                             </span>
                           )}
                         </td>
@@ -1395,11 +1452,7 @@ export default function CarLocationsPage() {
                               type="text"
                               value={row.vehicleId || ""}
                               onChange={(e) =>
-                                updateRowField(
-                                  cid,
-                                  "vehicleId",
-                                  e.target.value,
-                                )
+                                updateRowField(cid, "vehicleId", e.target.value)
                               }
                               className={`w-full rounded-none border px-2 py-1 text-[11px] sm:text-xs font-mono tracking-wide ${inputBg}`}
                               placeholder="FZ-Nr"
