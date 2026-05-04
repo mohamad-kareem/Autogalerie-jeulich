@@ -122,6 +122,41 @@ function normalizeFin(val) {
     .replace(/[^a-z0-9]/gi, "")
     .toLowerCase();
 }
+function findOverlappingCids(rows) {
+  const overlapping = new Set();
+
+  for (let i = 0; i < rows.length; i++) {
+    const a = rows[i];
+
+    if (!a.startDateTime || !a.endDateTime) continue;
+
+    const aStart = new Date(a.startDateTime);
+    const aEnd = new Date(a.endDateTime);
+
+    if (Number.isNaN(aStart.getTime()) || Number.isNaN(aEnd.getTime()))
+      continue;
+
+    for (let j = i + 1; j < rows.length; j++) {
+      const b = rows[j];
+
+      if ((a.plateNumber || "") !== (b.plateNumber || "")) continue;
+      if (!b.startDateTime || !b.endDateTime) continue;
+
+      const bStart = new Date(b.startDateTime);
+      const bEnd = new Date(b.endDateTime);
+
+      if (Number.isNaN(bStart.getTime()) || Number.isNaN(bEnd.getTime()))
+        continue;
+
+      if (aStart < bEnd && aEnd > bStart) {
+        overlapping.add(a._cid);
+        overlapping.add(b._cid);
+      }
+    }
+  }
+
+  return overlapping;
+}
 
 function makeCid() {
   return `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -177,7 +212,7 @@ export default function CarLocationsPage() {
 
   const [openCarSelectCid, setOpenCarSelectCid] = useState(null);
   const [carDropdownStyle, setCarDropdownStyle] = useState(null);
-
+  const [overlapCids, setOverlapCids] = useState(new Set());
   const mountedRef = useRef(true);
   const carInputRefs = useRef({});
 
@@ -226,6 +261,10 @@ export default function CarLocationsPage() {
       mountedRef.current = false;
     };
   }, []);
+  useEffect(() => {
+    const overlaps = findOverlappingCids(rows);
+    setOverlapCids(overlaps);
+  }, [rows]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -1253,18 +1292,22 @@ export default function CarLocationsPage() {
                     const cid = row._cid;
                     const isSelected = selectedCids.includes(cid);
                     const isEditing = editCid === cid;
-
+                    const hasOverlap = overlapCids.has(cid);
                     return (
                       <tr
                         key={cid}
                         className={`border-t ${borderColor} ${
-                          darkMode
-                            ? isSelected
-                              ? "bg-slate-800"
-                              : "hover:bg-slate-900/60"
-                            : isSelected
-                              ? "bg-slate-100"
-                              : "hover:bg-slate-50"
+                          hasOverlap
+                            ? darkMode
+                              ? "bg-red-950/50 hover:bg-red-950/70"
+                              : "bg-red-100 hover:bg-red-200"
+                            : darkMode
+                              ? isSelected
+                                ? "bg-slate-800"
+                                : "hover:bg-slate-900/60"
+                              : isSelected
+                                ? "bg-slate-100"
+                                : "hover:bg-slate-50"
                         }`}
                       >
                         <td className="px-3 py-[7px] text-center align-middle border-r border-slate-600/10">
@@ -1314,14 +1357,22 @@ export default function CarLocationsPage() {
                               />
                             </div>
                           ) : (
-                            <span
-                              className={`text-[11px] sm:text-xs block ${textPrimary} break-words`}
-                            >
-                              {formatDateRange(
-                                row.startDateTime,
-                                row.endDateTime,
+                            <>
+                              <span
+                                className={`text-[11px] sm:text-xs block ${textPrimary} break-words`}
+                              >
+                                {formatDateRange(
+                                  row.startDateTime,
+                                  row.endDateTime,
+                                )}
+                              </span>
+
+                              {hasOverlap && (
+                                <div className="mt-1 text-[10px] font-semibold text-red-600 dark:text-red-300">
+                                  ⚠ Zeitüberschneidung
+                                </div>
                               )}
-                            </span>
+                            </>
                           )}
                         </td>
 
