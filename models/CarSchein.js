@@ -8,7 +8,7 @@ const ReclamationSchema = new mongoose.Schema(
     what: { type: String, default: "" },
     cost: { type: Number, default: null },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const StageMetaSchema = new mongoose.Schema(
@@ -25,7 +25,7 @@ const StageMetaSchema = new mongoose.Schema(
       issue: { type: String, default: "" },
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const CarScheinSchema = new mongoose.Schema(
@@ -56,6 +56,11 @@ const CarScheinSchema = new mongoose.Schema(
 
     fuelNeeded: { type: Boolean, default: false },
     rotKennzeichen: { type: Boolean, default: false },
+    rotPlateNumber: {
+      type: String,
+      enum: ["", "DN-06919", "DN-06921"],
+      default: "",
+    },
     dashboardHidden: { type: Boolean, default: false },
 
     soldAt: { type: Date, default: null },
@@ -76,7 +81,7 @@ const CarScheinSchema = new mongoose.Schema(
     },
     stageMeta: { type: StageMetaSchema, default: () => ({}) },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.models.CarSchein ||

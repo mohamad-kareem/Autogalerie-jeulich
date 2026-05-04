@@ -47,6 +47,7 @@ export default function ScheinTable({
     keyNote: "",
     fuelNeeded: false,
     rotKennzeichen: false,
+    rotPlateNumber: "",
   });
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -587,6 +588,7 @@ export default function ScheinTable({
       keyNote: schein.keyNote || "",
       fuelNeeded: !!schein.fuelNeeded,
       rotKennzeichen: !!schein.rotKennzeichen,
+      rotPlateNumber: schein.rotPlateNumber || "",
     });
     setShowKeyModal(true);
   };
@@ -597,7 +599,10 @@ export default function ScheinTable({
 
   const handleKeySave = async () => {
     if (!selectedSchein?._id) return;
-
+    if (keyForm.rotKennzeichen && !keyForm.rotPlateNumber) {
+      toast.error("Bitte ein Rotkennzeichen auswählen.");
+      return;
+    }
     try {
       const res = await fetch("/api/carschein", {
         method: "PUT",
@@ -617,6 +622,7 @@ export default function ScheinTable({
           keyNote: keyForm.keyNote.trim(),
           fuelNeeded: keyForm.fuelNeeded,
           rotKennzeichen: keyForm.rotKennzeichen, // ✅ NEW
+          rotPlateNumber: keyForm.rotKennzeichen ? keyForm.rotPlateNumber : "",
         }),
       });
 
@@ -1423,6 +1429,26 @@ export default function ScheinTable({
                 />
                 Rotkennzeichen
               </label>
+              {keyForm.rotKennzeichen && (
+                <div className="ml-6 mt-2 flex gap-2">
+                  {["DN-06919", "DN-06921"].map((plate) => (
+                    <button
+                      key={plate}
+                      type="button"
+                      onClick={() => handleKeyChange("rotPlateNumber", plate)}
+                      className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition ${
+                        keyForm.rotPlateNumber === plate
+                          ? "border-red-600 bg-red-600 text-white"
+                          : darkMode
+                            ? "border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600"
+                            : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {plate}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div

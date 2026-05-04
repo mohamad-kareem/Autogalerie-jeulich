@@ -191,6 +191,9 @@ export async function POST(req) {
 
       fuelNeeded: toBool(body.fuelNeeded),
       rotKennzeichen: toBool(body.rotKennzeichen),
+      rotPlateNumber: toBool(body.rotKennzeichen)
+        ? toStr(body.rotPlateNumber)
+        : "",
       dashboardHidden: toBool(body.dashboardHidden),
 
       soldAt,
@@ -386,6 +389,11 @@ export async function PUT(req) {
       update.fuelNeeded = toBool(body.fuelNeeded);
     if (body.rotKennzeichen !== undefined)
       update.rotKennzeichen = toBool(body.rotKennzeichen);
+    if (body.rotPlateNumber !== undefined) {
+      update.rotPlateNumber = toBool(body.rotKennzeichen)
+        ? toStr(body.rotPlateNumber)
+        : "";
+    }
 
     // Stage + meta
     if (body.stage !== undefined)
