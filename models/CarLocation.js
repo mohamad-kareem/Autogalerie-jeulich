@@ -15,8 +15,14 @@ const CarLocationSchema = new mongoose.Schema(
     vehicleId: { type: String, default: "" },
     routeSummary: { type: String, default: "" },
     driverInfo: { type: String, default: "" },
+
+    // ✅ ADD THIS
+    marked: {
+      type: Boolean,
+      default: false,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.models.CarLocation ||

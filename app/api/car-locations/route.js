@@ -24,6 +24,7 @@ function normalizeDoc(doc) {
     ...doc,
     _id: idToString(doc._id),
     plateNumber: doc.plateNumber || "DN-06919",
+    marked: !!doc.marked,
   };
 }
 
@@ -35,7 +36,9 @@ function toDateOrNull(value) {
 }
 
 function normalizePlateNumber(value) {
-  const plate = String(value || "").trim().toUpperCase();
+  const plate = String(value || "")
+    .trim()
+    .toUpperCase();
 
   if (plate === "DN-06921") return "DN-06921";
 
@@ -54,7 +57,7 @@ export async function GET() {
       {
         docs: Array.isArray(docs) ? docs.map(normalizeDoc) : [],
       },
-      200
+      200,
     );
   } catch (err) {
     console.error("GET /api/car-locations error:", err);
@@ -83,6 +86,7 @@ export async function POST(req) {
       vehicleId: body.vehicleId || "",
       routeSummary: body.routeSummary || "",
       driverInfo: body.driverInfo || "",
+      marked: !!body.marked,
     });
 
     const obj = doc?.toObject ? doc.toObject() : doc;
@@ -109,23 +113,47 @@ export async function PUT(req) {
       return jsonResponse({ error: "Missing id" }, 400);
     }
 
-    const updateFields = {
-      plateNumber: normalizePlateNumber(body.plateNumber),
+    const updateFields = {};
 
-      startDateTime: toDateOrNull(body.startDateTime),
-      endDateTime: toDateOrNull(body.endDateTime),
-      vehicleType: body.vehicleType || "",
-      manufacturer: body.manufacturer || "",
-      vehicleId: body.vehicleId || "",
-      routeSummary: body.routeSummary || "",
-      driverInfo: body.driverInfo || "",
-    };
+    if (body.plateNumber !== undefined) {
+      updateFields.plateNumber = normalizePlateNumber(body.plateNumber);
+    }
 
-    const updated = await CarLocation.findByIdAndUpdate(
-      body.id,
-      updateFields,
-      { new: true }
-    ).lean();
+    if (body.startDateTime !== undefined) {
+      updateFields.startDateTime = toDateOrNull(body.startDateTime);
+    }
+
+    if (body.endDateTime !== undefined) {
+      updateFields.endDateTime = toDateOrNull(body.endDateTime);
+    }
+
+    if (body.vehicleType !== undefined) {
+      updateFields.vehicleType = body.vehicleType || "";
+    }
+
+    if (body.manufacturer !== undefined) {
+      updateFields.manufacturer = body.manufacturer || "";
+    }
+
+    if (body.vehicleId !== undefined) {
+      updateFields.vehicleId = body.vehicleId || "";
+    }
+
+    if (body.routeSummary !== undefined) {
+      updateFields.routeSummary = body.routeSummary || "";
+    }
+
+    if (body.driverInfo !== undefined) {
+      updateFields.driverInfo = body.driverInfo || "";
+    }
+
+    if (body.marked !== undefined) {
+      updateFields.marked = !!body.marked;
+    }
+
+    const updated = await CarLocation.findByIdAndUpdate(body.id, updateFields, {
+      new: true,
+    }).lean();
 
     if (!updated) {
       return jsonResponse({ error: "Not found" }, 404);

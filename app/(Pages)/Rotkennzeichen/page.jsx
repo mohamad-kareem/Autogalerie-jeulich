@@ -11,6 +11,7 @@ import {
   FiDownload,
   FiBook,
   FiMenu,
+  FiCheckCircle,
 } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
@@ -349,6 +350,7 @@ export default function CarLocationsPage() {
                 vehicleId: item.vehicleId || "",
                 routeSummary: item.routeSummary || "",
                 driverInfo: item.driverInfo || "",
+                marked: !!item.marked,
               };
             })
           : [];
@@ -503,7 +505,60 @@ export default function CarLocationsPage() {
       prev.includes(cid) ? prev.filter((x) => x !== cid) : [...prev, cid],
     );
   };
+  const toggleMarkOne = async (row) => {
+    if (!row._id) {
+      toast.error("Bitte zuerst speichern, dann markieren.");
+      return;
+    }
 
+    const nextMarked = !row.marked;
+
+    setRows((prev) =>
+      prev.map((r) => (r._cid === row._cid ? { ...r, marked: nextMarked } : r)),
+    );
+
+    try {
+      const res = await fetch("/api/car-locations", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: row._id,
+          marked: nextMarked,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(
+          data?.error || "Markierung konnte nicht gespeichert werden.",
+        );
+
+        setRows((prev) =>
+          prev.map((r) =>
+            r._cid === row._cid ? { ...r, marked: !nextMarked } : r,
+          ),
+        );
+
+        return;
+      }
+
+      setRows((prev) =>
+        prev.map((r) =>
+          r._cid === row._cid ? { ...r, marked: !!data.marked } : r,
+        ),
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("Markierung konnte nicht gespeichert werden.");
+
+      setRows((prev) =>
+        prev.map((r) =>
+          r._cid === row._cid ? { ...r, marked: !nextMarked } : r,
+        ),
+      );
+    }
+  };
   const updateRowField = (cid, field, value) => {
     setRows((prev) =>
       prev.map((r) => {
@@ -1350,6 +1405,7 @@ export default function CarLocationsPage() {
                     const isSelected = selectedCids.includes(cid);
                     const isEditing = editCid === cid;
                     const hasOverlap = overlapCids.has(cid);
+                    const isMarked = !!row.marked;
                     return (
                       <tr
                         key={cid}
@@ -1358,13 +1414,17 @@ export default function CarLocationsPage() {
                             ? darkMode
                               ? "bg-red-950/50 hover:bg-red-950/70"
                               : "bg-red-100 hover:bg-red-200"
-                            : darkMode
-                              ? isSelected
-                                ? "bg-slate-800"
-                                : "hover:bg-slate-900/60"
-                              : isSelected
-                                ? "bg-slate-100"
-                                : "hover:bg-slate-50"
+                            : isMarked
+                              ? darkMode
+                                ? "bg-amber-900/40 hover:bg-amber-900/60"
+                                : "bg-amber-200 hover:bg-amber-300"
+                              : darkMode
+                                ? isSelected
+                                  ? "bg-slate-800"
+                                  : "hover:bg-slate-900/60"
+                                : isSelected
+                                  ? "bg-slate-100"
+                                  : "hover:bg-slate-50"
                         }`}
                       >
                         <td className="px-3 py-[7px] text-center align-middle border-r border-slate-600/10">
@@ -1659,6 +1719,20 @@ export default function CarLocationsPage() {
 
                               {isSelected && (
                                 <div className="flex items-center gap-1.5 shrink-0">
+                                  <button
+                                    onClick={() => toggleMarkOne(row)}
+                                    className={`h-7 w-7 flex items-center justify-center rounded-md border ${
+                                      isMarked
+                                        ? "border-amber-500 bg-amber-500 text-white"
+                                        : darkMode
+                                          ? "border-slate-600 bg-slate-800 text-amber-300 hover:bg-slate-700"
+                                          : "border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100"
+                                    }`}
+                                    aria-label="Markieren"
+                                    title="Eintrag markieren"
+                                  >
+                                    <FiCheckCircle size={14} />
+                                  </button>
                                   <button
                                     onClick={() => {
                                       setEditCid(cid);
