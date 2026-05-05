@@ -326,36 +326,6 @@ export default function Hero() {
             </div>
 
             <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <div>
-                <span className="mb-1 block text-[11px] font-medium text-slate-300">
-                  Zahlungsart
-                </span>
-
-                <div className="flex h-9 overflow-hidden rounded-lg border border-white/15 bg-white/10 text-[12px] font-semibold">
-                  <button
-                    onClick={() => updateFilter("paymentType", "buy")}
-                    className={`flex-1 transition ${
-                      filters.paymentType === "buy"
-                        ? "bg-white text-black"
-                        : "text-slate-300 hover:bg-white/10"
-                    }`}
-                  >
-                    Kaufen
-                  </button>
-
-                  <button
-                    onClick={() => updateFilter("paymentType", "leasing")}
-                    className={`flex-1 transition ${
-                      filters.paymentType === "leasing"
-                        ? "bg-white text-black"
-                        : "text-slate-300 hover:bg-white/10"
-                    }`}
-                  >
-                    Leasen
-                  </button>
-                </div>
-              </div>
-
               <SelectBox
                 label="Preis bis"
                 value={filters.maxPrice}
