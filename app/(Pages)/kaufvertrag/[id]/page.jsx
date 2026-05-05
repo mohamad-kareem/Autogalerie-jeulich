@@ -86,11 +86,12 @@ export default function KaufvertragDetail() {
       setForm(cleanedData);
 
       setRawTotal(
-        cleanedData.total ? `€ ${formatGermanNumber(cleanedData.total)}` : ""
+        cleanedData.total ? `€ ${formatGermanNumber(cleanedData.total)}` : "",
       );
       setRawDownPayment(
-        `€ ${formatGermanNumber(cleanedData.downPayment ?? 0)}`
+        `€ ${formatGermanNumber(cleanedData.downPayment ?? 0)}`,
       );
+      fetchScheinByVin(cleanedData.vin);
     };
     fetchData();
   }, [id]);
@@ -442,7 +443,7 @@ export default function KaufvertragDetail() {
                         setForm((prev) => ({
                           ...prev,
                           agreements: prev.agreements.filter(
-                            (_, i) => i !== idx
+                            (_, i) => i !== idx,
                           ),
                         }))
                       }
@@ -636,7 +637,7 @@ export default function KaufvertragDetail() {
                 setRawDownPayment(
                   form.downPayment?.toString() !== undefined
                     ? form.downPayment.toString()
-                    : "0"
+                    : "0",
                 );
               }}
               className="input w-full p-1"
@@ -819,7 +820,7 @@ export default function KaufvertragDetail() {
                   type="button"
                   onClick={async () => {
                     const confirmed = confirm(
-                      "Bist du sicher, dass du diesen Vertrag löschen möchtest?"
+                      "Bist du sicher, dass du diesen Vertrag löschen möchtest?",
                     );
                     if (!confirmed) return;
 

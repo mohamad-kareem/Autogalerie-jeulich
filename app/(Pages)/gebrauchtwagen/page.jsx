@@ -18,7 +18,7 @@ import {
   Plus,
 } from "lucide-react";
 import SearchAndFilter from "@/app/(components)/helpers/SearchAndFilter";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 // Maps
@@ -48,6 +48,7 @@ const gearbox = {
 
 export default function UsedCarsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
 
   const [cars, setCars] = useState([]);
@@ -57,11 +58,13 @@ export default function UsedCarsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
     make: "",
+    model: "",
     fuelType: "",
     minPrice: 0,
     maxPrice: 100000,
     minYear: 1990,
     maxYear: new Date().getFullYear(),
+    maxMileage: "",
     transmission: "",
   });
   const [showFilters, setShowFilters] = useState(false);
@@ -77,10 +80,16 @@ export default function UsedCarsPage() {
 
   const fetchCars = async () => {
     setLoading(true);
+
     try {
-      const res = await fetch("/api/cars");
+      const query = searchParams.toString();
+
+      const res = await fetch(`/api/cars${query ? `?${query}` : ""}`, {
+        cache: "no-store",
+      });
+
       const data = await res.json();
-      setCars(data);
+      setCars(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch cars:", error);
     } finally {
@@ -121,6 +130,11 @@ export default function UsedCarsPage() {
             .includes(searchTerm.toLowerCase()));
 
       const matchesMake = filters.make === "" || car.make === filters.make;
+      const matchesModel = filters.model === "" || car.model === filters.model;
+
+      const matchesMileage =
+        !filters.maxMileage ||
+        Number(car.mileage || 0) <= Number(filters.maxMileage);
       const matchesFuel =
         filters.fuelType === "" || car.fuel === filters.fuelType;
 
@@ -139,17 +153,37 @@ export default function UsedCarsPage() {
       return (
         matchesSearch &&
         matchesMake &&
+        matchesModel &&
         matchesFuel &&
         matchesPrice &&
         matchesYear &&
+        matchesMileage &&
         matchesTransmission
       );
     });
   }, [cars, searchTerm, filters]);
 
   useEffect(() => {
+    const q = searchParams.get("q") || "";
+    const make = searchParams.get("make") || "";
+    const model = searchParams.get("model") || "";
+    const minYear = searchParams.get("minYear");
+    const maxMileage = searchParams.get("maxMileage");
+    const maxPrice = searchParams.get("maxPrice");
+
+    setSearchTerm(q);
+
+    setFilters((prev) => ({
+      ...prev,
+      make,
+      model,
+      minYear: minYear ? Number(minYear) : 1990,
+      maxMileage: maxMileage || "",
+      maxPrice: maxPrice ? Number(maxPrice) : 100000,
+    }));
+
     fetchCars();
-  }, []);
+  }, [searchParams]);
 
   const maxPrice = useMemo(() => {
     return (
@@ -618,11 +652,13 @@ export default function UsedCarsPage() {
               onClick={() => {
                 setFilters({
                   make: "",
+                  model: "",
                   fuelType: "",
                   minPrice: 0,
                   maxPrice: 100000,
                   minYear: 1990,
                   maxYear: new Date().getFullYear(),
+                  maxMileage: "",
                   transmission: "",
                 });
                 setSearchTerm("");

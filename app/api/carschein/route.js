@@ -227,12 +227,13 @@ export async function GET(req) {
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
     const limit = Math.max(parseInt(searchParams.get("limit") || "10", 10), 1);
     const hideDead = searchParams.get("hideDead") === "1";
-
+    const finNumber = toStr(searchParams.get("finNumber"));
+    const filter = finNumber ? { finNumber } : {};
     const skip = (page - 1) * limit;
 
     const [total, docs] = await Promise.all([
-      CarSchein.countDocuments(),
-      CarSchein.find()
+      CarSchein.countDocuments(filter),
+      CarSchein.find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
