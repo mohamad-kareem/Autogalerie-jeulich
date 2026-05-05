@@ -58,7 +58,7 @@ const CarScheinSchema = new mongoose.Schema(
     rotKennzeichen: { type: Boolean, default: false },
     rotPlateNumber: {
       type: String,
-      enum: ["", "DN-06919", "DN-06921"],
+      enum: ["", "DN-06919", "DN-06921", "BEIDE"],
       default: "",
     },
     dashboardHidden: { type: Boolean, default: false },

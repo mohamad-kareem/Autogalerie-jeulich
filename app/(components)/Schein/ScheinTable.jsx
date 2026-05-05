@@ -1431,7 +1431,7 @@ export default function ScheinTable({
               </label>
               {keyForm.rotKennzeichen && (
                 <div className="ml-6 mt-2 flex gap-2">
-                  {["DN-06919", "DN-06921"].map((plate) => (
+                  {["DN-06919", "DN-06921", "BEIDE"].map((plate) => (
                     <button
                       key={plate}
                       type="button"
@@ -1444,7 +1444,7 @@ export default function ScheinTable({
                             : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
                       }`}
                     >
-                      {plate}
+                      {plate === "BEIDE" ? "Beide" : plate}
                     </button>
                   ))}
                 </div>

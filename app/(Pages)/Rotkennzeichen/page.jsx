@@ -980,7 +980,46 @@ export default function CarLocationsPage() {
                         >
                           FIN: {car.finNumber || "–"}
                         </span>
-                        {car.rotPlateNumber && (
+                        {car.rotPlateNumber === "BEIDE" ? (
+                          <div className="flex gap-1">
+                            {["DN-06919", "DN-06921"].map((plate) => (
+                              <span
+                                key={plate}
+                                className="relative flex h-[24px] overflow-hidden rounded-[3px] border border-slate-400 shadow-sm"
+                              >
+                                <span className="flex h-full w-[18px] flex-col items-center justify-center bg-blue-700">
+                                  <svg
+                                    viewBox="0 0 100 100"
+                                    className="h-[10px] w-[10px]"
+                                    fill="gold"
+                                  >
+                                    {[...Array(12)].map((_, i) => {
+                                      const angle = (i * 360) / 12;
+                                      const x =
+                                        50 +
+                                        30 * Math.cos((angle * Math.PI) / 180);
+                                      const y =
+                                        50 +
+                                        30 * Math.sin((angle * Math.PI) / 180);
+
+                                      return (
+                                        <circle key={i} cx={x} cy={y} r="3" />
+                                      );
+                                    })}
+                                  </svg>
+
+                                  <span className="mt-[1px] text-[7px] font-semibold leading-none text-white">
+                                    D
+                                  </span>
+                                </span>
+
+                                <span className="flex h-full items-center bg-white px-2 font-mono text-[12px] font-bold tracking-[1px] text-red-600">
+                                  {plate.replace("-", " ")}
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        ) : car.rotPlateNumber ? (
                           <span className="relative flex h-[24px] overflow-hidden rounded-[3px] border border-slate-400 shadow-sm">
                             <span className="flex h-full w-[18px] flex-col items-center justify-center bg-blue-700">
                               <svg
@@ -1008,7 +1047,7 @@ export default function CarLocationsPage() {
                               {car.rotPlateNumber.replace("-", " ")}
                             </span>
                           </span>
-                        )}
+                        ) : null}
                         {car.isSold && (
                           <span
                             className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -1021,17 +1060,6 @@ export default function CarLocationsPage() {
                           </span>
                         )}
                       </div>
-
-                      {car.matchedCar && (
-                        <p
-                          className={`text-xs truncate mt-1 ${
-                            darkMode ? "text-slate-400" : "text-slate-600"
-                          }`}
-                        >
-                          {car.matchedCar.make || ""}{" "}
-                          {car.matchedCar.model || ""}
-                        </p>
-                      )}
                     </div>
                   </div>
                 </div>
