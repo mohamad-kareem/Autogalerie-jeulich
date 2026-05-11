@@ -11,7 +11,6 @@ import {
   SlidersHorizontal,
   ShieldCheck,
   BadgeEuro,
-  PhoneCall,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -33,17 +32,16 @@ export default function Hero() {
     model: "",
     minYear: "",
     maxMileage: "",
-    paymentType: "buy",
     maxPrice: "",
     location: "",
   });
 
   useEffect(() => {
-    const handleType = () => {
-      const currentText = isDeleting
-        ? fullText.substring(0, text.length - 1)
-        : fullText.substring(0, text.length + 1);
+    const currentText = isDeleting
+      ? fullText.substring(0, text.length - 1)
+      : fullText.substring(0, text.length + 1);
 
+    const timer = setTimeout(() => {
       setText(currentText);
 
       if (!isDeleting && currentText === fullText) {
@@ -55,9 +53,8 @@ export default function Hero() {
       } else {
         setTypingSpeed(isDeleting ? 50 : 150);
       }
-    };
+    }, typingSpeed);
 
-    const timer = setTimeout(handleType, typingSpeed);
     return () => clearTimeout(timer);
   }, [text, isDeleting, typingSpeed]);
 
@@ -147,7 +144,6 @@ export default function Hero() {
       model: "",
       minYear: "",
       maxMileage: "",
-      paymentType: "buy",
       maxPrice: "",
       location: "",
     });
@@ -168,8 +164,8 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative flex min-h-screen w-full items-center overflow-hidden bg-slate-950 text-white">
-      {/* Desktop background */}
+    <section className="relative w-full overflow-hidden bg-slate-950 text-white">
+      {/* Desktop Background */}
       <div className="absolute inset-0 hidden sm:block">
         <Image
           src={back}
@@ -179,14 +175,14 @@ export default function Hero() {
           className="object-cover"
           sizes="100vw"
         />
-        <div className="absolute inset-0 bg-black/35" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/55 to-transparent" />
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/65 to-slate-950/10" />
       </div>
 
-      <div className="relative z-10 w-full">
-        <div className="mx-auto grid w-full max-w-7xl items-center gap-8 px-4 py-24 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-          {/* Left content */}
-          <div className="space-y-6 text-center sm:text-left">
+      <div className="relative z-10 mx-auto w-full max-w-screen-2xl px-4 py-12 sm:px-6 sm:py-20 lg:px-8 xl:px-8">
+        <div className="grid min-h-[calc(100vh-112px)] w-full items-center gap-8 lg:grid-cols-[0.9fr_1.1fr] xl:gap-12">
+          {/* Left Content */}
+          <div className="max-w-2xl space-y-6 text-center sm:text-left">
             <div className="hidden sm:inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3 py-1 backdrop-blur">
               <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
               <span className="text-[10px] font-medium uppercase tracking-[0.25em] text-slate-200">
@@ -194,7 +190,7 @@ export default function Hero() {
               </span>
             </div>
 
-            <h1 className="font-playfair text-3xl leading-tight sm:text-4xl md:text-5xl lg:text-6xl">
+            <h1 className="font-playfair text-3xl leading-tight sm:text-4xl md:text-5xl xl:text-6xl">
               <span className="inline-block min-h-[1em]">
                 {text}
                 <span className="animate-pulse">|</span>
@@ -205,7 +201,7 @@ export default function Hero() {
               </span>
             </h1>
 
-            <p className="hidden max-w-xl text-sm text-slate-200 sm:block md:text-base">
+            <p className="hidden max-w-xl text-sm leading-relaxed text-slate-200 sm:block md:text-base">
               Auswahl, Qualität und Service auf Konzernniveau – an einem
               Standort.
             </p>
@@ -226,7 +222,7 @@ export default function Hero() {
               </Link>
             </div>
 
-            {/* Mobile image */}
+            {/* Mobile Image */}
             <div className="sm:hidden">
               <div className="relative h-[34vh] min-h-[230px] overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 shadow-2xl shadow-black/40">
                 <Image
@@ -238,15 +234,6 @@ export default function Hero() {
                   sizes="100vw"
                 />
                 <div className="absolute inset-0 bg-black/25" />
-
-                <div className="absolute left-3 top-3">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/45 px-3 py-1 backdrop-blur">
-                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                    <span className="text-[10px] font-medium uppercase tracking-[0.25em] text-slate-200">
-                      Autogalerie&nbsp;– Jülich
-                    </span>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -260,8 +247,8 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Filter box */}
-          <div className="rounded-2xl border border-white/10 bg-slate-950/80 p-4 shadow-2xl shadow-black/40 backdrop-blur-xl">
+          {/* Filter Box */}
+          <div className="w-full rounded-2xl border border-white/10 bg-slate-950/80 p-4 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-5 lg:ml-auto">
             <h2 className="mb-4 text-center text-sm font-semibold text-slate-100 sm:text-base">
               {loading ? "Fahrzeuge werden geladen..." : "Fahrzeug suchen"}
             </h2>
@@ -341,7 +328,7 @@ export default function Hero() {
                 }
               />
 
-              <div>
+              <div className="lg:col-span-2">
                 <span className="mb-1 block text-[11px] font-medium text-slate-300">
                   Ort oder PLZ
                 </span>
