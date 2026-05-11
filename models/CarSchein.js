@@ -22,7 +22,11 @@ const StageMetaSchema = new mongoose.Schema(
     },
     tuev: {
       passed: { type: Boolean, default: false },
-      issue: { type: String, default: "" },
+
+      issues: {
+        type: [String],
+        default: [],
+      },
     },
   },
   { _id: false },
@@ -64,7 +68,10 @@ const CarScheinSchema = new mongoose.Schema(
     dashboardHidden: { type: Boolean, default: false },
 
     soldAt: { type: Date, default: null },
-
+    tuvTasks: {
+      type: [String],
+      default: [],
+    },
     // ✅ NEW: link to existing ContactCustomer (no re-save)
     soldContactId: {
       type: mongoose.Schema.Types.ObjectId,

@@ -72,13 +72,27 @@ function normalizeReclamations(reclamations) {
 }
 function normalizeStageMeta(meta) {
   const m = meta && typeof meta === "object" ? meta : {};
+
+  const rawIssues = Array.isArray(m?.tuev?.issues)
+    ? m.tuev.issues
+    : m?.tuev?.issue
+      ? [m.tuev.issue]
+      : [];
+
   return {
     werkstatt: {
       where: toStr(m?.werkstatt?.where),
       what: toStr(m?.werkstatt?.what),
     },
-    platz: { note: toStr(m?.platz?.note) },
-    tuev: { passed: toBool(m?.tuev?.passed), issue: toStr(m?.tuev?.issue) },
+
+    platz: {
+      note: toStr(m?.platz?.note),
+    },
+
+    tuev: {
+      passed: toBool(m?.tuev?.passed),
+      issues: rawIssues.map(toStr).filter(Boolean),
+    },
   };
 }
 

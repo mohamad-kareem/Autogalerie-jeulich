@@ -99,8 +99,8 @@ function StageCard({ s, active, darkMode, onClick, compact = false }) {
             ? "border-sky-500/60 bg-sky-900/30 text-white"
             : "border-sky-500 bg-sky-100 text-gray-900"
           : darkMode
-          ? "border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700"
-          : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+            ? "border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700"
+            : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
       }`}
     >
       <span
@@ -112,8 +112,8 @@ function StageCard({ s, active, darkMode, onClick, compact = false }) {
               ? "bg-gray-600 text-white"
               : "bg-gray-900 text-white"
             : darkMode
-            ? "bg-gray-700 text-gray-200"
-            : "bg-gray-100 text-gray-700"
+              ? "bg-gray-700 text-gray-200"
+              : "bg-gray-100 text-gray-700"
         }`}
       >
         <Ico size={compact ? 13 : 14} />
@@ -164,7 +164,12 @@ export default function StageManagerButton({
     platz: { note: currentMeta?.platz?.note || "" },
     tuev: {
       passed: !!currentMeta?.tuev?.passed,
-      issue: currentMeta?.tuev?.issue || "",
+      issues: Array.isArray(currentMeta?.tuev?.issues)
+        ? currentMeta.tuev.issues
+        : currentMeta?.tuev?.issue
+          ? [currentMeta.tuev.issue]
+          : [],
+      issueInput: "",
     },
   });
 
@@ -181,13 +186,21 @@ export default function StageManagerButton({
         what: m?.werkstatt?.what || "",
       },
       platz: { note: m?.platz?.note || "" },
-      tuev: { passed: !!m?.tuev?.passed, issue: m?.tuev?.issue || "" },
+      tuev: {
+        passed: !!m?.tuev?.passed,
+        issues: Array.isArray(m?.tuev?.issues)
+          ? m.tuev.issues
+          : m?.tuev?.issue
+            ? [m.tuev.issue]
+            : [],
+        issueInput: "",
+      },
     });
   }, [open, schein]);
 
   const stageInfo = useMemo(
     () => STAGES.find((x) => x.id === stage) || STAGES[0],
-    [stage]
+    [stage],
   );
 
   // Table label: show TÜV status (Bestanden/Nicht bestanden)
@@ -207,6 +220,29 @@ export default function StageManagerButton({
     return null;
   }, [schein]);
 
+  const addTuevIssue = () => {
+    const value = meta.tuev.issueInput.trim();
+    if (!value) return;
+
+    setMeta((p) => ({
+      ...p,
+      tuev: {
+        ...p.tuev,
+        issues: [...p.tuev.issues, value],
+        issueInput: "",
+      },
+    }));
+  };
+
+  const removeTuevIssue = (index) => {
+    setMeta((p) => ({
+      ...p,
+      tuev: {
+        ...p.tuev,
+        issues: p.tuev.issues.filter((_, i) => i !== index),
+      },
+    }));
+  };
   const save = async () => {
     if (!schein?._id) return;
 
@@ -214,8 +250,8 @@ export default function StageManagerButton({
     const payloadMeta = {
       ...meta,
       tuev: {
-        ...meta.tuev,
-        issue: meta.tuev.passed ? "" : meta.tuev.issue,
+        passed: meta.tuev.passed,
+        issues: meta.tuev.issues,
       },
     };
 
@@ -498,7 +534,8 @@ export default function StageManagerButton({
                             tuev: {
                               ...p.tuev,
                               passed: e.target.checked,
-                              issue: e.target.checked ? "" : p.tuev.issue,
+
+                              issueInput: "",
                             },
                           }))
                         }
@@ -508,25 +545,79 @@ export default function StageManagerButton({
                     </label>
 
                     {!meta.tuev.passed && (
-                      <div>
-                        <label
-                          className={`block text-xs mb-1 ${
-                            darkMode ? "text-gray-300" : "text-gray-700"
-                          }`}
-                        >
-                          Problem / Mangel (optional)
-                        </label>
-                        <input
-                          className={inputClass(darkMode)}
-                          value={meta.tuev.issue}
-                          onChange={(e) =>
-                            setMeta((p) => ({
-                              ...p,
-                              tuev: { ...p.tuev, issue: e.target.value },
-                            }))
-                          }
-                          placeholder="z. B. Bremsleitung korrodiert"
-                        />
+                      <div className="space-y-3">
+                        <div>
+                          <label
+                            className={`block text-xs mb-1 ${
+                              darkMode ? "text-gray-300" : "text-gray-700"
+                            }`}
+                          >
+                            Problem / Mangel hinzufügen
+                          </label>
+
+                          <div className="flex gap-2">
+                            <input
+                              className={inputClass(darkMode)}
+                              value={meta.tuev.issueInput}
+                              onChange={(e) =>
+                                setMeta((p) => ({
+                                  ...p,
+                                  tuev: {
+                                    ...p.tuev,
+                                    issueInput: e.target.value,
+                                  },
+                                }))
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  addTuevIssue();
+                                }
+                              }}
+                              placeholder="z. B. Bremsleitung korrodiert"
+                            />
+
+                            <button
+                              type="button"
+                              onClick={addTuevIssue}
+                              disabled={!meta.tuev.issueInput.trim()}
+                              className="h-9 rounded-md bg-gray-900 px-3 text-xs font-medium text-white hover:bg-black disabled:opacity-50"
+                            >
+                              Hinzufügen
+                            </button>
+                          </div>
+                        </div>
+
+                        {meta.tuev.issues.length > 0 && (
+                          <ol className="space-y-1.5">
+                            {meta.tuev.issues.map((issue, index) => (
+                              <li
+                                key={index}
+                                className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-xs ${
+                                  darkMode
+                                    ? "border-gray-700 bg-gray-800 text-gray-200"
+                                    : "border-gray-200 bg-white text-gray-800"
+                                }`}
+                              >
+                                <span>
+                                  {index + 1}. {issue}
+                                </span>
+
+                                <button
+                                  type="button"
+                                  onClick={() => removeTuevIssue(index)}
+                                  className={`rounded-full p-1 ${
+                                    darkMode
+                                      ? "text-gray-400 hover:bg-gray-700 hover:text-white"
+                                      : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                                  }`}
+                                >
+                                  <FiX size={13} />
+                                </button>
+                              </li>
+                            ))}
+                          </ol>
+                        )}
                       </div>
                     )}
                   </div>
@@ -594,7 +685,7 @@ export default function StageManagerButton({
                               <a
                                 href={`tel:${String(soldContact.phone).replace(
                                   /\s+/g,
-                                  ""
+                                  "",
                                 )}`}
                                 className={`text-sm font-semibold underline-offset-2 hover:underline ${
                                   darkMode ? "text-gray-100" : "text-gray-900"
