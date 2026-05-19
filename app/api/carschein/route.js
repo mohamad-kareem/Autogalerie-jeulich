@@ -188,7 +188,7 @@ export async function POST(req) {
       carName,
       finNumber: finNumber || "",
       owner,
-
+      boughtAt: ensureValidDateOrNull(body.boughtAt),
       imageUrl: body.imageUrl || null,
       publicId: body.publicId || null,
 
@@ -379,7 +379,9 @@ export async function PUT(req) {
     if (body.carName !== undefined) update.carName = toStr(body.carName);
     if (body.finNumber !== undefined) update.finNumber = toStr(body.finNumber);
     if (body.owner !== undefined) update.owner = toStr(body.owner);
-
+    if (body.boughtAt !== undefined) {
+      update.boughtAt = ensureValidDateOrNull(body.boughtAt);
+    }
     // Notes/tasks
     if (body.notes !== undefined) update.notes = normalizeNotes(body.notes);
     if (body.completedTasks !== undefined)

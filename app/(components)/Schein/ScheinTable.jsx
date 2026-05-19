@@ -48,6 +48,7 @@ export default function ScheinTable({
     fuelNeeded: false,
     rotKennzeichen: false,
     rotPlateNumber: "",
+    boughtAt: "",
   });
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -589,6 +590,9 @@ export default function ScheinTable({
       fuelNeeded: !!schein.fuelNeeded,
       rotKennzeichen: !!schein.rotKennzeichen,
       rotPlateNumber: schein.rotPlateNumber || "",
+      boughtAt: schein.boughtAt
+        ? new Date(schein.boughtAt).toISOString().slice(0, 10)
+        : "",
     });
     setShowKeyModal(true);
   };
@@ -615,7 +619,7 @@ export default function ScheinTable({
           imageUrl: selectedSchein.imageUrl ?? null,
           publicId: selectedSchein.publicId ?? null,
           keyNumber: keyForm.keyNumber.trim() || "",
-
+          boughtAt: keyForm.boughtAt || null,
           keyCount: keyForm.keyCount,
           keyColor: keyForm.keyColor,
           keySold: keyForm.keySold,
@@ -1429,6 +1433,26 @@ export default function ScheinTable({
                 />
                 Rotkennzeichen
               </label>
+              <div>
+                <label
+                  className={`block text-xs font-medium mb-1 transition-colors duration-300 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Ankaufdatum
+                </label>
+
+                <input
+                  type="date"
+                  value={keyForm.boughtAt}
+                  onChange={(e) => handleKeyChange("boughtAt", e.target.value)}
+                  className={`w-full h-9 rounded-md border px-2 text-sm focus:outline-none transition-colors duration-300 ${
+                    darkMode
+                      ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500"
+                      : "bg-white border-gray-300 text-gray-900 focus:border-blue-600"
+                  }`}
+                />
+              </div>
               {keyForm.rotKennzeichen && (
                 <div className="ml-6 mt-2 flex gap-2">
                   {["DN-06919", "DN-06921", "BEIDE"].map((plate) => (

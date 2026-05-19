@@ -158,7 +158,32 @@ function findOverlappingCids(rows) {
 
   return overlapping;
 }
+function findInvalidBoughtDateCids(rows, carOptions) {
+  const invalid = new Set();
 
+  rows.forEach((row) => {
+    if (!row.startDateTime || !row.vehicleId) return;
+
+    const selectedCar = carOptions.find(
+      (car) => car.finNumber === row.vehicleId,
+    );
+
+    if (!selectedCar?.boughtAt) return;
+
+    const boughtDate = new Date(selectedCar.boughtAt);
+    const startDate = new Date(row.startDateTime);
+
+    if (
+      !Number.isNaN(boughtDate.getTime()) &&
+      !Number.isNaN(startDate.getTime()) &&
+      startDate < boughtDate
+    ) {
+      invalid.add(row._cid);
+    }
+  });
+
+  return invalid;
+}
 function makeCid() {
   return `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
@@ -214,6 +239,7 @@ export default function CarLocationsPage() {
   const [openCarSelectCid, setOpenCarSelectCid] = useState(null);
   const [carDropdownStyle, setCarDropdownStyle] = useState(null);
   const [overlapCids, setOverlapCids] = useState(new Set());
+  const [invalidBoughtDateCids, setInvalidBoughtDateCids] = useState(new Set());
   const mountedRef = useRef(true);
   const carInputRefs = useRef({});
 
@@ -265,7 +291,11 @@ export default function CarLocationsPage() {
   useEffect(() => {
     const overlaps = findOverlappingCids(rows);
     setOverlapCids(overlaps);
-  }, [rows]);
+
+    const invalidBoughtDates = findInvalidBoughtDateCids(rows, carOptions);
+
+    setInvalidBoughtDateCids(invalidBoughtDates);
+  }, [rows, carOptions]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -328,6 +358,7 @@ export default function CarLocationsPage() {
                 keySold: !!d.keySold,
                 soldAt: d.soldAt || null,
                 rotPlateNumber: d.rotPlateNumber || "",
+                boughtAt: d.boughtAt || null,
               }))
           : [];
 
@@ -647,6 +678,23 @@ export default function CarLocationsPage() {
       );
       return;
     }
+
+    const selectedCar = carOptions.find(
+      (car) => car.finNumber === row.vehicleId,
+    );
+
+    if (selectedCar?.boughtAt && row.startDateTime) {
+      const boughtDate = new Date(selectedCar.boughtAt);
+      const startDate = new Date(row.startDateTime);
+
+      if (startDate < boughtDate) {
+        toast.error(
+          "Dieses Fahrzeug kann nicht vor dem Ankaufdatum im Rotbuch benutzt werden.",
+        );
+        return;
+      }
+    }
+
     const payload = {
       plateNumber: row.plateNumber || activePlate,
       startDateTime: localInputToISO(row.startDateTime),
@@ -1035,6 +1083,18 @@ export default function CarLocationsPage() {
                         >
                           FIN: {car.finNumber || "–"}
                         </span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            darkMode
+                              ? "bg-slate-700 text-slate-300"
+                              : "bg-slate-200 text-slate-700"
+                          }`}
+                        >
+                          Ankaufdatum:{" "}
+                          {car.boughtAt
+                            ? new Date(car.boughtAt).toLocaleDateString("de-DE")
+                            : "–"}
+                        </span>
                         {car.rotPlateNumber === "BEIDE" ? (
                           <div className="flex gap-1">
                             {["DN-06919", "DN-06921"].map((plate) => (
@@ -1405,12 +1465,13 @@ export default function CarLocationsPage() {
                     const isSelected = selectedCids.includes(cid);
                     const isEditing = editCid === cid;
                     const hasOverlap = overlapCids.has(cid);
+                    const hasInvalidBoughtDate = invalidBoughtDateCids.has(cid);
                     const isMarked = !!row.marked;
                     return (
                       <tr
                         key={cid}
                         className={`border-t ${borderColor} ${
-                          hasOverlap
+                          hasOverlap || hasInvalidBoughtDate
                             ? darkMode
                               ? "bg-red-950/50 hover:bg-red-950/70"
                               : "bg-red-100 hover:bg-red-200"
@@ -1487,6 +1548,11 @@ export default function CarLocationsPage() {
                               {hasOverlap && (
                                 <div className="mt-1 text-[10px] font-semibold text-red-600 dark:text-red-300">
                                   ⚠ Zeitüberschneidung
+                                </div>
+                              )}
+                              {hasInvalidBoughtDate && (
+                                <div className="mt-1 text-[10px] font-semibold text-red-600 dark:text-red-300">
+                                  ⚠ Vor Ankaufdatum benutzt
                                 </div>
                               )}
                             </>

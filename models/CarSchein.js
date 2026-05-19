@@ -43,7 +43,7 @@ const CarScheinSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
-
+    boughtAt: { type: Date, default: null },
     owner: { type: String, trim: true, default: "" },
 
     imageUrl: { type: String, default: null },
