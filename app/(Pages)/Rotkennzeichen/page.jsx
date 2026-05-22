@@ -242,7 +242,11 @@ export default function CarLocationsPage() {
   const [invalidBoughtDateCids, setInvalidBoughtDateCids] = useState(new Set());
   const mountedRef = useRef(true);
   const carInputRefs = useRef({});
-
+  const [allScheinOptions, setAllScheinOptions] = useState([]);
+  const [showRotCarsModal, setShowRotCarsModal] = useState(false);
+  const [rotCarsDraft, setRotCarsDraft] = useState([]);
+  const [rotSearch, setRotSearch] = useState("");
+  const [savingRotCars, setSavingRotCars] = useState(false);
   const updateCarDropdownPosition = useCallback((cid) => {
     const el = carInputRefs.current[cid];
     if (!el) return;
@@ -346,21 +350,18 @@ export default function CarLocationsPage() {
 
         const allCarsList = Array.isArray(carsData) ? carsData : [];
 
-        const options = Array.isArray(scheinData?.docs)
-          ? scheinData.docs
-              .filter((d) => !!d.rotKennzeichen)
-              .map((d) => ({
-                id: String(d._id || ""),
-                carName: d.carName || "",
-                finNumber: d.finNumber || "",
-                keyColor: d.keyColor || null,
-                stage: d.stage || "",
-                keySold: !!d.keySold,
-                soldAt: d.soldAt || null,
-                rotPlateNumber: d.rotPlateNumber || "",
-                boughtAt: d.boughtAt || null,
-              }))
+        const allScheinList = Array.isArray(scheinData?.docs)
+          ? scheinData.docs.map((d) => ({
+              id: String(d._id || ""),
+              carName: d.carName || "",
+              finNumber: d.finNumber || "",
+              rotKennzeichen: !!d.rotKennzeichen,
+              rotPlateNumber: d.rotPlateNumber || "",
+              boughtAt: d.boughtAt || null,
+            }))
           : [];
+
+        const options = allScheinList.filter((d) => d.rotKennzeichen);
 
         const mapped = Array.isArray(locData?.docs)
           ? locData.docs.map((item) => {
@@ -389,6 +390,7 @@ export default function CarLocationsPage() {
         if (!mountedRef.current) return;
 
         setAllCars(allCarsList);
+        setAllScheinOptions(allScheinList);
         setCarOptions(options);
         setRows(mapped);
       } catch (e) {
@@ -1185,7 +1187,93 @@ export default function CarLocationsPage() {
       </div>
     );
   };
+  const openRotCarsManager = () => {
+    setRotCarsDraft(
+      allScheinOptions.map((car) => ({
+        ...car,
+        rotKennzeichen: !!car.rotKennzeichen,
+        rotPlateNumber: car.rotPlateNumber || "",
+      })),
+    );
 
+    setRotSearch("");
+    setShowRotCarsModal(true);
+  };
+
+  const toggleRotCar = (id) => {
+    setRotCarsDraft((prev) =>
+      prev.map((car) => {
+        if (car.id !== id) return car;
+
+        const nextValue = !car.rotKennzeichen;
+
+        return {
+          ...car,
+          rotKennzeichen: nextValue,
+          rotPlateNumber: nextValue ? car.rotPlateNumber || activePlate : "",
+        };
+      }),
+    );
+  };
+
+  const changeRotPlate = (id, plate) => {
+    setRotCarsDraft((prev) =>
+      prev.map((car) =>
+        car.id === id ? { ...car, rotPlateNumber: plate } : car,
+      ),
+    );
+  };
+
+  const saveRotCarsSelection = async () => {
+    try {
+      setSavingRotCars(true);
+
+      const changedCars = rotCarsDraft.filter((draft) => {
+        const original = allScheinOptions.find((car) => car.id === draft.id);
+
+        return (
+          original &&
+          (original.rotKennzeichen !== draft.rotKennzeichen ||
+            original.rotPlateNumber !== draft.rotPlateNumber)
+        );
+      });
+
+      for (const car of changedCars) {
+        const res = await fetch("/api/carschein", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: car.id,
+            rotKennzeichen: car.rotKennzeichen,
+            rotPlateNumber: car.rotKennzeichen ? car.rotPlateNumber : "",
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          toast.error(data?.error || "Fehler beim Speichern");
+          return;
+        }
+      }
+
+      const nextAll = rotCarsDraft;
+
+      setAllScheinOptions(nextAll);
+      setCarOptions(nextAll.filter((c) => c.rotKennzeichen));
+
+      setShowRotCarsModal(false);
+
+      toast.success("Rotbuch aktualisiert");
+    } catch (err) {
+      console.error(err);
+      toast.error("Speichern fehlgeschlagen");
+    } finally {
+      setSavingRotCars(false);
+    }
+  };
   if (loading) {
     return (
       <div
@@ -1354,6 +1442,18 @@ export default function CarLocationsPage() {
             >
               <FiBook className="text-[14px]" />
               Rotbuch
+            </button>
+
+            <button
+              onClick={openRotCarsManager}
+              className={`inline-flex h-[34px] items-center gap-1.5 rounded-lg border px-3 text-[12px] font-medium shadow-sm transition ${
+                darkMode
+                  ? "bg-slate-900 border-slate-700 text-slate-300 hover:border-red-500 hover:text-red-300"
+                  : "bg-white border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-600"
+              }`}
+            >
+              <FiCheckCircle className="text-[14px]" />
+              Fahrzeuge wählen
             </button>
 
             {someSelected && (
@@ -1911,6 +2011,145 @@ export default function CarLocationsPage() {
           color: ${darkMode ? "#e2e8f0" : "#0f172a"};
         }
       `}</style>
+
+      {showRotCarsModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+          <div
+            className={`w-full max-w-3xl rounded-2xl border shadow-2xl ${
+              darkMode
+                ? "bg-slate-900 border-slate-700"
+                : "bg-white border-slate-200"
+            }`}
+          >
+            <div
+              className={`flex items-center justify-between border-b p-4 ${
+                darkMode ? "border-slate-700" : "border-slate-200"
+              }`}
+            >
+              <div>
+                <h2 className={`text-sm font-semibold ${textPrimary}`}>
+                  Rotbuch Fahrzeuge
+                </h2>
+
+                <p className={`text-xs ${textSecondary}`}>
+                  Fahrzeuge auswählen
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowRotCarsModal(false)}
+                className={`rounded-full p-2 ${
+                  darkMode
+                    ? "hover:bg-slate-800 text-slate-300"
+                    : "hover:bg-slate-100 text-slate-600"
+                }`}
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <input
+                value={rotSearch}
+                onChange={(e) => setRotSearch(e.target.value)}
+                placeholder="Suchen..."
+                className={`mb-3 w-full rounded-lg border px-3 py-2 text-sm ${inputBg}`}
+              />
+
+              <div className="max-h-[60vh] overflow-y-auto custom-scroll space-y-2">
+                {rotCarsDraft
+                  .filter((car) => {
+                    const q = rotSearch.toLowerCase();
+
+                    return (
+                      car.carName?.toLowerCase().includes(q) ||
+                      car.finNumber?.toLowerCase().includes(q)
+                    );
+                  })
+                  .map((car) => (
+                    <div
+                      key={car.id}
+                      className={`rounded-xl border p-3 ${
+                        darkMode
+                          ? "border-slate-700 bg-slate-800"
+                          : "border-slate-200 bg-slate-50"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <label className="flex items-start gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={car.rotKennzeichen}
+                            onChange={() => toggleRotCar(car.id)}
+                            className="mt-1 h-4 w-4 accent-red-600"
+                          />
+
+                          <div>
+                            <div
+                              className={`text-sm font-semibold ${textPrimary}`}
+                            >
+                              {car.carName}
+                            </div>
+
+                            <div className={`text-xs ${textSecondary}`}>
+                              {car.finNumber || "–"}
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+
+                      {car.rotKennzeichen && (
+                        <div className="mt-3 flex gap-2 pl-7">
+                          {["DN-06919", "DN-06921", "BEIDE"].map((plate) => (
+                            <button
+                              key={plate}
+                              type="button"
+                              onClick={() => changeRotPlate(car.id, plate)}
+                              className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition ${
+                                car.rotPlateNumber === plate
+                                  ? "border-red-600 bg-red-600 text-white"
+                                  : darkMode
+                                    ? "border-slate-600 bg-slate-900 text-slate-300"
+                                    : "border-slate-300 bg-white text-slate-700"
+                              }`}
+                            >
+                              {plate === "BEIDE" ? "Beide" : plate}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            <div
+              className={`flex justify-end gap-2 border-t p-4 ${
+                darkMode ? "border-slate-700" : "border-slate-200"
+              }`}
+            >
+              <button
+                onClick={() => setShowRotCarsModal(false)}
+                className={`rounded-lg border px-4 py-2 text-xs ${
+                  darkMode
+                    ? "border-slate-700 text-slate-300"
+                    : "border-slate-300 text-slate-700"
+                }`}
+              >
+                Abbrechen
+              </button>
+
+              <button
+                onClick={saveRotCarsSelection}
+                disabled={savingRotCars}
+                className="rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                Speichern
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
