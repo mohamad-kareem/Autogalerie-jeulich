@@ -28,88 +28,107 @@ export default function KaufvertragAuswahlPage({ carId }) {
     router.push(`/kaufvertrag/form?${qp.toString()}`);
   };
 
-  const options = [{ value: "karim", label: "Hussein Karim", role: "Inhaber" }];
+  const options = [
+    {
+      value: "karim",
+      label: "Hussein Karim",
+      role: "Inhaber",
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+    <main className="relative flex min-h-screen items-center justify-center bg-[#f5f5f2] px-4 py-10 text-[#101510]">
       <button
         onClick={openSidebar}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-colors duration-300"
+        className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-2xl border border-black/10 bg-white text-[#101510] shadow-md shadow-black/5 transition hover:bg-[#f1f6f2] md:hidden"
         aria-label="Menü öffnen"
       >
         <FiMenu className="h-4 w-4" />
       </button>
 
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
+      <motion.section
+        initial={{ y: 18, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="max-w-md w-full bg-slate-800 rounded-xl shadow-lg border border-slate-700 overflow-hidden"
+        transition={{ duration: 0.28 }}
+        className="w-full max-w-[460px] overflow-hidden rounded-[26px] border border-white/80 bg-white shadow-xl shadow-black/5"
       >
-        <div className="p-6 text-center border-b border-slate-700">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="bg-blue-500/20 p-2 rounded-lg">
-              <FileText className="w-6 h-6 text-blue-400" />
-            </div>
-            <h1 className="text-xl font-semibold text-white">
-              Vertragsersteller
-            </h1>
+        <div className="border-b border-black/5 px-6 py-6 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e6f1e9] text-[#146c2e]">
+            <FileText className="h-6 w-6" />
           </div>
-          <p className="text-slate-400 text-sm">
-            Wählen Sie den Vertragsersteller für die Kaufvertragsgenerierung
+
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#146c2e]">
+            Kaufvertrag
+          </p>
+
+          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-[#07111f]">
+            Vertragsersteller wählen
+          </h1>
+
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#5f695f]">
+            Wählen Sie aus, wer als Vertragsersteller im Kaufvertrag erscheinen
+            soll.
           </p>
         </div>
 
-        <div className="p-6 space-y-4">
-          {options.map((opt) => (
-            <div
-              key={opt.value}
-              onClick={() => setSelected(opt.value)}
-              className={`cursor-pointer flex items-center p-4 rounded-lg border transition-colors ${
-                selected === opt.value
-                  ? "border-blue-500 bg-blue-500/10"
-                  : "border-slate-600 hover:border-blue-400 hover:bg-slate-700/50"
-              }`}
-            >
-              <div className="flex items-center gap-4 flex-1">
+        <div className="space-y-3 px-5 py-5">
+          {options.map((opt) => {
+            const active = selected === opt.value;
+
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setSelected(opt.value)}
+                className={`flex w-full items-center gap-4 rounded-[20px] border p-4 text-left transition ${
+                  active
+                    ? "border-[#146c2e]/40 bg-[#e6f1e9]"
+                    : "border-black/10 bg-[#fafaf8] hover:border-[#146c2e]/30 hover:bg-[#f1f6f2]"
+                }`}
+              >
                 <div
-                  className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                    selected === opt.value ? "bg-blue-500" : "bg-slate-700"
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition ${
+                    active
+                      ? "bg-[#146c2e] text-white"
+                      : "bg-white text-[#146c2e] shadow-sm"
                   }`}
                 >
-                  <User className="h-5 w-5 text-white" />
+                  <User className="h-5 w-5" />
                 </div>
 
-                <div>
-                  <h3 className="text-base font-medium text-white">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-[15px] font-semibold text-[#07111f]">
                     {opt.label}
                   </h3>
-                  <p className="text-sm text-slate-400">{opt.role}</p>
-                </div>
-              </div>
 
-              {selected === opt.value && (
-                <CheckCircle className="w-5 h-5 text-blue-400 flex-shrink-0" />
-              )}
-            </div>
-          ))}
+                  <p className="mt-0.5 text-sm text-[#5f695f]">{opt.role}</p>
+                </div>
+
+                <CheckCircle
+                  className={`h-5 w-5 shrink-0 transition ${
+                    active ? "text-[#146c2e]" : "text-black/15"
+                  }`}
+                />
+              </button>
+            );
+          })}
         </div>
 
-        <div className="p-6 pt-4">
+        <div className="border-t border-black/5 bg-[#fafaf8] px-5 py-5">
           <button
             onClick={handleContinue}
             disabled={!selected}
-            className={`w-full flex items-center justify-center py-3 px-4 rounded-lg font-medium transition-colors ${
+            className={`flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-[14px] font-medium transition ${
               selected
-                ? "bg-blue-600 hover:bg-blue-500 text-white shadow-md"
-                : "bg-slate-700 text-slate-400 cursor-not-allowed"
+                ? "bg-[#146c2e] text-white shadow-md shadow-green-900/10 hover:bg-[#0f5724]"
+                : "cursor-not-allowed bg-black/5 text-[#9aa39a]"
             }`}
           >
-            <span>Weiter zum Vertrag</span>
-            <ChevronRight className="ml-2 h-4 w-4" />
+            Weiter zum Vertrag
+            <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-      </motion.div>
-    </div>
+      </motion.section>
+    </main>
   );
 }

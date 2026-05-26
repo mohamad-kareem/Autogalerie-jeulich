@@ -1223,7 +1223,13 @@ export default function CarLocationsPage() {
       ),
     );
   };
-
+  const changeBoughtAt = (id, value) => {
+    setRotCarsDraft((prev) =>
+      prev.map((car) =>
+        car.id === id ? { ...car, boughtAt: value || null } : car,
+      ),
+    );
+  };
   const saveRotCarsSelection = async () => {
     try {
       setSavingRotCars(true);
@@ -1234,7 +1240,8 @@ export default function CarLocationsPage() {
         return (
           original &&
           (original.rotKennzeichen !== draft.rotKennzeichen ||
-            original.rotPlateNumber !== draft.rotPlateNumber)
+            original.rotPlateNumber !== draft.rotPlateNumber ||
+            (original.boughtAt || "") !== (draft.boughtAt || ""))
         );
       });
 
@@ -1248,6 +1255,7 @@ export default function CarLocationsPage() {
             id: car.id,
             rotKennzeichen: car.rotKennzeichen,
             rotPlateNumber: car.rotKennzeichen ? car.rotPlateNumber : "",
+            boughtAt: car.boughtAt || null,
           }),
         });
 
@@ -2099,23 +2107,46 @@ export default function CarLocationsPage() {
                       </div>
 
                       {car.rotKennzeichen && (
-                        <div className="mt-3 flex gap-2 pl-7">
-                          {["DN-06919", "DN-06921", "BEIDE"].map((plate) => (
-                            <button
-                              key={plate}
-                              type="button"
-                              onClick={() => changeRotPlate(car.id, plate)}
-                              className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition ${
-                                car.rotPlateNumber === plate
-                                  ? "border-red-600 bg-red-600 text-white"
-                                  : darkMode
-                                    ? "border-slate-600 bg-slate-900 text-slate-300"
-                                    : "border-slate-300 bg-white text-slate-700"
-                              }`}
+                        <div className="mt-3 pl-7">
+                          <div className="flex flex-wrap gap-2">
+                            {["DN-06919", "DN-06921", "BEIDE"].map((plate) => (
+                              <button
+                                key={plate}
+                                type="button"
+                                onClick={() => changeRotPlate(car.id, plate)}
+                                className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition ${
+                                  car.rotPlateNumber === plate
+                                    ? "border-red-600 bg-red-600 text-white"
+                                    : darkMode
+                                      ? "border-slate-600 bg-slate-900 text-slate-300"
+                                      : "border-slate-300 bg-white text-slate-700"
+                                }`}
+                              >
+                                {plate === "BEIDE" ? "Beide" : plate}
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="mt-3">
+                            <label
+                              className={`mb-1 block text-[11px] font-medium ${textSecondary}`}
                             >
-                              {plate === "BEIDE" ? "Beide" : plate}
-                            </button>
-                          ))}
+                              Ankaufdatum
+                            </label>
+
+                            <input
+                              type="date"
+                              value={
+                                car.boughtAt
+                                  ? String(car.boughtAt).slice(0, 10)
+                                  : ""
+                              }
+                              onChange={(e) =>
+                                changeBoughtAt(car.id, e.target.value)
+                              }
+                              className={`w-full rounded-lg border px-3 py-2 text-xs ${inputBg}`}
+                            />
+                          </div>
                         </div>
                       )}
                     </div>

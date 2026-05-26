@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   RefreshCw,
   ChevronRight,
@@ -10,18 +12,17 @@ import {
   Fuel,
   Zap,
   MapPin,
-  ShieldCheck,
   BadgeCheck,
   CarFront,
   Scale,
   X,
   Plus,
+  Tag,
+  FileText,
 } from "lucide-react";
-import SearchAndFilter from "@/app/(components)/helpers/SearchAndFilter";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
 
-// Maps
+import SearchAndFilter from "@/app/(components)/helpers/SearchAndFilter";
+
 const fuelMap = {
   PETROL: "Benzin",
   DIESEL: "Diesel",
@@ -29,22 +30,8 @@ const fuelMap = {
   diesel: "Diesel",
 };
 
-const doors = {
-  TWO: "2 Türen",
-  THREE: "3 Türen",
-  FOUR: "4 Türen",
-  FIVE: "5 Türen",
-  FOUR_OR_FIVE: "4/5 Türen",
-  "four or five": "4/5 Türen",
-  TWO_OR_THREE: "2/3 Türen",
-};
-
-const gearbox = {
-  MANUAL_GEAR: "Schaltgetriebe",
-  AUTOMATIC_GEAR: "Automatik",
-  SEMI_AUTOMATIC_GEAR: "Halbautomatik",
-  NO_GEARS: "Ohne Getriebe",
-};
+const btnBase =
+  "inline-flex h-10 items-center justify-center gap-1.5 rounded-xl px-3 text-[13px] font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
 
 export default function UsedCarsPage() {
   const router = useRouter();
@@ -67,23 +54,15 @@ export default function UsedCarsPage() {
     maxMileage: "",
     transmission: "",
   });
-  const [showFilters, setShowFilters] = useState(false);
-
-  const [viewMode, setViewMode] = useState("grid");
 
   const [comparisonMode, setComparisonMode] = useState(false);
   const [selectedForComparison, setSelectedForComparison] = useState([]);
-
-  // ONE base button style – same height for ALL buttons
-  const baseBtn =
-    "inline-flex h-9 items-center justify-center px-3 text-[11px] sm:text-xs font-medium rounded-md cursor-pointer transition-colors";
 
   const fetchCars = async () => {
     setLoading(true);
 
     try {
       const query = searchParams.toString();
-
       const res = await fetch(`/api/cars${query ? `?${query}` : ""}`, {
         cache: "no-store",
       });
@@ -97,18 +76,16 @@ export default function UsedCarsPage() {
     }
   };
 
-  const goToKaufvertrag = (carId) => {
-    router.push(`/kaufvertrag/auswahl?carId=${encodeURIComponent(carId)}`);
-  };
-
   const syncCars = async () => {
     setSyncing(true);
+
     try {
       const res = await fetch("/api/sync", {
         headers: {
           Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET}`,
         },
       });
+
       if (res.ok) await fetchCars();
     } catch (error) {
       console.error("Sync failed:", error);
@@ -116,52 +93,6 @@ export default function UsedCarsPage() {
       setSyncing(false);
     }
   };
-
-  const filteredCars = useMemo(() => {
-    return cars.filter((car) => {
-      const matchesSearch =
-        searchTerm === "" ||
-        `${car.make} ${car.model}`
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        (car.modelDescription &&
-          car.modelDescription
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()));
-
-      const matchesMake = filters.make === "" || car.make === filters.make;
-      const matchesModel = filters.model === "" || car.model === filters.model;
-
-      const matchesMileage =
-        !filters.maxMileage ||
-        Number(car.mileage || 0) <= Number(filters.maxMileage);
-      const matchesFuel =
-        filters.fuelType === "" || car.fuel === filters.fuelType;
-
-      const price = car.price?.consumerPriceGross || 0;
-      const matchesPrice =
-        price >= filters.minPrice && price <= filters.maxPrice;
-
-      const year = car.firstRegistration
-        ? parseInt(car.firstRegistration.slice(0, 4))
-        : 0;
-      const matchesYear = year >= filters.minYear && year <= filters.maxYear;
-
-      const matchesTransmission =
-        filters.transmission === "" || car.gearbox === filters.transmission;
-
-      return (
-        matchesSearch &&
-        matchesMake &&
-        matchesModel &&
-        matchesFuel &&
-        matchesPrice &&
-        matchesYear &&
-        matchesMileage &&
-        matchesTransmission
-      );
-    });
-  }, [cars, searchTerm, filters]);
 
   useEffect(() => {
     const q = searchParams.get("q") || "";
@@ -185,20 +116,41 @@ export default function UsedCarsPage() {
     fetchCars();
   }, [searchParams]);
 
-  const maxPrice = useMemo(() => {
-    return (
-      Math.ceil(
-        Math.max(...cars.map((car) => car.price?.consumerPriceGross || 0)) /
-          10000,
-      ) * 10000 || 100000
-    );
-  }, [cars]);
+  const filteredCars = useMemo(() => {
+    return cars.filter((car) => {
+      const title = `${car.make || ""} ${car.model || ""} ${
+        car.modelDescription || ""
+      }`.toLowerCase();
+
+      const price = Number(car.price?.consumerPriceGross || 0);
+      const year = car.firstRegistration
+        ? Number(String(car.firstRegistration).slice(0, 4))
+        : 0;
+
+      return (
+        (!searchTerm || title.includes(searchTerm.toLowerCase())) &&
+        (!filters.make || car.make === filters.make) &&
+        (!filters.model || car.model === filters.model) &&
+        (!filters.fuelType || car.fuel === filters.fuelType) &&
+        (!filters.maxMileage ||
+          Number(car.mileage || 0) <= Number(filters.maxMileage)) &&
+        price >= filters.minPrice &&
+        price <= filters.maxPrice &&
+        year >= filters.minYear &&
+        year <= filters.maxYear &&
+        (!filters.transmission || car.gearbox === filters.transmission)
+      );
+    });
+  }, [cars, searchTerm, filters]);
+
+  const selectedCars = useMemo(
+    () => cars.filter((car) => selectedForComparison.includes(car._id)),
+    [cars, selectedForComparison],
+  );
 
   const toggleComparisonMode = () => {
     setComparisonMode((prev) => {
-      if (prev) {
-        setSelectedForComparison([]);
-      }
+      if (prev) setSelectedForComparison([]);
       return !prev;
     });
   };
@@ -213,463 +165,457 @@ export default function UsedCarsPage() {
     );
   };
 
-  const selectedCars = useMemo(
-    () => cars.filter((car) => selectedForComparison.includes(car._id)),
-    [cars, selectedForComparison],
-  );
-
   const handleCompareNavigate = () => {
-    if (selectedForComparison.length >= 2) {
-      localStorage.setItem(
-        "carComparison",
-        JSON.stringify(selectedForComparison),
-      );
-      const query = selectedForComparison.map((id) => `id=${id}`).join("&");
-      router.push(`/vergleich?${query}`);
-    }
+    if (selectedForComparison.length < 2) return;
+
+    localStorage.setItem(
+      "carComparison",
+      JSON.stringify(selectedForComparison),
+    );
+
+    const query = selectedForComparison.map((id) => `id=${id}`).join("&");
+    router.push(`/vergleich?${query}`);
+  };
+
+  const goToKaufvertrag = (carId) => {
+    router.push(`/kaufvertrag/auswahl?carId=${encodeURIComponent(carId)}`);
+  };
+
+  const toggleSold = async (car) => {
+    const res = await fetch(`/api/cars/${car._id}/sold`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sold: !car.sold }),
+    });
+
+    if (!res.ok) return;
+
+    const updated = await res.json();
+
+    setCars((prev) =>
+      prev.map((item) => (item._id === updated._id ? updated : item)),
+    );
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-slate-50 pt-8">
-      {/* FIXED COMPARISON BAR */}
+    <main className="relative min-h-screen bg-[#f5f5f2] pb-16 pt-8 text-[#101510]">
       {comparisonMode && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-800 bg-slate-950/95 backdrop-blur-md">
-          <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <div
-                className={`${baseBtn} border border-slate-700 bg-slate-900 text-slate-100`}
-              >
-                <Scale className="mr-1 h-4 w-4 text-sky-400" />
-                <span className="font-semibold">
-                  Vergleichsmodus{" "}
-                  <span className="text-sky-300">
-                    ({selectedForComparison.length}/3)
-                  </span>
-                </span>
-              </div>
-
-              {selectedCars.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2">
-                  {selectedCars.slice(0, 3).map((car) => (
-                    <div
-                      key={car._id}
-                      className="flex items-center gap-2 rounded-md border border-slate-700 bg-slate-900/80 px-2 py-1 text-[11px] text-slate-100"
-                    >
-                      <button
-                        onClick={() => toggleCarForComparison(car._id)}
-                        className="cursor-pointer rounded-md p-1 text-slate-400 hover:text-slate-100"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                      <span className="line-clamp-1 font-medium">
-                        {car.make} {car.model}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 sm:gap-3">
-              <button
-                onClick={toggleComparisonMode}
-                className={`${baseBtn} border border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800`}
-              >
-                Abbrechen
-              </button>
-              <button
-                onClick={handleCompareNavigate}
-                disabled={selectedForComparison.length < 2}
-                className={`${baseBtn} ${
-                  selectedForComparison.length >= 2
-                    ? "bg-sky-600 text-white hover:bg-sky-500"
-                    : "cursor-not-allowed bg-slate-800 text-slate-400"
-                }`}
-              >
-                Fahrzeuge vergleichen
-              </button>
-            </div>
-          </div>
-        </div>
+        <ComparisonBar
+          selectedCars={selectedCars}
+          selectedForComparison={selectedForComparison}
+          toggleCarForComparison={toggleCarForComparison}
+          toggleComparisonMode={toggleComparisonMode}
+          handleCompareNavigate={handleCompareNavigate}
+        />
       )}
 
-      {/* MAIN CONTENT */}
-      <div className="mx-auto w-full max-w-[1500px] px-4  sm:px-6 lg:px-8">
-        {/* PAGE HEADER: title left, buttons right on same line */}
-        <header className="mb-4 sm:mb-6 lg:mb-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {/* Left: title */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div>
-                <h1 className="text-base font-semibold text-white sm:text-3xl lg:text-4xl">
-                  Unsere Fahrzeuge
-                </h1>
-              </div>
+      <div className="mx-auto w-full max-w-[1500px] px-4 sm:px-6 lg:px-8">
+        <header className="mb-6 rounded-[24px] border border-white/80 bg-white px-5 py-5 shadow-lg shadow-black/5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#146c2e]">
+                Autogalerie Jülich
+              </p>
+
+              <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#07111f] sm:text-3xl">
+                Unsere Fahrzeuge
+              </h1>
             </div>
 
-            {/* Right: header actions (ALWAYS same line together ab sm) */}
-            <div className="flex flex-wrap items-center justify-start gap-2 text-[11px] sm:justify-end sm:text-xs">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={syncCars}
                 disabled={syncing}
-                className={`${baseBtn} border border-slate-700 bg-slate-900/80 text-slate-100 hover:border-sky-400 hover:bg-slate-900 disabled:opacity-60`}
+                className={`${btnBase} border border-black/10 bg-[#fafaf8] text-[#101510] hover:border-[#146c2e]/40 hover:bg-[#f1f6f2]`}
               >
-                {syncing ? (
-                  <RefreshCw className="mr-1 h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-1 h-4 w-4" />
-                )}
-                <span className="hidden sm:inline">Bestand aktualisieren</span>
-                <span className="sm:hidden">Aktualisieren</span>
+                <RefreshCw
+                  className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`}
+                />
+                Aktualisieren
               </button>
 
               <button
                 onClick={toggleComparisonMode}
-                className={`${baseBtn} border ${
+                className={`${btnBase} ${
                   comparisonMode
-                    ? "border-sky-500 bg-sky-950/60 text-sky-100"
-                    : "border-slate-700 bg-slate-900/80 text-slate-100 hover:border-sky-400"
+                    ? "bg-[#146c2e] text-white hover:bg-[#0f5724]"
+                    : "border border-[#146c2e]/20 bg-[#e6f1e9] text-[#146c2e] hover:bg-[#dceee0]"
                 }`}
               >
-                <Scale className="mr-1 h-4 w-4" />
-                <span className="hidden sm:inline">
-                  {comparisonMode ? "Vergleich aktiv" : "Fahrzeuge vergleichen"}
-                </span>
-                <span className="sm:hidden">Vergleich</span>
+                <Scale className="h-4 w-4" />
+                Vergleich
               </button>
             </div>
           </div>
         </header>
 
-        {/* SEARCH + FILTER: neatly aligned below header in a card */}
-        <section className="mb-5  bg-slate-950/80 pt-1 pb-2 shadow-sm shadow-black/30 sm:mb-6 ">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           <SearchAndFilter
             cars={cars}
             loading={loading}
-            syncing={syncing}
-            syncCars={syncCars}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             filters={filters}
             setFilters={setFilters}
-            showFilters={showFilters}
-            setShowFilters={setShowFilters}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            maxPrice={maxPrice}
           />
-        </section>
 
-        {/* RESULT HEADER */}
-        <div className="mb-4 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 text-sm text-slate-300">
-            {loading ? (
-              <span className="inline-flex items-center gap-2">
-                <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
-                Fahrzeuge werden geladen...
-              </span>
-            ) : (
-              <>
-                <span className="text-white">
-                  {filteredCars.length}{" "}
-                  {filteredCars.length === 1 ? "Fahrzeug" : "Fahrzeuge"}
-                </span>
-              </>
+          <div className="min-w-0 flex-1">
+            <div className="mb-5 rounded-[20px] border border-white/80 bg-white px-5 py-4 shadow-md shadow-black/5">
+              <p className="text-sm text-[#101510]">
+                {loading ? (
+                  <span className="inline-flex items-center gap-2 text-[#5f695f]">
+                    <RefreshCw className="h-4 w-4 animate-spin text-[#146c2e]" />
+                    Fahrzeuge werden geladen...
+                  </span>
+                ) : (
+                  <>
+                    <span className="font-semibold text-[#146c2e]">
+                      {filteredCars.length}
+                    </span>{" "}
+                    {filteredCars.length === 1 ? "Fahrzeug" : "Fahrzeuge"}{" "}
+                    gefunden
+                  </>
+                )}
+              </p>
+            </div>
+
+            <section
+              aria-label="Fahrzeugliste"
+              className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3"
+            >
+              {filteredCars.map((car) => (
+                <CarCard
+                  key={car._id}
+                  car={car}
+                  session={session}
+                  comparisonMode={comparisonMode}
+                  isSelected={selectedForComparison.includes(car._id)}
+                  toggleCarForComparison={toggleCarForComparison}
+                  setComparisonMode={setComparisonMode}
+                  goToKaufvertrag={goToKaufvertrag}
+                  toggleSold={toggleSold}
+                />
+              ))}
+            </section>
+
+            {!loading && filteredCars.length === 0 && (
+              <EmptyState
+                setFilters={setFilters}
+                setSearchTerm={setSearchTerm}
+              />
             )}
           </div>
         </div>
+      </div>
+    </main>
+  );
+}
 
-        {/* GRID VIEW */}
-        <section
-          aria-label="Fahrzeugliste"
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4"
-        >
-          {filteredCars.map((car) => {
-            const isSelected = selectedForComparison.includes(car._id);
-
-            return (
-              <article
-                key={car._id}
-                className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-slate-950/95 p-[1px] shadow-sm shadow-black/40 backdrop-blur-sm transition-all duration-300 ${
-                  comparisonMode && isSelected
-                    ? "border-sky-500 ring-1 ring-sky-500/70"
-                    : "border-slate-800 hover:-translate-y-1 hover:border-sky-400/70 hover:shadow-lg"
-                }`}
-              >
-                <div className="flex h-full flex-col rounded-2xl bg-slate-950">
-                  {/* IMAGE / BADGES */}
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-slate-900">
-                    {/* VERKAUFT ribbon */}
-                    {car.sold && (
-                      <div className="absolute top-0 right-0 z-30 animate-fade-in">
-                        <div className="relative">
-                          <div className="absolute top-6 right-[-44px] transform rotate-45 bg-gradient-to-br from-blue-700 via-blue-600 to-blue-800 text-white text-[13px] font-extrabold px-12 py-1 shadow-xl ring-1 ring-white drop-shadow-sm backdrop-blur-md tracking-widest rounded-sm">
-                            VERKAUFT
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* certified badge */}
-                    {car.certified && (
-                      <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-md bg-emerald-900/80 px-2.5 py-1 text-[11px] font-medium text-emerald-100 shadow-sm">
-                        <BadgeCheck className="h-3 w-3" />
-                        Zertifiziert
-                      </div>
-                    )}
-
-                    {car.images?.[0]?.ref ? (
-                      <img
-                        src={car.images[0].ref}
-                        alt={`${car.make} ${car.model}`}
-                        className="h-full w-full p-4 object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-slate-600">
-                        <CarFront className="h-10 w-10" />
-                      </div>
-                    )}
-
-                    {/* comparison toggle in comparisonMode */}
-                    {comparisonMode && (
-                      <button
-                        onClick={() => toggleCarForComparison(car._id)}
-                        className={`${baseBtn} absolute bottom-3 right-3 border text-[11px] ${
-                          isSelected
-                            ? "border-sky-500 bg-sky-600 text-white"
-                            : "border-slate-300 bg-slate-100 text-slate-900 hover:bg-white"
-                        }`}
-                        aria-label={
-                          isSelected
-                            ? "Aus Vergleich entfernen"
-                            : "Zum Vergleich hinzufügen"
-                        }
-                      >
-                        {isSelected ? (
-                          <X className="h-3.5 w-3.5" />
-                        ) : (
-                          <Plus className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* CONTENT */}
-                  <div className="flex flex-1 flex-col gap-3 p-4">
-                    {/* title + price row */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h3 className="line-clamp-1 text-base font-semibold text-white">
-                          {car.make} {car.model}
-                        </h3>
-                        {car.modelDescription && (
-                          <p className="mt-0.5 line-clamp-1 text-sm text-slate-400">
-                            {car.modelDescription}
-                          </p>
-                        )}
-                      </div>
-
-                      {car.price?.consumerPriceGross && (
-                        <div className="shrink-0 text-right">
-                          <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                            Preis
-                          </p>
-                          <p className="whitespace-nowrap text-sm font-semibold text-slate-50">
-                            {parseFloat(
-                              car.price.consumerPriceGross,
-                            ).toLocaleString("de-DE", {
-                              style: "currency",
-                              currency: car.price.currency || "EUR",
-                              maximumFractionDigits: 0,
-                            })}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* SPECS */}
-                    <dl className="grid grid-cols-2 gap-3 text-sm text-slate-200">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-slate-400" />
-                        <div>
-                          <dt className="text-[11px] text-slate-500">
-                            Erstzulassung
-                          </dt>
-                          <dd className="font-medium">
-                            {car.firstRegistration
-                              ? car.firstRegistration.slice(0, 4)
-                              : "-"}
-                          </dd>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Gauge className="h-4 w-4 text-slate-400" />
-                        <div>
-                          <dt className="text-[11px] text-slate-500">
-                            Kilometer
-                          </dt>
-                          <dd className="font-medium">
-                            {car.mileage
-                              ? `${car.mileage.toLocaleString()} km`
-                              : "-"}
-                          </dd>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Fuel className="h-4 w-4 text-slate-400" />
-                        <div>
-                          <dt className="text-[11px] text-slate-500">
-                            Kraftstoff
-                          </dt>
-                          <dd className="font-medium">
-                            {fuelMap[car.fuel] || car.fuel || "-"}
-                          </dd>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-slate-400" />
-                        <div>
-                          <dt className="text-[11px] text-slate-500">
-                            Leistung
-                          </dt>
-                          <dd className="font-medium">
-                            {car.power ? `${car.power} kW` : "-"}
-                          </dd>
-                        </div>
-                      </div>
-                    </dl>
-
-                    {/* location + warranty chips */}
-                    <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-300">
-                      {car.location && (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-900 px-2 py-0.5">
-                          <MapPin className="h-3 w-3" />
-                          {car.location}
-                        </span>
-                      )}
-                      {car.warranty && (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-900 px-2 py-0.5 text-emerald-300">
-                          <ShieldCheck className="h-3 w-3" />
-                          Garantie
-                        </span>
-                      )}
-                    </div>
-
-                    {/* ACTIONS */}
-                    <div className="mt-auto space-y-2 pt-1">
-                      {/* Row 1: Details + Compare */}
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/gebrauchtwagen/${car._id}`}
-                          className={`${baseBtn} flex-1 bg-sky-600 text-white hover:bg-sky-500`}
-                        >
-                          Details anzeigen
-                          <ChevronRight className="h-4 w-4" />
-                        </Link>
-
-                        {!comparisonMode && (
-                          <button
-                            onClick={() => {
-                              setComparisonMode(true);
-                              toggleCarForComparison(car._id);
-                            }}
-                            className={`${baseBtn} flex-1 border border-slate-600 bg-slate-950 text-slate-200 hover:border-sky-400 hover:text-sky-100`}
-                            title="Zum Vergleich hinzufügen"
-                          >
-                            <Scale className="mr-1 h-4 w-4" />
-                            Vergleichen
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Row 2: Admin actions */}
-                      {session?.user && (
-                        <div className="flex items-center gap-2 text-[11px] sm:text-xs">
-                          <button
-                            onClick={async () => {
-                              const res = await fetch(
-                                `/api/cars/${car._id}/sold`,
-                                {
-                                  method: "PUT",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                  },
-                                  body: JSON.stringify({ sold: !car.sold }),
-                                },
-                              );
-
-                              if (res.ok) {
-                                const updated = await res.json();
-                                setCars((prev) =>
-                                  prev.map((c) =>
-                                    c._id === updated._id ? updated : c,
-                                  ),
-                                );
-                              }
-                            }}
-                            className={`${baseBtn} flex-1 ${
-                              car.sold
-                                ? "bg-emerald-700 text-emerald-50 hover:bg-emerald-600"
-                                : "bg-amber-500 text-amber-950 hover:bg-amber-400"
-                            }`}
-                          >
-                            {car.sold
-                              ? "Als verfügbar markieren"
-                              : "Als verkauft markieren"}
-                          </button>
-
-                          <button
-                            onClick={() => goToKaufvertrag(car._id)}
-                            className={`${baseBtn} flex-1 border border-sky-500 bg-slate-950 text-sky-100 hover:bg-sky-950/60`}
-                          >
-                            📄 Vertrag
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </section>
-
-        {/* EMPTY STATE */}
-        {!loading && filteredCars.length === 0 && (
-          <div className="mt-10 rounded-2xl border border-slate-800 bg-slate-950/90 px-6 py-12 text-center shadow-sm shadow-black/40 backdrop-blur-md">
-            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-slate-900">
-              <CarFront className="h-10 w-10 text-slate-400" />
-            </div>
-            <h3 className="mb-2 text-2xl font-semibold text-white">
-              Keine passenden Fahrzeuge gefunden
-            </h3>
-            <p className="mx-auto mb-6 max-w-md text-sm text-slate-300">
-              Passen Sie Ihre Suchbegriffe oder Filter an – eventuell ist Ihr
-              Wunschfahrzeug bereits im Bestand, wird aber aktuell ausgefiltert.
-            </p>
-            <button
-              onClick={() => {
-                setFilters({
-                  make: "",
-                  model: "",
-                  fuelType: "",
-                  minPrice: 0,
-                  maxPrice: 100000,
-                  minYear: 1990,
-                  maxYear: new Date().getFullYear(),
-                  maxMileage: "",
-                  transmission: "",
-                });
-                setSearchTerm("");
-              }}
-              className={`${baseBtn} bg-slate-50 text-slate-900 hover:bg-white`}
-            >
-              Filter zurücksetzen
-            </button>
+function CarCard({
+  car,
+  session,
+  comparisonMode,
+  isSelected,
+  toggleCarForComparison,
+  setComparisonMode,
+  goToKaufvertrag,
+  toggleSold,
+}) {
+  return (
+    <article
+      className={`group relative overflow-hidden rounded-[24px] border bg-white shadow-lg shadow-black/5 transition-all duration-300 ${
+        comparisonMode && isSelected
+          ? "border-[#146c2e] ring-2 ring-[#146c2e]/20"
+          : "border-white/80 hover:-translate-y-1 hover:border-[#146c2e]/30 hover:shadow-xl"
+      }`}
+    >
+      <div className="relative aspect-[4/3] overflow-hidden bg-[#f3f5f1]">
+        {car.sold && (
+          <div className="absolute left-4 top-4 z-30 inline-flex items-center gap-1.5 rounded-full border border-white/60 bg-[#146c2e]/95 px-3 py-1.5 text-[12px] font-semibold text-white shadow-lg backdrop-blur">
+            <Tag className="h-3.5 w-3.5" />
+            Verkauft
           </div>
         )}
+
+        {car.certified && !car.sold && (
+          <div className="absolute left-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-[12px] font-medium text-[#146c2e] shadow-md backdrop-blur">
+            <BadgeCheck className="h-4 w-4" />
+            Zertifiziert
+          </div>
+        )}
+
+        {car.images?.[0]?.ref ? (
+          <img
+            src={car.images[0].ref}
+            alt={`${car.make} ${car.model}`}
+            className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${
+              car.sold ? "opacity-80 grayscale-[15%]" : ""
+            }`}
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-[#8b958b]">
+            <CarFront className="h-12 w-12" />
+          </div>
+        )}
+
+        {comparisonMode && (
+          <button
+            onClick={() => toggleCarForComparison(car._id)}
+            className={`absolute bottom-4 right-4 z-20 flex h-9 w-9 items-center justify-center rounded-xl shadow-lg transition ${
+              isSelected
+                ? "bg-[#146c2e] text-white"
+                : "bg-white text-[#101510] hover:bg-[#e6f1e9]"
+            }`}
+          >
+            {isSelected ? (
+              <X className="h-4 w-4" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+          </button>
+        )}
       </div>
+
+      <div className="flex min-h-[330px] flex-col p-5">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h3 className="line-clamp-1 text-[20px] font-semibold tracking-[-0.03em] text-[#07111f]">
+              {car.make} {car.model}
+            </h3>
+
+            {car.modelDescription && (
+              <p className="mt-1 line-clamp-1 text-sm leading-5 text-[#5f695f]">
+                {car.modelDescription}
+              </p>
+            )}
+          </div>
+
+          {car.price?.consumerPriceGross && (
+            <div className="shrink-0 text-right">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8b958b]">
+                Preis
+              </p>
+
+              <p className="whitespace-nowrap text-lg font-semibold text-[#146c2e]">
+                {parseFloat(car.price.consumerPriceGross).toLocaleString(
+                  "de-DE",
+                  {
+                    style: "currency",
+                    currency: car.price.currency || "EUR",
+                    maximumFractionDigits: 0,
+                  },
+                )}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <dl className="grid grid-cols-2 gap-2.5">
+          <SpecItem
+            icon={<Calendar />}
+            label="Erstzulassung"
+            value={
+              car.firstRegistration ? car.firstRegistration.slice(0, 4) : "-"
+            }
+          />
+
+          <SpecItem
+            icon={<Gauge />}
+            label="Kilometerstand"
+            value={
+              car.mileage
+                ? `${Number(car.mileage).toLocaleString("de-DE")} km`
+                : "-"
+            }
+          />
+
+          <SpecItem
+            icon={<Fuel />}
+            label="Kraftstoff"
+            value={fuelMap[car.fuel] || car.fuel || "-"}
+          />
+
+          <SpecItem
+            icon={<Zap />}
+            label="Leistung"
+            value={car.power ? `${car.power} kW` : "-"}
+          />
+        </dl>
+
+        {car.location && (
+          <div className="mt-4">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f6f2] px-3 py-1.5 text-[12px] font-medium text-[#5f695f]">
+              <MapPin className="h-3.5 w-3.5 text-[#146c2e]" />
+              {car.location}
+            </span>
+          </div>
+        )}
+
+        <div className="mt-auto space-y-2.5 pt-5">
+          <div className="grid grid-cols-2 gap-2.5">
+            <Link
+              href={`/gebrauchtwagen/${car._id}`}
+              className={`${btnBase} bg-[#146c2e] text-white shadow-md shadow-green-900/10 hover:bg-[#0f5724]`}
+            >
+              Details
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+
+            {!comparisonMode && (
+              <button
+                onClick={() => {
+                  setComparisonMode(true);
+                  toggleCarForComparison(car._id);
+                }}
+                className={`${btnBase} border border-black/10 bg-white text-[#101510] hover:border-[#146c2e]/40 hover:bg-[#f1f6f2]`}
+              >
+                <Scale className="h-4 w-4" />
+                Vergleich
+              </button>
+            )}
+          </div>
+
+          {session?.user && (
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                onClick={() => toggleSold(car)}
+                className={`${btnBase} ${
+                  car.sold
+                    ? "bg-[#e6f1e9] text-[#146c2e] hover:bg-[#dceee0]"
+                    : "bg-[#fff3d8] text-[#9a5b00] hover:bg-[#ffe8ad]"
+                }`}
+              >
+                <Tag className="h-4 w-4" />
+                {car.sold ? "Verfügbar" : "Verkauft"}
+              </button>
+
+              <button
+                onClick={() => goToKaufvertrag(car._id)}
+                className={`${btnBase} border border-[#146c2e]/25 bg-white text-[#146c2e] hover:bg-[#f1f6f2]`}
+              >
+                <FileText className="h-4 w-4" />
+                Vertrag
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function SpecItem({ icon, label, value }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5 rounded-2xl bg-[#fafaf8] p-2.5 shadow-sm shadow-black/[0.03]">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-[#146c2e] shadow-sm">
+        <span className="[&>svg]:h-4 [&>svg]:w-4">{icon}</span>
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <dt className="truncate text-[10px] font-medium text-[#7b857b]">
+          {label}
+        </dt>
+
+        <dd className="truncate text-[12px] font-semibold leading-5 text-[#101510]">
+          {value}
+        </dd>
+      </div>
+    </div>
+  );
+}
+
+function ComparisonBar({
+  selectedCars,
+  selectedForComparison,
+  toggleCarForComparison,
+  toggleComparisonMode,
+  handleCompareNavigate,
+}) {
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-black/10 bg-white/95 shadow-[0_-10px_35px_rgba(0,0,0,0.08)] backdrop-blur-xl">
+      <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex h-9 items-center gap-2 rounded-xl border border-[#146c2e]/20 bg-[#e6f1e9] px-3 text-xs font-medium text-[#146c2e]">
+            <Scale className="h-4 w-4" />
+            Vergleich {selectedForComparison.length}/3
+          </div>
+
+          {selectedCars.slice(0, 3).map((car) => (
+            <div
+              key={car._id}
+              className="inline-flex h-9 items-center gap-2 rounded-xl border border-black/10 bg-[#fafaf8] px-3 text-xs text-[#101510]"
+            >
+              <button
+                onClick={() => toggleCarForComparison(car._id)}
+                className="text-gray-400 hover:text-[#101510]"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+
+              <span className="font-medium">
+                {car.make} {car.model}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleComparisonMode}
+            className={`${btnBase} border border-black/10 bg-white text-[#101510] hover:bg-[#f1f6f2]`}
+          >
+            Abbrechen
+          </button>
+
+          <button
+            onClick={handleCompareNavigate}
+            disabled={selectedForComparison.length < 2}
+            className={`${btnBase} bg-[#146c2e] text-white hover:bg-[#0f5724]`}
+          >
+            Vergleichen
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ setFilters, setSearchTerm }) {
+  return (
+    <div className="mt-8 rounded-[24px] border border-white/70 bg-white px-6 py-12 text-center shadow-lg shadow-black/5">
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#e6f1e9]">
+        <CarFront className="h-8 w-8 text-[#146c2e]" />
+      </div>
+
+      <h3 className="text-xl font-semibold text-[#07111f]">
+        Keine passenden Fahrzeuge gefunden
+      </h3>
+
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#5f695f]">
+        Passen Sie Ihre Suchbegriffe oder Filter an.
+      </p>
+
+      <button
+        onClick={() => {
+          setFilters({
+            make: "",
+            model: "",
+            fuelType: "",
+            minPrice: 0,
+            maxPrice: 100000,
+            minYear: 1990,
+            maxYear: new Date().getFullYear(),
+            maxMileage: "",
+            transmission: "",
+          });
+
+          setSearchTerm("");
+        }}
+        className={`${btnBase} mt-5 bg-[#146c2e] text-white hover:bg-[#0f5724]`}
+      >
+        Filter zurücksetzen
+      </button>
     </div>
   );
 }
