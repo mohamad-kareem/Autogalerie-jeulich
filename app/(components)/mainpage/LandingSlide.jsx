@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronRight, ChevronLeft } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, ChevronLeft, ArrowRight } from "lucide-react";
 import popularCategories from "../../utils/images.js";
 
 export default function LandingSlide() {
@@ -9,7 +10,7 @@ export default function LandingSlide() {
     const container = document.getElementById("scroll-container");
     if (!container) return;
 
-    const scrollAmount = window.innerWidth < 640 ? 240 : 320;
+    const scrollAmount = window.innerWidth < 640 ? 220 : 300;
     container.scrollBy({
       left: direction === "left" ? -scrollAmount : scrollAmount,
       behavior: "smooth",
@@ -17,67 +18,82 @@ export default function LandingSlide() {
   };
 
   return (
-    <section className="w-full bg-white border-b border-gray-100 py-10 sm:py-14 px-4 sm:px-6 lg:px-16">
-      <div className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-2 sm:px-4 lg:px-8">
-        {/* Title */}
-        <div className="mb-10 text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-gray-900">
-            Unsere Kategorien
-          </h2>
-          <div className="mt-3 h-[2px] w-20 mx-auto rounded-full bg-gray-900" />
-          <p className="mt-3 text-sm sm:text-base text-gray-500">
-            Entdecken Sie unsere wichtigsten Bereiche auf einen Blick.
-          </p>
+    <section className="w-full bg-[#f5f5f2] py-10 sm:py-14">
+      <div className="mx-auto max-w-[1180px] px-3 sm:px-6 lg:px-8">
+        {/* Header row — mobile.de style: title left, arrows right */}
+        <div className="mb-5 flex items-end justify-between gap-4 sm:mb-6">
+          <div>
+            <div className="mb-3 h-[2px] w-10 bg-[#146c2e] sm:w-12" />
+
+            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#146c2e] sm:text-[10px] sm:tracking-[0.32em]">
+              Kategorien
+            </p>
+
+            <p className="mt-2 max-w-md text-[13px] font-semibold leading-6 text-[#263126] sm:text-sm">
+              Entdecken Sie unsere wichtigsten Bereiche auf einen Blick.
+            </p>
+          </div>
+
+          {/* Arrows — desktop only, top-right like mobile.de */}
+          <div className="hidden shrink-0 gap-2 md:flex">
+            <button
+              onClick={() => scroll("left")}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-black/10 bg-white text-[#101510] shadow-sm transition hover:border-[#146c2e] hover:text-[#146c2e]"
+              aria-label="Zurück"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+
+            <button
+              onClick={() => scroll("right")}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-black/10 bg-white text-[#101510] shadow-sm transition hover:border-[#146c2e] hover:text-[#146c2e]"
+              aria-label="Weiter"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Slider Container with Arrows */}
-        <div className="relative">
-          {/* Scroll Arrows */}
-          <button
-            onClick={() => scroll("left")}
-            className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-100 hover:border-gray-400 transition"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
+        {/* Scrollable Category Cards */}
+        <div
+          id="scroll-container"
+          className="flex gap-3 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4"
+        >
+          {popularCategories.map((category, index) => (
+            <Link
+              key={index}
+              href={category.link || "/gebrauchtwagen"}
+              className="group flex w-[160px] shrink-0 flex-col overflow-hidden rounded-[16px] border border-white/70 bg-white shadow-xl shadow-black/10 transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl sm:w-[200px]"
+            >
+              {/* Image area — mobile.de style full-width thumbnail */}
+              <div className="relative flex h-[120px] items-center justify-center overflow-hidden bg-[#fafaf8] sm:h-[150px]">
+                <Image
+                  src={category.image}
+                  alt={category.alt}
+                  width={140}
+                  height={140}
+                  unoptimized
+                  className="h-[80%] w-[80%] object-contain transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
 
-          <button
-            onClick={() => scroll("right")}
-            className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-100 hover:border-gray-400 transition"
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-
-          {/* Scrollable Category Cards */}
-          <div
-            id="scroll-container"
-            className="flex gap-6 overflow-x-auto scroll-smooth scrollbar-hide px-1 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
-            {popularCategories.map((category, index) => (
-              <div
-                key={index}
-                className="min-w-[180px] sm:min-w-[210px] md:min-w-[230px] lg:min-w-[240px] flex-shrink-0 rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-gray-400 hover:shadow-md"
-              >
-                <div className="mx-auto mb-4 h-24 w-24 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
-                  <Image
-                    src={category.image}
-                    alt={category.alt}
-                    width={100}
-                    height={100}
-                    unoptimized
-                    className="h-full w-full object-contain transition-transform duration-300 hover:scale-105"
-                  />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+              {/* Text area */}
+              <div className="flex flex-1 flex-col border-t border-black/5 p-3.5">
+                <h3 className="text-sm font-black tracking-[-0.02em] text-[#101510] sm:text-base">
                   {category.title}
                 </h3>
-                <p className="mt-1 text-sm text-gray-500">
+
+                <p className="mt-1 line-clamp-2 text-[12px] font-semibold leading-5 text-[#263126]">
                   {category.description}
                 </p>
+
+                <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-black text-[#146c2e] transition group-hover:gap-2">
+                  Ansehen
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </span>
               </div>
-            ))}
-          </div>
+            </Link>
+          ))}
         </div>
       </div>
     </section>

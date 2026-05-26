@@ -20,11 +20,11 @@ export default function SellCarYourWay() {
   }, [inView]);
 
   return (
-    <section className="relative w-full py-10 px-4 sm:py-16 sm:px-6 lg:px-16 overflow-hidden bg-gray-50">
+    <section className="relative w-full py-10 px-4 sm:py-16 sm:px-6 lg:px-8 overflow-hidden bg-[#f5f5f2]">
       {/* Background gradient blobs */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-20 h-20 sm:w-32 sm:h-32 bg-blue-400/20 rounded-full blur-xl sm:blur-3xl"></div>
-        <div className="absolute bottom-1/3 right-1/4 w-24 h-24 sm:w-40 sm:h-40 bg-blue-400/20 rounded-full blur-xl sm:blur-3xl"></div>
+        <div className="absolute top-1/4 left-1/4 w-20 h-20 sm:w-32 sm:h-32 bg-[#146c2e]/15 rounded-full blur-xl sm:blur-3xl"></div>
+        <div className="absolute bottom-1/3 right-1/4 w-24 h-24 sm:w-40 sm:h-40 bg-[#146c2e]/15 rounded-full blur-xl sm:blur-3xl"></div>
       </div>
 
       <motion.div
@@ -32,12 +32,12 @@ export default function SellCarYourWay() {
         initial={{ opacity: 0, y: 40 }}
         animate={hasAnimated ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center relative z-10"
+        className="w-full max-w-[1180px] mx-auto px-3 sm:px-6 lg:px-8 py-16 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center relative z-10"
       >
         {/* Text content */}
         <div className="space-y-6 md:space-y-8 order-2 md:order-1">
           <div className="space-y-3 md:space-y-4">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-black to-blue-800 leading-snug md:leading-tight">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-black to-[#146c2e] leading-snug md:leading-tight">
               Kaufen oder verkaufen Sie Autos – ganz nach Ihrem Wunsch
             </h2>
             <p className="text-gray-700 text-base md:text-lg">
@@ -49,14 +49,14 @@ export default function SellCarYourWay() {
           <div className="space-y-4 md:space-y-6">
             {/* Feature 1 */}
             <motion.div
-              className="flex items-start space-x-3 p-3 sm:p-4 bg-white rounded-lg md:rounded-xl hover:bg-gray-200 transition-colors shadow"
+              className="flex items-start space-x-3 p-3 sm:p-4 bg-white rounded-lg md:rounded-xl hover:bg-gray-100 transition-colors shadow"
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
               <div className="relative flex-shrink-0">
-                <div className="absolute inset-0 bg-blue-200 rounded-md md:rounded-lg rotate-3 blur-sm" />
+                <div className="absolute inset-0 bg-[#146c2e]/20 rounded-md md:rounded-lg rotate-3 blur-sm" />
                 <div className="relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-md md:rounded-lg shadow-md">
-                  <FaCarAlt className="text-blue-950 text-lg sm:text-xl" />
+                  <FaCarAlt className="text-[#146c2e] text-lg sm:text-xl" />
                 </div>
               </div>
               <div>
@@ -72,14 +72,14 @@ export default function SellCarYourWay() {
 
             {/* Feature 2 */}
             <motion.div
-              className="flex items-start space-x-3 p-3 sm:p-4 bg-white rounded-lg md:rounded-xl hover:bg-gray-200 transition-colors shadow"
+              className="flex items-start space-x-3 p-3 sm:p-4 bg-white rounded-lg md:rounded-xl hover:bg-gray-100 transition-colors shadow"
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
               <div className="relative flex-shrink-0">
-                <div className="absolute inset-0 bg-green-200 rounded-md md:rounded-lg -rotate-3 blur-sm" />
+                <div className="absolute inset-0 bg-[#17b14b]/25 rounded-md md:rounded-lg -rotate-3 blur-sm" />
                 <div className="relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-md md:rounded-lg shadow-md">
-                  <MdSell className="text-blue-600 text-lg sm:text-xl" />
+                  <MdSell className="text-[#146c2e] text-lg sm:text-xl" />
                 </div>
               </div>
               <div>
@@ -100,8 +100,8 @@ export default function SellCarYourWay() {
               <Button
                 size="md sm:lg"
                 className="group flex items-center w-full sm:w-auto justify-center"
-                bgColor="bg-gradient-to-r from-blue-950 to-blue-800"
-                hoverColor="hover:from-blue-700 hover:to-blue-900"
+                bgColor="bg-gradient-to-r from-[#0f5724] to-[#146c2e]"
+                hoverColor="hover:from-[#146c2e] hover:to-[#0f5724]"
               >
                 <span>Jetzt entdecken</span>
                 <IoIosArrowForward className="ml-2 text-base sm:text-lg transition-transform group-hover:translate-x-1" />
@@ -111,8 +111,8 @@ export default function SellCarYourWay() {
               <Button
                 size="md sm:lg"
                 className="group flex items-center w-full sm:w-auto justify-center"
-                bgColor="bg-gradient-to-r from-slate-600 to-slate-800"
-                hoverColor="hover:from-slate-700 hover:to-slate-900"
+                bgColor="bg-gradient-to-r from-black to-black/70"
+                hoverColor="hover:from-black hover:to-black"
               >
                 <span>Auto verkaufen</span>
                 <IoIosArrowForward className="ml-2 text-base sm:text-lg transition-transform group-hover:translate-x-1" />
@@ -144,7 +144,7 @@ export default function SellCarYourWay() {
               className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 bg-white px-3 py-1 sm:px-4 sm:py-2 rounded-md sm:rounded-lg shadow-md border border-gray-200 -rotate-3 flex items-center space-x-1 sm:space-x-2"
               whileHover={{ scale: 1.05 }}
             >
-              <FaSearch className="text-blue-600 text-base sm:text-xl" />
+              <FaSearch className="text-[#146c2e] text-base sm:text-xl" />
               <span className="text-xs sm:text-sm font-bold text-gray-800">
                 Kaufen
               </span>
@@ -155,21 +155,18 @@ export default function SellCarYourWay() {
               className="absolute top-4 right-4 sm:top-6 sm:right-6 bg-white px-3 py-1 sm:px-4 sm:py-2 rounded-md sm:rounded-lg shadow-md border border-gray-200 rotate-3 flex items-center space-x-1 sm:space-x-2"
               whileHover={{ scale: 1.05 }}
             >
-              <MdOutlineAttachMoney className="text-green-600 text-base sm:text-xl" />
+              <MdOutlineAttachMoney className="text-[#17b14b] text-base sm:text-xl" />
               <span className="text-xs sm:text-sm font-bold text-gray-800">
                 Verkaufen
               </span>
             </motion.div>
 
-            {/* Blurblue circle effects */}
-            <div className="absolute -bottom-2 -left-2 sm:-bottom-4 sm:-left-4 w-10 h-10 sm:w-16 sm:h-16 bg-blue-400/20 rounded-full blur-md"></div>
-            <div className="absolute -top-2 -right-2 sm:-top-4 sm:-right-4 w-12 h-12 sm:w-20 sm:h-20 bg-blue-400/20 rounded-full blur-md"></div>
+            {/* Blur circle effects */}
+            <div className="absolute -bottom-2 -left-2 sm:-bottom-4 sm:-left-4 w-10 h-10 sm:w-16 sm:h-16 bg-[#146c2e]/15 rounded-full blur-md"></div>
+            <div className="absolute -top-2 -right-2 sm:-top-4 sm:-right-4 w-12 h-12 sm:w-20 sm:h-20 bg-[#146c2e]/15 rounded-full blur-md"></div>
           </div>
         </motion.div>
       </motion.div>
-
-      {/* Bottom glow effect */}
-      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-24 sm:w-40 sm:h-40 bg-blue-400/20 rounded-full blur-[60px] sm:blur-[100px] pointer-events-none" />
     </section>
   );
 }

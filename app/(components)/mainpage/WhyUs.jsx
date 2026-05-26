@@ -1,122 +1,95 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import steps from "../../utils/Why.js";
-import Button from "../helpers/Button";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import steps from "../../utils/Why.js";
 
 export default function WhyUs() {
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const containerRef = useRef(null);
-
-  // calculate scroll progress for the timeline line
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const winH = window.innerHeight;
-      const start = rect.top - winH / 2;
-      const end = rect.bottom - winH / 2;
-      const prog = Math.min(Math.max((0 - start) / (end - start), 0), 1);
-      setScrollProgress(prog);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   return (
-    <section className="relative w-full py-12  lg:px-16 pb-30 pt-30 overflow-hidden bg-black">
-      <div
-        className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10"
-        ref={containerRef}
-      >
-        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl  font-playfair leading-tight text-center mb-12 text-white">
-          So funktioniert der Autoankauf bei Autogalerie Jülich
-        </h2>
+    <section className="w-full bg-[#f5f5f2] py-10 sm:py-14">
+      <div className="mx-auto max-w-[1180px] px-3 sm:px-6 lg:px-8">
+        <div className="rounded-[26px] bg-white px-4 py-8 shadow-xl shadow-black/5 sm:px-6 sm:py-10 lg:px-8">
+          {/* Header */}
+          <div className="mb-8 flex flex-col gap-4 lg:mb-10 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <div className="mb-3 h-[2px] w-12 bg-[#146c2e]" />
 
-        {/* Static Gray Line */}
-        <div className="hidden md:block absolute top-[260px] bottom-[285px] left-1/2 transform -translate-x-1/2 w-[2px] bg-gray-300 z-0" />
+              <p className="mb-2 text-[10px] font-black uppercase tracking-[0.3em] text-[#146c2e]">
+                Autoankauf
+              </p>
 
-        {/* Dynamic blue Line */}
-        <div
-          className="hidden md:block absolute top-[260px] left-1/2 transform -translate-x-1/2 w-[2px] bg-blue-600 z-10 transition-all duration-300"
-          style={{
-            height: `calc(${scrollProgress} * (90% - 420px))`,
-          }}
-        />
+              <h2 className="text-[28px] font-black leading-[0.95] tracking-[-0.045em] text-[#07111f] sm:text-[38px]">
+                Auto verkaufen.
+                <br />
+                Schnell & unkompliziert.
+              </h2>
+            </div>
 
-        {/* Timeline Items */}
-        <div className="relative flex flex-col gap-20 md:gap-32 z-20">
-          {steps.map((step, i) => {
-            const reached = scrollProgress >= i / steps.length;
-            return (
+            <p className="max-w-md text-[13px] font-semibold leading-6 text-[#263126]/70 sm:text-sm">
+              Faire Bewertung, schnelle Abwicklung und persönliche Beratung —
+              direkt bei Autogalerie Jülich.
+            </p>
+          </div>
+
+          {/* Steps */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {steps.map((step, index) => (
               <div
                 key={step.id}
-                className={`relative flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-10 md:gap-12 ${
-                  i % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
-                }`}
+                className="group overflow-hidden rounded-[24px] border border-black/8 bg-[#fafaf8] transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/10"
               >
                 {/* Image */}
-                <div className="w-full md:w-1/2 flex justify-center">
+                <div className="relative h-[180px] overflow-hidden">
                   <Image
                     src={step.image}
-                    alt={`Schritt ${step.id}`}
-                    width={300}
-                    height={200}
-                    className="rounded-xl shadow-lg max-w-full h-auto"
+                    alt={step.title}
+                    fill
+                    sizes="(max-width:768px) 100vw, 25vw"
+                    className="object-cover transition duration-500 group-hover:scale-105"
                   />
+
+                  <div className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-black text-[#146c2e] shadow-md">
+                    0{index + 1}
+                  </div>
                 </div>
 
-                {/* Text */}
-                <div className="bg-gradient-to-br from-black to-blue-950 rounded-xl shadow-md p-6 sm:p-8 max-w-md w-full md:w-1/2 relative z-10 text-center md:text-left">
-                  <h3 className="font-bold text-lg sm:text-xl mb-2 text-white">
+                {/* Content */}
+                <div className="flex flex-col gap-3 p-5">
+                  <h3 className="text-[18px] font-black leading-snug tracking-[-0.03em] text-[#101510]">
                     {step.title}
                   </h3>
-                  <p className="text-gray-400 text-sm sm:text-base">
+
+                  <p className="text-[13px] font-semibold leading-6 text-[#263126]/70">
                     {step.description}
                   </p>
                 </div>
-
-                {/* Step Number */}
-                <div
-                  className={`hidden md:flex absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full border-4 items-center justify-center font-bold z-30 transition-all duration-300 ${
-                    reached
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-gray-800 border-gray-300"
-                  }`}
-                >
-                  {step.id}
-                </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
 
-        {/* CTA */}
-        <div className="mt-8 text-center">
-          <div className="flex justify-center mb-3">
+          {/* CTA */}
+          <div className="mt-8 flex flex-col items-center justify-between gap-4 rounded-[24px] bg-[#eef6f0] px-5 py-5 text-center sm:flex-row sm:text-left">
+            <div>
+              <h3 className="text-[18px] font-black text-[#101510]">
+                Kostenlose Fahrzeugbewertung
+              </h3>
+
+              <p className="mt-1 text-[13px] font-semibold text-[#263126]/70">
+                Unverbindlich & schnell online anfragen.
+              </p>
+            </div>
+
             <Link
-              href="/gebrauchtwagen"
-              passHref
-              className="
-                inline-flex items-center justify-center 
-                rounded-full border border-blue-400 px-5 py-2.5 
-                text-sm md:text-base font-semibold text-white 
-                transition 
-                hover:border-white/40 hover:text-blue-200
-              "
+              href="/Autoverkaufen"
+              className="inline-flex h-[48px] items-center justify-center gap-2 rounded-2xl bg-[#146c2e] px-5 text-sm font-black text-white shadow-lg shadow-green-900/20 transition hover:bg-[#0f5724]"
             >
-              Kostenlose Fahrzeugbewertung
+              Jetzt anfragen
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
       </div>
-
-      {/* Glow */}
-      <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
-      <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
     </section>
   );
 }

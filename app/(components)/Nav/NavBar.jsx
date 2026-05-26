@@ -1,12 +1,12 @@
 // components/NavBar.jsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   User,
   Settings,
@@ -21,151 +21,140 @@ import {
   Calendar,
 } from "lucide-react";
 
-import Logo from "../../(assets)/logo1111.png";
 import { Menus } from "../../utils/NavData";
 import SimpleContactFormModal from "@/app/(components)/helpers/SimpleContactFormModal";
 
-/* -----------------------------
-  Small helpers
------------------------------- */
-const cx = (...c) => c.filter(Boolean).join(" ");
-const hasSub = (m) => Array.isArray(m?.subMenu) && m.subMenu.length > 0;
+const GREEN = "#146c2e";
 
-const dropdownVariants = {
-  hidden: {
-    opacity: 0,
-    y: 8,
-    scale: 0.985,
-    pointerEvents: "none",
-    transition: { duration: 0.14, ease: "easeOut" },
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    pointerEvents: "auto",
-    transition: { duration: 0.14, ease: "easeOut" },
-  },
-};
+const cx = (...classes) => classes.filter(Boolean).join(" ");
 
-const itemVariants = {
-  hidden: { opacity: 0, x: -8 },
-  visible: { opacity: 1, x: 0 },
-};
+const WRAPPER = "mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-8";
 
-/* -----------------------------
-  Desktop Menu
------------------------------- */
-function DesktopMenu({ menu, scrolled }) {
+const adminRoutes = [
+  "/admin",
+  "/AdminDashboard",
+  "/forms",
+  "/excel",
+  "/schlussel",
+  "/Fahrzeugverwaltung",
+  "/PersonalData",
+  "/Plate",
+  "/Reg",
+  "/punsh",
+  "/Posteingang",
+  "/Zeiterfassungsverwaltung",
+  "/kaufvertrag",
+  "/TrackVisitors76546633",
+  "/Vehicles",
+  "/medicine",
+  "/Autoteil",
+  "/aufgabenboard",
+  "/translator",
+  "/Rotkennzeichen",
+  "/Kundenkontakte",
+];
+
+const hasSubMenu = (menu) =>
+  Array.isArray(menu?.subMenu) && menu.subMenu.length > 0;
+
+function DesktopMenu({ menu }) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const has = hasSub(menu);
 
-  const isFahrzeuge = String(menu?.name || "")
-    .trim()
-    .toLowerCase()
-    .includes("fahrzeug");
+  const hasSub = hasSubMenu(menu);
 
-  const widthClass =
-    menu.gridCols === 3
-      ? "w-[360px]"
-      : menu.gridCols === 2
-        ? "w-[320px]"
-        : "w-[260px]";
+  const active =
+    menu.href &&
+    (pathname === menu.href ||
+      pathname?.toLowerCase().startsWith(String(menu.href).toLowerCase()));
 
   return (
     <li
       className="relative"
-      onMouseEnter={() => has && setOpen(true)}
+      onMouseEnter={() => hasSub && setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
       <Link
         href={menu.href || "#"}
         className={cx(
-          "group inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition",
-          scrolled
-            ? "text-slate-200 hover:text-white hover:bg-white/10"
-            : "text-slate-100 hover:text-white hover:bg-white/10",
+          "group inline-flex h-10 items-center gap-1.5 rounded-xl px-4",
+          "text-[14px] font-semibold tracking-[-0.01em]",
+          "transition-all duration-200",
+          active
+            ? "bg-[#e6f1e9] text-[#146c2e]"
+            : "text-[#121812] hover:bg-[#f1f6f2] hover:text-[#146c2e]",
         )}
       >
-        <span className="relative">
-          {menu.name}
-          <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-white/90 transition-all duration-300 group-hover:w-full" />
-        </span>
+        <span>{menu.name}</span>
 
-        {has && (
+        {hasSub && (
           <ChevronDown
             className={cx(
-              "h-4 w-4 transition-transform duration-300",
-              open ? "rotate-180" : "",
-              "text-slate-300",
+              "h-3.5 w-3.5 transition-transform duration-200",
+              open ? "rotate-180 text-[#146c2e]" : "text-[#6b746b]",
             )}
           />
         )}
       </Link>
 
-      {has && (
+      {hasSub && (
         <AnimatePresence>
           {open && (
             <motion.div
-              className={cx("absolute left-0 top-full z-50 pt-3", widthClass)}
-              initial="hidden"
-              animate="visible"
-              exit="hidden"
-              variants={dropdownVariants}
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.98 }}
+              transition={{ duration: 0.16, ease: "easeOut" }}
+              className="absolute left-0 top-full z-50 pt-3"
             >
-              {isFahrzeuge ? (
-                <div className="inline-block rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden">
-                  <div className="flex flex-col gap-1 p-2">
-                    {menu.subMenu.map((sub, index) => (
-                      <motion.div
-                        key={sub.href || sub.name || index}
-                        variants={itemVariants}
-                        initial="hidden"
-                        animate="visible"
-                        transition={{ duration: 0.14, delay: index * 0.02 }}
-                      >
-                        <Link
-                          href={sub.href || "#"}
-                          className={cx(
-                            "inline-flex w-fit items-center rounded-lg px-5 py-2 text-sm font-semibold transition",
-                            "text-slate-900",
-                            "hover:bg-slate-900 hover:text-white",
-                            "focus:outline-none focus:ring-2 focus:ring-blue-500/30",
-                          )}
-                        >
-                          {sub.name}
-                        </Link>
-                      </motion.div>
-                    ))}
-                  </div>
+              <div className="w-[300px] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_18px_60px_rgba(0,0,0,0.14)]">
+                <div className="border-b border-black/5 bg-[#f7f9f5] px-4 py-3">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#146c2e]">
+                    {menu.name}
+                  </p>
                 </div>
-              ) : (
-                <div className="inline-block rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden">
-                  <div className="flex flex-col gap-1 p-2">
-                    {menu.subMenu.map((sub, index) => (
-                      <motion.div
-                        key={sub.href || sub.name || index}
-                        variants={itemVariants}
-                        initial="hidden"
-                        animate="visible"
-                        transition={{ duration: 0.14, delay: index * 0.02 }}
+
+                <div className="p-2">
+                  {menu.subMenu.map((sub) => {
+                    const subActive =
+                      sub.href &&
+                      (pathname === sub.href ||
+                        pathname
+                          ?.toLowerCase()
+                          .startsWith(String(sub.href).toLowerCase()));
+
+                    return (
+                      <Link
+                        key={sub.href || sub.name}
+                        href={sub.href || "#"}
+                        className={cx(
+                          "group flex items-center justify-between gap-3 rounded-xl px-3 py-3",
+                          "transition-all duration-200",
+                          subActive
+                            ? "bg-[#e6f1e9] text-[#146c2e]"
+                            : "text-[#121812] hover:bg-[#f1f6f2] hover:text-[#146c2e]",
+                        )}
                       >
-                        <Link
-                          href={sub.href || "#"}
-                          className={cx(
-                            "inline-flex w-fit items-center rounded-lg px-3 py-2 text-sm font-semibold transition",
-                            "text-slate-900",
-                            "hover:bg-blue-50 hover:text-blue-700",
-                            "focus:outline-none focus:ring-2 focus:ring-blue-500/30",
+                        <div className="min-w-0">
+                          <p className="truncate text-[14px] font-semibold">
+                            {sub.name}
+                          </p>
+
+                          {sub.desc && (
+                            <p className="mt-0.5 line-clamp-1 text-[11px] font-medium text-[#6b746b]">
+                              {sub.desc}
+                            </p>
                           )}
-                        >
-                          {sub.name}
-                        </Link>
-                      </motion.div>
-                    ))}
-                  </div>
+                        </div>
+
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#eef5ef] text-[#146c2e] transition group-hover:bg-[#146c2e] group-hover:text-white">
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </span>
+                      </Link>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -174,13 +163,9 @@ function DesktopMenu({ menu, scrolled }) {
   );
 }
 
-/* -----------------------------
-  Mobile Drawer (elegant + modern)
------------------------------- */
-function MobileDrawer({ menus, isOpen, setIsOpen, onOpenContact, isLoggedIn }) {
+function MobileDrawer({ menus, isOpen, setIsOpen, onOpenContact }) {
   const pathname = usePathname();
   const [activeIndex, setActiveIndex] = useState(null);
-  const mountedRef = useRef(false);
 
   const close = () => {
     setIsOpen(false);
@@ -188,65 +173,37 @@ function MobileDrawer({ menus, isOpen, setIsOpen, onOpenContact, isLoggedIn }) {
   };
 
   useEffect(() => {
-    mountedRef.current = true;
-  }, []);
-
-  // lock scroll when open
-  useEffect(() => {
-    if (!mountedRef.current) return;
     document.body.style.overflow = isOpen ? "hidden" : "auto";
+
     return () => {
       document.body.style.overflow = "auto";
     };
   }, [isOpen]);
 
-  const subMenuVariants = {
-    enter: {
-      height: "auto",
-      opacity: 1,
-      transition: { duration: 0.2, ease: "easeOut" },
-    },
-    exit: {
-      height: 0,
-      opacity: 0,
-      transition: { duration: 0.16, ease: "easeIn" },
-    },
-  };
-
   return (
     <div className="print:hidden lg:hidden">
-      {/* Trigger */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className={cx(
-            "fixed top-8 -translate-y-1/2 z-[9999]",
-            "h-10 w-10 p-0 rounded-xl",
-            "flex items-center justify-center",
-            "bg-white/10 backdrop-blur-md border border-white/20 shadow-lg",
-            "hover:bg-white/20 transition-all duration-300",
-            isLoggedIn ? "right-16" : "right-4",
-          )}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-black/10 bg-white shadow-sm transition hover:bg-[#f1f6f2]"
           aria-label="Menü öffnen"
         >
-          <Menu className="h-[18px] w-[18px] text-white" />
+          <Menu className="h-5 w-5 text-[#121812]" />
         </button>
       )}
 
-      {/* Overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/55 z-[998] backdrop-blur-sm"
             onClick={close}
+            className="fixed inset-0 z-[998] bg-black/35 backdrop-blur-sm"
           />
         )}
       </AnimatePresence>
 
-      {/* Drawer */}
       <AnimatePresence>
         {isOpen && (
           <motion.aside
@@ -254,187 +211,140 @@ function MobileDrawer({ menus, isOpen, setIsOpen, onOpenContact, isLoggedIn }) {
             animate={{ x: "0%" }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
-            className="fixed left-0 top-0 w-[88vw] max-w-sm h-[100dvh] z-[999] overflow-y-auto
-                       bg-gradient-to-b from-slate-950 to-slate-900 text-white shadow-2xl border-r border-slate-800/70"
+            className="fixed left-0 top-0 z-[999] h-[100dvh] w-[88vw] max-w-sm overflow-y-auto border-r border-black/10 bg-white shadow-2xl"
           >
-            <div className="h-full pt-5 pb-8">
-              {/* Header */}
-              <div className="px-5">
-                <div className="flex items-center justify-between">
-                  <Link
-                    href="/"
-                    onClick={close}
-                    className="flex items-center gap-3"
-                  >
-                    <div className="relative h-10 w-10">
-                      <Image
-                        src={Logo}
-                        alt="Autogalerie Jülich"
-                        priority
-                        className="h-10 w-10 object-contain"
-                      />
-                    </div>
-                    <div className="leading-tight">
-                      <div className="text-sm font-semibold text-white">
-                        Autogalerie{" "}
-                        <span className="text-blue-400">Jülich</span>
-                      </div>
-                      <div className="text-[11px] text-slate-300">Menü</div>
-                    </div>
-                  </Link>
-
-                  <button
-                    onClick={close}
-                    className="p-2 rounded-xl bg-white/10 border border-white/15 hover:bg-white/15 transition"
-                    aria-label="Schließen"
-                  >
-                    <X className="h-5 w-5 text-white" />
-                  </button>
-                </div>
-
-                <div className="mt-4 h-px bg-white/10" />
-              </div>
-
-              {/* List */}
-              <div className="mt-3 px-2">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
-                  {menus.map(({ name, href, subMenu }, i) => {
-                    const hasSubMenu =
-                      Array.isArray(subMenu) && subMenu.length > 0;
-                    const isActive = activeIndex === i;
-
-                    const isCurrent =
-                      !hasSubMenu &&
-                      href &&
-                      (pathname === href ||
-                        pathname
-                          ?.toLowerCase()
-                          .startsWith(String(href).toLowerCase()));
-
-                    return (
-                      <div
-                        key={name}
-                        className="border-b border-white/10 last:border-b-0"
-                      >
-                        {hasSubMenu ? (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setActiveIndex(isActive ? null : i)
-                              }
-                              className={cx(
-                                "w-full px-4 py-3.5 flex items-center justify-between",
-                                "hover:bg-white/6 transition",
-                              )}
-                            >
-                              <span className="text-[15px] font-semibold text-slate-100">
-                                {name}
-                              </span>
-                              <ChevronDown
-                                className={cx(
-                                  "h-5 w-5 transition-transform duration-300",
-                                  isActive
-                                    ? "rotate-180 text-blue-300"
-                                    : "text-slate-300",
-                                )}
-                              />
-                            </button>
-
-                            <AnimatePresence initial={false}>
-                              {isActive && (
-                                <motion.div
-                                  initial="exit"
-                                  animate="enter"
-                                  exit="exit"
-                                  variants={subMenuVariants}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="pb-2">
-                                    {subMenu.map((sub) => {
-                                      const subActive =
-                                        sub.href &&
-                                        (pathname === sub.href ||
-                                          pathname
-                                            ?.toLowerCase()
-                                            .startsWith(
-                                              String(sub.href).toLowerCase(),
-                                            ));
-
-                                      return (
-                                        <Link
-                                          key={sub.name}
-                                          href={sub.href || "#"}
-                                          onClick={close}
-                                          className={cx(
-                                            "mx-3 my-1 flex items-center justify-between gap-3 rounded-xl px-3 py-3",
-                                            "bg-white/[0.02] hover:bg-white/10 transition",
-                                            subActive
-                                              ? "ring-1 ring-blue-500/35"
-                                              : "",
-                                          )}
-                                        >
-                                          <div className="min-w-0">
-                                            <div className="text-[14px] font-semibold text-slate-100 truncate">
-                                              {sub.name}
-                                            </div>
-                                            {sub.desc && (
-                                              <div className="mt-0.5 text-[12px] text-slate-400 line-clamp-2">
-                                                {sub.desc}
-                                              </div>
-                                            )}
-                                          </div>
-                                          <ArrowRight className="h-4 w-4 text-slate-400 shrink-0" />
-                                        </Link>
-                                      );
-                                    })}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </>
-                        ) : (
-                          <Link
-                            href={href || "#"}
-                            onClick={close}
-                            className={cx(
-                              "px-4 py-3.5 flex items-center justify-between",
-                              "hover:bg-white/6 transition",
-                            )}
-                          >
-                            <span
-                              className={cx(
-                                "text-[15px] font-semibold",
-                                isCurrent ? "text-blue-300" : "text-slate-100",
-                              )}
-                            >
-                              {name}
-                            </span>
-                            <ArrowRight className="h-4 w-4 text-slate-400 shrink-0" />
-                          </Link>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* CTA */}
-              <div className="px-5 mt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    close();
-                    onOpenContact();
-                  }}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-2xl
-                             bg-blue-600 px-4 py-3 text-sm font-semibold text-white
-                             hover:bg-blue-700 transition shadow-lg shadow-black/20"
+            <div className="px-5 pb-8 pt-5">
+              <div className="flex items-center justify-between">
+                <Link
+                  href="/"
+                  onClick={close}
+                  className="relative h-10 w-[205px]"
                 >
-                  <Calendar className="h-4 w-4" />
-                  Termin vereinbaren
+                  <Image
+                    src="/logo11.png"
+                    alt="Autogalerie Jülich"
+                    fill
+                    priority
+                    sizes="235px"
+                    className="object-cover object-left"
+                  />
+                </Link>
+
+                <button
+                  onClick={close}
+                  className="rounded-xl border border-black/10 bg-[#f7f9f5] p-2 transition hover:bg-[#e6f1e9]"
+                  aria-label="Schließen"
+                >
+                  <X className="h-5 w-5 text-[#121812]" />
                 </button>
               </div>
+
+              <div className="mt-5 rounded-2xl border border-black/10 bg-[#f7f9f5] p-3">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#146c2e]">
+                  Autogalerie Jülich
+                </p>
+                <p className="mt-1 text-sm font-medium text-[#5f695f]">
+                  Geprüfte Fahrzeuge und faire Beratung.
+                </p>
+              </div>
+
+              <div className="mt-4 overflow-hidden rounded-2xl border border-black/10 bg-white">
+                {menus.map(({ name, href, subMenu }, index) => {
+                  const hasSub = Array.isArray(subMenu) && subMenu.length > 0;
+                  const openSub = activeIndex === index;
+
+                  const current =
+                    href &&
+                    (pathname === href ||
+                      pathname
+                        ?.toLowerCase()
+                        .startsWith(String(href).toLowerCase()));
+
+                  return (
+                    <div
+                      key={name}
+                      className="border-b border-black/5 last:border-b-0"
+                    >
+                      {hasSub ? (
+                        <>
+                          <button
+                            onClick={() =>
+                              setActiveIndex(openSub ? null : index)
+                            }
+                            className="flex w-full items-center justify-between px-4 py-3.5 text-left transition hover:bg-[#f7f9f5]"
+                          >
+                            <span className="text-sm font-semibold text-[#121812]">
+                              {name}
+                            </span>
+
+                            <ChevronDown
+                              className={cx(
+                                "h-5 w-5 transition-transform",
+                                openSub
+                                  ? "rotate-180 text-[#146c2e]"
+                                  : "text-[#6b746b]",
+                              )}
+                            />
+                          </button>
+
+                          <AnimatePresence>
+                            {openSub && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="pb-2">
+                                  {subMenu.map((sub) => (
+                                    <Link
+                                      key={sub.href || sub.name}
+                                      href={sub.href || "#"}
+                                      onClick={close}
+                                      className="mx-3 my-1 flex items-center justify-between gap-3 rounded-xl bg-[#f7f9f5] px-3 py-3 text-sm font-semibold text-[#121812] transition hover:bg-[#e6f1e9] hover:text-[#146c2e]"
+                                    >
+                                      <span>{sub.name}</span>
+                                      <ArrowRight className="h-4 w-4 text-[#146c2e]" />
+                                    </Link>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </>
+                      ) : (
+                        <Link
+                          href={href || "#"}
+                          onClick={close}
+                          className="flex items-center justify-between px-4 py-3.5 transition hover:bg-[#f7f9f5]"
+                        >
+                          <span
+                            className={cx(
+                              "text-sm font-semibold",
+                              current ? "text-[#146c2e]" : "text-[#121812]",
+                            )}
+                          >
+                            {name}
+                          </span>
+
+                          <ArrowRight className="h-4 w-4 text-[#146c2e]" />
+                        </Link>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => {
+                  close();
+                  onOpenContact();
+                }}
+                className="mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#146c2e] px-4 text-[13px] font-semibold text-white shadow-md shadow-green-900/15 transition hover:bg-[#0f5724]"
+              >
+                <Calendar className="h-4 w-4" />
+                Termin vereinbaren
+              </button>
             </div>
           </motion.aside>
         )}
@@ -443,201 +353,131 @@ function MobileDrawer({ menus, isOpen, setIsOpen, onOpenContact, isLoggedIn }) {
   );
 }
 
-/* -----------------------------
-  User Dropdown
------------------------------- */
 function UserDropdown({ user, avatarUrl, open, setOpen, dropdownRef }) {
   return (
-    <div
-      className="fixed top-3 right-3 sm:top-4 sm:right-4 z-[9999] print:hidden"
-      ref={dropdownRef}
-    >
-      <div className="relative">
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setOpen((v) => !v)}
-          className={cx(
-            "flex h-10 w-10 items-center justify-center rounded-full border-[1.5px] shadow-lg backdrop-blur-md transition-all",
-            open
-              ? "border-blue-500 bg-white/95 "
-              : "border-white/40 bg-white/10 hover:border-blue-400 hover:bg-white/15",
-          )}
-          aria-label="Benutzermenü öffnen"
-        >
-          {avatarUrl ? (
-            <div className="relative">
-              <Image
-                src={avatarUrl}
-                alt="User Avatar"
-                width={36}
-                height={36}
-                className="h-9 w-9 rounded-full object-cover"
-              />
-              <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-[1.5px] border-slate-900 bg-green-500 shadow-sm" />
-            </div>
-          ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-slate-700 to-slate-950 text-white">
-              <User className="h-4 w-4" />
-            </div>
-          )}
-        </motion.button>
+    <div ref={dropdownRef} className="relative print:hidden">
+      <button
+        onClick={() => setOpen((prev) => !prev)}
+        className={cx(
+          "flex h-10 w-10 items-center justify-center rounded-full border bg-white shadow-sm transition",
+          open ? "border-[#146c2e]" : "border-black/10 hover:border-[#146c2e]",
+        )}
+        aria-label="Benutzermenü öffnen"
+      >
+        {avatarUrl ? (
+          <Image
+            src={avatarUrl}
+            alt="User Avatar"
+            width={36}
+            height={36}
+            className="h-9 w-9 rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#121812] text-white">
+            <User className="h-4 w-4" />
+          </div>
+        )}
+      </button>
 
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.97 }}
-              transition={{ duration: 0.18, ease: "easeOut" }}
-              className="absolute right-0 mt-3 w-[290px] sm:w-[320px] rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-2xl"
-            >
-              <div className="px-4 py-4 text-white border-b border-slate-800/70 bg-white/5 backdrop-blur-xl">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full border border-white/15 bg-white/10 overflow-hidden flex items-center justify-center ">
-                    {avatarUrl ? (
-                      <Image
-                        src={avatarUrl}
-                        alt="User Avatar"
-                        width={48}
-                        height={48}
-                        className="h-12 w-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <User className="h-6 w-6 text-white" />
-                    )}
-                  </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.97 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
+            className="absolute right-0 mt-3 w-[300px] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl shadow-black/10"
+          >
+            <div className="bg-[#f7f9f5] px-4 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-black/10 bg-white">
+                  {avatarUrl ? (
+                    <Image
+                      src={avatarUrl}
+                      alt="User Avatar"
+                      width={48}
+                      height={48}
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-6 w-6 text-[#6b746b]" />
+                  )}
+                </div>
 
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-sm font-semibold text-white truncate">
-                      {user?.name}
-                    </h3>
-                    <p className="text-xs text-slate-300 truncate mt-1 flex items-center">
-                      <Mail className="w-3 h-3 mr-1" /> {user?.email}
-                    </p>
-                  </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-[#121812]">
+                    {user?.name || "Admin"}
+                  </p>
+                  <p className="mt-1 flex items-center gap-1 truncate text-xs font-medium text-[#6b746b]">
+                    <Mail className="h-3 w-3" />
+                    {user?.email}
+                  </p>
                 </div>
               </div>
+            </div>
 
-              <div className="py-2">
-                <p className="px-4 pb-1 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
-                  Navigation
-                </p>
+            <div className="p-2">
+              <Link
+                href="/AdminDashboard"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-[#121812] transition hover:bg-[#e6f1e9] hover:text-[#146c2e]"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e6f1e9]">
+                  <Settings className="h-4 w-4 text-[#146c2e]" />
+                </span>
+                Admin Dashboard
+              </Link>
+            </div>
 
-                <Link
-                  href="/AdminDashboard"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center backdrop-blur-xl px-4 py-2.5 text-sm text-slate-200 hover:bg-white/5 hover:text-blue-300 transition-colors group"
-                >
-                  <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-900/30 group-hover:bg-blue-900/45">
-                    <Settings className="w-4 h-4 text-blue-300" />
-                  </div>
-                  <span className="ml-3">Admin Dashboard</span>
-                </Link>
-              </div>
-
-              <div className="border-t border-slate-800/70 px-3 py-3 bg-white/5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpen(false);
-                    signOut({ callbackUrl: "/" });
-                  }}
-                  className="flex w-full items-center justify-center gap-2 px-3 py-2 rounded-xl border border-blue-500/35 bg-blue-900/25 text-blue-200 hover:bg-blue-900/40 transition"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Abmelden
-                </button>
-
-                <p className="mt-2 text-[11px] text-center text-slate-500">
-                  Autogalerie Jülich System
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+            <div className="border-t border-black/5 bg-[#f7f9f5] p-3">
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  signOut({ callbackUrl: "/" });
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#146c2e]/25 bg-[#e6f1e9] px-3 py-2 text-sm font-semibold text-[#146c2e] transition hover:bg-[#dceee0]"
+              >
+                <LogOut className="h-4 w-4" />
+                Abmelden
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-/* -----------------------------
-  Main NavBar
------------------------------- */
 export default function NavBar() {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const isHomePage = pathname === "/";
 
-  const [open, setOpen] = useState(false); // user dropdown open
-  const [scrolled, setScrolled] = useState(false);
   const [hydrated, setHydrated] = useState(false);
-
+  const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState(session?.user || null);
-
-  // Contact modal
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
 
-  // Mobile drawer
-  const [mobileOpen, setMobileOpen] = useState(false);
-
   const dropdownRef = useRef(null);
-
-  const adminRoutes = useMemo(
-    () => [
-      "/admin",
-      "/AdminDashboard",
-      "/forms",
-      "/excel",
-      "/schlussel",
-      "/Fahrzeugverwaltung",
-      "/PersonalData",
-      "/Plate",
-      "/Reg",
-      "/punsh",
-      "/Posteingang",
-      "/Zeiterfassungsverwaltung",
-      "/kaufvertrag",
-      "/TrackVisitors76546633",
-      "/Vehicles",
-      "/medicine",
-      "/Autoteil",
-      "/aufgabenboard",
-      "/translator",
-      "/Rotkennzeichen",
-      "/Kundenkontakte",
-    ],
-    [],
-  );
 
   const isAdminRoute = adminRoutes.some((route) =>
     pathname?.toLowerCase().startsWith(route.toLowerCase()),
   );
 
-  const hideDropdownRoutes = useMemo(() => ["/schlussel"], []);
-  const hideDropdown = hideDropdownRoutes.some((route) =>
-    pathname?.toLowerCase().startsWith(route.toLowerCase()),
-  );
-
-  useEffect(() => {
-    if (session?.user) setUser(session.user);
-  }, [session]);
-
-  const showDropdownOnHome = session?.user && isHomePage;
-  const showDropdownOnOtherPagesMobileOnly =
-    session?.user && !isHomePage && !isAdminRoute && !hideDropdown;
-
   useEffect(() => {
     setHydrated(true);
 
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => setScrolled(window.scrollY > 16);
 
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setOpen(false);
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setUserMenuOpen(false);
       }
     };
 
     handleScroll();
+
     window.addEventListener("scroll", handleScroll, { passive: true });
     document.addEventListener("mousedown", handleClickOutside);
 
@@ -648,18 +488,23 @@ export default function NavBar() {
   }, []);
 
   useEffect(() => {
-    const fetchAdmin = async () => {
+    if (session?.user) setUser(session.user);
+  }, [session]);
+
+  useEffect(() => {
+    async function fetchAdmin() {
       if (!session?.user?.id) return;
 
       try {
         const res = await fetch(`/api/admins?id=${session.user.id}`);
-        if (!res.ok) throw new Error("Admin data could not be loaded");
+        if (!res.ok) return;
+
         const data = await res.json();
         setUser(data);
-      } catch (err) {
-        console.error(err);
+      } catch (error) {
+        console.error("Admin data could not be loaded:", error);
       }
-    };
+    }
 
     fetchAdmin();
   }, [session?.user?.id]);
@@ -668,7 +513,7 @@ export default function NavBar() {
   if (isAdminRoute) return null;
 
   const avatarUrl = user?.image || "";
-  const isLoggedIn = !!session;
+  const showUserMenu = Boolean(session?.user);
 
   const openContact = () => {
     setMobileOpen(false);
@@ -682,111 +527,94 @@ export default function NavBar() {
         onClose={() => setContactOpen(false)}
       />
 
-      {/* Top bar */}
-      <div className="print:hidden bg-slate-950/75 backdrop-blur-md border-b border-slate-800/70 text-slate-100">
-        <div className="mx-auto max-w-screen-2xl px-4 xl:px-8">
-          <div className="flex flex-col gap-2 py-2 text-sm md:flex-row md:items-center md:justify-start">
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-blue-400" />
-                <span>Alte Dürenerstraße 4 Jülich</span>
+      <div className="hidden border-b border-black/5 bg-white text-[#121812] print:hidden md:block">
+        <div className={WRAPPER}>
+          <div className="flex h-8 items-center justify-between text-[12px] font-medium">
+            <div className="flex items-center gap-5 -ml-1">
+              <span className="inline-flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-[#146c2e]" />
+                Alte Dürenerstraße 4, Jülich
               </span>
-              <span className="hidden md:inline text-white/25">•</span>
-              <span className="inline-flex items-center gap-2">
-                <Phone className="h-4 w-4 text-blue-400" />
-                <a
-                  className="font-semibold hover:underline"
-                  href="tel:+49 (0)2461 9163780"
-                >
-                  02461 9163780
-                </a>
-              </span>
+
+              <a
+                href="tel:+4924619163780"
+                className="inline-flex items-center gap-1.5 transition hover:text-[#146c2e]"
+              >
+                <Phone className="h-3.5 w-3.5 text-[#146c2e]" />
+                02461 9163780
+              </a>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main header */}
       <header
         className={cx(
-          "print:hidden sticky top-0 z-50 transition-all duration-300",
-          "bg-gradient-to-b from-slate-950/95 to-slate-900/90 backdrop-blur-xl shadow-2xl border-b border-slate-800/70",
+          "sticky top-0 z-50 border-b border-black/5 bg-white/95 backdrop-blur-xl transition-all duration-300 print:hidden",
+          scrolled && "shadow-[0_8px_30px_rgba(0,0,0,0.06)]",
         )}
       >
-        <nav className="mx-auto max-w-screen-2xl px-4 xl:px-8">
-          <div className="flex h-16 items-center gap-4">
-            {/* Logo + Title */}
-            <Link href="/" className="flex items-center gap-3 min-w-0 shrink-0">
-              <div className="relative h-10 w-10">
-                <Image
-                  src={Logo}
-                  alt="Autogalerie Jülich"
-                  priority
-                  className="h-10 w-10 object-contain"
-                />
-              </div>
-
-              <div className="leading-tight min-w-0">
-                <div className="truncate text-[13px] sm:text-lg font-playfair font-bold uppercase text-white tracking-[0.06em] sm:tracking-[0.1em]">
-                  Autogalerie <span className="text-blue-400">Jülich</span>
-                </div>
-              </div>
+        <nav className={WRAPPER}>
+          <div className="flex h-[70px] items-center gap-8">
+            <Link
+              href="/"
+              className="relative -ml-3 h-10 w-[205px] shrink-0 lg:-ml-6"
+            >
+              <Image
+                src="/logo11.png"
+                alt="Autogalerie Jülich"
+                fill
+                priority
+                sizes="235px"
+                className="object-cover object-left"
+              />
             </Link>
 
-            {/* Desktop nav + CTA beside each other (wide, right-aligned) */}
-            <div className="hidden lg:flex flex-1 items-center justify-end gap-6">
-              <ul className="flex items-center gap-1 xl:gap-2 2xl:gap-3">
+            <div className="hidden flex-1 items-center justify-end gap-5 lg:flex">
+              <ul className="flex items-center gap-3">
                 {Menus.map((menu) => (
-                  <DesktopMenu
-                    key={menu.name}
-                    menu={menu}
-                    scrolled={scrolled}
-                  />
+                  <DesktopMenu key={menu.name} menu={menu} />
                 ))}
               </ul>
 
               <button
                 type="button"
                 onClick={openContact}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shrink-0"
+                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-[#146c2e] px-4 text-[13px] font-semibold text-white shadow-md shadow-green-900/15 transition hover:bg-[#0f5724]"
               >
-                Termin vereinbaren
+                <Calendar className="h-3.5 w-3.5" />
+                Termin
               </button>
+
+              {showUserMenu && (
+                <UserDropdown
+                  user={user}
+                  avatarUrl={avatarUrl}
+                  open={userMenuOpen}
+                  setOpen={setUserMenuOpen}
+                  dropdownRef={dropdownRef}
+                />
+              )}
             </div>
 
-            {/* Mobile drawer */}
-            <div className="lg:hidden ml-auto">
+            <div className="ml-auto flex items-center gap-2 lg:hidden">
+              {showUserMenu && (
+                <UserDropdown
+                  user={user}
+                  avatarUrl={avatarUrl}
+                  open={userMenuOpen}
+                  setOpen={setUserMenuOpen}
+                  dropdownRef={dropdownRef}
+                />
+              )}
+
               <MobileDrawer
                 menus={Menus}
                 isOpen={mobileOpen}
                 setIsOpen={setMobileOpen}
                 onOpenContact={openContact}
-                isLoggedIn={isLoggedIn}
               />
             </div>
-
-            {/* User dropdown rules */}
-            {showDropdownOnHome && (
-              <UserDropdown
-                user={user}
-                avatarUrl={avatarUrl}
-                open={open}
-                setOpen={setOpen}
-                dropdownRef={dropdownRef}
-              />
-            )}
-
-            {showDropdownOnOtherPagesMobileOnly && (
-              <div className="lg:hidden">
-                <UserDropdown
-                  user={user}
-                  avatarUrl={avatarUrl}
-                  open={open}
-                  setOpen={setOpen}
-                  dropdownRef={dropdownRef}
-                />
-              </div>
-            )}
           </div>
         </nav>
       </header>

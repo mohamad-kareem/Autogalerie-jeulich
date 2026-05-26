@@ -12,19 +12,17 @@ import GridBackground from "../helpers/Grid";
 import RandomCarSlider from "./RandomCarSlider";
 import DiscountPopup from "./popup.jsx"; // Import the popup component
 import ConsentBanner from "../helpers/ConsentBanner"; // adjust path if needed
-import OpelPremiumAd from "../helpers/Ad2";
+
 const Complete = () => {
   return (
     <main className="relative bg-black text-white">
       {/*  Grid SVG in the background */}
       <HeroSection />
       <Rating />
-      <Reviews />
-      <OpelPremiumAd />
+
       <LandingChoices />
       <RandomCarSlider />
-      <LandingSlide />
-      <WhyUs />
+
       <SellCarYourWay />
       <Footbar />
     </main>

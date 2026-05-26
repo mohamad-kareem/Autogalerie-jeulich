@@ -4,31 +4,33 @@ export const Menus = [
     subMenu: [
       {
         name: "Gebrauchtwagen",
-        desc: "Gebraucht Fahrzeuge",
+        desc: "Gebrauchte Fahrzeuge",
         href: "/gebrauchtwagen",
       },
       {
-        name: "fahrzeugevergleich",
-        desc: "Fahrzeug Vergleich",
+        name: "Fahrzeugvergleich",
+        desc: "Fahrzeuge vergleichen",
         href: "/vergleich",
       },
+      {
+        name: "Auto verkaufen",
+        desc: "Schnell und einfach verkaufen",
+        href: "/Autoverkaufen",
+      },
     ],
-    //* gridCols:2
   },
-  {
-    name: "Auto verkaufen",
-    href: "/Autoverkaufen",
-    desc: "schnell und einfach",
-  },
+
   {
     name: "Finanzierung",
     href: "/finanzierung",
     desc: "Kredit Optionen",
   },
+
   {
     name: "Garantie",
     href: "/garantie",
   },
+
   {
     name: "Kontakt",
     desc: "Kontakt Infos",

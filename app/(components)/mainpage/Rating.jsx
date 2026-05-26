@@ -5,9 +5,8 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
 import Rate from "../../(assets)/Rate.png";
-import Button from "../helpers/Button";
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
 
 export default function Rating() {
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.2 });
@@ -18,89 +17,84 @@ export default function Rating() {
   }, [inView]);
 
   return (
-    <section className="relative w-full py-16 px-4 sm:px-6 lg:px-16 overflow-hidden bg-slate-950">
-      {/* Background elements */}
-
-      <motion.div
-        ref={ref}
-        initial={{ opacity: 0, y: 60 }}
-        animate={hasAnimated ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="w-full max-w-[95vw] xl:max-w-[1280px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-center relative z-10"
-      >
-        {/* Text Content */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-blue-400" />
-            <h2 className="text-2xl font-playfair leading-tight sm:text-3xl md:text-4xl  text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-300">
-              Kundenzufriedenheit
-            </h2>
-          </div>
-
-          <p className="text-base sm:text-lg leading-relaxed text-gray-300">
-            Bei uns stehen Sie im Mittelpunkt! Unser Team sorgt für einen
-            reibungslosen Ablauf, besten Kundenservice und kompetente Beratung.
-            Ob beim Kauf oder Verkauf eines Fahrzeugs – Ihr Autohaus in Jülich
-            setzt alles daran, Ihre Erwartungen zu übertreffen.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 items-start">
-            <Link
-              href="https://www.mobile.de/bewertungen/AutogalerieJuelich#1"
-              className="
-                            inline-flex items-center justify-center 
-                            rounded-full border border-white/60 px-5 py-2 
-                            text-sm md:text-base font-semibold text-white 
-                            transition 
-                            hover:border-blue-400 hover:text-blue-200
-                          "
-            >
-              Beratung vereinbaren
-            </Link>
-
-            <div className="flex items-center gap-2 text-blue-400 mt-2">
-              <div className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <StarIcon
-                    key={i}
-                    className="w-4 h-4 sm:w-5 sm:h-5 fill-current"
-                  />
-                ))}
-              </div>
-              <span className="text-sm font-medium">4.9/5.0</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Rating Image - Now with better sizing */}
+    <section className="w-full bg-[#f5f5f2] ">
+      <div className="mx-auto max-w-[1180px] px-3 sm:px-6 lg:px-8">
         <motion.div
-          className="relative flex justify-center"
-          whileHover={{ scale: 1.03 }}
-          transition={{ type: "spring", stiffness: 300 }}
+          ref={ref}
+          initial={{ opacity: 0, y: 60 }}
+          animate={hasAnimated ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="relative overflow-hidden "
         >
-          <div className="relative p-1 bg-gradient-to-br from-blue-400 to-blue-900 rounded-3xl shadow-2xl w-full max-w-xs">
-            <div className="bg-slate-950 p-3 sm:p-4 rounded-2xl">
-              <Image
-                src={Rate}
-                alt="Kundenbewertung"
-                width={300}
-                height={360}
-                className="w-full h-auto rounded-xl"
-                loading="lazy"
-                unoptimized
-              />
+          <div className="grid grid-cols-1 items-center gap-6 p-5 sm:gap-10 sm:p-8 lg:grid-cols-2 lg:gap-12 lg:p-10">
+            {/* Text Content */}
+            <div>
+              <div className="mb-3 h-[2px] w-10 bg-[#146c2e] sm:w-12" />
+
+              <div className="mb-3 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-[#146c2e]" />
+                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#146c2e] sm:text-[14px] sm:tracking-[0.32em]">
+                  Kundenstimmen
+                </p>
+              </div>
+
+              <p className="mt-4 max-w-[480px] text-[14px] font-medium leading-7 text-[#263126] sm:text-[25px] sm:leading-[35px]">
+                Ehrliche Beratung und zufriedene Kunden stehen bei uns an erster
+                Stelle.
+              </p>
+
+              {/* Rating chip */}
+              <div className="mt-5 inline-flex items-center gap-2.5 rounded-2xl border border-black/10 bg-[#fafaf8] px-4 py-2.5">
+                <div className="flex text-[#146c2e]">
+                  {[...Array(5)].map((_, i) => (
+                    <StarIcon
+                      key={i}
+                      className="h-4 w-4 fill-current sm:h-[18px] sm:w-[18px]"
+                    />
+                  ))}
+                </div>
+                <span className="text-sm font-black text-[#101510]">
+                  4.9 / 5.0
+                </span>
+              </div>
+
+              <div className="mt-5">
+                <Link
+                  href="https://www.mobile.de/bewertungen/AutogalerieJuelich#1"
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-black/60 px-5 py-3 text-xs font-black text-white shadow-lg shadow-green-900/25 transition hover:bg-[#0f5724]"
+                >
+                  Beratung vereinbaren
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
             </div>
 
-            {/* Floating badge - now smaller */}
-            <div className="absolute -bottom-3 -right-3 bg-blue-400 text-black px-3 py-1 rounded-full font-bold text-xs sm:text-sm shadow-lg">
-              TOP BEWERTET
-            </div>
+            {/* Rating Image */}
+            <motion.div
+              className="relative flex justify-center"
+              whileHover={{ scale: 1.03 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <div className="relative w-full max-w-xs rounded-[20px] border border-black/10 bg-[#fafaf8] p-3 shadow-lg shadow-black/5 sm:p-4">
+                <Image
+                  src={Rate}
+                  alt="Kundenbewertung"
+                  width={300}
+                  height={360}
+                  className="h-auto w-full rounded-2xl"
+                  loading="lazy"
+                  unoptimized
+                />
+
+                {/* Floating badge */}
+                <div className="absolute -bottom-3 -right-3 rounded-full bg-[#146c2e] px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-white shadow-lg shadow-green-900/25 sm:text-xs">
+                  Top Bewertet
+                </div>
+              </div>
+            </motion.div>
           </div>
         </motion.div>
-      </motion.div>
-
-      {/* Glow Effects */}
-      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-64 h-64 bg-gradient-to-r from-blue-500/20 to-blue-900/20 rounded-full blur-[80px] pointer-events-none" />
+      </div>
     </section>
   );
 }
