@@ -202,13 +202,12 @@ export default function FinanzierungPage() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm">
+            <div className="overflow-hidden rounded-3xl border border-black/10  shadow-sm">
               <Image
                 src={finance}
                 alt="Finanzierungsprozess"
-                className="h-full min-h-[260px] w-full object-cover"
-                width={800}
-                height={600}
+                className="h-fit  w-fit object-fill"
+                width={700}
                 priority
               />
             </div>
