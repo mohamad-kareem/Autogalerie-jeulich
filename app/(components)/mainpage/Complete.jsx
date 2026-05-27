@@ -12,12 +12,13 @@ import GridBackground from "../helpers/Grid";
 import RandomCarSlider from "./RandomCarSlider";
 import DiscountPopup from "./popup.jsx"; // Import the popup component
 import ConsentBanner from "../helpers/ConsentBanner"; // adjust path if needed
-
+import MovingWords from "./movingwords";
 const Complete = () => {
   return (
     <main className="relative bg-black text-white">
       {/*  Grid SVG in the background */}
       <HeroSection />
+      <MovingWords />
       <Rating />
 
       <LandingChoices />

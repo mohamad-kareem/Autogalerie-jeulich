@@ -78,7 +78,7 @@ export default function Hero() {
   }, [cars]);
 
   const mileages = ["25000", "50000", "75000", "100000", "150000"];
-  const prices = ["5000", "10000", "15000", "20000", "30000", "50000"];
+  const prices = ["5000", "8000", "10000", "15000"];
 
   const resultCount = useMemo(() => {
     return cars.filter((car) => {
@@ -140,7 +140,7 @@ export default function Hero() {
 
   return (
     <section className="w-full bg-[#f5f5f2]">
-      <div className="mx-auto max-w-[1180px] px-0 pb-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1180px] px-0 pb-5 sm:px-6 sm:pb-8 lg:px-8">
         <div className="relative overflow-hidden rounded-none border-0 bg-white shadow-xl shadow-black/10 sm:rounded-b-[28px] sm:border sm:border-white/70">
           <div className="relative h-[430px] w-full overflow-hidden sm:h-[520px] lg:h-[610px]">
             <Image
@@ -190,15 +190,12 @@ export default function Hero() {
                   label="Erstzulassung"
                   value="2017"
                 />
-
                 <InfoItem
                   icon={<Gauge />}
                   label="Kilometerstand"
                   value="73.500 km"
                 />
-
                 <InfoItem icon={<Fuel />} label="Kraftstoff" value="Benzin" />
-
                 <InfoItem
                   icon={<Settings />}
                   label="Getriebe"
@@ -210,7 +207,6 @@ export default function Hero() {
                     <p className="text-[22px] font-black leading-none text-[#17b14b]">
                       8.990 €
                     </p>
-
                     <p className="mt-1 text-[11px] font-bold text-white/80">
                       inkl. MwSt.
                     </p>
@@ -220,18 +216,18 @@ export default function Hero() {
             </div>
           </div>
 
-          <div className="bg-white px-4 py-5 sm:px-5 lg:px-6">
-            <div className="mb-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#146c2e]">
+          <div className="bg-white px-3 py-3 sm:px-5 sm:py-5 lg:px-6">
+            <div className="mb-3 sm:mb-4">
+              <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#146c2e] sm:text-[10px] sm:tracking-[0.18em]">
                 {loading ? "Fahrzeuge werden geladen..." : ""}
               </p>
 
-              <h2 className="mt-1 text-lg font-black text-[#101510]">
+              <h2 className="mt-1 text-base font-black text-[#101510] sm:text-lg">
                 Passendes Fahrzeug finden
               </h2>
             </div>
 
-            <div className="flex h-[46px] items-center rounded-2xl border border-black/10 bg-[#fafaf8] px-4">
+            <div className="flex h-[40px] items-center rounded-xl border border-black/10 bg-[#fafaf8] px-3 sm:h-[46px] sm:rounded-2xl sm:px-4">
               <Search className="h-4 w-4 text-[#146c2e]" />
 
               <input
@@ -241,17 +237,17 @@ export default function Hero() {
                   if (e.key === "Enter") handleSearch();
                 }}
                 placeholder="Marke, Modell oder Stichwort"
-                className="h-full w-full bg-transparent px-3 text-sm font-semibold text-[#101510] outline-none placeholder:text-gray-400"
+                className="h-full w-full bg-transparent px-2 text-xs font-semibold text-[#101510] outline-none placeholder:text-gray-400 sm:px-3 sm:text-sm"
               />
             </div>
 
-            <div className="mt-4 grid items-end gap-3 md:grid-cols-3 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_170px]">
+            <div className="mt-3 grid grid-cols-2 items-end gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_170px]">
               <SelectBox
                 label="Marke"
                 value={filters.make}
                 onChange={(v) => updateFilter("make", v)}
                 options={makes}
-                placeholder="Alle Marken"
+                placeholder="Alle"
               />
 
               <SelectBox
@@ -259,24 +255,24 @@ export default function Hero() {
                 value={filters.model}
                 onChange={(v) => updateFilter("model", v)}
                 options={models}
-                placeholder="Alle Modelle"
+                placeholder="Alle"
                 disabled={!filters.make}
               />
 
               <SelectBox
-                label="Erstzulassung"
+                label="EZ ab"
                 value={filters.minYear}
                 onChange={(v) => updateFilter("minYear", v)}
                 options={years}
-                placeholder="Beliebig"
+                placeholder="Alle"
               />
 
               <SelectBox
-                label="Kilometerstand bis"
+                label="Km bis"
                 value={filters.maxMileage}
                 onChange={(v) => updateFilter("maxMileage", v)}
                 options={mileages}
-                placeholder="Beliebig"
+                placeholder="Alle"
                 format={(v) => `${Number(v).toLocaleString("de-DE")} km`}
               />
 
@@ -285,7 +281,7 @@ export default function Hero() {
                 value={filters.maxPrice}
                 onChange={(v) => updateFilter("maxPrice", v)}
                 options={prices}
-                placeholder="Beliebig"
+                placeholder="Alle"
                 format={(v) =>
                   Number(v).toLocaleString("de-DE", {
                     style: "currency",
@@ -297,9 +293,9 @@ export default function Hero() {
 
               <button
                 onClick={handleSearch}
-                className="flex h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[#146c2e] px-4 text-white shadow-lg shadow-green-900/20 transition hover:bg-[#0f5724]"
+                className="col-span-2 flex h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-[#146c2e] px-4 text-white shadow-lg shadow-green-900/20 transition hover:bg-[#0f5724] sm:h-[48px] sm:rounded-2xl lg:col-span-1"
               >
-                <span className="text-lg font-black leading-none">
+                <span className="text-base font-black leading-none sm:text-lg">
                   {resultCount}
                 </span>
                 <span className="text-xs font-black">Angebote</span>
@@ -307,29 +303,29 @@ export default function Hero() {
               </button>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex h-[46px] min-w-[230px] flex-1 items-center rounded-2xl border border-black/10 bg-[#fafaf8] px-4">
-                <MapPin className="h-4 w-4 text-[#146c2e]" />
+            <div className="mt-3 flex items-center justify-between gap-2 sm:mt-4 sm:flex-wrap sm:gap-3">
+              <div className="hidden h-[42px] min-w-0 flex-1 items-center rounded-xl border border-black/10 bg-[#fafaf8] px-3 sm:flex sm:h-[46px] sm:min-w-[230px] sm:rounded-2xl sm:px-4">
+                <MapPin className="h-4 w-4 shrink-0 text-[#146c2e]" />
 
-                <span className="px-3 text-xs font-bold text-[#101510]">
+                <span className="truncate px-3 text-xs font-bold text-[#101510]">
                   Alte Dürenerstraße 4, Jülich
                 </span>
               </div>
 
               <button
                 onClick={resetFilters}
-                className="inline-flex items-center gap-2 text-xs font-bold text-gray-500 transition hover:text-[#101510]"
+                className="inline-flex h-[38px] flex-1 items-center justify-center gap-2 rounded-xl border border-black/10 bg-[#fafaf8] px-3 text-[11px] font-bold text-gray-600 transition hover:text-[#101510] sm:h-auto sm:flex-none sm:border-0 sm:bg-transparent sm:px-0 sm:text-xs"
               >
                 <RotateCcw className="h-4 w-4" />
-                Filter zurücksetzen
+                Zurücksetzen
               </button>
 
               <Link
                 href="/gebrauchtwagen"
-                className="hidden  items-center gap-2 text-xs font-black text-[#146c2e] transition hover:text-[#101510] sm:inline-flex"
+                className="inline-flex h-[38px] flex-1 items-center justify-center gap-2 rounded-xl border border-[#146c2e]/20 bg-[#146c2e]/5 px-3 text-[11px] font-black text-[#146c2e] transition hover:text-[#101510] sm:h-auto sm:flex-none sm:border-0 sm:bg-transparent sm:px-0 sm:text-xs"
               >
                 <SlidersHorizontal className="h-4 w-4" />
-                Weitere Filter anzeigen
+                Mehr Filter
               </Link>
             </div>
           </div>
@@ -369,8 +365,8 @@ function SelectBox({
   disabled = false,
 }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-[10px] font-black text-[#101510]">
+    <label className="block min-w-0">
+      <span className="mb-1 block truncate text-[9px] font-black text-[#101510] sm:text-[10px]">
         {label}
       </span>
 
@@ -379,7 +375,7 @@ function SelectBox({
           value={value}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
-          className="h-[48px] w-full cursor-pointer appearance-none rounded-2xl border border-black/10 bg-[#fafaf8] px-3 pr-8 text-xs font-bold text-[#101510] outline-none transition hover:border-[#146c2e] focus:border-[#146c2e] disabled:cursor-not-allowed disabled:opacity-50"
+          className="h-[40px] w-full cursor-pointer appearance-none rounded-xl border border-black/10 bg-[#fafaf8] px-2 pr-7 text-[11px] font-bold text-[#101510] outline-none transition hover:border-[#146c2e] focus:border-[#146c2e] disabled:cursor-not-allowed disabled:opacity-50 sm:h-[48px] sm:rounded-2xl sm:px-3 sm:pr-8 sm:text-xs"
         >
           <option value="">{placeholder}</option>
 
@@ -390,7 +386,7 @@ function SelectBox({
           ))}
         </select>
 
-        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 sm:right-3" />
       </div>
     </label>
   );
