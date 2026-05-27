@@ -2,8 +2,6 @@
 
 import {
   FiInfo,
-  FiShield,
-  FiDollarSign,
   FiUpload,
   FiCheckCircle,
   FiMail,
@@ -17,193 +15,226 @@ import AdminCarForm from "@/app/(components)/CarForm/index";
 import Footer from "@/app/(components)/mainpage/Footbar";
 import Link from "next/link";
 
+const WRAPPER = "mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-8";
+
 const PublicAddCarPage = () => {
+  const reasons = [
+    {
+      title: "Stressfreier Prozess",
+      desc: "Keine Anzeigen, Besichtigungen oder langen Verhandlungen.",
+    },
+    {
+      title: "Schnelle Rückmeldung",
+      desc: "Wir prüfen Ihre Angaben und melden uns zeitnah zurück.",
+    },
+    {
+      title: "Faire Bewertung",
+      desc: "Realistische Einschätzung durch unsere Erfahrung im Fahrzeughandel.",
+    },
+    {
+      title: "Einfache Abwicklung",
+      desc: "Wir unterstützen Sie bei Dokumenten, Übergabe und Verkauf.",
+    },
+  ];
+
+  const documents = [
+    "Fahrzeugschein und Fahrzeugbrief",
+    "Service- und Wartungsunterlagen",
+    "Aktuelle Fotos von außen und innen",
+    "Kilometerstand und Zustandsdetails",
+  ];
+
+  const process = [
+    {
+      step: "1",
+      title: "Details einreichen",
+      desc: "Fahrzeugdaten und Bilder bequem über das Formular senden.",
+    },
+    {
+      step: "2",
+      title: "Angebot erhalten",
+      desc: "Wir prüfen Ihr Fahrzeug und melden uns mit einer fairen Einschätzung.",
+    },
+    {
+      step: "3",
+      title: "Verkauf abschließen",
+      desc: "Bei Interesse klären wir gemeinsam Übergabe, Zahlung und Unterlagen.",
+    },
+  ];
+
+  const stats = [
+    {
+      icon: <FiAward className="h-6 w-6 text-[#146c2e]" />,
+      value: "500+",
+      label: "Fahrzeuge bewertet",
+    },
+    {
+      icon: <FiCheckCircle className="h-6 w-6 text-[#146c2e]" />,
+      value: "Fair",
+      label: "Transparente Angebote",
+    },
+    {
+      icon: <FiClock className="h-6 w-6 text-[#146c2e]" />,
+      value: "24h",
+      label: "Schnelle Rückmeldung",
+    },
+    {
+      icon: <FiFileText className="h-6 w-6 text-[#146c2e]" />,
+      value: "0€",
+      label: "Unverbindliche Anfrage",
+    },
+  ];
+
   return (
-    <main className="bg-gradient-to-br from-slate-900 to-slate-950">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-black/30  to-slate-800 py-16 md:py-28 px-4 sm:px-6 lg:px-8 text-white overflow-hidden">
-        <div className="max-w-7xl mx-auto text-center relative z-10 space-y-6 mt-10">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight tracking-tight">
-            Verkaufen Sie Ihr Auto <br className="hidden sm:block" />
-            <span className="text-slate-600">mühelos</span>
-          </h1>
-          <p className="text-lg sm:text-xl md:text-2xl max-w-3xl mx-auto text-gray-300 font-light leading-relaxed">
-            Erhalten Sie innerhalb von Minuten ein wettbewerbsfähiges,
-            unverbindliches Angebot von unserem Händler. Überspringen Sie den
-            Stress von Privatverkäufen und Verhandlungen mit Händlern.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4 pt-4">
-            <div className="flex items-center bg-white/10 backdrop-blur-sm px-6 py-3 rounded-full border border-white/20">
-              <FiCheckCircle className="mr-3 text-emerald-400" />
-              <span className="font-medium">Sofortangebot</span>
+    <main className="min-h-screen bg-[#f5f6f3]">
+      {/* HERO */}
+      <section className="w-full py-6 sm:py-10 lg:py-14">
+        <div className={WRAPPER}>
+          <div className="rounded-3xl bg-[#eef6f0] px-4 py-8 shadow-sm sm:px-8 sm:py-12 lg:px-10">
+            <div className="mx-auto max-w-3xl text-center">
+              <div className="mx-auto mb-4 h-[2px] w-12 bg-[#146c2e]" />
+
+              <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-[#146c2e] sm:text-[12px]">
+                Fahrzeug verkaufen
+              </p>
+
+              <h1 className="mt-3 text-[30px] font-semibold leading-[1.08] tracking-[-0.05em] text-[#07111f] sm:text-5xl">
+                Verkaufen Sie Ihr Auto einfach und transparent
+              </h1>
+
+              <p className="mx-auto mt-4 max-w-2xl text-[14px] leading-7 text-[#5f695f] sm:text-[16px]">
+                Senden Sie uns Ihre Fahrzeugdaten. Wir prüfen Ihr Fahrzeug und
+                melden uns mit einer fairen, unverbindlichen Einschätzung.
+              </p>
+
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#146c2e]/15 bg-white px-4 py-2 text-[13px] font-semibold text-[#146c2e]">
+                  <FiCheckCircle className="h-4 w-4" />
+                  Unverbindliche Anfrage
+                </div>
+
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#146c2e]/15 bg-white px-4 py-2 text-[13px] font-semibold text-[#146c2e]">
+                  <FiClock className="h-4 w-4" />
+                  Schnelle Rückmeldung
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Main Content */}
-      <section className="py-12 md:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
-          {/* Left Side - Information */}
-          <div className="lg:col-span-1 space-y-6 md:space-y-8">
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-              <h2 className="text-2xl font-bold mb-6 flex items-center text-gray-900">
-                <FiInfo className="mr-3 text-slate-600" />
-                <span className="bg-gradient-to-br from-black to-slate-950 bg-clip-text text-transparent">
-                  Warum uns wählen?
-                </span>
-              </h2>
-              <ul className="space-y-4">
-                {[
-                  {
-                    title: "Stressfreier Prozess",
-                    desc: "Keine Anzeigen, Besichtigungen oder Verhandlungen",
-                  },
-                  {
-                    title: "Sofortige Zahlung",
-                    desc: "Erhalten Sie die Zahlung sofort nach Annahme",
-                  },
-                  {
-                    title: "Expertenbewertung",
-                    desc: "Präzise Marktbewertung durch unsere Spezialisten",
-                  },
-                  {
-                    title: "Vereinfachte Papierarbeit",
-                    desc: "Wir erledigen alle Dokumente für Sie",
-                  },
-                ].map((item, index) => (
-                  <li key={index} className="flex items-start">
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="h-2.5 w-2.5 bg-gradient-to-r from-slate-500 to-slate-700 rounded-full"></div>
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-gray-900 font-medium">{item.title}</p>
-                      <p className="text-gray-600 text-sm mt-1 leading-relaxed">
-                        {item.desc}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+      {/* MAIN */}
+      <section className={`${WRAPPER} pb-10 sm:pb-14`}>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_1fr] lg:gap-8">
+          {/* LEFT */}
+          <aside className="space-y-5">
+            <InfoBox
+              icon={<FiInfo />}
+              title="Warum uns wählen?"
+              items={reasons}
+            />
 
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-              <h2 className="text-2xl font-bold mb-6 flex items-center text-gray-900">
-                <FiUpload className="mr-3 text-slate-600" />
-                <span className="bg-gradient-to-br from-black to-slate-950 bg-clip-text text-transparent">
+            <div className="rounded-3xl border border-black/[0.06] bg-white p-5 shadow-sm sm:p-6">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e6f1e9] text-[#146c2e]">
+                  <FiUpload className="h-5 w-5" />
+                </div>
+
+                <h2 className="text-[20px] font-semibold tracking-[-0.03em] text-[#07111f]">
                   Benötigte Dokumente
-                </span>
-              </h2>
-              <p className="text-gray-600 mb-5 text-base leading-relaxed">
-                Für das genaueste Angebot bereiten Sie bitte diese Dokumente
-                vor:
+                </h2>
+              </div>
+
+              <p className="mb-4 text-[13px] leading-6 text-[#5f695f]">
+                Für eine genaue Einschätzung bereiten Sie bitte folgende
+                Informationen vor:
               </p>
+
               <ul className="space-y-3">
-                {[
-                  "Fahrzeugschein und Fahrzeugbrief",
-                  "Service- und Wartungsunterlagen",
-                  "Aktuelle Fotos (Innenraum, Außenansicht, Kilometerstand)",
-                  "Kilometerstand und Zustandsdetails",
-                ].map((item, index) => (
-                  <li key={index} className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="h-2 w-2 bg-gradient-to-r from-slate-500 to-slate-700 rounded-full"></div>
-                    </div>
-                    <p className="ml-3 text-gray-700">{item}</p>
+                {documents.map((item, index) => (
+                  <li
+                    key={index}
+                    className="flex gap-3 text-[13px] text-[#263126]"
+                  >
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#146c2e]" />
+                    {item}
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-8 rounded-2xl border border-gray-200 shadow-lg">
-              <div className="flex items-start mb-6">
-                <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm">
-                  <FiMail className="text-white text-xl" />
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-white">
-                    E-Mail an unser Team
-                  </h3>
-                  <p className="text-slate-200 hover:text-white transition-colors">
-                    autogalerie.jülich@web.de
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start">
-                <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm">
-                  <FiPhone className="text-white text-xl" />
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-white">
-                    Direkte Linie
-                  </h3>
-                  <p className="text-slate-200 hover:text-white transition-colors">
-                    +49 (0)2461 9163780
-                  </p>
-                </div>
-              </div>
+            <div className="rounded-3xl bg-[#101510] p-5 text-white shadow-xl shadow-black/10 sm:p-6">
+              <ContactRow
+                icon={<FiMail />}
+                title="E-Mail"
+                value="autogalerie.jülich@web.de"
+              />
+
+              <div className="my-5 border-t border-white/10" />
+
+              <ContactRow
+                icon={<FiPhone />}
+                title="Telefon"
+                value="+49 (0)2461 9163780"
+              />
+
               <Link
                 href="/kontakt"
-                className="w-full mt-8 bg-white text-gray-900 font-medium py-3 px-6 rounded-xl hover:bg-gray-100 transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center"
+                className="mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-[13px] font-semibold text-[#101510] transition hover:bg-[#eef6f0]"
               >
-                <FiClock className="mr-2" />
+                <FiClock className="h-4 w-4" />
                 Beratung vereinbaren
               </Link>
             </div>
-          </div>
+          </aside>
 
-          {/* Right Side - Form */}
-          <div className="lg:col-span-2 space-y-8">
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 transition-all duration-300 hover:shadow-2xl">
-              <div className="bg-gradient-to-br from-slate-900 to-slate-950 px-8 py-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight pb-1">
+          {/* RIGHT */}
+          <div className="space-y-6">
+            <div className="overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-[0_18px_60px_-35px_rgba(7,17,31,0.22)]">
+              <div className="bg-[#101510] px-5 py-5 sm:px-7">
+                <h2 className="text-[21px] font-semibold tracking-[-0.03em] text-white sm:text-2xl">
                   Fahrzeugbewertungsanfrage
                 </h2>
-                <p className="text-gray-300 font-light text-sm sm:text-md ">
-                  Füllen Sie dieses Formular aus und erhalten Sie innerhalb von
-                  24 Stunden Ihr wettbewerbsfähiges Angebot
+
+                <p className="mt-1 text-[13px] leading-6 text-white/70 sm:text-sm">
+                  Füllen Sie das Formular aus. Wir melden uns schnellstmöglich
+                  mit einer Einschätzung.
                 </p>
               </div>
-              <div className="p-2  pt-4">
+
+              <div className="p-2 sm:p-4">
                 <AdminCarForm />
               </div>
             </div>
 
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-              <h3 className="text-2xl font-bold mb-8 text-gray-900 flex items-center">
-                <FiTrendingUp className="mr-3 text-slate-600" />
-                Unser effizienter Prozess
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[
-                  {
-                    step: "1",
-                    title: "Details einreichen",
-                    desc: "Geben Sie genaue Fahrzeuginformationen und Fotos über unser sicheres Formular an",
-                  },
-                  {
-                    step: "2",
-                    title: "Angebot erhalten",
-                    desc: "Erhalten Sie eine faire Marktbewertung von unseren Experten innerhalb eines Werktages",
-                  },
-                  {
-                    step: "3",
-                    title: "Verkauf abschließen",
-                    desc: "Nehmen Sie unser Angebot an und wir organisieren die Abholung mit sofortiger Zahlung",
-                  },
-                ].map((item, index) => (
-                  <div key={index} className="group">
-                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 hover:border-slate-300 transition-all duration-300 h-full group-hover:shadow-md">
-                      <div className="text-slate-600 font-bold text-3xl mb-4">
-                        {item.step}
-                      </div>
-                      <h4 className="font-semibold text-gray-900 mb-2 text-lg">
-                        {item.title}
-                      </h4>
-                      <p className="text-gray-600 text-sm leading-relaxed">
-                        {item.desc}
-                      </p>
+            <div className="rounded-3xl border border-black/[0.06] bg-white p-5 shadow-sm sm:p-7">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e6f1e9] text-[#146c2e]">
+                  <FiTrendingUp className="h-5 w-5" />
+                </div>
+
+                <h3 className="text-[22px] font-semibold tracking-[-0.03em] text-[#07111f]">
+                  Unser Ablauf
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {process.map((item) => (
+                  <div
+                    key={item.step}
+                    className="rounded-2xl border border-black/[0.06] bg-[#fafbf9] p-4"
+                  >
+                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-[#e6f1e9] text-[14px] font-semibold text-[#146c2e]">
+                      {item.step}
                     </div>
+
+                    <h4 className="text-[15px] font-semibold text-[#07111f]">
+                      {item.title}
+                    </h4>
+
+                    <p className="mt-1 text-[12px] leading-5 text-[#5f695f]">
+                      {item.desc}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -212,49 +243,33 @@ const PublicAddCarPage = () => {
         </div>
       </section>
 
-      {/* Trust Badges Section */}
-      <section className="bg-gradient-to-b from-gray-100 to-white py-16 md:py-24 px-4 sm:px-6 lg:px-8 border-t border-gray-100">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Vertrauen von Tausenden von Verkäufern
+      {/* TRUST */}
+      <section className="border-t border-black/[0.06] bg-white py-10 sm:py-14">
+        <div className={WRAPPER}>
+          <div className="mb-8 text-center">
+            <h2 className="text-[26px] font-semibold tracking-[-0.04em] text-[#07111f] sm:text-4xl">
+              Einfach. Fair. Transparent.
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Unser Engagement für Transparenz und faire Preise macht uns zur
-              ersten Wahl für anspruchsvolle Autoverkäufer in ganz Deutschland.
+
+            <p className="mx-auto mt-3 max-w-2xl text-[14px] leading-7 text-[#5f695f]">
+              Wir legen Wert auf klare Kommunikation und eine zuverlässige
+              Abwicklung beim Fahrzeugankauf.
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              {
-                icon: <FiAward className="text-3xl mb-3 text-slate-600" />,
-                value: "500+",
-                label: "Fahrzeuge erworben",
-              },
-              {
-                icon: (
-                  <FiCheckCircle className="text-3xl mb-3 text-slate-600" />
-                ),
-                value: "98%",
-                label: "Zufriedenheitsrate",
-              },
-              {
-                icon: <FiClock className="text-3xl mb-3 text-slate-600" />,
-                value: "24h",
-                label: "Durchschn. Antwortzeit",
-              },
-              {
-                icon: <FiFileText className="text-3xl mb-3 text-slate-600" />,
-                value: "€0",
-                label: "Versteckte Gebühren",
-              },
-            ].map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="flex justify-center">{stat.icon}</div>
-                <div className="text-4xl font-bold text-gray-900 mb-2">
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {stats.map((stat, index) => (
+              <div
+                key={index}
+                className="rounded-2xl border border-black/[0.06] bg-[#fafbf9] p-4 text-center sm:p-5"
+              >
+                <div className="mb-3 flex justify-center">{stat.icon}</div>
+
+                <div className="text-[24px] font-semibold tracking-[-0.04em] text-[#07111f] sm:text-3xl">
                   {stat.value}
                 </div>
-                <div className="text-gray-600 uppercase text-xs tracking-wider font-medium">
+
+                <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b756b]">
                   {stat.label}
                 </div>
               </div>
@@ -263,10 +278,58 @@ const PublicAddCarPage = () => {
         </div>
       </section>
 
-      {/* Footer Section */}
       <Footer />
     </main>
   );
 };
+
+function InfoBox({ icon, title, items }) {
+  return (
+    <div className="rounded-3xl border border-black/[0.06] bg-white p-5 shadow-sm sm:p-6">
+      <div className="mb-5 flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e6f1e9] text-[#146c2e]">
+          {icon}
+        </div>
+
+        <h2 className="text-[20px] font-semibold tracking-[-0.03em] text-[#07111f]">
+          {title}
+        </h2>
+      </div>
+
+      <ul className="space-y-4">
+        {items.map((item, index) => (
+          <li key={index} className="flex gap-3">
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#146c2e]" />
+
+            <div>
+              <p className="text-[14px] font-semibold text-[#101510]">
+                {item.title}
+              </p>
+
+              <p className="mt-0.5 text-[12px] leading-5 text-[#5f695f]">
+                {item.desc}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ContactRow({ icon, title, value }) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#4ade80]">
+        {icon}
+      </div>
+
+      <div>
+        <h3 className="text-[14px] font-semibold text-white">{title}</h3>
+        <p className="mt-0.5 text-[13px] text-white/70">{value}</p>
+      </div>
+    </div>
+  );
+}
 
 export default PublicAddCarPage;

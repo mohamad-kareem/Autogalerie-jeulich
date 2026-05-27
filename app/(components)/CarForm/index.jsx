@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState } from "react";
 import ContactInfo from "./FormSteps/ContactInfo";
 import BasicInfo from "./FormSteps/BasicInfo";
@@ -60,10 +61,12 @@ const AdminCarForm = () => {
     if (!validateStep(step)) return;
 
     setIsSubmitting(true);
+
     const toastId = toast.loading("Fahrzeug wird gesendet...");
 
     try {
       const formPayload = new FormData();
+
       Object.entries(formData).forEach(([key, value]) => {
         if (Array.isArray(value)) {
           value.forEach((item, index) => {
@@ -87,6 +90,7 @@ const AdminCarForm = () => {
 
       if (response.ok) {
         toast.success("Fahrzeug erfolgreich hinzugefügt!", { id: toastId });
+
         setFormData(formInitialData);
         setImages([]);
         setPreviews([]);
@@ -112,75 +116,80 @@ const AdminCarForm = () => {
   ];
 
   const CurrentStepComponent = steps[step - 1].component;
+  const progress = ((step - 1) / (steps.length - 1)) * 100;
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-0 sm:px-4 md:px-4 lg:px-6 xl:px-8 py-2 ">
-      {/* Enhanced Responsive Step Indicator */}
-      <div className="mb-4 sm:mb-6 overflow-x-auto pb-2 scrollbar-hide">
-        <div className="relative min-w-[550px] sm:min-w-0">
-          {/* Progress line */}
-          <div className="absolute top-1/2 left-0 right-0 h-1.5 bg-gray-200 rounded-full -z-10 transform -translate-y-1/2">
+    <div className="mx-auto w-full max-w-4xl px-0 py-2 sm:px-3 lg:px-4">
+      {/* STEP INDICATOR */}
+      <div className="mb-4 overflow-x-auto pb-2 sm:mb-6">
+        <div className="relative min-w-[520px] sm:min-w-0">
+          <div className="absolute left-0 right-0 top-[18px] h-1 rounded-full bg-black/[0.08]">
             <div
-              className="h-full bg-gradient-to-r from-slate-600 to-slate-500 rounded-full transition-all duration-500 ease-in-out"
-              style={{
-                width: `${((step - 1) / (steps.length - 1)) * 100}%`,
-              }}
-            ></div>
+              className="h-full rounded-full bg-[#146c2e] transition-all duration-500 ease-in-out"
+              style={{ width: `${progress}%` }}
+            />
           </div>
 
-          {/* Steps */}
-          <div className="flex justify-between relative">
-            {steps.map(({ title }, index) => (
-              <div
-                key={index}
-                className="flex flex-col items-center px-1"
-                style={{ width: `${100 / steps.length}%` }}
-                onClick={() => step > index + 1 && setStep(index + 1)}
-              >
-                <button
-                  type="button"
-                  className={`w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-                    step > index + 1
-                      ? "bg-green-500 text-white shadow-md hover:bg-green-600"
-                      : step === index + 1
-                      ? "bg-gradient-to-br from-slate-600 to-slate-500 text-white shadow-lg"
-                      : "bg-white border-2 border-gray-300 text-gray-500 hover:border-gray-400"
-                  } ${step > index + 1 ? "cursor-pointer" : "cursor-default"}`}
+          <div className="relative flex justify-between">
+            {steps.map(({ title }, index) => {
+              const stepNumber = index + 1;
+              const isDone = step > stepNumber;
+              const isActive = step === stepNumber;
+              const isClickable = step > stepNumber;
+
+              return (
+                <div
+                  key={title}
+                  className="flex flex-col items-center px-1"
+                  style={{ width: `${100 / steps.length}%` }}
                 >
-                  {step > index + 1 ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 sm:h-5 sm:w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  ) : (
-                    index + 1
-                  )}
-                </button>
-                <span
-                  className={`text-[11px] sm:text-xs mt-1 sm:mt-2 text-center font-medium whitespace-nowrap ${
-                    step >= index + 1 ? "text-gray-800" : "text-gray-500"
-                  }`}
-                >
-                  {title}
-                </span>
-              </div>
-            ))}
+                  <button
+                    type="button"
+                    onClick={() => isClickable && setStep(stepNumber)}
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold transition-all sm:h-10 sm:w-10 ${
+                      isDone
+                        ? "bg-[#146c2e] text-white shadow-md shadow-green-900/15 hover:bg-[#0f5724]"
+                        : isActive
+                          ? "bg-[#101510] text-white shadow-md"
+                          : "border border-black/[0.12] bg-white text-[#6b756b]"
+                    } ${isClickable ? "cursor-pointer" : "cursor-default"}`}
+                  >
+                    {isDone ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    ) : (
+                      stepNumber
+                    )}
+                  </button>
+
+                  <span
+                    className={`mt-1.5 max-w-[80px] truncate text-center text-[10px] font-semibold sm:mt-2 sm:text-[11px] ${
+                      step >= stepNumber ? "text-[#101510]" : "text-[#8b958b]"
+                    }`}
+                  >
+                    {title}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Form content */}
+      {/* FORM CONTENT */}
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-lg md:rounded-xl shadow-md p-4 sm:p-5 md:p-8 border border-gray-100"
+        className="rounded-2xl border border-black/[0.06] bg-white p-3 shadow-[0_10px_35px_-24px_rgba(7,17,31,0.18)] sm:rounded-3xl sm:p-5 md:p-7"
       >
         <CurrentStepComponent
           formData={formData}

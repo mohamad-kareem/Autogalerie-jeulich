@@ -1,41 +1,51 @@
 export default function Button({
   type = "button",
-  bgColor = "bg-gradient-to-br from-slate-600 to-black",
-  hoverColor = "hover:from-slate-600 hover:to-slate-800",
+  bgColor = "bg-[#146c2e]",
+  hoverColor = "hover:bg-[#0f5724]",
   textColor = "text-white",
   className = "",
   fullWidth = false,
   disabled = false,
   children,
-  ...props // we'll filter props below
+  ...props
 }) {
   const baseStyles = `
-    flex items-center justify-center
-    font-medium text-center
-    rounded-lg transition-all duration-300 cursor-pointer
+    inline-flex items-center justify-center gap-2
+    rounded-xl font-semibold tracking-[-0.01em]
+    transition-all duration-200
+    active:scale-[0.98]
+    disabled:cursor-not-allowed
   `;
 
   const responsivePadding = `
-    px-2 py-2 text-xs
-    sm:px-5 sm:py-2.5 sm:text-base
+    h-10 px-4 text-[12px]
+    sm:h-11 sm:px-5 sm:text-[14px]
   `;
 
   const fullWidthClass = fullWidth ? "w-full" : "";
-  const disabledStyles = disabled ? "opacity-50 cursor-not-allowed" : "";
 
-  // Destructure & discard unwanted props before passing to <button>
-  const { icon, size, loading, ...filteslateProps } = props;
+  const disabledStyles = disabled
+    ? "opacity-50"
+    : "shadow-md shadow-green-900/10";
+
+  // remove unwanted props
+  const { icon, size, loading, ...filteredProps } = props;
 
   return (
     <button
       type={type}
       disabled={disabled}
       className={`
-        ${bgColor} ${hoverColor} ${textColor}
-        ${baseStyles} ${responsivePadding}
-        ${fullWidthClass} ${disabledStyles} ${className}
+        ${bgColor}
+        ${hoverColor}
+        ${textColor}
+        ${baseStyles}
+        ${responsivePadding}
+        ${fullWidthClass}
+        ${disabledStyles}
+        ${className}
       `}
-      {...filteslateProps}
+      {...filteredProps}
     >
       {children}
     </button>

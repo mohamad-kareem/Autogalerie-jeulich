@@ -13,6 +13,7 @@ import {
 const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
     setFormData({
       ...formData,
       [name]: type === "checkbox" ? checked : value,
@@ -20,171 +21,182 @@ const BasicInfo = ({ formData, setFormData, nextStep, prevStep, errors }) => {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header Section */}
+    <div className="space-y-5 sm:space-y-7">
+      {/* HEADER */}
+      <div className="rounded-3xl border border-black/[0.06] bg-[#eef6f0] p-4 shadow-sm sm:p-6">
+        <div className="mb-3 h-[2px] w-10 bg-[#146c2e]" />
 
-      <div className="bg-gradient-to-r from-slate-50 via-white to-slate-50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="p-6">
-          <h2 className="text-sm sm:text-2xl font-bold text-gray-900">
-            Grundinformationen
-          </h2>
-          <p className="text-gray-600 mt-2 text-sm ">
-            Basisinformationen über das Fahrzeug
-          </p>
-        </div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#146c2e] sm:text-[11px]">
+          Fahrzeugdaten
+        </p>
+
+        <h2 className="mt-2 text-[22px] font-semibold tracking-[-0.04em] text-[#07111f] sm:text-3xl">
+          Grundinformationen
+        </h2>
+
+        <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#5f695f] sm:text-[14px]">
+          Basisinformationen über das Fahrzeug für eine schnelle und faire
+          Bewertung.
+        </p>
       </div>
-      {/* Form Fields */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          <Input
-            label="Hersteller (Marke)"
-            name="make"
-            value={formData.make}
-            onChange={handleChange}
-            requislate
-            error={errors.make}
-          />
 
-          <Input
-            label="Fahrzeug-Identifizierungsnummer (VIN)"
-            name="vin"
-            value={formData.vin}
-            onChange={handleChange}
-            requislate
-            error={errors.vin}
-          />
-
-          <Input
-            label="Modell"
-            name="model"
-            value={formData.model}
-            onChange={handleChange}
-            requislate
-            error={errors.model}
-          />
-
-          <Input
-            label="Preis (€)"
-            type="number"
-            name="price"
-            value={formData.price}
-            onChange={handleChange}
-            requislate
-            error={errors.price}
-          />
-        </div>
-
-        <div className="space-y-6">
-          <Input
-            label="Erstzulassung"
-            name="registration"
-            value={formData.registration}
-            onChange={handleChange}
-            placeholder="MM/YYYY"
-            requislate
-            error={errors.registration}
-          />
-
-          <Input
-            label="Kilometerstand"
-            type="number"
-            name="kilometers"
-            value={formData.kilometers}
-            onChange={handleChange}
-            requislate
-            error={errors.kilometers}
-          />
-
-          <Input
-            label="Leistung (PS)"
-            type="number"
-            name="hp"
-            value={formData.hp}
-            onChange={handleChange}
-            requislate
-            error={errors.hp}
-          />
-
-          <Select
-            label="Kraftstoffart"
-            name="fuel"
-            value={formData.fuel}
-            onChange={handleChange}
-            options={fuelOptions}
-            requislate
-            error={errors.fuel}
-          />
-        </div>
-
-        {/* Full-width selects */}
-        <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Select
-            label="Zustand"
-            name="condition"
-            value={formData.condition}
-            onChange={handleChange}
-            options={conditionOptions}
-            requislate
-            error={errors.condition}
-          />
-
-          <Select
-            label="Status"
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            options={statusOptions}
-            requislate
-            error={errors.status}
-          />
-        </div>
-
-        {/* Checkbox section */}
-        <div className="space-y-4 p-6 bg-gray-50 rounded-xl border border-gray-200 col-span-1 md:col-span-2">
-          <h3 className="font-medium text-gray-700 text-lg">
-            Zusätzliche Informationen
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Checkbox
-              label="Unfallfrei"
-              name="accidentFree"
-              checked={formData.accidentFree}
+      {/* FORM */}
+      <div className="rounded-3xl border border-black/[0.06] bg-white p-4 shadow-sm sm:p-6">
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2">
+          <div className="space-y-4 sm:space-y-5">
+            <Input
+              label="Hersteller (Marke)"
+              name="make"
+              value={formData.make}
               onChange={handleChange}
+              requislate
+              error={errors.make}
             />
-            <Checkbox
-              label="Fahrtauglich"
-              name="operational"
-              checked={formData.operational}
+
+            <Input
+              label="Fahrzeug-Identifizierungsnummer (VIN)"
+              name="vin"
+              value={formData.vin}
               onChange={handleChange}
+              requislate
+              error={errors.vin}
+            />
+
+            <Input
+              label="Modell"
+              name="model"
+              value={formData.model}
+              onChange={handleChange}
+              requislate
+              error={errors.model}
+            />
+
+            <Input
+              label="Preis (€)"
+              type="number"
+              name="price"
+              value={formData.price}
+              onChange={handleChange}
+              requislate
+              error={errors.price}
+            />
+          </div>
+
+          <div className="space-y-4 sm:space-y-5">
+            <Input
+              label="Erstzulassung"
+              name="registration"
+              value={formData.registration}
+              onChange={handleChange}
+              placeholder="MM/YYYY"
+              requislate
+              error={errors.registration}
+            />
+
+            <Input
+              label="Kilometerstand"
+              type="number"
+              name="kilometers"
+              value={formData.kilometers}
+              onChange={handleChange}
+              requislate
+              error={errors.kilometers}
+            />
+
+            <Input
+              label="Leistung (PS)"
+              type="number"
+              name="hp"
+              value={formData.hp}
+              onChange={handleChange}
+              requislate
+              error={errors.hp}
+            />
+
+            <Select
+              label="Kraftstoffart"
+              name="fuel"
+              value={formData.fuel}
+              onChange={handleChange}
+              options={fuelOptions}
+              requislate
+              error={errors.fuel}
+            />
+          </div>
+
+          {/* SELECTS */}
+          <div className="grid grid-cols-1 gap-4 sm:gap-5 md:col-span-2 md:grid-cols-2">
+            <Select
+              label="Zustand"
+              name="condition"
+              value={formData.condition}
+              onChange={handleChange}
+              options={conditionOptions}
+              requislate
+              error={errors.condition}
+            />
+
+            <Select
+              label="Status"
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              options={statusOptions}
+              requislate
+              error={errors.status}
+            />
+          </div>
+
+          {/* CHECKBOXES */}
+          <div className="md:col-span-2 rounded-2xl border border-[#146c2e]/10 bg-[#fafbf9] p-4 sm:p-5">
+            <h3 className="mb-4 text-[15px] font-semibold tracking-[-0.02em] text-[#07111f] sm:text-base">
+              Zusätzliche Informationen
+            </h3>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Checkbox
+                label="Unfallfrei"
+                name="accidentFree"
+                checked={formData.accidentFree}
+                onChange={handleChange}
+              />
+
+              <Checkbox
+                label="Fahrtauglich"
+                name="operational"
+                checked={formData.operational}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          {/* CATEGORY */}
+          <div className="md:col-span-2">
+            <Select
+              label="Kategorie"
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              options={categoryOptions}
+              requislate
+              error={errors.category}
             />
           </div>
         </div>
-
-        {/* Category select */}
-        <div className="col-span-1 md:col-span-2">
-          <Select
-            label="Kategorie"
-            name="category"
-            value={formData.category}
-            onChange={handleChange}
-            options={categoryOptions}
-            requislate
-            error={errors.category}
-          />
-        </div>
       </div>
 
-      {/* Navigation Buttons */}
-      <div className="flex flex-col-reverse sm:flex-row justify-between gap-4 pt-8 border-t border-gray-200">
+      {/* NAVIGATION */}
+      <div className="flex flex-col-reverse gap-3 border-t border-black/[0.08] pt-5 sm:flex-row sm:items-center sm:justify-between sm:pt-7">
         <Button
           onClick={prevStep}
-          bgColor="bg-gray-800"
-          hoverColor="hover:bg-gray-700"
+          bgColor="bg-[#101510]"
+          hoverColor="hover:bg-[#263126]"
           icon="FiArrowLeft"
           className="w-full sm:w-auto"
         >
           Zurück
         </Button>
+
         <Button
           onClick={nextStep}
           icon="FiArrowRight"
