@@ -1010,7 +1010,7 @@ const DashboardContent = ({
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
-              className={`w-full max-w-3xl rounded-lg shadow-xl ${
+              className={`w-full max-w-5xl rounded-lg shadow-xl ${
                 darkMode
                   ? "bg-gray-800 border border-gray-700"
                   : "bg-white border border-gray-200"
@@ -1074,7 +1074,7 @@ const DashboardContent = ({
                       {/* like TÜV: hide on mobile + spacing */}
                       <th className="hidden sm:table-cell py-3 px-14">FIN</th>
 
-                      <th className="py-3 px-6">Wo</th>
+                      <th className="py-3 px-2">Wo</th>
 
                       <th className="py-3 pl-6 pr-4 sm:pr-6">Was</th>
                     </tr>
@@ -1115,7 +1115,7 @@ const DashboardContent = ({
                             </div>
                           </td>
 
-                          <td className="py-3 px-6">
+                          <td className="py-3 px-2">
                             <div
                               className={`text-sm truncate ${
                                 darkMode ? "text-gray-300" : "text-gray-700"
@@ -1126,9 +1126,9 @@ const DashboardContent = ({
                             </div>
                           </td>
 
-                          <td className="py-3 pl-6 pr-4 sm:pr-6">
+                          <td className="py-3 pl-4 pr-6">
                             <div
-                              className={`text-sm truncate ${
+                              className={`text-sm leading-5 ${
                                 darkMode ? "text-gray-300" : "text-gray-700"
                               }`}
                               title={what}
@@ -1231,7 +1231,13 @@ const DashboardContent = ({
               </div>
 
               <div className="max-h-[60vh] overflow-y-auto custom-scroll">
-                <table className="w-full">
+                <table className="w-full table-fixed">
+                  <colgroup>
+                    <col className="w-[22%]" />
+                    <col className="hidden sm:table-column sm:w-[25%]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[41%]" />
+                  </colgroup>
                   <thead>
                     <tr
                       className={`text-left text-xs font-medium border-b ${
