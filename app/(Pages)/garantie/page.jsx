@@ -1,313 +1,360 @@
 // app/garantie/page.jsx
 import React from "react";
-import Link from "next/link";
-import Button from "@/app/(components)/helpers/Button";
-import Footbar from "@/app/(components)/mainpage/Footbar";
 import Head from "next/head";
-import garantieLogo from "@/app/(assets)/garantie.jpg";
 import Image from "next/image";
+import Footbar from "@/app/(components)/mainpage/Footbar";
+import garantieLogo from "@/app/(assets)/garantie.jpg";
 
 import {
   FiShield,
   FiClock,
   FiCheckCircle,
-  FiXCircle,
   FiSettings,
   FiCpu,
   FiLayers,
   FiTruck,
-  FiSliders,
-  FiDroplet,
-  FiCalendar,
-  FiMail,
-  FiPhone,
-  FiAlertCircle,
-  FiAward,
-  FiMapPin,
   FiGlobe,
   FiDollarSign,
   FiTrendingUp,
   FiShieldOff,
+  FiAward,
 } from "react-icons/fi";
 
+const GREEN = "#146c2e";
+
 export default function GarantiePage() {
+  const benefits = [
+    {
+      icon: FiDollarSign,
+      title: "Kostenschutz",
+      desc: "Absicherung bei unerwarteten Reparaturkosten.",
+    },
+    {
+      icon: FiGlobe,
+      title: "Europaweit",
+      desc: "Schutz über ausgewählte Partnerwerkstätten.",
+    },
+    {
+      icon: FiTrendingUp,
+      title: "Mehr Sicherheit",
+      desc: "Mehr Vertrauen beim Fahrzeugkauf.",
+    },
+  ];
+
+  const protection = [
+    {
+      icon: FiShield,
+      title: "Flexible Laufzeiten",
+      desc: "12, 24 oder 36 Monate Schutz passend zu Ihrem Fahrzeug.",
+    },
+    {
+      icon: FiClock,
+      title: "Schnelle Bearbeitung",
+      desc: "Unterstützung bei der Abwicklung im Garantiefall.",
+    },
+    {
+      icon: FiDollarSign,
+      title: "Transparente Konditionen",
+      desc: "Klare und verständliche Garantiebedingungen.",
+    },
+    {
+      icon: FiTruck,
+      title: "Zuverlässige Hilfe",
+      desc: "Unterstützung bei technischen Problemen.",
+    },
+  ];
+
+  const packages = [
+    {
+      icon: FiCpu,
+      title: "Basis-Schutz",
+      items: ["Motor", "Getriebe", "Antriebsstrang"],
+    },
+    {
+      icon: FiLayers,
+      title: "Komfort-Paket",
+      items: ["Elektronik", "Klimaanlage", "Komfortsysteme"],
+    },
+    {
+      icon: FiShieldOff,
+      title: "Nicht enthalten",
+      items: ["Verschleißteile", "Karosserieschäden", "Unfallschäden"],
+    },
+  ];
+
+  const services = [
+    {
+      title: "Fahrzeugprüfung",
+      content:
+        "Vor Abschluss wird das Fahrzeug technisch geprüft und bewertet.",
+    },
+    {
+      title: "Individueller Schutz",
+      content:
+        "Die Garantie wird passend zu Fahrzeug und Laufleistung gewählt.",
+    },
+    {
+      title: "Klare Abwicklung",
+      content: "Alle Leistungen und Bedingungen werden transparent festgelegt.",
+    },
+    {
+      title: "Persönliche Betreuung",
+      content:
+        "Wir begleiten Sie auch nach dem Fahrzeugkauf zuverlässig weiter.",
+    },
+  ];
+
   return (
     <>
       <Head>
         <title>Garantie | Auto Galerie Jülich</title>
+
         <meta name="robots" content="index,follow" />
+
         <meta
           name="description"
-          content="Premium-Garantie für Gebrauchtwagen in Kooperation mit CarGarantie® - Sicherheit und Schutz für Ihr Fahrzeug"
+          content="Garantie für Gebrauchtwagen bei Auto Galerie Jülich."
         />
       </Head>
-      <div className="min-h-screen bg-gray-100 overflow-x-hidden">
-        {/* Hero Section */}
-        <section className="relative bg-gradient-to-br from-slate-800 to-slate-950 text-white py-20 sm:py-28 lg:py-32 text-center mb-12 overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/pattern.png')] bg-cover opacity-10" />
-          <div className="relative z-10 px-4 sm:px-6 max-w-5xl mx-auto">
-            <div className="flex flex-col items-center mb-6 sm:mb-8">
-              <div className="flex items-center bg-white/10 px-4 py-2 rounded-full text-sm sm:text-base font-medium text-white mb-6">
-                <FiShield className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                <span className="mr-2">Premium Protection by</span>
+
+      <main className="min-h-screen overflow-x-hidden bg-[#f5f6f3]">
+        {/* HERO */}
+        <section className="w-full py-6 sm:py-12">
+          <div className="w-full bg-[#eef6f0] py-7 shadow-sm sm:py-12 lg:py-14">
+            <div className="mx-auto max-w-[1180px] px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,360px)_1fr] lg:gap-12">
+                <div>
+                  <div className="mb-3 h-[2px] w-10 bg-[#146c2e] sm:w-12" />
+
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#146c2e] sm:text-[13px]">
+                    Garantie
+                  </p>
+
+                  <h1 className="max-w-[420px] text-[28px] font-semibold leading-[1.08] tracking-[-0.05em] text-[#101510] sm:text-[34px] lg:text-[40px]">
+                    Unser Garantie-Versprechen
+                  </h1>
+                </div>
+
+                <div className="rounded-3xl border border-[#146c2e]/10 bg-white/70 p-4 shadow-sm shadow-green-900/5 backdrop-blur sm:p-6">
+                  <div className="mb-4 flex items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e6f1e9] text-[#146c2e]">
+                      <FiShield className="h-5 w-5" />
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#146c2e]">
+                        CarGarantie
+                      </p>
+
+                      <p className="text-[14px] font-medium text-[#101510] sm:text-base">
+                        Sicherheit für Ihren Fahrzeugkauf
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="text-[13px] leading-6 text-[#263126] sm:text-[15px] sm:leading-7">
+                    Viele unserer Fahrzeuge können mit einer individuellen
+                    CarGarantie® Absicherung ausgeliefert werden. Der genaue
+                    Umfang richtet sich nach Fahrzeug und Garantiepaket.
+                  </p>
+                </div>
               </div>
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-serif font-bold leading-tight mb-6">
-                Unser Garantie-Versprechen
-              </h1>
-              <div className="w-24 h-1.5 bg-slate-700 mx-auto mb-8" />
-              <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
-                Jedes Fahrzeug wird mit einer individuellen{" "}
-                <span className="font-semibold text-white">
-                  CarGarantie® Absicherung
-                </span>{" "}
-                ausgeliefert - maßgeschneidert für Ihr Auto.
-              </p>
             </div>
           </div>
         </section>
 
-        {/* Warranty Benefits */}
-        <div className="relative max-w-6xl mx-auto mb-20 px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: <FiDollarSign className="h-8 w-8 text-slate-700" />,
-                title: "Kostenschutz",
-                desc: "Volle Absicherung bei Reparaturen",
-                bg: "bg-gradient-to-br from-white to-slate-70",
-              },
-              {
-                icon: <FiGlobe className="h-8 w-8 text-slate-700" />,
-                title: "Europaweit",
-                desc: "Gültig in über 5.000 Partnerwerkstätten",
-                bg: "bg-gradient-to-br from-white to-blue-50",
-              },
-              {
-                icon: <FiTrendingUp className="h-8 w-8 text-slate-700" />,
-                title: "Wertsteigerung",
-                desc: "Erhöht den Wiederverkaufswert",
-                bg: "bg-gradient-to-br from-white to-green-50",
-              },
-            ].map((item, idx) => (
-              <div
-                key={idx}
-                className={`${item.bg} rounded-xl shadow-lg border border-gray-200 p-8 text-center transition-all hover:shadow-xl hover:-translate-y-1`}
-              >
-                <div className="mx-auto bg-white w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-sm border border-gray-200">
-                  {item.icon}
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {item.title}
-                </h3>
-                <p className="text-gray-600">{item.desc}</p>
-              </div>
+        {/* BENEFITS */}
+        <section className="mx-auto max-w-[1180px] px-4 pb-8 sm:px-6 sm:pb-12 lg:px-8">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-5">
+            {benefits.map((item, index) => (
+              <InfoCard key={index} {...item} />
             ))}
           </div>
-          <div className="mt-8 flex justify-center">
+
+          <div className="mt-6 flex justify-center">
             <Image
               src={garantieLogo}
               alt="CarGarantie Logo"
-              width={160}
-              height={40}
-              className="h-20 object-contain opacity-90"
+              width={180}
+              height={60}
+              className="h-14 w-auto object-contain opacity-90 sm:h-20"
             />
           </div>
-        </div>
+        </section>
 
-        {/* Coverage Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 max-w-6xl mx-auto mb-20">
-          {/* Protection Benefits */}
-          <div className="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-gray-900 to-slate-700 p-6">
-              <div className="flex items-center">
-                <FiCheckCircle className="h-8 w-8 text-white mr-4" />
-                <h2 className="text-2xl font-bold text-white">
-                  Ihr CarGarantie® Schutz
-                </h2>
-              </div>
-              <p className="text-white mt-2">
-                Individuelle Pakete für jeden Bedarf
+        {/* MAIN CARDS */}
+        <section className="mx-auto grid max-w-[1180px] grid-cols-1 gap-4 px-4 pb-8 sm:px-6 sm:pb-12 lg:grid-cols-2 lg:px-8">
+          <Panel
+            icon={FiCheckCircle}
+            title="Ihr CarGarantie® Schutz"
+            subtitle="Individuelle Pakete für jeden Bedarf"
+          >
+            {protection.map((item, index) => (
+              <SmallFeature key={index} {...item} />
+            ))}
+          </Panel>
+
+          <Panel
+            icon={FiSettings}
+            title="Schutzumfänge"
+            subtitle="Abhängig vom Fahrzeug und Garantiepaket"
+          >
+            {packages.map((item, index) => (
+              <PackageCard key={index} {...item} />
+            ))}
+
+            <div className="border-t border-black/10 pt-4 text-center">
+              <Image
+                src={garantieLogo}
+                alt="CarGarantie Logo"
+                width={150}
+                height={45}
+                className="mx-auto h-8 w-auto object-contain"
+              />
+
+              <p className="mt-2 text-[11px] text-[#263126]/70">
+                Der genaue Umfang ergibt sich aus dem individuellen
+                Garantievertrag.
               </p>
             </div>
-            <div className="p-6 space-y-5">
-              {[
-                {
-                  icon: <FiShield className="h-5 w-5 text-green-600" />,
-                  title: "Flexible Laufzeiten",
-                  desc: "12, 24 oder 36 Monate Schutz - passend zu Ihrem Fahrzeug",
-                },
-                {
-                  icon: <FiClock className="h-5 w-5 text-green-600" />,
-                  title: "Keine Vorleistungen",
-                  desc: "Wir übernehmen die Abwicklung mit der Werkstatt",
-                },
-                {
-                  icon: <FiDollarSign className="h-5 w-5 text-green-600" />,
-                  title: "Transparente Konditionen",
-                  desc: "Keine versteckten Kosten oder Überraschungen",
-                },
-                {
-                  icon: <FiTruck className="h-5 w-5 text-green-600" />,
-                  title: "Schnelle Hilfe",
-                  desc: "24/7 Notfallservice im gesamten EU-Raum",
-                },
-              ].map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-start p-4 bg-gray-50 rounded-lg border border-gray-200"
-                >
-                  <span className="mt-0.5 mr-3">{item.icon}</span>
-                  <div>
-                    <h4 className="font-medium text-gray-900">{item.title}</h4>
-                    <p className="text-sm text-gray-600">{item.desc}</p>
-                  </div>
+          </Panel>
+        </section>
+
+        {/* SERVICES */}
+        <section className="mx-auto max-w-[1180px] px-4 pb-8 sm:px-6 sm:pb-12 lg:px-8">
+          <div className="rounded-3xl bg-[#101510] p-5 text-white shadow-xl shadow-black/10 sm:p-8">
+            <div className="mb-6">
+              <div className="mb-3 h-[2px] w-10 bg-[#22c55e]" />
+
+              <h2 className="text-[24px] font-semibold tracking-[-0.03em] sm:text-[30px]">
+                CarGarantie® Leistungen
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {services.map((item, index) => (
+                <div key={index} className="border-l-2 border-[#22c55e] pl-4">
+                  <h3 className="text-[15px] font-semibold">{item.title}</h3>
+
+                  <p className="mt-1 text-[12px] leading-5 text-white/70 sm:text-[13px]">
+                    {item.content}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
+        </section>
 
-          {/* Coverage Options */}
-          <div className="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-gray-900 to-blue-900 p-6">
-              <div className="flex items-center">
-                <FiSettings className="h-8 w-8 text-white mr-4" />
-                <h2 className="text-2xl font-bold text-white">Schutzumfänge</h2>
+        {/* LEGAL */}
+        <section className="mx-auto max-w-[1180px] px-4 pb-12 sm:px-6 lg:px-8">
+          <div className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm sm:p-6">
+            <div className="flex gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e6f1e9] text-[#146c2e]">
+                <FiAward className="h-5 w-5" />
               </div>
-              <p className="text-blue-200 mt-2">
-                Drei maßgeschneiderte Optionen
-              </p>
-            </div>
-            <div className="p-6 space-y-5">
-              {[
-                {
-                  icon: <FiCpu className="h-5 w-5 text-blue-600" />,
-                  title: "Basis-Schutz",
-                  items: [
-                    "Motor & Getriebe",
-                    "Antriebsstrang",
-                    "Hauptelektronik",
-                  ],
-                },
-                {
-                  icon: <FiLayers className="h-5 w-5 text-blue-600" />,
-                  title: "Komfort-Paket",
-                  items: [
-                    "Alle Basis-Komponenten",
-                    "Klimaanlage",
-                    "Fahrerassistenzsysteme",
-                  ],
-                },
-                {
-                  icon: <FiShieldOff className="h-5 w-5 text-blue-600" />,
-                  title: "Nicht enthalten",
-                  items: [
-                    "Verschleißteile",
-                    "Karosserieschäden",
-                    "Unfallfolgen",
-                  ],
-                },
-              ].map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-start p-4 bg-gray-50 rounded-lg border border-gray-200"
-                >
-                  <span className="mt-0.5 mr-3">{item.icon}</span>
-                  <div>
-                    <h4 className="font-medium text-gray-900">{item.title}</h4>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {item.items.map((subItem, subIdx) => (
-                        <span
-                          key={subIdx}
-                          className="bg-white px-3 py-1 rounded-full text-sm text-gray-600 border border-gray-200 shadow-sm"
-                        >
-                          {subItem}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <div className="pt-4 border-t border-gray-200 text-center">
-                <Image
-                  src={garantieLogo}
-                  alt="CarGarantie Logo"
-                  width={160}
-                  height={40}
-                  className="h-8 object-contain mx-auto"
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                  Alle Garantien werden durch CarGarantie® bereitgestellt
+
+              <div>
+                <h3 className="text-[16px] font-semibold text-[#101510]">
+                  Rechtliche Hinweise
+                </h3>
+
+                <p className="mt-2 text-[12px] leading-6 text-[#263126] sm:text-[13px]">
+                  Die CarGarantie® ist eine freiwillige Leistung der Auto
+                  Galerie Jülich in Kooperation mit unserem Partner
+                  CarGarantie®. Sie stellt keine gesetzliche Gewährleistung dar.
+                  Der genaue Umfang ergibt sich aus dem individuellen
+                  Garantievertrag.
                 </p>
               </div>
             </div>
           </div>
-        </div>
+        </section>
+      </main>
 
-        {/* Conditions */}
-        <div className="px-4 max-w-6xl mx-auto mb-20">
-          <div className="bg-gradient-to-br from-gray-900 to-slate-700 text-white rounded-xl p-8">
-            <div className="flex justify-between items-start mb-6">
-              <h3 className="text-2xl font-bold">CarGarantie® Leistungen</h3>
-            </div>
-            <div className="space-y-6">
-              {[
-                {
-                  title: "Fahrzeugprüfung",
-                  content:
-                    "Vor Vertragsabschluss erfolgt eine detaillierte technische Untersuchung durch unsere Sachverständigen.",
-                },
-                {
-                  title: "Europaweiter Schutz",
-                  content:
-                    "Die Garantie gilt in über 5.000 zertifizierten Werkstätten in ganz Europa.",
-                },
-                {
-                  title: "Transparente Abwicklung",
-                  content:
-                    "Keine versteckten Kosten - alle Leistungen sind im Vertrag klar definiert.",
-                },
-                {
-                  title: "Schnelle Hilfe",
-                  content:
-                    "24-Stunden-Pannenhilfe inklusive - weltweit gültig für die Vertragslaufzeit.",
-                },
-              ].map((item, idx) => (
-                <div key={idx} className="border-l-2 border-slate-700 pl-5">
-                  <h4 className="font-semibold text-lg mb-2">{item.title}</h4>
-                  <p className="text-gray-300">{item.content}</p>
-                </div>
-              ))}
-            </div>
+      <Footbar />
+    </>
+  );
+}
+
+function InfoCard({ icon: Icon, title, desc }) {
+  return (
+    <div className="rounded-3xl border border-[#146c2e]/10 bg-white/70 p-4 shadow-sm shadow-green-900/5 sm:p-5">
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e6f1e9] text-[#146c2e]">
+        <Icon className="h-5 w-5" />
+      </div>
+
+      <h3 className="text-[15px] font-semibold tracking-[-0.02em] text-[#101510] sm:text-base">
+        {title}
+      </h3>
+
+      <p className="mt-1 text-[12px] leading-5 text-[#263126] sm:text-[13px]">
+        {desc}
+      </p>
+    </div>
+  );
+}
+
+function Panel({ icon: Icon, title, subtitle, children }) {
+  return (
+    <div className="overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm">
+      <div className="bg-[#eef6f0] p-4 sm:p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[#146c2e] shadow-sm">
+            <Icon className="h-5 w-5" />
           </div>
-        </div>
 
-        {/* Legal Note */}
-        <div className="bg-white rounded-xl shadow-xl p-8 mb-20 border border-gray-200 mx-4 max-w-6xl mx-auto">
-          <div className="flex items-start">
-            <FiAward className="h-6 w-6 text-gray-500 mt-0.5 mr-4" />
-            <div>
-              <h4 className="text-lg font-bold text-gray-900 mb-3">
-                Rechtliche Hinweise
-              </h4>
-              <p className="text-gray-600">
-                Die CarGarantie® ist eine freiwillige Leistung der Auto Galerie
-                Jülich in Kooperation mit unserem Partner CarGarantie®. Sie
-                stellt keine gesetzliche Gewährleistung dar. Der genaue Umfang
-                ergibt sich aus dem individuellen Garantievertrag. Voraussetzung
-                ist ein einwandfreier technischer Zustand des Fahrzeugs bei
-                Vertragsabschluss. Änderungen und Irrtümer vorbehalten. Stand:{" "}
-                {new Date().toLocaleDateString("de-DE", {
-                  year: "numeric",
-                  month: "long",
-                })}
-                .
-              </p>
-            </div>
+          <div>
+            <h2 className="text-[18px] font-semibold tracking-[-0.03em] text-[#101510] sm:text-[22px]">
+              {title}
+            </h2>
+
+            <p className="text-[12px] text-[#263126]">{subtitle}</p>
           </div>
         </div>
       </div>
 
-      <Footbar />
-    </>
+      <div className="space-y-3 p-4 sm:p-5">{children}</div>
+    </div>
+  );
+}
+
+function SmallFeature({ icon: Icon, title, desc }) {
+  return (
+    <div className="flex gap-3 rounded-2xl border border-black/5 bg-[#fafbf9] p-3">
+      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e6f1e9] text-[#146c2e]">
+        <Icon className="h-4 w-4" />
+      </div>
+
+      <div>
+        <h3 className="text-[14px] font-semibold text-[#101510]">{title}</h3>
+
+        <p className="mt-1 text-[12px] leading-5 text-[#263126]">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+function PackageCard({ icon: Icon, title, items }) {
+  return (
+    <div className="rounded-2xl border border-black/5 bg-[#fafbf9] p-3">
+      <div className="mb-3 flex items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e6f1e9] text-[#146c2e]">
+          <Icon className="h-4 w-4" />
+        </div>
+
+        <h3 className="text-[14px] font-semibold text-[#101510]">{title}</h3>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {items.map((item, index) => (
+          <span
+            key={index}
+            className="rounded-full border border-[#146c2e]/10 bg-white px-3 py-1 text-[11px] font-semibold text-[#263126]"
+          >
+            {item}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -1,34 +1,54 @@
 "use client";
 
 import React, { useState } from "react";
-import Footbar from "@/app/(components)/mainpage/Footbar";
 import Head from "next/head";
 import { toast } from "react-hot-toast";
-import Button from "@/app/(components)/helpers/Button";
+import Footbar from "@/app/(components)/mainpage/Footbar";
+import {
+  User,
+  Mail,
+  Phone,
+  FileText,
+  MessageSquare,
+  Calendar,
+  Send,
+  ChevronDown,
+} from "lucide-react";
+
+const initialFormData = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  subject: "",
+  message: "",
+  date: "",
+  privacy: false,
+};
+
+const inputBase =
+  "h-10 w-full rounded-xl border border-black/10 bg-[#fafaf8] px-3 text-[13px] font-medium text-[#101510] outline-none transition placeholder:text-[#8b958b] focus:border-[#146c2e]/40 focus:bg-white focus:ring-4 focus:ring-[#146c2e]/10 sm:h-12 sm:rounded-2xl sm:px-4 sm:text-sm";
 
 export default function ContactPage({ carId, carName, carLink }) {
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    subject: "",
-    message: "",
-    date: "",
-    privacy: false,
-  });
+  const [formData, setFormData] = useState(initialFormData);
   const [status, setStatus] = useState("idle");
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
   };
 
+  const resetForm = () => {
+    setFormData(initialFormData);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!formData.privacy) {
       toast.error("Bitte akzeptieren Sie die Datenschutzerklärung.");
       return;
@@ -37,7 +57,7 @@ export default function ContactPage({ carId, carName, carLink }) {
     setStatus("loading");
 
     const payload = {
-      name: `${formData.firstName} ${formData.lastName}`,
+      name: `${formData.firstName} ${formData.lastName}`.trim(),
       email: formData.email,
       phone: formData.phone,
       subject: formData.subject,
@@ -51,34 +71,31 @@ export default function ContactPage({ carId, carName, carLink }) {
     try {
       const submitRes = await fetch("/api/submit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(payload),
       });
 
-      if (!submitRes.ok) throw new Error("Database submission failed");
+      if (!submitRes.ok) {
+        throw new Error("Database submission failed");
+      }
 
       const emailRes = await fetch("/api/email", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(payload),
       });
 
-      if (emailRes.ok) {
-        setStatus("success");
-        setFormData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          phone: "",
-          subject: "",
-          message: "",
-          date: "",
-          privacy: false,
-        });
-        toast.success("Nachricht erfolgreich gesendet!");
-      } else {
+      if (!emailRes.ok) {
         throw new Error("Email sending failed");
       }
+
+      setStatus("success");
+      resetForm();
+      toast.success("Nachricht erfolgreich gesendet!");
     } catch (err) {
       console.error(err);
       setStatus("error");
@@ -89,285 +106,304 @@ export default function ContactPage({ carId, carName, carLink }) {
   return (
     <>
       <Head>
-        <title>Kontakt | Auto Galerie Jülich</title>
-        <meta name="robots" content="index,follow" />
+        <title>Kontakt | Autogalerie Jülich</title>
+
         <meta
           name="description"
-          content="Kontaktieren Sie die Auto Galerie Jülich für Fragen zu unseren Fahrzeugen und Services."
+          content="Kontaktieren Sie die Autogalerie Jülich."
         />
       </Head>
 
-      <div className="min-h-screen flex flex-col bg-gray-50 py-4 mt-16">
-        {/* Main Content - Professional Desktop */}
-        <div className="flex-1 py-6">
-          <div className="max-w-4xl mx-auto px-4">
-            {/* Professional Compact Form */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-              <div className="mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">
+      <main className="min-h-screen bg-[#f5f5f2] pt-4 text-[#101510] sm:pt-10">
+        <div className="mx-auto w-full max-w-[1180px] px-3 sm:px-6 lg:px-8">
+          <div className="grid gap-4 lg:grid-cols-[1fr_300px] lg:items-start lg:gap-6">
+            <section className="rounded-[20px] border border-white/80 bg-white p-4 shadow-lg shadow-black/5 sm:rounded-[28px] sm:p-7">
+              <div className="mb-4 sm:mb-6">
+                <div className="mb-2 h-[2px] w-10 bg-[#146c2e] sm:mb-3 sm:w-12" />
+
+                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#146c2e] sm:text-[10px] sm:tracking-[0.24em]">
                   Kontaktformular
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Senden Sie uns eine Nachricht
                 </p>
+
+                <h1 className="mt-2 text-[26px] font-semibold leading-tight tracking-[-0.05em] text-[#07111f] sm:mt-3 sm:text-[32px]">
+                  Schreiben Sie uns
+                </h1>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Vorname*
-                    </label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition"
-                      placeholder="Ihr Vorname"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nachname*
-                    </label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition"
-                      placeholder="Ihr Nachname"
-                    />
-                  </div>
+              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-5">
+                <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
+                  <InputField
+                    icon={<User />}
+                    label="Vorname"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    placeholder="Ihr Vorname"
+                    required
+                  />
+
+                  <InputField
+                    icon={<User />}
+                    label="Nachname"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    placeholder="Ihr Nachname"
+                    required
+                  />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      E-Mail*
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition"
-                      placeholder="ihre@email.de"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Telefon
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition"
-                      placeholder="+49 ..."
-                    />
-                  </div>
+                <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
+                  <InputField
+                    icon={<Mail />}
+                    label="E-Mail"
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="ihre@email.de"
+                    required
+                  />
+
+                  <InputField
+                    icon={<Phone />}
+                    label="Telefon"
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="+49 ..."
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Betreff*
-                  </label>
-                  <select
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition"
-                  >
-                    <option value="">Bitte wählen</option>
-                    <option value="Allgemeine Anfrage">
-                      Allgemeine Anfrage
-                    </option>
-                    <option value="Probefahrt vereinbaren">
-                      Probefahrt vereinbaren
-                    </option>
-                    <option value="Finanzierungsanfrage">
-                      Finanzierungsanfrage
-                    </option>
-                    <option value="Inzahlungnahme">Inzahlungnahme</option>
-                    <option value="Service-Termin">Service-Termin</option>
-                  </select>
+                  <Label text="Betreff" icon={<FileText />} required />
+
+                  <div className="relative mt-1.5 sm:mt-2">
+                    <select
+                      name="subject"
+                      value={formData.subject}
+                      onChange={handleChange}
+                      required
+                      className={`${inputBase} appearance-none pr-9 sm:pr-10`}
+                    >
+                      <option value="">Bitte wählen</option>
+                      <option value="Allgemeine Anfrage">
+                        Allgemeine Anfrage
+                      </option>
+                      <option value="Probefahrt vereinbaren">
+                        Probefahrt vereinbaren
+                      </option>
+                      <option value="Finanzierungsanfrage">
+                        Finanzierungsanfrage
+                      </option>
+                      <option value="Inzahlungnahme">Inzahlungnahme</option>
+                      <option value="Service-Termin">Service-Termin</option>
+                    </select>
+
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b958b] sm:right-4" />
+                  </div>
                 </div>
 
                 {formData.subject === "Probefahrt vereinbaren" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Gewünschter Termin
-                    </label>
+                    <Label text="Gewünschter Termin" icon={<Calendar />} />
+
                     <input
                       type="datetime-local"
                       name="date"
                       value={formData.date}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition"
+                      className={`${inputBase} mt-1.5 sm:mt-2`}
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ihre Nachricht*
-                  </label>
+                  <Label
+                    text="Ihre Nachricht"
+                    icon={<MessageSquare />}
+                    required
+                  />
+
                   <textarea
                     name="message"
                     rows={4}
                     value={formData.message}
                     onChange={handleChange}
                     required
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition resize-none"
                     placeholder="Wie können wir Ihnen helfen?"
+                    className="mt-1.5 min-h-[115px] w-full resize-none rounded-xl border border-black/10 bg-[#fafaf8] px-3 py-3 text-[13px] font-medium text-[#101510] outline-none transition placeholder:text-[#8b958b] focus:border-[#146c2e]/40 focus:bg-white focus:ring-4 focus:ring-[#146c2e]/10 sm:mt-2 sm:min-h-[170px] sm:rounded-2xl sm:px-4 sm:py-4 sm:text-sm"
                   />
                 </div>
 
-                <div className="flex items-start space-x-3">
+                <label className="flex items-start gap-3 rounded-xl bg-[#f7f9f5] p-3 sm:rounded-2xl sm:p-4">
                   <input
                     type="checkbox"
                     name="privacy"
                     checked={formData.privacy}
                     onChange={handleChange}
                     required
-                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-slate-600 focus:ring-slate-500"
+                    className="mt-1 h-4 w-4 rounded border-black/20 accent-[#146c2e]"
                   />
-                  <label className="text-xs text-gray-700 leading-relaxed">
+
+                  <span className="text-[11px] font-medium leading-5 text-[#5f695f] sm:text-xs sm:leading-6">
                     Ich akzeptiere die{" "}
                     <a
                       href="/Datenschutz"
-                      className="text-slate-600 hover:text-slate-800 font-medium underline"
+                      className="font-semibold text-[#146c2e] underline underline-offset-2"
                     >
                       Datenschutzerklärung
                     </a>
-                    *
-                  </label>
-                </div>
+                    .
+                  </span>
+                </label>
 
-                <Button
+                <button
                   type="submit"
                   disabled={status === "loading"}
-                  className={`w-full py-3 text-sm font-semibold rounded transition-colors ${
-                    status === "loading"
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-slate-600 hover:bg-slate-700 text-white"
-                  }`}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#146c2e] px-5 text-[13px] font-semibold text-white shadow-md shadow-green-900/15 transition hover:bg-[#0f5724] disabled:cursor-not-allowed disabled:opacity-60 sm:h-12 sm:rounded-2xl sm:text-sm"
                 >
+                  <Send className="h-4 w-4" />
+
                   {status === "loading"
                     ? "Wird gesendet..."
                     : "Nachricht senden"}
-                </Button>
+                </button>
               </form>
-            </div>
-            {/* Compact Contact Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-16 mt-16">
-              {/* Anrufen */}
-              <a
+            </section>
+
+            <aside className="flex flex-col gap-3 self-start">
+              <ContactCard
                 href="tel:+4924619163780"
-                className="flex items-center justify-center space-x-2 py-2.5 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-sm text-sm sm:text-base"
-              >
-                <svg
-                  className="w-4 h-4 sm:w-5 sm:h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                  />
-                </svg>
-                <span className="font-medium">Anrufen</span>
-              </a>
+                icon={<Phone />}
+                title="Anrufen"
+                text="02461 9163780"
+              />
 
-              {/* WhatsApp */}
-              <a
+              <ContactCard
                 href="https://wa.me/4915234205041"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center space-x-2 py-2.5 px-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-sm text-sm sm:text-base"
-              >
-                <svg
-                  className="w-4 h-4 sm:w-5 sm:h-5"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                </svg>
-                <span className="font-medium">WhatsApp</span>
-              </a>
+                icon={<MessageSquare />}
+                title="WhatsApp"
+                text="Direkt schreiben"
+                external
+              />
 
-              {/* Email */}
-              <a
+              <ContactCard
                 href="mailto:autogalerie.jülich@web.de"
-                className="flex items-center justify-center space-x-2 py-2.5 px-3 bg-slate-500 hover:bg-slate-600 text-white rounded-lg transition-colors shadow-sm text-sm sm:text-base"
-              >
-                <svg
-                  className="w-4 h-4 sm:w-5 sm:h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-                <span className="font-medium">E-Mail</span>
-              </a>
+                icon={<Mail />}
+                title="E-Mail"
+                text="autogalerie.jülich@web.de"
+              />
+            </aside>
+          </div>
+
+          <section className="mt-4 overflow-hidden rounded-[20px] border border-white/80 bg-white shadow-lg shadow-black/5 sm:mt-6 sm:rounded-[28px]">
+            <div className="h-64 md:h-80">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2515.2826803796497!2d6.37113927576914!3d50.918487653555246!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47bf5c0643671421%3A0x2fbe6b78cebf739a!2sAlte%20D%C3%BCrener%20Str.%204%2C%2052428%20J%C3%BClich!5e0!3m2!1sen!2sde!4v1745751132011!5m2!1sen!2sde"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen=""
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
             </div>
-            {/* Professional Compact Map */}
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden ">
-              <div className="h-64 md:h-80">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2515.2826803796497!2d6.37113927576914!3d50.918487653555246!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47bf5c0643671421%3A0x2fbe6b78cebf739a!2sAlte%20D%C3%BCrener%20Str.%204%2C%2052428%20J%C3%BClich!5e0!3m2!1sen!2sde!4v1745751132011!5m2!1sen!2sde"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen=""
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              </div>
-              <div className="p-4 border-t border-gray-200">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      Auto Galerie Jülich
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Alte Dürener Str. 4, 52428 Jülich
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <a
-                      href="https://maps.google.com/?q=Alte+Dürener+Str.+4,52428+Jülich"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900 transition-colors text-sm font-medium"
-                    >
-                      Route
-                    </a>
-                  </div>
+
+            <div className="border-t border-gray-200 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    Auto Galerie Jülich
+                  </p>
+
+                  <p className="text-sm text-gray-600">
+                    Alte Dürener Str. 4, 52428 Jülich
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <a
+                    href="https://maps.google.com/?q=Alte+Dürener+Str.+4,52428+Jülich"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded bg-black/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-900"
+                  >
+                    Route
+                  </a>
                 </div>
               </div>
             </div>
-          </div>
+          </section>
         </div>
 
-        <Footbar />
-      </div>
+        <div className="mt-10 sm:mt-16">
+          <Footbar />
+        </div>
+      </main>
     </>
+  );
+}
+
+function Label({ text, icon, required }) {
+  return (
+    <label className="flex items-center gap-2 text-[13px] font-semibold text-[#101510] sm:text-sm">
+      <span className="text-[#146c2e] [&>svg]:h-4 [&>svg]:w-4">{icon}</span>
+      {text}
+      {required && <span className="text-[#146c2e]">*</span>}
+    </label>
+  );
+}
+
+function InputField({
+  icon,
+  label,
+  type = "text",
+  name,
+  value,
+  onChange,
+  placeholder,
+  required = false,
+}) {
+  return (
+    <div>
+      <Label text={label} icon={icon} required={required} />
+
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        placeholder={placeholder}
+        className={`${inputBase} mt-1.5 sm:mt-2`}
+      />
+    </div>
+  );
+}
+
+function ContactCard({ href, icon, title, text, external = false }) {
+  return (
+    <a
+      href={href}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noopener noreferrer" : undefined}
+      className="group flex h-[76px] items-center gap-3 rounded-[18px] border border-white/80 bg-white px-4 shadow-md shadow-black/5 transition hover:border-[#146c2e]/20"
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e6f1e9] text-[#146c2e] transition group-hover:bg-[#146c2e] group-hover:text-white">
+        <span className="[&>svg]:h-4 [&>svg]:w-4">{icon}</span>
+      </div>
+
+      <div className="min-w-0">
+        <p className="text-[13px] font-semibold leading-none text-[#07111f]">
+          {title}
+        </p>
+
+        <p className="mt-1 truncate text-[11px] font-medium text-[#5f695f]">
+          {text}
+        </p>
+      </div>
+    </a>
   );
 }

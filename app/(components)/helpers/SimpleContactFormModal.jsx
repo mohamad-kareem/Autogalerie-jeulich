@@ -1,16 +1,19 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  FiSend,
-  FiX,
-  FiUser,
-  FiMail,
-  FiPhone,
-  FiFileText,
-  FiMessageSquare,
-} from "react-icons/fi";
 import { toast } from "react-hot-toast";
+import {
+  X,
+  Send,
+  User,
+  Mail,
+  Phone,
+  FileText,
+  MessageSquare,
+  Calendar,
+  ShieldCheck,
+  ChevronDown,
+} from "lucide-react";
 
 const initialFormData = {
   name: "",
@@ -19,6 +22,9 @@ const initialFormData = {
   subject: "",
   message: "",
 };
+
+const inputBase =
+  "h-11 w-full rounded-xl border border-black/10 bg-[#fafaf8] pl-10 pr-3 text-sm font-medium text-[#101510] outline-none transition placeholder:text-[#8b958b] focus:border-[#146c2e]/50 focus:bg-white focus:ring-4 focus:ring-[#146c2e]/10 disabled:cursor-not-allowed disabled:opacity-60";
 
 export default function SimpleContactFormModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState(initialFormData);
@@ -50,7 +56,6 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (isSubmitting) return;
 
     setIsSubmitting(true);
@@ -68,10 +73,6 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
 
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Submission failed");
-      }
-
-      if (data.emailSent === false) {
-        console.warn("Anfrage gespeichert, aber E-Mail wurde nicht gesendet.");
       }
 
       toast.success("Ihre Nachricht wurde erfolgreich gesendet!");
@@ -96,105 +97,86 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
 
   return (
     <div
-      className={`fixed inset-0 z-[1000000] flex items-center justify-center px-2 transition-all duration-300 ${
-        isVisible ? "bg-black/60" : "bg-black/0"
-      }`}
       onClick={handleOverlayClick}
+      className={`fixed inset-0 z-[1000000] flex items-center justify-center bg-black/45 px-3 py-4 backdrop-blur-sm transition duration-300 ${
+        isVisible ? "opacity-100" : "opacity-0"
+      }`}
     >
       <div
-        className={`w-full max-w-xs transform rounded-lg bg-white shadow-xl transition-all duration-300 md:max-w-md ${
+        className={`w-full max-w-[520px] overflow-hidden rounded-[24px] border border-white/80 bg-white shadow-2xl shadow-black/20 transition duration-300 ${
           isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
         }`}
       >
-        <div className="rounded-t-lg border-b border-slate-700/60 bg-gradient-to-r from-slate-900 to-slate-800 p-3 text-slate-50 md:p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold md:text-lg">
-                Kontaktieren Sie uns
-              </h2>
-              <p className="mt-0.5 text-[10px] text-slate-200/80 md:text-xs">
-                Antwort innerhalb von 12h
-              </p>
-            </div>
+        <div className="relative bg-[#f7f9f5] px-4 py-4 sm:px-5 sm:py-5">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl border border-black/10 bg-white text-[#5f695f] transition hover:bg-[#e6f1e9] hover:text-[#146c2e] disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Schließen"
+          >
+            <X className="h-4 w-4" />
+          </button>
 
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="rounded-full p-1 text-slate-200/80 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-              aria-label="Schließen"
-            >
-              <FiX size={18} />
-            </button>
+          <div className="pr-12">
+            <div className="mb-3 h-[2px] w-10 bg-[#146c2e]" />
+
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#146c2e]">
+              Kontakt aufnehmen
+            </p>
+
+            <p className="mt-2 text-sm leading-6 text-[#5f695f]">
+              Antwort innerhalb von 12h
+            </p>
           </div>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="space-y-2.5 p-3 text-xs md:p-4 md:text-sm"
+          className="max-h-[70vh] space-y-3 overflow-y-auto px-4 py-4 sm:max-h-none sm:px-5 sm:py-5"
         >
-          <div className="relative">
-            <FiUser
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={14}
-            />
-            <input
-              type="text"
-              name="name"
-              placeholder="Name"
-              required
-              disabled={isSubmitting}
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full rounded border border-slate-200 py-1.5 pl-8 pr-2 text-xs focus:border-slate-900/60 focus:ring-1 focus:ring-slate-900 disabled:bg-slate-100 disabled:opacity-70 md:py-2 md:text-sm"
-            />
-          </div>
+          <InputField
+            icon={<User />}
+            type="text"
+            name="name"
+            placeholder="Ihr Name"
+            required
+            disabled={isSubmitting}
+            value={formData.name}
+            onChange={handleChange}
+          />
+
+          <InputField
+            icon={<Mail />}
+            type="email"
+            name="email"
+            placeholder="Ihre E-Mail"
+            required
+            disabled={isSubmitting}
+            value={formData.email}
+            onChange={handleChange}
+          />
+
+          <InputField
+            icon={<Phone />}
+            type="tel"
+            name="phone"
+            placeholder="Telefonnummer"
+            disabled={isSubmitting}
+            value={formData.phone}
+            onChange={handleChange}
+          />
 
           <div className="relative">
-            <FiMail
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={14}
-            />
-            <input
-              type="email"
-              name="email"
-              placeholder="Ihre E-Mail"
-              required
-              disabled={isSubmitting}
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full rounded border border-slate-200 py-1.5 pl-8 pr-2 text-xs focus:border-slate-900/60 focus:ring-1 focus:ring-slate-900 disabled:bg-slate-100 disabled:opacity-70 md:py-2 md:text-sm"
-            />
-          </div>
+            <FileText className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#146c2e]" />
 
-          <div className="relative">
-            <FiPhone
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={14}
-            />
-            <input
-              type="tel"
-              name="phone"
-              placeholder="Telefon"
-              disabled={isSubmitting}
-              value={formData.phone}
-              onChange={handleChange}
-              className="w-full rounded border border-slate-200 py-1.5 pl-8 pr-2 text-xs focus:border-slate-900/60 focus:ring-1 focus:ring-slate-900 disabled:bg-slate-100 disabled:opacity-70 md:py-2 md:text-sm"
-            />
-          </div>
-
-          <div className="relative">
-            <FiFileText
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={14}
-            />
             <select
               name="subject"
               required
               disabled={isSubmitting}
               value={formData.subject}
               onChange={handleChange}
-              className="w-full appearance-none rounded border border-slate-200 bg-white py-1.5 pl-8 pr-6 text-xs focus:border-slate-900/60 focus:ring-1 focus:ring-slate-900 disabled:bg-slate-100 disabled:opacity-70 md:py-2 md:text-sm"
+              className={`${inputBase} appearance-none pr-10`}
             >
               <option value="">Betreff auswählen</option>
               <option value="Allgemeine Anfrage">Allgemeine Anfrage</option>
@@ -206,54 +188,79 @@ export default function SimpleContactFormModal({ isOpen, onClose }) {
               <option value="Service-Termin">Service-Termin</option>
             </select>
 
-            <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
-              <svg
-                className="h-3 w-3 text-slate-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </div>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b958b]" />
           </div>
 
           <div className="relative">
-            <FiMessageSquare
-              className="absolute left-3 top-3 text-slate-400"
-              size={14}
-            />
+            <MessageSquare className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-[#146c2e]" />
+
             <textarea
               name="message"
-              placeholder="Nachricht"
+              placeholder="Ihre Nachricht"
               required
               disabled={isSubmitting}
               value={formData.message}
               onChange={handleChange}
-              rows={5}
-              className="w-full resize-none rounded border border-slate-200 py-1.5 pl-8 pr-2 text-xs focus:border-slate-900/60 focus:ring-1 focus:ring-slate-900 disabled:bg-slate-100 disabled:opacity-70 md:py-2 md:text-sm"
+              rows={4}
+              className="min-h-[120px] w-full resize-none rounded-xl border border-black/10 bg-[#fafaf8] px-3 py-3 pl-10 text-sm font-medium text-[#101510] outline-none transition placeholder:text-[#8b958b] focus:border-[#146c2e]/50 focus:bg-white focus:ring-4 focus:ring-[#146c2e]/10 disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex w-full items-center justify-center gap-2 rounded bg-gradient-to-r from-slate-900 to-slate-800 py-2 text-xs font-medium text-slate-50 shadow-sm transition-all duration-200 hover:from-slate-800 hover:to-slate-700 hover:shadow disabled:cursor-not-allowed disabled:opacity-50 md:py-2.5 md:text-sm"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#146c2e] px-4 text-sm font-semibold text-white shadow-md shadow-green-900/15 transition hover:bg-[#0f5724] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <FiSend size={14} />
-            {isSubmitting ? "Wird gesendet..." : "Senden"}
+            <Send className="h-4 w-4" />
+            {isSubmitting ? "Wird gesendet..." : "Nachricht senden"}
           </button>
 
-          <p className="text-center text-[10px] text-slate-500 md:text-[11px]">
+          <p className="text-center text-[11px] font-medium text-[#7b857b]">
             Ihre Daten werden vertraulich behandelt.
           </p>
         </form>
       </div>
+    </div>
+  );
+}
+
+function InputField({
+  icon,
+  type,
+  name,
+  placeholder,
+  required,
+  disabled,
+  value,
+  onChange,
+}) {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#146c2e] [&>svg]:h-4 [&>svg]:w-4">
+        {icon}
+      </span>
+
+      <input
+        type={type}
+        name={name}
+        placeholder={placeholder}
+        required={required}
+        disabled={disabled}
+        value={value}
+        onChange={onChange}
+        className={inputBase}
+      />
+    </div>
+  );
+}
+
+function MiniInfo({ icon, text }) {
+  return (
+    <div className="flex items-center gap-2 rounded-2xl border border-black/5 bg-white px-3 py-2 text-xs font-semibold text-[#5f695f]">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-[#e6f1e9] text-[#146c2e] [&>svg]:h-3.5 [&>svg]:w-3.5">
+        {icon}
+      </span>
+      <span className="truncate">{text}</span>
     </div>
   );
 }

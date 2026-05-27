@@ -1,5 +1,10 @@
 // app/finanzierung/page.jsx
 import React from "react";
+import Image from "next/image";
+import Head from "next/head";
+import Footbar from "@/app/(components)/mainpage/Footbar";
+import finance from "@/app/(assets)/finance.jpg";
+
 import {
   FaUniversity,
   FaInfoCircle,
@@ -8,241 +13,294 @@ import {
   FaFileAlt,
   FaShieldAlt,
 } from "react-icons/fa";
-import Image from "next/image";
-import finance from "@/app/(assets)/finance.jpg";
-import Footbar from "@/app/(components)/mainpage/Footbar";
-import Head from "next/head";
 
 export default function FinanzierungPage() {
+  const steps = [
+    {
+      number: "1",
+      title: "Beratungsgespräch",
+      description:
+        "Gemeinsam besprechen wir Ihre Wünsche und finanziellen Möglichkeiten.",
+    },
+    {
+      number: "2",
+      title: "Angebotserstellung",
+      description:
+        "Sie erhalten ein klares Finanzierungsangebot mit allen Konditionen.",
+    },
+    {
+      number: "3",
+      title: "Dokumentenprüfung",
+      description:
+        "Wir unterstützen Sie bei den notwendigen Unterlagen für die Bank.",
+    },
+    {
+      number: "4",
+      title: "Finanzierungszusage",
+      description:
+        "Nach positiver Prüfung erhalten Sie die Zusage des Kreditinstituts.",
+    },
+  ];
+
+  const benefits = [
+    {
+      icon: FaUniversity,
+      title: "Bankenunabhängig",
+      description:
+        "Wir vergleichen passende Finanzierungsmöglichkeiten für Sie.",
+    },
+    {
+      icon: FaInfoCircle,
+      title: "Ehrliche Beratung",
+      description: "Klare Informationen ohne unnötigen Verkaufsdruck.",
+    },
+    {
+      icon: FaFileAlt,
+      title: "Dokumentenservice",
+      description:
+        "Wir helfen Ihnen bei der Vorbereitung der benötigten Unterlagen.",
+    },
+    {
+      icon: FaChartLine,
+      title: "Attraktive Konditionen",
+      description:
+        "Passende Raten und Laufzeiten abhängig von Ihrer Situation.",
+    },
+    {
+      icon: FaShieldAlt,
+      title: "Sicherheit",
+      description: "Ihre Daten werden vertraulich und sorgfältig behandelt.",
+    },
+    {
+      icon: FaHandshake,
+      title: "Langfristige Betreuung",
+      description: "Auch nach Abschluss bleiben wir Ihr Ansprechpartner.",
+    },
+  ];
+
+  const cards = [
+    {
+      icon: FaHandshake,
+      title: "Persönliche Beratung",
+      description:
+        "Individuelle Lösungen passend zu Ihrem Budget und Fahrzeugwunsch.",
+    },
+    {
+      icon: FaChartLine,
+      title: "Transparente Konditionen",
+      description:
+        "Klare Übersicht über Rate, Laufzeit, Anzahlung und Gesamtkosten.",
+    },
+    {
+      icon: FaShieldAlt,
+      title: "Diskrete Abwicklung",
+      description: "Ihre persönlichen Daten behandeln wir vertraulich.",
+    },
+  ];
+
   return (
     <>
       <Head>
         <title>Finanzierung | Auto Galerie Jülich</title>
+
         <meta name="robots" content="index,follow" />
+
         <meta
           name="description"
-          content="Individuelle Fahrzeugfinanzierung - maßgeschneiderte Lösungen für Ihren Autokauf"
+          content="Individuelle Fahrzeugfinanzierung bei Auto Galerie Jülich."
         />
       </Head>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-950 overflow-x-hidden">
-        {/* Hero Section with Gradient */}
-        <section className="relative bg-gradient-to-br from-black/30  to-slate-800 text-white py-24 sm:py-32 text-center overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/pattern.png')] bg-cover opacity-10" />
-          <div className="relative z-10 px-4 sm:px-6 max-w-5xl mx-auto">
-            <div className="flex flex-col items-center mb-6 sm:mb-8">
-              <div className="flex items-center bg-white/10 px-4 py-2 rounded-full text-sm sm:text-base font-medium text-white mb-6">
-                <FaUniversity className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                <span>Finanzierungsservice</span>
-              </div>
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-serif font-bold leading-tight mb-6">
-                Individuelle Fahrzeugfinanzierung
-              </h1>
-              <div className="w-24 h-1.5 bg-slate-900 mx-auto mb-8" />
-              <p className="text-lg sm:text-xl lg:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
-                Maßgeschneiderte Lösungen in Zusammenarbeit mit führenden
-                Kslateitinstituten
-              </p>
-            </div>
-          </div>
-        </section>
 
-        {/* Process Section with Image */}
-        <section className="py-16 sm:py-20 bg-gray-50">
-          <div className="px-4 sm:px-6 max-w-6xl mx-auto">
-            <div className="flex flex-col lg:flex-row gap-12 items-center">
-              <div className="lg:w-1/2">
-                <div className="mb-8">
-                  <h2 className="text-2xl sm:text-4xl font-serif font-bold text-gray-900 mb-4">
-                    Unser Finanzierungsprozess
-                  </h2>
-                  <div className="w-16 h-1 bg-slate-900 mb-6" />
-                  <p className="text-gray-600">
-                    Einfach, transparent und kundenorientiert - von der ersten
-                    Beratung bis zur Zusage
+      <main className="min-h-screen overflow-x-hidden bg-[#f5f6f3]">
+        {/* HERO */}
+        <section className="w-full py-6 sm:py-12">
+          <div className="w-full bg-[#eef6f0] py-7 shadow-sm sm:py-12 lg:py-14">
+            <div className="mx-auto max-w-[1180px] px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,380px)_1fr] lg:gap-12">
+                <div>
+                  <div className="mb-3 h-[2px] w-10 bg-[#146c2e] sm:w-12" />
+
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#146c2e] sm:text-[13px]">
+                    Finanzierung
+                  </p>
+
+                  <h1 className="max-w-[450px] text-[28px] font-semibold leading-[1.08] tracking-[-0.05em] text-[#101510] sm:text-[34px] lg:text-[38px]">
+                    Individuelle Fahrzeugfinanzierung
+                  </h1>
+                </div>
+
+                <div className="rounded-3xl border border-[#146c2e]/10 bg-white/70 p-4 shadow-sm shadow-green-900/5 backdrop-blur sm:p-6">
+                  <div className="mb-4 flex items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e6f1e9] text-[#146c2e]">
+                      <FaUniversity className="h-5 w-5" />
+                    </div>
+
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#146c2e]">
+                        Finanzierungsservice
+                      </p>
+
+                      <p className="text-[14px] font-medium text-[#101510] sm:text-base">
+                        Transparent und passend zu Ihrem Budget
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="text-[13px] leading-6 text-[#263126] sm:text-[15px] sm:leading-7">
+                    Wir unterstützen Sie bei der passenden Finanzierung für Ihr
+                    Wunschfahrzeug. Gemeinsam finden wir eine Lösung mit fairen
+                    Raten und verständlichen Konditionen.
                   </p>
                 </div>
-
-                <div className="space-y-8">
-                  {[
-                    {
-                      number: "1",
-                      title: "Beratungsgespräch",
-                      description:
-                        "Gemeinsam ermitteln wir Ihre Wünsche und finanziellen Rahmenbedingungen.",
-                    },
-                    {
-                      number: "2",
-                      title: "Angebotserstellung",
-                      description:
-                        "Sie erhalten ein detailliertes Finanzierungsangebot mit allen relevanten Konditionen.",
-                    },
-                    {
-                      number: "3",
-                      title: "Dokumentenprüfung",
-                      description:
-                        "Wir prüfen gemeinsam mit Ihnen alle notwendigen Unterlagen für die Bank.",
-                    },
-                    {
-                      number: "4",
-                      title: "Finanzierungsbestätigung",
-                      description:
-                        "Nach positiver Prüfung erhalten Sie die Zusage Ihres Kslateitinstituts.",
-                    },
-                  ].map((step) => (
-                    <div key={step.number} className="flex items-start">
-                      <div className="flex-shrink-0 mr-6">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-900 to-slate-950 text-white flex items-center justify-center font-serif text-xl">
-                          {step.number}
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                          {step.title}
-                        </h3>
-                        <p className="text-gray-600">{step.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="lg:w-1/2">
-                <Image
-                  src={finance}
-                  alt="Finanzierungsprozess"
-                  className="rounded-xl shadow-2xl"
-                  width={800}
-                  height={600}
-                  priority
-                />
               </div>
             </div>
           </div>
         </section>
 
-        {/* Benefits Section */}
-        <section className="py-16 sm:py-20 bg-gradient-to-br from-gray-900 to-slate-900 text-white">
-          <div className="px-4 sm:px-6 max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-4">
+        {/* PROCESS */}
+        <section className="mx-auto max-w-[1180px] px-4 pb-8 sm:px-6 sm:pb-12 lg:px-8">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-8">
+            <div className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm sm:p-6">
+              <div className="mb-6">
+                <div className="mb-3 h-[2px] w-10 bg-[#146c2e]" />
+
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#146c2e]">
+                  Ablauf
+                </p>
+
+                <h2 className="text-[24px] font-semibold tracking-[-0.03em] text-[#101510] sm:text-[30px]">
+                  Unser Finanzierungsprozess
+                </h2>
+
+                <p className="mt-2 text-[13px] leading-6 text-[#263126] sm:text-[14px]">
+                  Von der ersten Beratung bis zur Finanzierungszusage begleiten
+                  wir Sie Schritt für Schritt.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {steps.map((step) => (
+                  <div
+                    key={step.number}
+                    className="flex gap-3 rounded-2xl border border-black/5 bg-[#fafbf9] p-3"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e6f1e9] text-[15px] font-semibold text-[#146c2e]">
+                      {step.number}
+                    </div>
+
+                    <div>
+                      <h3 className="text-[14px] font-semibold text-[#101510] sm:text-[15px]">
+                        {step.title}
+                      </h3>
+
+                      <p className="mt-1 text-[12px] leading-5 text-[#263126] sm:text-[13px]">
+                        {step.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm">
+              <Image
+                src={finance}
+                alt="Finanzierungsprozess"
+                className="h-full min-h-[260px] w-full object-cover"
+                width={800}
+                height={600}
+                priority
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* BENEFITS */}
+        <section className="mx-auto max-w-[1180px] px-4 pb-8 sm:px-6 sm:pb-12 lg:px-8">
+          <div className="rounded-3xl bg-[#101510] p-5 text-white shadow-xl shadow-black/10 sm:p-8">
+            <div className="mb-6 text-left sm:text-center">
+              <div className="mb-3 h-[2px] w-10 bg-[#22c55e] sm:mx-auto" />
+
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#22c55e]">
+                Vorteile
+              </p>
+
+              <h2 className="text-[24px] font-semibold tracking-[-0.03em] sm:text-[30px]">
                 Unsere Finanzierungsvorteile
               </h2>
-              <div className="w-16 h-1 bg-slate-400 mx-auto mb-6" />
-              <p className="text-gray-300 max-w-3xl mx-auto text-lg">
-                Warum Sie Ihre Finanzierung über uns abschließen sollten
+
+              <p className="mx-auto mt-2 max-w-[650px] text-[13px] leading-6 text-white/70 sm:text-[14px]">
+                Verständlich, transparent und passend zu Ihrer Situation.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                {
-                  icon: <FaUniversity className="text-xl" />,
-                  title: "Bankenunabhängig",
-                  description:
-                    "Wir arbeiten mit allen Kslateitinstituten für die besten Konditionen",
-                },
-                {
-                  icon: <FaInfoCircle className="text-xl" />,
-                  title: "Ehrliche Beratung",
-                  description: "Transparente Informationen ohne Verkaufsdruck",
-                },
-                {
-                  icon: <FaFileAlt className="text-xl" />,
-                  title: "Dokumentenservice",
-                  description:
-                    "Wir bereiten alle notwendigen Unterlagen für Sie vor",
-                },
-                {
-                  icon: <FaChartLine className="text-xl" />,
-                  title: "Attraktive Zinsen",
-                  description:
-                    "Zugang zu speziellen Konditionen durch unsere Partnerschaften",
-                },
-                {
-                  icon: <FaShieldAlt className="text-xl" />,
-                  title: "Sicherheit",
-                  description:
-                    "Ihre Daten behandeln wir mit höchster Vertraulichkeit",
-                },
-                {
-                  icon: <FaHandshake className="text-xl" />,
-                  title: "Langfristige Betreuung",
-                  description:
-                    "Wir bleiben auch nach Abschluss Ihr Ansprechpartner",
-                },
-              ].map((benefit, index) => (
-                <div
-                  key={index}
-                  className="bg-white/10 rounded-xl p-6 border border-white/20 backdrop-blur-sm hover:bg-white/20 transition-all"
-                >
-                  <div className="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center mb-4 text-white">
-                    {benefit.icon}
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">
-                    {benefit.title}
-                  </h3>
-                  <p className="text-gray-300">{benefit.description}</p>
-                </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {benefits.map((item, index) => (
+                <DarkBenefit key={index} {...item} />
               ))}
             </div>
           </div>
         </section>
-        {/* Value Proposition Cards */}
-        <section className="py-16 sm:py-20 bg-white">
-          <div className="px-4 sm:px-6 max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl sm:text-4xl font-serif font-bold text-gray-900 mb-4">
-                Ihr Weg zur optimalen Finanzierung
-              </h2>
-              <div className="w-16 h-1 bg-slate-900 mx-auto mb-6" />
-              <p className="text-gray-600 max-w-3xl mx-auto text-lg">
-                Wir vermitteln zwischen Ihnen und Ihrem Kslateitinstitut für
-                attraktive Konditionen
-              </p>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-lg p-8 border border-gray-200 transform transition-all hover:-translate-y-2 hover:shadow-xl">
-                <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
-                  <FaHandshake className="text-slate-600 text-xl" />
-                </div>
-                <h3 className="text-xl font-semibold mb-3">
-                  Persönliche Beratung
-                </h3>
-                <p className="text-gray-600">
-                  Individuelle Lösungen basierend auf Ihren finanziellen
-                  Rahmenbedingungen
-                </p>
-              </div>
+        {/* CARDS */}
+        <section className="mx-auto max-w-[1180px] px-4 pb-12 sm:px-6 lg:px-8">
+          <div className="mb-6">
+            <div className="mb-3 h-[2px] w-10 bg-[#146c2e]" />
 
-              <div className="bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-lg p-8 border border-gray-200 transform transition-all hover:-translate-y-2 hover:shadow-xl">
-                <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
-                  <FaChartLine className="text-slate-600 text-xl" />
-                </div>
-                <h3 className="text-xl font-semibold mb-3">
-                  Transparente Konditionen
-                </h3>
-                <p className="text-gray-600">
-                  Klare Offenlegung aller Kosten und Raten - keine versteckten
-                  Gebühren
-                </p>
-              </div>
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#146c2e]">
+              Ihr Vorteil
+            </p>
 
-              <div className="bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-lg p-8 border border-gray-200 transform transition-all hover:-translate-y-2 hover:shadow-xl">
-                <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
-                  <FaShieldAlt className="text-slate-600 text-xl" />
-                </div>
-                <h3 className="text-xl font-semibold mb-3">
-                  Diskrete Abwicklung
-                </h3>
-                <p className="text-gray-600">
-                  Höchste Vertraulichkeit Ihrer Daten
-                </p>
-              </div>
-            </div>
+            <h2 className="text-[24px] font-semibold tracking-[-0.03em] text-[#101510] sm:text-[30px]">
+              Ihr Weg zur passenden Finanzierung
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:gap-5 md:grid-cols-3">
+            {cards.map((item, index) => (
+              <LightCard key={index} {...item} />
+            ))}
           </div>
         </section>
-      </div>
+      </main>
+
       <Footbar />
     </>
+  );
+}
+
+function DarkBenefit({ icon: Icon, title, description }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:bg-white/10 sm:p-5">
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-[#4ade80]">
+        <Icon className="h-5 w-5" />
+      </div>
+
+      <h3 className="text-[15px] font-semibold text-white sm:text-base">
+        {title}
+      </h3>
+
+      <p className="mt-1 text-[12px] leading-5 text-white/65 sm:text-[13px]">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function LightCard({ icon: Icon, title, description }) {
+  return (
+    <div className="rounded-3xl border border-[#146c2e]/10 bg-white p-4 shadow-sm shadow-green-900/5 sm:p-5">
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e6f1e9] text-[#146c2e]">
+        <Icon className="h-5 w-5" />
+      </div>
+
+      <h3 className="text-[15px] font-semibold tracking-[-0.02em] text-[#101510] sm:text-base">
+        {title}
+      </h3>
+
+      <p className="mt-1 text-[12px] leading-5 text-[#263126] sm:text-[13px]">
+        {description}
+      </p>
+    </div>
   );
 }

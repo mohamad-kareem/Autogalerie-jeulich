@@ -70,10 +70,6 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
         throw new Error(data.message || "Anfrage konnte nicht gesendet werden");
       }
 
-      if (data.emailSent === false) {
-        console.warn("Anfrage gespeichert, aber E-Mail wurde nicht gesendet.");
-      }
-
       toast.success("Ihre Anfrage wurde erfolgreich übermittelt!");
 
       setFormData(initialFormData);
@@ -91,33 +87,36 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
     }
   };
 
-  const labelClass = `block ${
-    isMobile ? "text-[11px]" : "text-xs"
-  } font-medium text-gray-700 mb-1`;
+  const labelClass = `mb-1 block font-medium text-[#263126] ${
+    isMobile ? "text-[10px]" : "text-xs"
+  }`;
 
   const fieldBase =
-    "w-full rounded-md border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed";
+    "w-full rounded-xl border border-black/10 bg-white text-[#101510] outline-none transition placeholder:text-[#9aa39a] focus:border-[#146c2e] focus:ring-2 focus:ring-[#146c2e]/15 disabled:cursor-not-allowed disabled:bg-[#f3f5f1]";
 
-  const fieldPadding = isMobile ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-sm";
+  const fieldPadding = isMobile
+    ? "px-2.5 py-1.5 text-[11px]"
+    : "px-3.5 py-2.5 text-sm";
 
   const fieldClass = `${fieldBase} ${fieldPadding}`;
 
-  const buttonSize = isMobile ? "py-1.5 text-xs" : "py-2 text-sm";
+  const buttonSize = isMobile ? "h-9 text-[11px]" : "h-11 text-sm";
 
   return (
     <form
       onSubmit={handleSubmit}
-      className={`mx-auto ${isMobile ? "space-y-2 max-w-xs" : "space-y-3"}`}
+      className={`mx-auto ${isMobile ? "max-w-xs space-y-2" : "space-y-3.5"}`}
     >
       <input type="hidden" name="car" value={car._id} />
 
       <div
         className={`grid grid-cols-1 ${
-          isMobile ? "gap-1.5" : "md:grid-cols-2 md:gap-3 gap-2"
+          isMobile ? "gap-1.5" : "gap-3 md:grid-cols-2"
         }`}
       >
         <div>
           <label className={labelClass}>Name*</label>
+
           <input
             type="text"
             name="name"
@@ -131,6 +130,7 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
 
         <div>
           <label className={labelClass}>E-Mail*</label>
+
           <input
             type="email"
             name="email"
@@ -143,9 +143,10 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
         </div>
       </div>
 
-      <div className={isMobile ? "space-y-1.5" : "space-y-2"}>
+      <div className={`grid grid-cols-1 ${isMobile ? "gap-1.5" : "gap-3"}`}>
         <div>
           <label className={labelClass}>Telefon</label>
+
           <input
             type="tel"
             name="phone"
@@ -158,6 +159,7 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
 
         <div>
           <label className={labelClass}>Wunschdatum & Uhrzeit</label>
+
           <input
             type="datetime-local"
             name="date"
@@ -171,6 +173,7 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
 
       <div>
         <label className={labelClass}>Betreff*</label>
+
         <select
           name="subject"
           value={formData.subject}
@@ -180,44 +183,49 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
           className={fieldClass}
         >
           <option value="">Bitte wählen</option>
+
           <option value="Allgemeine Anfrage">Allgemeine Anfrage</option>
+
           <option value="Probefahrt vereinbaren">Probefahrt vereinbaren</option>
+
           <option value="Finanzierungsanfrage">Finanzierungsanfrage</option>
+
           <option value="Inzahlungnahme">Inzahlungnahme</option>
+
           <option value="Service-Termin">Service-Termin</option>
         </select>
       </div>
 
       <div>
         <label className={labelClass}>Nachricht*</label>
+
         <textarea
           name="message"
-          rows={isMobile ? 3 : 4}
+          rows={isMobile ? 2 : 4}
           value={formData.message}
           onChange={handleChange}
           required
           disabled={isSubmitting}
           className={`${fieldBase} ${
-            isMobile ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-sm"
-          } resize-vertical`}
+            isMobile ? "px-2.5 py-1.5 text-[11px]" : "px-3.5 py-2.5 text-sm"
+          } resize-y`}
         />
       </div>
 
-      <div>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className={`w-full bg-gradient-to-r from-slate-600 to-slate-700 hover:from-blue-700 hover:to-blue-800 text-white ${buttonSize} rounded-md font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed`}
-        >
-          <FiSend className={isMobile ? "w-3.5 h-3.5" : "w-4 h-4"} />
-          {isSubmitting ? "Wird gesendet..." : "Nachricht senden"}
-        </button>
-      </div>
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className={`flex w-full items-center justify-center gap-2 rounded-xl bg-[#146c2e] font-semibold text-white shadow-md shadow-green-900/15 transition hover:bg-[#0f5724] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 ${buttonSize}`}
+      >
+        <FiSend className={isMobile ? "h-3 w-3" : "h-4 w-4"} />
+
+        {isSubmitting ? "Wird gesendet..." : "Nachricht senden"}
+      </button>
 
       <p
         className={`${
-          isMobile ? "text-[9px]" : "text-[10px]"
-        } text-gray-500 leading-tight mt-1`}
+          isMobile ? "text-[8px]" : "text-[10px]"
+        } mt-1 leading-4 text-[#6b756b]`}
       >
         * Pflichtfelder. Wir werden Ihre Daten nur zur Bearbeitung Ihrer Anfrage
         verwenden.
@@ -225,5 +233,4 @@ const ContactForm = ({ car, onSuccess, isMobile = false }) => {
     </form>
   );
 };
-
 export default ContactForm;

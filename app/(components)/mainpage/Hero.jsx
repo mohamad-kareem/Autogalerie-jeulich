@@ -178,7 +178,7 @@ export default function Hero() {
                 href="/gebrauchtwagen"
                 className="mt-4 inline-flex items-center gap-2 rounded-xl bg-black/60 px-5 py-3 text-xs font-black text-white shadow-lg shadow-green-900/25 transition hover:bg-[#0f5724]"
               >
-                Details zum Fahrzeug
+                zu den Fahrzeugen
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
