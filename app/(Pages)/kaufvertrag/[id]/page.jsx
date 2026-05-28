@@ -80,20 +80,34 @@ export default function KaufvertragDetail() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const res = await fetch(`/api/kaufvertrag/${id}`);
-      const data = await res.json();
-      const cleanedData = sanitizeData(data);
-      setForm(cleanedData);
+      try {
+        const res = await fetch(`/api/kaufvertrag/${id}`);
 
-      setRawTotal(
-        cleanedData.total ? `€ ${formatGermanNumber(cleanedData.total)}` : "",
-      );
-      setRawDownPayment(
-        `€ ${formatGermanNumber(cleanedData.downPayment ?? 0)}`,
-      );
-      fetchScheinByVin(cleanedData.vin);
+        if (!res.ok) {
+          throw new Error("Kaufvertrag konnte nicht geladen werden");
+        }
+
+        const data = await res.json();
+        const cleanedData = sanitizeData(data);
+
+        setForm(cleanedData);
+
+        setRawTotal(
+          cleanedData.total ? `€ ${formatGermanNumber(cleanedData.total)}` : "",
+        );
+
+        setRawDownPayment(
+          `€ ${formatGermanNumber(cleanedData.downPayment ?? 0)}`,
+        );
+      } catch (error) {
+        console.error("Fehler beim Laden des Kaufvertrags:", error);
+        alert("Fehler beim Laden des Kaufvertrags.");
+      }
     };
-    fetchData();
+
+    if (id) {
+      fetchData();
+    }
   }, [id]);
 
   const handleChange = (e) => {

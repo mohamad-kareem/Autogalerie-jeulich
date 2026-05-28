@@ -52,6 +52,7 @@ const adminRoutes = [
   "/translator",
   "/Rotkennzeichen",
   "/Kundenkontakte",
+  "/lackieren",
 ];
 
 const hasSubMenu = (menu) =>
