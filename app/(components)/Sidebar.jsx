@@ -23,7 +23,8 @@ import {
   FiSettings,
   FiUser,
 } from "react-icons/fi";
-import { FaCarSide } from "react-icons/fa";
+
+import { FaCarSide, FaPaintRoller } from "react-icons/fa";
 
 import ProfileEditModal from "@/app/(components)/admin/ProfileEditModal";
 
@@ -161,6 +162,13 @@ export default function Sidebar({
         label: "Schlüssel",
         badge: null,
         color: "text-slate-400",
+      },
+      {
+        href: "/lackieren",
+        icon: <FaPaintRoller />,
+        label: "Lackieren",
+        badge: null,
+        color: "text-purple-500",
       },
       {
         href: "/kaufvertrag/liste",
