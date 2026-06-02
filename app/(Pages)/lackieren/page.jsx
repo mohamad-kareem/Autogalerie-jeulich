@@ -14,6 +14,7 @@ import {
   FiChevronDown,
   FiChevronRight,
   FiAlertCircle,
+  FiMinus,
   FiPlus,
   FiFolder,
   FiFolderPlus,
@@ -24,7 +25,10 @@ import {
 } from "react-icons/fi";
 
 /* =========================================================
-   BRANDS — each brand has a fixed .glb model
+   BRANDS  — YOU define these. One shared .glb per brand.
+   ---------------------------------------------------------
+   Drop each brand's .glb in /public and reference it here.
+   Every vehicle the user adds under a brand uses this model.
 ========================================================= */
 const BRANDS = [
   {
@@ -32,13 +36,47 @@ const BRANDS = [
     label: "Mercedes-Benz",
     model: "/uploads_files_5489305_Glk.glb",
   },
-  { id: "mercedes1", label: "Mercedes-Benz1", model: "/mercedes.glb" },
-  { id: "Peugeot", label: "Peugeot", model: "/peugeot.glb" },
-  { id: "Ford", label: "Ford", model: "/fordfocus.glb" },
-  { id: "Hyundai", label: "Hyundai", model: "/hyundai.glb" },
-  { id: "Opel", label: "Opel", model: "/opel.glb" },
-  { id: "Kia", label: "Kia", model: "/kiapicanto.glb" },
-  { id: "Kia1", label: "Kia1", model: "/kiapicanto1.glb" },
+  {
+    id: "mercedes1",
+    label: "Mercedes-Benz1",
+    model: "/mercedes.glb",
+  },
+
+  {
+    id: "Peugeot",
+    label: "Peugeot",
+    model: "/peugeot.glb",
+  },
+  {
+    id: "Ford",
+    label: "Ford",
+    model: "/fordfocus.glb",
+  },
+  {
+    id: "Hyundai",
+    label: "Hyundai",
+    model: "/hyundai.glb",
+  },
+  {
+    id: "Opel",
+    label: "Opel",
+    model: "/opel.glb",
+  },
+  {
+    id: "Kia    ",
+    label: "Kia",
+    model: "/kiapicanto.glb",
+  },
+  {
+    id: "Kia1    ",
+    label: "Kia1",
+    model: "/kiapicanto1.glb",
+  },
+];
+
+/* Seed vehicles (optional). Users add more in-app. */
+const SEED_VEHICLES = [
+  // { id: "v1", brandId: "mercedes", name: "GLK 220 CDI", fin: "WDC2049811A123456" },
 ];
 
 const DAMAGE_TYPES = [
@@ -49,7 +87,6 @@ const DAMAGE_TYPES = [
   { id: "crack", label: "Riss / Bruch", color: "#7c3aed" },
   { id: "other", label: "Sonstiges", color: "#52525b" },
 ];
-
 const ACTIONS = [
   "Spachteln",
   "Schleifen",
@@ -59,13 +96,11 @@ const ACTIONS = [
   "Beule ausbeulen",
   "Teil tauschen",
 ];
-
 const SEVERITY = [
   { id: "low", label: "Leicht", color: "#16a34a" },
   { id: "mid", label: "Mittel", color: "#f59e0b" },
   { id: "high", label: "Schwer", color: "#ef4444" },
 ];
-
 const PANELS = [
   "Motorhaube",
   "Dach",
@@ -86,7 +121,10 @@ const PANELS = [
   "Felge",
 ];
 
+// damage types that look like strokes (long & thin) get a length dimension
 const ELONGATED = new Set(["scratch", "crack"]);
+
+// vehicle-wide actions that don't need a point on the car
 const GLOBAL_ACTIONS = [
   { id: "full_paint", label: "Komplett-Lackierung", icon: "🎨" },
   { id: "full_polish", label: "Komplett-Politur", icon: "✨" },
@@ -105,255 +143,64 @@ const makeMark = (local, normal, type) => ({
   severity: "mid",
   panel: "",
   note: "",
-  size: 0.06,
-  length: ELONGATED.has(type) ? 0.14 : 0.06,
+  size: 0.06, // 6% of car radius
+  length: ELONGATED.has(type) ? 0.14 : 0.06, // 14% for elongated default
   rotation: 0,
 });
 
 export default function VehicleInspection3DPage() {
-  // Vehicles
-  const [vehicles, setVehicles] = useState([]);
-  const [activeVehicleId, setActiveVehicleId] = useState(null);
+  // vehicles (user-managed) + selection
+  const [vehicles, setVehicles] = useState(SEED_VEHICLES);
+  const [activeVehicleId, setActiveVehicleId] = useState(
+    SEED_VEHICLES[0]?.id || null,
+  );
   const activeVehicle = vehicles.find((v) => v.id === activeVehicleId) || null;
   const activeBrand = activeVehicle
     ? BRANDS.find((b) => b.id === activeVehicle.brandId)
     : null;
 
-  // Marks & globals per vehicle
+  // per-vehicle marks
   const [marksByVehicle, setMarksByVehicle] = useState({});
+  // vehicle-wide actions: { [vehicleId]: { actions: Set, custom: [string] } }
   const [globalsByVehicle, setGlobalsByVehicle] = useState({});
   const marks = (activeVehicleId && marksByVehicle[activeVehicleId]) || [];
-  const activeGlobals = (activeVehicleId &&
-    globalsByVehicle[activeVehicleId]) || { actions: {}, custom: [] };
+  const activeVehicleIdRef = useRef(activeVehicleId);
+  activeVehicleIdRef.current = activeVehicleId;
+  const setMarks = useCallback(
+    (updater) =>
+      setMarksByVehicle((prev) => {
+        const vid = activeVehicleIdRef.current;
+        if (!vid) return prev;
+        const cur = prev[vid] || [];
+        const next = typeof updater === "function" ? updater(cur) : updater;
+        return { ...prev, [vid]: next };
+      }),
+    [],
+  );
 
-  // UI state
-  const [activeType, setActiveType] = useState(null); // null = no tool armed
-  const [selectedMarkId, setSelectedMarkId] = useState(null);
-  const [autoSpin, setAutoSpin] = useState(true);
-  const [showAddVehicle, setShowAddVehicle] = useState(false);
-  const [customGlobalInput, setCustomGlobalInput] = useState("");
-
-  // IMPORTANT:
-  // three.current is a ref, so changing three.current.carMeshes does NOT re-run React effects.
-  // These two states force React to re-run model loading and pointer-selection logic at the right time.
+  const [ready, setReady] = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
-  const [modelReady, setModelReady] = useState(false);
+  const [errored, setErrored] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState("Szene wird vorbereitet");
 
-  // Three.js refs
+  const [activeType, setActiveType] = useState("scratch");
+  const [selectedMark, setSelectedMark] = useState(null);
+  const [placing, setPlacing] = useState(true);
+  const [autoSpin, setAutoSpin] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+
   const mountRef = useRef(null);
   const three = useRef({});
-  const marksRef = useRef(marks);
+  const stateRef = useRef({});
+  stateRef.current = { autoSpin, placing, activeType };
+  const marksRef = useRef([]);
   marksRef.current = marks;
-  const activeTypeRef = useRef(activeType);
-  activeTypeRef.current = activeType;
-  const selectedMarkIdRef = useRef(selectedMarkId);
-  selectedMarkIdRef.current = selectedMarkId;
+  const selectedMarkRef = useRef(null);
+  selectedMarkRef.current = selectedMark;
 
-  const autoSpinRef = useRef(autoSpin);
-  autoSpinRef.current = autoSpin;
+  const currentModel = activeBrand?.model || null;
 
-  // Helper to update marks
-  const setMarks = useCallback(
-    (updater) => {
-      if (!activeVehicleId) return;
-      setMarksByVehicle((prev) => {
-        const cur = prev[activeVehicleId] || [];
-        const next = typeof updater === "function" ? updater(cur) : updater;
-        return { ...prev, [activeVehicleId]: next };
-      });
-    },
-    [activeVehicleId],
-  );
-
-  const updateMark = useCallback(
-    (id, patch) => {
-      setMarks((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, ...patch } : m)),
-      );
-    },
-    [setMarks],
-  );
-
-  const deleteMark = useCallback(
-    (id) => {
-      setMarks((prev) => prev.filter((m) => m.id !== id));
-      if (selectedMarkId === id) setSelectedMarkId(null);
-    },
-    [setMarks, selectedMarkId],
-  );
-
-  // Global actions
-  const toggleGlobal = (id) => {
-    setGlobalsByVehicle((prev) => {
-      const cur = prev[activeVehicleId] || { actions: {}, custom: [] };
-      const newActions = { ...cur.actions, [id]: !cur.actions?.[id] };
-      return { ...prev, [activeVehicleId]: { ...cur, actions: newActions } };
-    });
-  };
-  const addCustomGlobal = () => {
-    const val = customGlobalInput.trim();
-    if (!val) return;
-    setGlobalsByVehicle((prev) => {
-      const cur = prev[activeVehicleId] || { actions: {}, custom: [] };
-      return {
-        ...prev,
-        [activeVehicleId]: { ...cur, custom: [...cur.custom, val] },
-      };
-    });
-    setCustomGlobalInput("");
-  };
-  const removeCustomGlobal = (idx) => {
-    setGlobalsByVehicle((prev) => {
-      const cur = prev[activeVehicleId] || { actions: {}, custom: [] };
-      return {
-        ...prev,
-        [activeVehicleId]: {
-          ...cur,
-          custom: cur.custom.filter((_, i) => i !== idx),
-        },
-      };
-    });
-  };
-  const clearAllTasks = () => {
-    if (!confirm("Alle Aufgaben dieses Fahrzeugs entfernen?")) return;
-    setMarks([]);
-    setSelectedMarkId(null);
-    setGlobalsByVehicle((prev) => ({
-      ...prev,
-      [activeVehicleId]: { actions: {}, custom: [] },
-    }));
-  };
-
-  // Vehicle management
-  const addVehicle = ({ brandId, name, fin }) => {
-    const id = `v_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    setVehicles((prev) => [
-      ...prev,
-      { id, brandId, name: name.trim(), fin: fin.trim() },
-    ]);
-    setActiveVehicleId(id);
-    setShowAddVehicle(false);
-    toast.success("Fahrzeug hinzugefügt");
-  };
-  const deleteVehicle = (id) => {
-    if (!confirm("Fahrzeug wirklich entfernen?")) return;
-    setVehicles((prev) => prev.filter((v) => v.id !== id));
-    setMarksByVehicle((prev) => {
-      const n = { ...prev };
-      delete n[id];
-      return n;
-    });
-    setGlobalsByVehicle((prev) => {
-      const n = { ...prev };
-      delete n[id];
-      return n;
-    });
-    if (activeVehicleId === id) setActiveVehicleId(null);
-  };
-
-  // Print & Save
-  const handlePrint = () => {
-    const w = window.open("", "_blank", "width=900,height=1200");
-    if (!w) return toast.error("Popup wurde blockiert.");
-    const esc = (s = "") =>
-      String(s ?? "").replace(
-        /[&<>"']/g,
-        (c) =>
-          ({
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#039;",
-          })[c],
-      );
-    const globalRows = [
-      ...Object.entries(activeGlobals.actions || {})
-        .filter(([, on]) => on)
-        .map(([id]) => GLOBAL_ACTIONS.find((x) => x.id === id)?.label)
-        .filter(Boolean),
-      ...(activeGlobals.custom || []),
-    ];
-    const globalsHtml =
-      globalRows.length === 0
-        ? ""
-        : `<h2 style="font-size:13px;margin:24px 0 6px;letter-spacing:.08em;text-transform:uppercase;color:#475569">Gesamtfahrzeug</h2><ul style="margin:0;padding-left:18px;font-size:13px">${globalRows.map((r) => `<li><b>${esc(r)}</b></li>`).join("")}</ul>`;
-    const rows = marks
-      .map((m, i) => {
-        const tp = DAMAGE_TYPES.find((x) => x.id === m.type);
-        const sv = SEVERITY.find((x) => x.id === m.severity);
-        return `<tr><td>${i + 1}</td><td><span class="dot" style="background:${tp?.color}"></span>${esc(tp?.label)}</td><td>${esc(m.panel) || "—"}</td><td><b>${esc(m.action)}</b></td><td class="sev" style="color:${sv?.color}">${esc(sv?.label)}</td></td><td>${esc(m.note) || "—"}</td></tr>`;
-      })
-      .join("");
-    const title = activeVehicle
-      ? `${activeBrand?.label || ""} ${activeVehicle.name}`
-      : "Fahrzeug";
-    w.document.write(
-      `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lackier-Auftrag</title><style>*{box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;color:#0f172a;padding:40px}.top{display:flex;justify-content:space-between;border-bottom:2px solid #0f172a;padding-bottom:14px}.brand{font-size:18px;font-weight:800;letter-spacing:.14em}.doc{font-size:11px;color:#64748b;text-align:right}h1{font-size:24px;margin:18px 0 2px}.sub{color:#64748b;font-size:13px;margin-bottom:20px}table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #e2e8f0}th{font-size:10px;text-transform:uppercase;color:#64748b}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle}.sev{font-weight:700}.foot{margin-top:30px;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:12px}</style></head><body onload="window.print();window.onafterprint=()=>window.close()"><div class="top"><div class="brand">Autogalerie Jülich</div><div class="doc">Lackier- & Reparatur-Auftrag<br/>${new Date().toLocaleDateString("de-DE")}</div></div><h1>${esc(title)}</h1><div class="sub">${activeVehicle?.fin ? "FIN " + esc(activeVehicle.fin) + " · " : ""}${marks.length} Position(en) · ${globalRows.length} Gesamt-Maßnahme(n)</div>${globalsHtml}<h2 style="font-size:13px;margin:24px 0 6px;letter-spacing:.08em;text-transform:uppercase;color:#475569">Einzelpositionen</h2><table><thead><tr><th>#</th><th>Schaden</th><th>Bauteil</th><th>Maßnahme</th><th>Grad</th><th>Notiz</th></tr></thead><tbody>${rows || '<tr><td colspan="6">Keine Markierungen</td></tr>'}</tbody></table><div class="foot">Erstellt mit dem 3D-Inspektionswerkzeug</div></body></html>`,
-    );
-    w.document.close();
-    w.focus();
-  };
-  const handleSave = async () => {
-    const payload = {
-      vehicle: activeVehicle,
-      brand: activeBrand?.label,
-      marks,
-      globals: activeGlobals,
-    };
-    console.log("Inspection payload", payload);
-    toast.success("Auftrag gespeichert (Konsole)");
-  };
-
-  // Camera fly-to-mark (uses t.THREE)
-  const flyToMark = useCallback((mark) => {
-    const t = three.current;
-    if (!t.camera || !mark || !t.THREE) return;
-    const world = t.carGroup.localToWorld(new t.THREE.Vector3(...mark.local));
-    const center = new t.THREE.Vector3(0, world.y, 0);
-    const dir = world.clone().sub(center);
-    dir.y = 0;
-    if (dir.lengthSq() < 1e-4) dir.set(1, 0, 1);
-    dir.normalize();
-    const R = (t.localCarRadius || 2) * (t.carGroup.scale.x || 1);
-    const dist = R * (0.85 + (mark.size || 0.06) * 1.5);
-    const camPos = world
-      .clone()
-      .add(dir.multiplyScalar(dist))
-      .add(new t.THREE.Vector3(0, R * 0.25, 0));
-    t.fly.fromCam.copy(t.camera.position);
-    t.fly.toCam.copy(camPos);
-    t.fly.fromTgt.copy(t.controls.target);
-    t.fly.toTgt.copy(world);
-    t.fly.t = 0;
-    t.fly.active = true;
-    setAutoSpin(false);
-  }, []);
-
-  const selectMark = (id) => {
-    setSelectedMarkId(id);
-    const m = marks.find((m) => m.id === id);
-    if (m) flyToMark(m);
-  };
-
-  const resetView = () => {
-    const t = three.current;
-    if (!t.camera) return;
-    t.fly.fromCam.copy(t.camera.position);
-    t.fly.fromTgt.copy(t.controls.target);
-    if (t.homeView) {
-      t.fly.toCam.copy(t.homeView.camPos);
-      t.fly.toTgt.copy(t.homeView.center);
-    } else {
-      t.fly.toCam.set(5.4, 2.5, 6.4);
-      t.fly.toTgt.set(0, 0.65, 0);
-    }
-    t.fly.t = 0;
-    t.fly.active = true;
-    setAutoSpin(false);
-  };
-
-  // ========== THREE.JS SETUP ==========
+  /* ============ THREE setup once ============ */
   useEffect(() => {
     let disposed = false;
     let cleanup = () => {};
@@ -379,6 +226,7 @@ export default function VehicleInspection3DPage() {
         const mount = mountRef.current;
         const width = mount.clientWidth,
           height = mount.clientHeight;
+
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(
           40,
@@ -387,17 +235,13 @@ export default function VehicleInspection3DPage() {
           1000,
         );
         camera.position.set(5.4, 2.5, 6.4);
+
         const renderer = new THREE.WebGLRenderer({
           antialias: true,
           alpha: true,
         });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(width, height);
-        renderer.domElement.style.position = "absolute";
-        renderer.domElement.style.inset = "0";
-        renderer.domElement.style.zIndex = "0";
-        renderer.domElement.style.width = "100%";
-        renderer.domElement.style.height = "100%";
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -464,6 +308,8 @@ export default function VehicleInspection3DPage() {
         scene.add(carGroup);
         const decalGroup = new THREE.Group();
         carGroup.add(decalGroup);
+        const draftGroup = new THREE.Group();
+        carGroup.add(draftGroup);
         const handleGroup = new THREE.Group();
         carGroup.add(handleGroup);
 
@@ -479,6 +325,7 @@ export default function VehicleInspection3DPage() {
           toTgt: new THREE.Vector3(),
         };
         const textures = buildDamageTextures(THREE);
+
         const dracoLoader = new DRACOLoader();
         dracoLoader.setDecoderPath(
           "https://www.gstatic.com/draco/versioned/decoders/1.5.6/",
@@ -495,6 +342,7 @@ export default function VehicleInspection3DPage() {
           pmrem,
           carGroup,
           decalGroup,
+          draftGroup,
           handleGroup,
           raycaster,
           pointer,
@@ -518,16 +366,18 @@ export default function VehicleInspection3DPage() {
 
         const easeInOut = (x) =>
           x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+        const clock = new THREE.Clock();
         let raf;
         const tick = () => {
           raf = requestAnimationFrame(tick);
+          const dt = clock.getDelta();
           if (fly.active) {
-            fly.t += 1 / 60 / fly.dur;
+            fly.t += dt / fly.dur;
             const k = easeInOut(Math.min(fly.t, 1));
             camera.position.lerpVectors(fly.fromCam, fly.toCam, k);
             controls.target.lerpVectors(fly.fromTgt, fly.toTgt, k);
             if (fly.t >= 1) fly.active = false;
-          } else if (autoSpinRef.current) carGroup.rotation.y += 0.0036;
+          } else if (stateRef.current.autoSpin) carGroup.rotation.y += 0.0036;
           controls.update();
           renderer.render(scene, camera);
         };
@@ -542,10 +392,13 @@ export default function VehicleInspection3DPage() {
           renderer.dispose();
           renderer.domElement.parentNode?.removeChild(renderer.domElement);
         };
+
         three.current.initialized = true;
         setSceneReady(true);
       } catch (err) {
         console.error(err);
+        setErrored(true);
+        setLoadingMsg("3D ist in diesem Browser nicht verfügbar.");
         toast.error("WebGL wird nicht unterstützt.");
       }
     })();
@@ -555,360 +408,761 @@ export default function VehicleInspection3DPage() {
     };
   }, []);
 
-  // Load model when brand changes (uses t.THREE)
+  /* ============ load/swap model when the BRAND model changes ============ */
   useEffect(() => {
     const t = three.current;
-    if (!sceneReady || !t.initialized || !t.THREE) return;
+    if (!sceneReady || !t.initialized) return;
 
-    setModelReady(false);
-
-    if (!activeBrand?.model || !activeVehicle) {
-      if (t.modelRoot) t.carGroup.remove(t.modelRoot);
-      t.modelRoot = null;
-      t.loadedModel = null;
+    // no vehicle selected -> clear the stage
+    if (!currentModel) {
+      if (t.modelRoot) {
+        t.carGroup.remove(t.modelRoot);
+        t.modelRoot = null;
+      }
       t.carMeshes = [];
-      setSelectedMarkId(null);
+      while (t.decalGroup.children.length) {
+        const c = t.decalGroup.children.pop();
+        c.geometry?.dispose?.();
+        c.material?.dispose?.();
+      }
+      if (t.handleGroup) disposeMarkGroup(t.handleGroup);
+      setReady(false);
       return;
     }
 
-    if (
-      t.loadedModel === activeBrand.model &&
-      t.modelRoot &&
-      t.carMeshes?.length
-    ) {
-      setModelReady(true);
+    // same model already loaded (switching between two Mercedes vehicles) -> just refresh decals, no reload
+    if (t.loadedModel === currentModel && t.modelRoot) {
+      setReady(true);
       return;
     }
 
-    setSelectedMarkId(null);
-    if (t.modelRoot) t.carGroup.remove(t.modelRoot);
-    while (t.decalGroup.children.length)
-      t.decalGroup.remove(t.decalGroup.children[0]);
-    while (t.handleGroup.children.length)
-      t.handleGroup.remove(t.handleGroup.children[0]);
+    setReady(false);
+    setErrored(false);
+    setSelectedMark(null);
+    setLoadingMsg(`${activeBrand?.label || "Modell"} wird geladen`);
+
+    const { THREE, carGroup, decalGroup, loader } = t;
+    if (t.modelRoot) {
+      carGroup.remove(t.modelRoot);
+      t.modelRoot.traverse((o) => {
+        if (o.isMesh) {
+          o.geometry?.dispose?.();
+          if (Array.isArray(o.material))
+            o.material.forEach((m) => m.dispose?.());
+          else o.material?.dispose?.();
+        }
+      });
+      t.modelRoot = null;
+    }
     t.carMeshes = [];
+    while (decalGroup.children.length) {
+      const c = decalGroup.children.pop();
+      c.geometry?.dispose?.();
+      c.material?.dispose?.();
+    }
+    if (t.handleGroup) disposeMarkGroup(t.handleGroup);
+    carGroup.scale.setScalar(1);
+    carGroup.position.set(0, 0, 0);
+    carGroup.rotation.set(0, 0, 0);
 
-    t.loader.load(
-      activeBrand.model,
+    let cancelled = false;
+    loader.load(
+      currentModel,
       (gltf) => {
+        if (cancelled) return;
         t.modelRoot = gltf.scene;
-        t.loadedModel = activeBrand.model;
-        t.carGroup.add(gltf.scene);
+        t.loadedModel = currentModel;
+        carGroup.add(gltf.scene);
 
-        gltf.scene.updateMatrixWorld(true);
-        t.carGroup.updateMatrixWorld(true);
+        // --- robust framing -------------------------------------------------
+        // Some downloaded models include junk (giant ground planes, backdrops,
+        // light rigs) that inflate the bounding box and make the car look tiny.
+        // We measure the MEDIAN-sized meshes to find the real car, ignore
+        // outliers, scale to a consistent size, then fit the camera to it.
 
         const meshes = [];
+        gltf.scene.updateWorldMatrix(true, true);
         gltf.scene.traverse((o) => {
           if (o.isMesh && o.geometry) {
-            o.visible = true;
+            o.geometry.computeBoundingBox?.();
             meshes.push(o);
           }
         });
-        const box = new t.THREE.Box3();
-        meshes.forEach((m) => box.expandByObject(m));
-        const size = new t.THREE.Vector3();
-        box.getSize(size);
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const scale = 3.6 / maxDim;
-        t.carGroup.scale.setScalar(scale);
-        const newBox = new t.THREE.Box3().setFromObject(t.carGroup);
-        const center = new t.THREE.Vector3();
-        newBox.getCenter(center);
-        t.carGroup.position.x -= center.x;
-        t.carGroup.position.z -= center.z;
-        t.carGroup.position.y -= newBox.min.y;
-        t.carMeshes = meshes;
-        meshes.forEach((m) => {
-          m.castShadow = true;
-          m.receiveShadow = true;
+
+        // Separate the real car from TRUE backdrops only. A backdrop is a
+        // mesh that is BOTH enormous AND nearly flat (ground plane / skybox /
+        // wall). The old code dropped any mesh > median*4, which on some
+        // models throws away the car body itself (it can be one big mesh) — so
+        // the click-ray passed through it and hit a small interior part,
+        // landing the mark in the wrong place. Now we keep every real part.
+        const tmp = new THREE.Box3();
+        const dims = meshes.map((m) => {
+          tmp.setFromObject(m);
+          const s = new THREE.Vector3();
+          tmp.getSize(s);
+          return {
+            max: Math.max(s.x, s.y, s.z) || 0,
+            min: Math.min(s.x, s.y, s.z) || 0,
+          };
         });
-        const finalBox = new t.THREE.Box3().setFromObject(t.carGroup);
-        const rad = finalBox.getBoundingSphere(new t.THREE.Sphere()).radius;
-        t.localCarRadius = rad / scale;
-        const carCenter = new t.THREE.Vector3();
-        finalBox.getCenter(carCenter);
-        t.controls.target.copy(carCenter);
+        const sortedMax = dims
+          .map((d) => d.max)
+          .filter((v) => v > 0)
+          .sort((a, b) => a - b);
+        const median = sortedMax[Math.floor(sortedMax.length / 2)] || 1;
+        // huge (>6x median) AND paper-thin (<2% of its own largest dim)
+        const isBackdrop = (i) =>
+          dims[i].max > median * 6 && dims[i].min < dims[i].max * 0.02;
+
+        const carBox = new THREE.Box3();
+        let any = false;
+        meshes.forEach((m, i) => {
+          if (!isBackdrop(i)) {
+            tmp.setFromObject(m);
+            carBox.union(tmp);
+            any = true;
+          }
+        });
+        // fallback: if filtering removed everything, use the whole scene
+        if (!any) carBox.setFromObject(gltf.scene);
+
+        const size = new THREE.Vector3();
+        carBox.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const TARGET = 3.6; // desired car length in scene units
+        carGroup.scale.setScalar(TARGET / maxDim);
+
+        // recenter on the (filtered) car and sit it on the floor
+        const box2 = new THREE.Box3().setFromObject(carGroup);
+        const c2 = new THREE.Vector3();
+        box2.getCenter(c2);
+        carGroup.position.x -= c2.x;
+        carGroup.position.z -= c2.z;
+        carGroup.position.y -= box2.min.y;
+
+        // Collect ALL real car parts for raycasting (every non-backdrop mesh)
+        // so the ray hits the actual body instead of passing through it.
+        meshes.forEach((m, i) => {
+          if (!isBackdrop(i)) {
+            m.castShadow = true;
+            m.receiveShadow = true;
+            t.carMeshes.push(m);
+          }
+        });
+        if (t.carMeshes.length === 0) {
+          gltf.scene.traverse((o) => {
+            if (o.isMesh) t.carMeshes.push(o);
+          });
+        }
+
+        // --- fit camera to the car ------------------------------------------
+        const fitBox = new THREE.Box3().setFromObject(carGroup);
+        const center = new THREE.Vector3();
+        fitBox.getCenter(center);
+        const sphere = fitBox.getBoundingSphere(new THREE.Sphere());
+        const r = sphere.radius || 2;
+        const fov = (t.camera.fov * Math.PI) / 180;
+        const fitDist = (r / Math.sin(fov / 2)) * 1.15; // padding
+
+        // local-space radius (used to scale decals relative to the car)
+        const scaleFactor = carGroup.scale.x || 1;
+        t.localCarRadius = r / scaleFactor || 2;
+
+        t.controls.target.copy(center);
+        t.controls.minDistance = r * 0.6;
+        t.controls.maxDistance = fitDist * 3;
+        // place camera at a pleasant 3/4 angle at the fit distance
+        const dirv = new THREE.Vector3(0.8, 0.45, 1).normalize();
+        t.camera.position.copy(center).add(dirv.multiplyScalar(fitDist));
+        t.camera.near = Math.max(0.01, r / 100);
+        t.camera.far = fitDist * 10;
+        t.camera.updateProjectionMatrix();
         t.controls.update();
+
+        // remember the framing so "reset view" returns here
         t.homeView = {
-          center: carCenter.clone(),
+          center: center.clone(),
           camPos: t.camera.position.clone(),
         };
 
-        // This is the key fix: the click/marking useEffect waits for this.
-        setModelReady(true);
+        setReady(true);
+        setAutoSpin(false);
       },
-      undefined,
+      (xhr) => {
+        if (xhr.total)
+          setLoadingMsg(
+            `${activeBrand?.label || "Modell"} ${Math.round((xhr.loaded / xhr.total) * 100)}%`,
+          );
+      },
       (err) => {
         console.error(err);
-        setModelReady(false);
-        toast.error("Modell konnte nicht geladen werden.");
+        if (!cancelled) {
+          setErrored(true);
+          setLoadingMsg("Modell konnte nicht geladen werden.");
+          toast.error("Modell konnte nicht geladen werden.");
+        }
       },
     );
-  }, [sceneReady, activeBrand?.model, activeVehicleId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [currentModel, sceneReady]);
 
-  // Sync marks to decals
+  /* when switching vehicles that share a model, marks differ -> re-render decals */
+  /* sync marks -> decals */
   useEffect(() => {
     const t = three.current;
-    if (!modelReady || !t.decalGroup || !t.THREE || !t.modelRoot) return;
-    while (t.decalGroup.children.length)
-      t.decalGroup.remove(t.decalGroup.children[0]);
-    while (t.handleGroup.children.length)
-      t.handleGroup.remove(t.handleGroup.children[0]);
+    if (!t.decalGroup || !t.THREE || ready !== true) return;
+    const { decalGroup } = t;
+    disposeMarkGroup(decalGroup);
     marks.forEach((m, idx) =>
-      addMarkVisual(
-        t,
-        t.decalGroup,
-        m,
-        idx + 1,
-        m.id === selectedMarkId,
-        false,
-      ),
+      addMarkVisual(t, decalGroup, m, idx + 1, m.id === selectedMark, false),
     );
-    const sel = marks.find((m) => m.id === selectedMarkId);
-    if (sel) addHandles(t, t.handleGroup, sel);
-  }, [marks, selectedMarkId, modelReady]);
+    // size handles live in their own group, only for the selected mark
+    if (t.handleGroup) {
+      disposeMarkGroup(t.handleGroup);
+      const sel = marks.find((m) => m.id === selectedMark);
+      if (sel) addHandles(t, t.handleGroup, sel);
+    }
+  }, [marks, selectedMark, ready, activeVehicleId]);
 
-  // ========== CLEAN INTERACTION LOGIC (uses t.THREE) ==========
+  const flyToMark = useCallback((mark) => {
+    const t = three.current;
+    if (!t.camera || !mark) return;
+    const { THREE, carGroup, camera, controls, fly } = t;
+    const world = carGroup.localToWorld(new THREE.Vector3(...mark.local));
+    const center = new THREE.Vector3(0, world.y, 0);
+    const dir = world.clone().sub(center);
+    dir.y = 0;
+    if (dir.lengthSq() < 1e-4) dir.set(1, 0, 1);
+    dir.normalize();
+    // distance scales with car size and damage size, in world units
+    const R = (t.localCarRadius || 2) * (carGroup.scale.x || 1);
+    const dist = R * (0.85 + (mark.size || 0.06) * 1.5);
+    const camPos = world
+      .clone()
+      .add(dir.multiplyScalar(dist))
+      .add(new THREE.Vector3(0, R * 0.25, 0));
+    fly.fromCam.copy(camera.position);
+    fly.toCam.copy(camPos);
+    fly.fromTgt.copy(controls.target);
+    fly.toTgt.copy(world);
+    fly.t = 0;
+    fly.active = true;
+    setAutoSpin(false);
+  }, []);
+
+  // ── Pointer system ────────────────────────────────────────────────────
+  // Clear, predictable rules (no hidden modes, no wheel-resize):
+  //   TAP empty space            -> deselect (or, in Markier-Modus with
+  //                                 nothing selected, drop a NEW mark there).
+  //   TAP a mark                 -> select it. TAP it again -> deselect.
+  //   DRAG a mark                -> move it across the bodywork.
+  //   DRAG a handle (selected)   -> resize / re-angle it.
+  //   DRAG empty space           -> orbit the camera.
+  //   WHEEL                      -> always zoom (never touches size).
+  // Placing a mark does NOT auto-select, so you can place several in a row and
+  // the scene is never "stuck" with something selected.
   useEffect(() => {
     const t = three.current;
-    if (!modelReady || !t.renderer || !t.carMeshes?.length || !t.THREE) return;
-
+    if (ready !== true || !t.renderer || !t.THREE) return;
+    const THREE = t.THREE;
     const el = t.renderer.domElement;
+    const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+    const R = () => t.localCarRadius || 2;
+    const worldR = () => (t.localCarRadius || 2) * (t.carGroup.scale.x || 1);
 
-    const getHitMark = () => {
-      const hits = t.raycaster.intersectObjects(t.decalGroup.children, true);
-      const hit = hits.find((h) => h.object.userData?.markId);
-      return hit ? hit.object.userData.markId : null;
+    const setPointer = (e) => {
+      const rect = el.getBoundingClientRect();
+      t.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      t.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      t.raycaster.setFromCamera(t.pointer, t.camera);
     };
 
-    const getHitCarPoint = () => {
+    const hitCar = () => {
+      if (!t.carMeshes?.length) return null;
       const hits = t.raycaster.intersectObjects(t.carMeshes, true);
       if (!hits.length) return null;
       const hit = hits[0];
+      t.carGroup.updateMatrixWorld(true);
       const localPt = t.carGroup.worldToLocal(hit.point.clone());
-      let normal = new t.THREE.Vector3(0, 0, 1);
+      let nrmLocal = new THREE.Vector3(0, 0, 1);
+      let nrmWorld = new THREE.Vector3(0, 0, 1);
       if (hit.face) {
-        const worldNormal = hit.face.normal
+        nrmWorld = hit.face.normal
           .clone()
-          .transformDirection(hit.object.matrixWorld);
-        const invNormal = new t.THREE.Matrix3()
+          .transformDirection(hit.object.matrixWorld)
+          .normalize();
+        const inv = new THREE.Matrix3()
           .getNormalMatrix(t.carGroup.matrixWorld)
           .invert();
-        normal = worldNormal.applyMatrix3(invNormal).normalize();
+        nrmLocal = nrmWorld.clone().applyMatrix3(inv).normalize();
       }
-      return { localPt, normal };
-    };
-
-    let dragHandle = null;
-    let downPoint = null;
-
-    const onPointerDown = (e) => {
-      if (e.button !== 0) return;
-      const rect = el.getBoundingClientRect();
-      t.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      t.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      t.raycaster.setFromCamera(t.pointer, t.camera);
-
-      const handleHits = t.raycaster.intersectObjects(
-        t.handleGroup.children,
-        true,
-      );
-      if (handleHits.length) {
-        const hit = handleHits[0];
-        const handleData = hit.object.userData;
-        if (handleData.handle) {
-          const mark = marksRef.current.find((m) => m.id === handleData.markId);
-          if (mark) {
-            const nrm = new t.THREE.Vector3(...mark.normal).normalize();
-            const q = new t.THREE.Quaternion().setFromUnitVectors(
-              new t.THREE.Vector3(0, 0, 1),
-              nrm,
-            );
-            const basis = {
-              center: new t.THREE.Vector3(...mark.local),
-              ex: new t.THREE.Vector3(1, 0, 0).applyQuaternion(q),
-              ey: new t.THREE.Vector3(0, 1, 0).applyQuaternion(q),
-            };
-            let anchor = null;
-            if (
-              ELONGATED.has(mark.type) &&
-              (handleData.handle === "endA" || handleData.handle === "endB")
-            ) {
-              const rot = mark.rotation || 0;
-              const half = (mark.length || 0.14) * (t.localCarRadius || 2);
-              const axis = basis.ex
-                .clone()
-                .multiplyScalar(Math.cos(rot))
-                .add(basis.ey.clone().multiplyScalar(Math.sin(rot)));
-              const sign = handleData.handle === "endB" ? -1 : 1;
-              anchor = basis.center
-                .clone()
-                .add(axis.multiplyScalar(sign * half));
-            }
-            dragHandle = {
-              markId: handleData.markId,
-              handleType: handleData.handle,
-              basis,
-              anchor,
-            };
-            t.controls.enabled = false;
-            el.setPointerCapture(e.pointerId);
-            e.preventDefault();
-          }
-        }
-        return;
-      }
-      downPoint = {
-        x: e.clientX,
-        y: e.clientY,
-        moved: false,
-        time: performance.now(),
+      return {
+        worldPoint: hit.point.clone(),
+        distance: hit.distance,
+        nrmWorld,
+        nrmLocal,
+        localPt,
       };
     };
 
-    const onPointerMove = (e) => {
-      if (dragHandle) {
-        const rect = el.getBoundingClientRect();
-        t.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        t.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-        t.raycaster.setFromCamera(t.pointer, t.camera);
-        const mark = marksRef.current.find((m) => m.id === dragHandle.markId);
-        if (!mark) return;
-        const nrm = new t.THREE.Vector3(...mark.normal).normalize();
-        const worldNrm = nrm
+    // nearest mark under the pointer — ONLY the decal footprint counts, never
+    // the floating pin/leader/halo (whose large hit areas used to re-select a
+    // mark when you clicked near it).
+    const hitMarkId = () => {
+      const decals = t.decalGroup.children.filter((o) => o.userData.pick);
+      if (!decals.length) return null;
+      const mh = t.raycaster.intersectObjects(decals, false);
+      return mh.length ? mh[0].object.userData.markId : null;
+    };
+
+    const hitHandle = () => {
+      if (!t.handleGroup?.children.length) return null;
+      const hits = t.raycaster.intersectObjects(t.handleGroup.children, false);
+      const h = hits.find((x) => x.object.userData.handle);
+      return h ? h.object.userData : null;
+    };
+
+    const markBasis = (m) => {
+      const nrm = new THREE.Vector3(...(m.normal || [0, 0, 1])).normalize();
+      const q = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        nrm,
+      );
+      return {
+        nrm,
+        center: new THREE.Vector3(...m.local),
+        ex: new THREE.Vector3(1, 0, 0).applyQuaternion(q),
+        ey: new THREE.Vector3(0, 1, 0).applyQuaternion(q),
+        plane: new THREE.Plane().setFromNormalAndCoplanarPoint(
+          nrm.clone().transformDirection(t.carGroup.matrixWorld).normalize(),
+          t.carGroup.localToWorld(new THREE.Vector3(...m.local)),
+        ),
+      };
+    };
+
+    // g = current gesture: null | {kind:'resize',...} | {kind:'mark',...} | {kind:'orbit',...}
+    let g = null;
+    const TH = 5; // px movement threshold that turns a tap into a drag
+
+    // Coalesce drag updates to one React commit per animation frame. Updating
+    // state on every pointermove (each rebuilding the markers) was a big cause
+    // of the stutter; this keeps dragging smooth.
+    let rafId = 0;
+    let pending = null;
+    const flush = () => {
+      rafId = 0;
+      if (pending) {
+        updateMarkRef.current(pending.id, pending.patch);
+        pending = null;
+      }
+    };
+    const schedule = (id, patch) => {
+      pending = { id, patch };
+      if (!rafId) rafId = requestAnimationFrame(flush);
+    };
+
+    const beginResize = (hk, e) => {
+      const m = marksRef.current.find((x) => x.id === hk.markId);
+      if (!m) return false;
+      const basis = markBasis(m);
+      let anchor = null;
+      if (
+        ELONGATED.has(m.type) &&
+        (hk.handle === "endA" || hk.handle === "endB")
+      ) {
+        const cur = m.rotation || 0;
+        const half = (m.length || 0.14) * R();
+        const axis = basis.ex
           .clone()
-          .transformDirection(t.carGroup.matrixWorld)
-          .normalize();
-        const worldCenter = t.carGroup.localToWorld(
-          new t.THREE.Vector3(...mark.local),
-        );
-        const plane = new t.THREE.Plane().setFromNormalAndCoplanarPoint(
-          worldNrm,
-          worldCenter,
-        );
-        const intersectPoint = new t.THREE.Vector3();
-        if (t.raycaster.ray.intersectPlane(plane, intersectPoint)) {
-          const localPt = t.carGroup.worldToLocal(intersectPoint);
-          const R = t.localCarRadius;
-          const rel = localPt.clone().sub(dragHandle.basis.center);
-          const u = rel.dot(dragHandle.basis.ex);
-          const v = rel.dot(dragHandle.basis.ey);
-          if (!ELONGATED.has(mark.type)) {
-            if (dragHandle.handleType === "radius") {
-              const newSize = Math.min(
-                0.28,
-                Math.max(0.018, Math.hypot(u, v) / R),
-              );
-              updateMark(mark.id, { size: newSize });
-            }
-          } else {
-            const rot = mark.rotation || 0;
-            const axis = dragHandle.basis.ex
-              .clone()
-              .multiplyScalar(Math.cos(rot))
-              .add(dragHandle.basis.ey.clone().multiplyScalar(Math.sin(rot)));
-            const halfLen = (mark.length || 0.14) * R;
-            if (
-              dragHandle.handleType === "endA" ||
-              dragHandle.handleType === "endB"
-            ) {
-              const sign = dragHandle.handleType === "endB" ? 1 : -1;
-              const fixedEnd =
-                dragHandle.anchor ||
-                dragHandle.basis.center
-                  .clone()
-                  .add(axis.clone().multiplyScalar(-sign * halfLen));
-              const moving = localPt;
-              const seg = moving.clone().sub(fixedEnd);
-              if (seg.lengthSq() < 1e-6) return;
-              const newLen = seg.length() / R;
-              const newCenter = fixedEnd
-                .clone()
-                .add(seg.clone().multiplyScalar(0.5));
-              const newDir = seg.clone().normalize();
-              const newRot = Math.atan2(
-                newDir.dot(dragHandle.basis.ey),
-                newDir.dot(dragHandle.basis.ex),
-              );
-              updateMark(mark.id, {
-                local: [newCenter.x, newCenter.y, newCenter.z],
-                length: Math.min(0.55, Math.max(0.04, newLen)),
-                rotation: ((newRot % Math.PI) + Math.PI) % Math.PI,
-              });
-            } else if (dragHandle.handleType === "width") {
-              const perpDist = Math.abs(u * -Math.sin(rot) + v * Math.cos(rot));
-              const newSize = Math.min(
-                0.09,
-                Math.max(0.01, perpDist / (0.6 * R)),
-              );
-              updateMark(mark.id, { size: newSize });
-            }
-          }
-        }
-        return;
+          .multiplyScalar(Math.cos(cur))
+          .add(basis.ey.clone().multiplyScalar(Math.sin(cur)));
+        const sign = hk.handle === "endB" ? -1 : 1;
+        anchor = basis.center
+          .clone()
+          .add(axis.clone().multiplyScalar(sign * half));
       }
-      if (downPoint) {
-        const dx = Math.abs(e.clientX - downPoint.x);
-        const dy = Math.abs(e.clientY - downPoint.y);
-        if (dx > 5 || dy > 5) downPoint.moved = true;
-      }
+      g = {
+        kind: "resize",
+        markId: hk.markId,
+        handle: hk.handle,
+        basis,
+        anchor,
+      };
+      t.controls.enabled = false;
+      setAutoSpin(false);
+      el.setPointerCapture?.(e.pointerId);
+      return true;
     };
 
-    const onPointerUp = (e) => {
-      if (dragHandle) {
-        dragHandle = null;
-        t.controls.enabled = true;
-        el.releasePointerCapture?.(e.pointerId);
+    const applyResize = (ptLocal) => {
+      const m = marksRef.current.find((x) => x.id === g.markId);
+      if (!m) return;
+      const b = g.basis;
+      const rel = ptLocal.clone().sub(b.center);
+      const u = rel.dot(b.ex);
+      const v = rel.dot(b.ey);
+      const r = R();
+      if (!ELONGATED.has(m.type)) {
+        schedule(m.id, { size: clamp(Math.hypot(u, v) / r, 0.025, 0.35) });
         return;
       }
-      if (!downPoint) return;
-      const wasTap =
-        !downPoint.moved && performance.now() - downPoint.time < 400;
-      downPoint = null;
-      if (!wasTap) return;
+      if (g.handle === "width") {
+        const cur = m.rotation || 0;
+        const perp = -u * Math.sin(cur) + v * Math.cos(cur);
+        schedule(m.id, { size: clamp(Math.abs(perp) / (0.6 * r), 0.012, 0.1) });
+        return;
+      }
+      const fixed = (g.anchor || b.center).clone();
+      const seg = ptLocal.clone().sub(fixed);
+      const segLen = seg.length();
+      if (segLen < 1e-4) return;
+      const newCenter = fixed.clone().add(seg.clone().multiplyScalar(0.5));
+      const dir = seg.clone().normalize();
+      const ang = Math.atan2(dir.dot(b.ey), dir.dot(b.ex));
+      schedule(m.id, {
+        local: [newCenter.x, newCenter.y, newCenter.z],
+        length: clamp(segLen / 2 / r, 0.04, 0.6),
+        rotation: ((ang % Math.PI) + Math.PI) % Math.PI,
+      });
+    };
 
-      const rect = el.getBoundingClientRect();
-      t.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      t.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      t.raycaster.setFromCamera(t.pointer, t.camera);
+    const onDown = (e) => {
+      if (e.button !== 0) return;
+      setPointer(e);
 
-      const hitMark = getHitMark();
-      if (hitMark) {
-        // Toggle selection
-        setSelectedMarkId((prev) => (prev === hitMark ? null : hitMark));
+      // 1) a size handle on the selected mark
+      const hk = hitHandle();
+      if (hk && beginResize(hk, e)) {
+        e.preventDefault();
+        return;
+      }
+
+      // 2) a mark -> grab it (select + arm move). Disabling controls here (in
+      //    the capture phase) makes OrbitControls bail, so a drag moves the
+      //    mark instead of spinning the camera.
+      const id = hitMarkId();
+      if (id) {
+        g = {
+          kind: "mark",
+          id,
+          wasSelected: selectedMarkRef.current === id,
+          moved: false,
+          x: e.clientX,
+          y: e.clientY,
+        };
+        t.controls.enabled = false;
         setAutoSpin(false);
+        setSelectedMark(id);
+        el.setPointerCapture?.(e.pointerId);
         return;
       }
-      if (activeTypeRef.current) {
-        const carHit = getHitCarPoint();
-        if (carHit) {
-          const newMark = makeMark(
-            [carHit.localPt.x, carHit.localPt.y, carHit.localPt.z],
-            [carHit.normal.x, carHit.normal.y, carHit.normal.z],
-            activeTypeRef.current,
-          );
-          setMarks((prev) => [...prev, newMark]);
-          setSelectedMarkId(newMark.id);
-          setAutoSpin(false);
-          toast.success("Schaden gesetzt");
-        }
-      } else {
-        setSelectedMarkId(null);
-      }
+
+      // 3) empty space -> let OrbitControls orbit; remember for tap detection
+      g = { kind: "orbit", moved: false, x: e.clientX, y: e.clientY };
     };
 
-    el.addEventListener("pointerdown", onPointerDown);
-    el.addEventListener("pointermove", onPointerMove);
-    el.addEventListener("pointerup", onPointerUp);
+    const onMove = (e) => {
+      if (!g) return;
+      if (g.kind === "resize") {
+        setPointer(e);
+        const hitPt = new THREE.Vector3();
+        if (t.raycaster.ray.intersectPlane(g.basis.plane, hitPt))
+          applyResize(t.carGroup.worldToLocal(hitPt.clone()));
+        e.preventDefault();
+        return;
+      }
+      const far = Math.abs(e.clientX - g.x) + Math.abs(e.clientY - g.y) > TH;
+      if (g.kind === "mark") {
+        if (far) g.moved = true;
+        if (g.moved) {
+          setPointer(e);
+          const c = hitCar();
+          if (c)
+            schedule(g.id, {
+              local: [c.localPt.x, c.localPt.y, c.localPt.z],
+              normal: [c.nrmLocal.x, c.nrmLocal.y, c.nrmLocal.z],
+            });
+          e.preventDefault();
+        }
+        return;
+      }
+      if (g.kind === "orbit" && far) g.moved = true;
+    };
+
+    const finishDrag = (e) => {
+      t.controls.enabled = true;
+      try {
+        el.releasePointerCapture?.(e.pointerId);
+      } catch {}
+    };
+
+    const onUp = (e) => {
+      if (!g) return;
+      // commit the last drag value immediately
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+      flush();
+      const cur = g;
+      g = null;
+
+      if (cur.kind === "resize") {
+        finishDrag(e);
+        return;
+      }
+
+      if (cur.kind === "mark") {
+        finishDrag(e);
+        if (!cur.moved) {
+          // tap on a mark: toggle selection
+          if (cur.wasSelected) setSelectedMark(null);
+          else setSelectedMark(cur.id);
+        }
+        // if it moved, it stays selected (already set on down)
+        return;
+      }
+
+      // orbit / empty space
+      if (cur.moved) return; // was an orbit drag
+
+      if (!stateRef.current.placing) {
+        // view mode: a tap on empty space clears the selection
+        if (selectedMarkRef.current) setSelectedMark(null);
+        return;
+      }
+
+      // Markier-Modus: a tap on the car places a NEW mark — even right next to
+      // an existing one (the previous selection is simply cleared). Tapping the
+      // background (missing the car) deselects.
+      if (!activeVehicleIdRef.current) {
+        toast.error("Bitte zuerst ein Fahrzeug wählen oder anlegen.");
+        return;
+      }
+      setPointer(e);
+      const c = hitCar();
+      if (!c) {
+        if (selectedMarkRef.current) setSelectedMark(null);
+        return;
+      }
+      const mk = makeMark(
+        [c.localPt.x, c.localPt.y, c.localPt.z],
+        [c.nrmLocal.x, c.nrmLocal.y, c.nrmLocal.z],
+        stateRef.current.activeType,
+      );
+      setMarks((prev) => [...prev, mk]);
+      setSelectedMark(null); // never leave the scene stuck on a selection
+      toast.success("Schaden gesetzt — antippen zum Bearbeiten.", {
+        id: "placed",
+        duration: 1200,
+      });
+    };
+
+    // capture phase so we run BEFORE OrbitControls and can suppress its orbit
+    el.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
     return () => {
-      el.removeEventListener("pointerdown", onPointerDown);
-      el.removeEventListener("pointermove", onPointerMove);
-      el.removeEventListener("pointerup", onPointerUp);
+      if (rafId) cancelAnimationFrame(rafId);
+      el.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
       t.controls.enabled = true;
     };
-  }, [modelReady, activeVehicleId, updateMark, setMarks]);
+  }, [ready]);
 
+  // Esc clears the current selection (another easy way to reach "nothing
+  // selected").
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") setSelectedMark(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const resetView = () => {
+    const t = three.current;
+    if (!t.camera) return;
+    const { fly, camera, controls, homeView } = t;
+    fly.fromCam.copy(camera.position);
+    fly.fromTgt.copy(controls.target);
+    if (homeView) {
+      fly.toCam.copy(homeView.camPos);
+      fly.toTgt.copy(homeView.center);
+    } else {
+      fly.toCam.set(5.4, 2.5, 6.4);
+      fly.toTgt.set(0, 0.65, 0);
+    }
+    fly.t = 0;
+    fly.active = true;
+  };
+
+  const updateMark = (id, patch) =>
+    setMarks((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+  const updateMarkRef = useRef(updateMark);
+  updateMarkRef.current = updateMark;
+  const deleteMark = (id) => {
+    setMarks((prev) => prev.filter((m) => m.id !== id));
+    if (selectedMark === id) setSelectedMark(null);
+  };
+  const clearAll = () => {
+    if (
+      marks.length &&
+      confirm("Alle Markierungen dieses Fahrzeugs entfernen?")
+    ) {
+      setMarks([]);
+      setSelectedMark(null);
+    }
+  };
+
+  // ---- global (whole-car) actions per vehicle ----
+  const activeGlobals = (activeVehicleId &&
+    globalsByVehicle[activeVehicleId]) || { actions: {}, custom: [] };
+  const [customGlobalInput, setCustomGlobalInput] = useState("");
+  const globalsCount =
+    Object.values(activeGlobals.actions || {}).filter(Boolean).length +
+    (activeGlobals.custom?.length || 0);
+
+  const setActiveGlobals = (updater) =>
+    setGlobalsByVehicle((prev) => {
+      if (!activeVehicleId) return prev;
+      const cur = prev[activeVehicleId] || { actions: {}, custom: [] };
+      const next = typeof updater === "function" ? updater(cur) : updater;
+      return { ...prev, [activeVehicleId]: next };
+    });
+  const toggleGlobal = (id) =>
+    setActiveGlobals((cur) => ({
+      ...cur,
+      actions: { ...(cur.actions || {}), [id]: !cur.actions?.[id] },
+    }));
+  const addCustomGlobal = () => {
+    const v = customGlobalInput.trim();
+    if (!v) return;
+    setActiveGlobals((cur) => ({ ...cur, custom: [...(cur.custom || []), v] }));
+    setCustomGlobalInput("");
+  };
+  const removeCustomGlobal = (i) =>
+    setActiveGlobals((cur) => ({
+      ...cur,
+      custom: (cur.custom || []).filter((_, idx) => idx !== i),
+    }));
+  const clearAllAufgaben = () => {
+    if (!confirm("Alle Aufgaben dieses Fahrzeugs entfernen?")) return;
+    setMarks([]);
+    setSelectedMark(null);
+    setActiveGlobals({ actions: {}, custom: [] });
+  };
+  const selectMark = (id) => {
+    setSelectedMark(id);
+    const m = marks.find((x) => x.id === id);
+    if (m) flyToMark(m);
+  };
+
+  /* ---- vehicle management ---- */
+  const addVehicle = ({ brandId, name, fin }) => {
+    const id = `v_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
+    const v = { id, brandId, name: name.trim(), fin: fin.trim() };
+    setVehicles((prev) => [...prev, v]);
+    setActiveVehicleId(id);
+    setShowAdd(false);
+    toast.success("Fahrzeug hinzugefügt");
+  };
+  const deleteVehicle = (id) => {
+    if (!confirm("Dieses Fahrzeug entfernen?")) return;
+    setVehicles((prev) => prev.filter((v) => v.id !== id));
+    setMarksByVehicle((prev) => {
+      const n = { ...prev };
+      delete n[id];
+      return n;
+    });
+    if (activeVehicleId === id) setActiveVehicleId(null);
+  };
+
+  const handleSave = async () => {
+    const globals = {
+      preset: Object.entries(activeGlobals.actions || {})
+        .filter(([, on]) => on)
+        .map(([id]) => id),
+      custom: activeGlobals.custom || [],
+    };
+    const payload = {
+      vehicle: activeVehicle,
+      brand: activeBrand?.label,
+      marks: marks.map(({ id, ...r }) => r),
+      globals,
+    };
+    try {
+      console.log("Inspection payload:", payload);
+      toast.success("Auftrag gespeichert (siehe Konsole)");
+    } catch {
+      toast.error("Speichern fehlgeschlagen");
+    }
+  };
+
+  const handlePrint = () => {
+    const w = window.open("", "_blank", "width=900,height=1200");
+    if (!w) return toast.error("Popup wurde blockiert.");
+    const esc = (s = "") =>
+      String(s ?? "").replace(
+        /[&<>"']/g,
+        (c) =>
+          ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;",
+          })[c],
+      );
+    const globalRows = [
+      ...Object.entries(activeGlobals.actions || {})
+        .filter(([, on]) => on)
+        .map(([id]) => GLOBAL_ACTIONS.find((x) => x.id === id)?.label)
+        .filter(Boolean),
+      ...(activeGlobals.custom || []),
+    ];
+    const globalsHtml =
+      globalRows.length === 0
+        ? ""
+        : `
+      <h2 style="font-size:13px;margin:24px 0 6px;letter-spacing:.08em;text-transform:uppercase;color:#475569">Gesamtfahrzeug</h2>
+      <ul style="margin:0;padding-left:18px;font-size:13px">${globalRows.map((r) => `<li><b>${esc(r)}</b></li>`).join("")}</ul>`;
+    const rows = marks
+      .map((m, i) => {
+        const tp = DAMAGE_TYPES.find((x) => x.id === m.type);
+        const sv = SEVERITY.find((x) => x.id === m.severity);
+        return `<tr><td>${i + 1}</td><td><span class="dot" style="background:${tp?.color}"></span>${esc(tp?.label)}</td><td>${esc(m.panel) || "—"}</td><td><b>${esc(m.action)}</b></td><td><span class="sev" style="color:${sv?.color}">${esc(sv?.label)}</span></td><td>${esc(m.note) || "—"}</td></tr>`;
+      })
+      .join("");
+    const title = activeVehicle
+      ? `${activeBrand?.label || ""} ${activeVehicle.name}`
+      : "Fahrzeug";
+    w.document
+      .write(`<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><title>Lackier-Auftrag</title><style>
+      *{box-sizing:border-box}body{font-family:'Segoe UI',system-ui,sans-serif;color:#0f172a;padding:40px}
+      .top{display:flex;justify-content:space-between;border-bottom:2px solid #0f172a;padding-bottom:14px}
+      .brand{font-size:18px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.doc{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.16em;text-align:right}
+      h1{font-size:24px;margin:18px 0 2px}.sub{color:#64748b;font-size:13px;margin-bottom:20px}
+      table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+      th{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#64748b}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle}
+      .sev{font-weight:700}.foot{margin-top:30px;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:12px}
+      </style></head><body onload="window.print();window.onafterprint=()=>window.close()">
+      <div class="top"><div class="brand">Autogalerie Jülich</div><div class="doc">Lackier- & Reparatur-Auftrag<br/>${new Date().toLocaleDateString("de-DE")}</div></div>
+      <h1>${esc(title)}</h1><div class="sub">${activeVehicle?.fin ? "FIN " + esc(activeVehicle.fin) + " · " : ""}${marks.length} Position(en) · ${globalRows.length} Gesamt-Maßnahme(n)</div>
+      ${globalsHtml}
+      <h2 style="font-size:13px;margin:24px 0 6px;letter-spacing:.08em;text-transform:uppercase;color:#475569">Einzelpositionen</h2>
+      <table><thead><tr><th>#</th><th>Schaden</th><th>Bauteil</th><th>Maßnahme</th><th>Grad</th><th>Notiz</th></tr></thead><tbody>${rows || '<tr><td colspan="6">Keine Markierungen</td></tr>'}</tbody></table>
+      <div class="foot">Erstellt mit dem 3D-Inspektionswerkzeug · Nur für den internen Gebrauch.</div></body></html>`);
+    w.document.close();
+    w.focus();
+  };
+
+  const selected = marks.find((m) => m.id === selectedMark);
   const counts = useMemo(
     () =>
       DAMAGE_TYPES.map((t) => ({
@@ -917,12 +1171,7 @@ export default function VehicleInspection3DPage() {
       })),
     [marks],
   );
-  const globalsCount =
-    Object.values(activeGlobals.actions || {}).filter(Boolean).length +
-    (activeGlobals.custom?.length || 0);
-  const selectedMark = marks.find((m) => m.id === selectedMarkId);
 
-  // JSX (same as original, uses activeType and selectedMarkId)
   return (
     <div style={fontStack} className="min-h-screen bg-[#fafafa] text-zinc-900">
       <div
@@ -932,6 +1181,7 @@ export default function VehicleInspection3DPage() {
             "radial-gradient(80% 100% at 50% 0%, rgba(99,102,241,.08), transparent 70%)",
         }}
       />
+
       <div className="relative mx-auto w-full max-w-[1600px] px-4 sm:px-6 py-5">
         <header className="mb-5 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -968,16 +1218,18 @@ export default function VehicleInspection3DPage() {
         </header>
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_1fr_340px]">
+          {/* TREE */}
           <VehicleTree
             brands={BRANDS}
             vehicles={vehicles}
             activeVehicleId={activeVehicleId}
             onSelect={setActiveVehicleId}
-            onAdd={() => setShowAddVehicle(true)}
+            onAdd={() => setShowAdd(true)}
             onDeleteVehicle={deleteVehicle}
             marksByVehicle={marksByVehicle}
           />
 
+          {/* CENTER: viewer + details strip */}
           <div className="flex flex-col gap-4">
             <section className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_1px_3px_rgba(24,24,27,.06),0_12px_40px_-12px_rgba(24,24,27,.12)]">
               <div
@@ -985,10 +1237,10 @@ export default function VehicleInspection3DPage() {
                 className="relative aspect-[16/9] w-full touch-none"
                 style={{
                   background: "linear-gradient(180deg,#ffffff 0%,#f4f4f5 100%)",
-                  cursor: activeType ? "crosshair" : "default",
+                  cursor: placing ? "crosshair" : "grab",
                 }}
               >
-                {!activeVehicle && three.current.initialized && (
+                {!activeVehicle && sceneReady && !errored && (
                   <div className="absolute inset-0 grid place-items-center px-6">
                     <div className="flex max-w-xs flex-col items-center gap-3 text-center">
                       <div className="grid h-12 w-12 place-items-center rounded-full bg-zinc-100 text-zinc-400">
@@ -999,7 +1251,7 @@ export default function VehicleInspection3DPage() {
                         lege ein neues an.
                       </p>
                       <button
-                        onClick={() => setShowAddVehicle(true)}
+                        onClick={() => setShowAdd(true)}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
                       >
                         <FiPlusCircle size={14} /> Fahrzeug anlegen
@@ -1007,23 +1259,38 @@ export default function VehicleInspection3DPage() {
                     </div>
                   </div>
                 )}
-                {activeVehicle && !three.current.modelRoot && (
+                {activeVehicle && ready !== true && !errored && (
                   <div className="absolute inset-0 grid place-items-center">
-                    <div className="h-7 w-7 animate-spin rounded-full border-2 border-zinc-200 border-t-indigo-600" />
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="h-7 w-7 animate-spin rounded-full border-2 border-zinc-200 border-t-indigo-600" />
+                      <span className="text-xs text-zinc-400">
+                        {loadingMsg}
+                      </span>
+                    </div>
                   </div>
                 )}
-                {activeVehicle && three.current.modelRoot && (
+                {errored && (
+                  <div className="absolute inset-0 grid place-items-center px-6">
+                    <div className="flex max-w-xs flex-col items-center gap-2 text-center">
+                      <FiAlertCircle className="text-red-500" size={22} />
+                      <p className="text-xs text-zinc-500">
+                        {loadingMsg}
+                        <br />
+                        Prüfe den Modellpfad der Marke und CORS.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {ready === true && activeVehicle && (
                   <>
                     <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2">
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm ${activeType ? "bg-indigo-600 text-white" : "border border-zinc-200 bg-white/90 text-zinc-600"}`}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm ${placing ? "bg-indigo-600 text-white" : "border border-zinc-200 bg-white/90 text-zinc-600"}`}
                       >
                         <span
-                          className={`h-1.5 w-1.5 rounded-full ${activeType ? "bg-white" : "bg-zinc-400"}`}
+                          className={`h-1.5 w-1.5 rounded-full ${placing ? "bg-white" : "bg-zinc-400"}`}
                         />
-                        {activeType
-                          ? `Markieren: ${DAMAGE_TYPES.find((x) => x.id === activeType)?.label || "Schaden"}`
-                          : "Nur Ansicht"}
+                        {placing ? "Markier-Modus" : "Nur Ansicht"}
                       </span>
                       <span className="rounded-full border border-zinc-200 bg-white/90 px-2.5 py-1 text-[11px] font-medium text-zinc-600 shadow-sm">
                         {activeBrand?.label} · {activeVehicle.name}
@@ -1041,9 +1308,9 @@ export default function VehicleInspection3DPage() {
                         />
                       </ViewerBtn>
                       <ViewerBtn
-                        onClick={() => setActiveType(null)}
-                        active={false}
-                        title="Markier-Modus deaktivieren"
+                        onClick={() => setPlacing((p) => !p)}
+                        active={placing}
+                        title="Markier-Modus"
                       >
                         <FiCrosshair size={15} />
                       </ViewerBtn>
@@ -1054,39 +1321,17 @@ export default function VehicleInspection3DPage() {
                         <FiMaximize size={15} />
                       </ViewerBtn>
                     </div>
-                    <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
-                      <span className="rounded-full border border-zinc-200/70 bg-white/85 px-3 py-1 text-[11px] text-zinc-500 backdrop-blur-sm">
-                        {activeType
-                          ? "Klicken setzt Schaden · Ziehen dreht die Ansicht · Scrollen zoomt"
-                          : "Ziehen zum Drehen · Scrollen zum Zoomen · Klick auf Markierung zum Auswählen"}
-                      </span>
-                    </div>
-                    {marks.length > 0 && (
-                      <div className="absolute bottom-3 left-4 flex flex-wrap gap-2">
-                        {counts
-                          .filter((c) => c.n > 0)
-                          .map((c) => (
-                            <span
-                              key={c.id}
-                              className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/90 px-2 py-0.5 text-[10px] font-medium text-zinc-600 backdrop-blur-sm"
-                            >
-                              <span
-                                className="h-2 w-2 rounded-full"
-                                style={{ background: c.color }}
-                              />
-                              {c.label} · {c.n}
-                            </span>
-                          ))}
-                      </div>
-                    )}
+                    <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center"></div>
                   </>
                 )}
               </div>
             </section>
 
+            {/* DETAILS + AUFGABEN SUMMARY (below the viewer) */}
             {activeVehicle && (
               <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+                {/* details */}
+                <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_1px_3px_rgba(24,24,27,.05)]">
                   <div className="mb-3 flex items-center gap-2">
                     <FiTruck className="text-zinc-400" size={14} />
                     <h2 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
@@ -1110,7 +1355,9 @@ export default function VehicleInspection3DPage() {
                     <DetailRow label="Markierungen" value={`${marks.length}`} />
                   </div>
                 </div>
-                <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+
+                {/* AUFGABEN — the actual list, not a summary */}
+                <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_1px_3px_rgba(24,24,27,.05)]">
                   <div className="mb-3 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <FiClipboard className="text-zinc-400" size={14} />
@@ -1120,19 +1367,21 @@ export default function VehicleInspection3DPage() {
                     </div>
                     {(marks.length > 0 || globalsCount > 0) && (
                       <button
-                        onClick={clearAllTasks}
+                        onClick={clearAllAufgaben}
                         className="text-[11px] font-medium text-red-600 hover:text-red-700"
                       >
                         Alle löschen
                       </button>
                     )}
                   </div>
+
                   {marks.length === 0 && globalsCount === 0 ? (
                     <p className="py-2 text-[11px] text-zinc-400">
                       Noch keine Aufgaben.
                     </p>
                   ) : (
                     <ul className="-mx-1 max-h-72 space-y-0.5 overflow-auto px-1">
+                      {/* whole-car preset actions */}
                       {Object.entries(activeGlobals.actions || {})
                         .filter(([, on]) => on)
                         .map(([id]) => {
@@ -1160,7 +1409,7 @@ export default function VehicleInspection3DPage() {
                             </li>
                           );
                         })}
-                      {activeGlobals.custom?.map((c, i) => (
+                      {(activeGlobals.custom || []).map((c, i) => (
                         <li
                           key={`gc_${i}`}
                           className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs hover:bg-zinc-50"
@@ -1182,10 +1431,11 @@ export default function VehicleInspection3DPage() {
                           </button>
                         </li>
                       ))}
-                      {marks.map((m, idx) => {
-                        const dt = DAMAGE_TYPES.find((d) => d.id === m.type);
-                        const sv = SEVERITY.find((s) => s.id === m.severity);
-                        const on = selectedMarkId === m.id;
+                      {/* per-mark positions */}
+                      {marks.map((m, i) => {
+                        const t = DAMAGE_TYPES.find((x) => x.id === m.type);
+                        const sv = SEVERITY.find((x) => x.id === m.severity);
+                        const on = selectedMark === m.id;
                         return (
                           <li
                             key={m.id}
@@ -1194,9 +1444,9 @@ export default function VehicleInspection3DPage() {
                           >
                             <span
                               className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full text-[10px] font-semibold text-white"
-                              style={{ background: dt?.color }}
+                              style={{ background: t?.color }}
                             >
-                              {idx + 1}
+                              {i + 1}
                             </span>
                             <span className="min-w-0 flex-1">
                               <span className="flex items-center gap-1.5">
@@ -1205,7 +1455,7 @@ export default function VehicleInspection3DPage() {
                                 </span>
                                 <span className="h-1 w-1 rounded-full bg-zinc-300" />
                                 <span className="truncate text-zinc-500">
-                                  {m.panel || dt?.label}
+                                  {m.panel || t?.label}
                                 </span>
                               </span>
                               {m.note && (
@@ -1232,6 +1482,8 @@ export default function VehicleInspection3DPage() {
                       })}
                     </ul>
                   )}
+
+                  {/* severity tally */}
                   {marks.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-3 border-t border-zinc-100 pt-3">
                       {SEVERITY.map((s) => {
@@ -1260,13 +1512,9 @@ export default function VehicleInspection3DPage() {
             )}
           </div>
 
+          {/* RIGHT: tools */}
           <aside className="flex flex-col gap-4">
             <Panel title="1 · Schadensart wählen">
-              <div className="mb-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px] leading-relaxed text-zinc-500">
-                Keine Art ist automatisch ausgewählt. Wähle eine Art zum
-                Markieren, klicke sie erneut zum Abwählen. Ziehen dreht weiter
-                das Fahrzeug.
-              </div>
               <div className="grid grid-cols-2 gap-1.5">
                 {DAMAGE_TYPES.map((t) => {
                   const on = activeType === t.id;
@@ -1274,21 +1522,19 @@ export default function VehicleInspection3DPage() {
                   return (
                     <button
                       key={t.id}
-                      onClick={() =>
-                        setActiveType((cur) => (cur === t.id ? null : t.id))
-                      }
-                      className={`flex items-center justify-between rounded-lg border px-2.5 py-2 text-xs font-medium transition ${on ? "border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm" : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"}`}
+                      onClick={() => setActiveType(t.id)}
+                      className={`flex items-center justify-between rounded-lg border px-2.5 py-2 text-xs font-medium transition ${on ? "border-zinc-900 bg-zinc-900 text-white shadow-sm" : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"}`}
                     >
                       <span className="flex items-center gap-2">
                         <span
-                          className={`h-2.5 w-2.5 rounded-full ${on ? "ring-2 ring-indigo-200" : ""}`}
+                          className="h-2.5 w-2.5 rounded-full ring-2 ring-white/40"
                           style={{ background: t.color }}
                         />
                         {t.label}
                       </span>
                       {n > 0 && (
                         <span
-                          className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${on ? "bg-indigo-100 text-indigo-700" : "bg-zinc-100 text-zinc-500"}`}
+                          className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${on ? "bg-white/20" : "bg-zinc-100 text-zinc-500"}`}
                         >
                           {n}
                         </span>
@@ -1297,21 +1543,14 @@ export default function VehicleInspection3DPage() {
                   );
                 })}
               </div>
-              <button
-                type="button"
-                onClick={() => setActiveType(null)}
-                className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[11px] font-medium text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-700"
-              >
-                Auswahl aufheben
-              </button>
             </Panel>
 
-            {selectedMark ? (
+            {selected ? (
               <Panel
                 title="2 · Maßnahme & Größe"
                 action={
                   <button
-                    onClick={() => setSelectedMarkId(null)}
+                    onClick={() => setSelectedMark(null)}
                     className="text-zinc-400 hover:text-zinc-600"
                   >
                     <FiX size={15} />
@@ -1325,11 +1564,11 @@ export default function VehicleInspection3DPage() {
                         <button
                           key={t.id}
                           onClick={() =>
-                            updateMark(selectedMark.id, {
+                            updateMark(selected.id, {
                               type: t.id,
                               length: ELONGATED.has(t.id)
-                                ? Math.max(selectedMark.length || 0.14, 0.1)
-                                : selectedMark.size,
+                                ? Math.max(selected.length || 0.14, 0.1)
+                                : selected.size,
                             })
                           }
                           title={t.label}
@@ -1337,7 +1576,7 @@ export default function VehicleInspection3DPage() {
                           style={{
                             background: t.color,
                             borderColor:
-                              selectedMark.type === t.id
+                              selected.type === t.id
                                 ? "#0f172a"
                                 : "transparent",
                           }}
@@ -1345,8 +1584,9 @@ export default function VehicleInspection3DPage() {
                       ))}
                     </div>
                   </Field>
+
                   {(() => {
-                    const isE = ELONGATED.has(selectedMark.type);
+                    const isE = ELONGATED.has(selected.type);
                     const cm = (f) => (f * 200).toFixed(f < 0.05 ? 1 : 0);
                     const presets = isE
                       ? [
@@ -1368,22 +1608,21 @@ export default function VehicleInspection3DPage() {
                           {isE
                             ? "Die beiden End-Griffe ziehen für Länge & Richtung, den seitlichen Griff für die Breite."
                             : "Den Griff am Rand ziehen, um die Größe einzustellen."}{" "}
-                          Griffe oder Schnellgrößen benutzen. Mausrad bleibt nur
-                          für Zoom.
+                          Den Schaden selbst ziehen, um ihn zu verschieben.
                         </p>
                         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                           {isE ? (
                             <>
                               <span className="rounded-md bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 ring-1 ring-zinc-200">
-                                Länge {cm(selectedMark.length)} cm
+                                Länge {cm(selected.length)} cm
                               </span>
                               <span className="rounded-md bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 ring-1 ring-zinc-200">
-                                Breite {cm(selectedMark.size)} cm
+                                Breite {cm(selected.size)} cm
                               </span>
                             </>
                           ) : (
                             <span className="rounded-md bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 ring-1 ring-zinc-200">
-                              Ø {cm(selectedMark.size)} cm
+                              Ø {cm(selected.size)} cm
                             </span>
                           )}
                         </div>
@@ -1396,7 +1635,7 @@ export default function VehicleInspection3DPage() {
                               key={lbl}
                               onClick={() =>
                                 updateMark(
-                                  selectedMark.id,
+                                  selected.id,
                                   isE ? { length: val } : { size: val },
                                 )
                               }
@@ -1409,21 +1648,18 @@ export default function VehicleInspection3DPage() {
                       </div>
                     );
                   })()}
+
                   <Field label="Maßnahme">
                     <Select
-                      value={selectedMark.action}
-                      onChange={(v) =>
-                        updateMark(selectedMark.id, { action: v })
-                      }
+                      value={selected.action}
+                      onChange={(v) => updateMark(selected.id, { action: v })}
                       options={ACTIONS}
                     />
                   </Field>
                   <Field label="Bauteil">
                     <Select
-                      value={selectedMark.panel}
-                      onChange={(v) =>
-                        updateMark(selectedMark.id, { panel: v })
-                      }
+                      value={selected.panel}
+                      onChange={(v) => updateMark(selected.id, { panel: v })}
                       options={["", ...PANELS]}
                       placeholder="(optional)"
                     />
@@ -1431,12 +1667,12 @@ export default function VehicleInspection3DPage() {
                   <Field label="Schweregrad">
                     <div className="grid grid-cols-3 gap-1.5">
                       {SEVERITY.map((s) => {
-                        const on = selectedMark.severity === s.id;
+                        const on = selected.severity === s.id;
                         return (
                           <button
                             key={s.id}
                             onClick={() =>
-                              updateMark(selectedMark.id, { severity: s.id })
+                              updateMark(selected.id, { severity: s.id })
                             }
                             className={`rounded-lg border px-2 py-1.5 text-[11px] font-semibold transition ${on ? "text-white shadow-sm" : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"}`}
                             style={
@@ -1453,9 +1689,9 @@ export default function VehicleInspection3DPage() {
                   </Field>
                   <Field label="Notiz">
                     <textarea
-                      value={selectedMark.note}
+                      value={selected.note}
                       onChange={(e) =>
-                        updateMark(selectedMark.id, { note: e.target.value })
+                        updateMark(selected.id, { note: e.target.value })
                       }
                       placeholder="z. B. tiefer Kratzer, ca. 15 cm …"
                       rows={2}
@@ -1464,13 +1700,13 @@ export default function VehicleInspection3DPage() {
                   </Field>
                   <div className="flex items-center justify-between pt-1">
                     <button
-                      onClick={() => flyToMark(selectedMark)}
+                      onClick={() => flyToMark(selected)}
                       className="inline-flex items-center gap-1.5 text-[11px] font-medium text-indigo-600 hover:text-indigo-700"
                     >
                       <FiTarget size={13} /> Zur Stelle springen
                     </button>
                     <button
-                      onClick={() => deleteMark(selectedMark.id)}
+                      onClick={() => deleteMark(selected.id)}
                       className="inline-flex items-center gap-1.5 text-[11px] font-medium text-red-600 hover:text-red-700"
                     >
                       <FiTrash2 size={13} /> Entfernen
@@ -1493,6 +1729,7 @@ export default function VehicleInspection3DPage() {
               </Panel>
             )}
 
+            {/* Gesamtfahrzeug-Maßnahmen */}
             {activeVehicle && (
               <Panel title="Gesamtfahrzeug-Maßnahmen">
                 <div className="grid grid-cols-2 gap-1.5">
@@ -1513,11 +1750,14 @@ export default function VehicleInspection3DPage() {
                     );
                   })}
                 </div>
+                {/* custom global action input */}
                 <div className="mt-2 flex gap-1.5">
                   <input
                     value={customGlobalInput}
                     onChange={(e) => setCustomGlobalInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && addCustomGlobal()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") addCustomGlobal();
+                    }}
                     placeholder="Eigene Maßnahme hinzufügen…"
                     className="flex-1 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                   />
@@ -1549,13 +1789,16 @@ export default function VehicleInspection3DPage() {
                 )}
               </Panel>
             )}
+
+            {/* AUFGABEN — merged list (per-mark positions + global actions) */}
           </aside>
         </div>
       </div>
-      {showAddVehicle && (
+
+      {showAdd && (
         <AddVehicleModal
           brands={BRANDS}
-          onClose={() => setShowAddVehicle(false)}
+          onClose={() => setShowAdd(false)}
           onAdd={addVehicle}
         />
       )}
@@ -1563,159 +1806,15 @@ export default function VehicleInspection3DPage() {
   );
 }
 
-// ========== HELPER COMPONENTS AND FUNCTIONS (unchanged from your original) ==========
-function VehicleTree({
-  brands,
-  vehicles,
-  activeVehicleId,
-  onSelect,
-  onAdd,
-  onDeleteVehicle,
-  marksByVehicle,
-}) {
-  const [query, setQuery] = useState("");
-  const [openBrands, setOpenBrands] = useState({});
-  const byBrand = useMemo(() => {
-    const g = {};
-    brands.forEach((b) => (g[b.id] = []));
-    vehicles.forEach((v) => {
-      if (
-        !query ||
-        `${v.name} ${v.fin}`.toLowerCase().includes(query.toLowerCase())
-      )
-        (g[v.brandId] ||= []).push(v);
-    });
-    return g;
-  }, [brands, vehicles, query]);
-  useEffect(() => {
-    const v = vehicles.find((x) => x.id === activeVehicleId);
-    if (v) setOpenBrands((p) => ({ ...p, [v.brandId]: true }));
-  }, [activeVehicleId, vehicles]);
-  const toggle = (id) => setOpenBrands((p) => ({ ...p, [id]: !p[id] }));
-  return (
-    <aside className="flex flex-col rounded-2xl border border-zinc-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b px-3.5 py-3">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wider">
-          Fahrzeuge
-        </h2>
-        <button
-          onClick={onAdd}
-          className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-2 py-1 text-[10px] font-semibold text-white"
-        >
-          <FiPlus size={12} /> Neu
-        </button>
-      </div>
-      <div className="px-3 pt-3">
-        <div className="relative">
-          <FiSearch
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
-            size={13}
-          />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Suchen…"
-            className="h-8 w-full rounded-lg border border-zinc-200 pl-7 pr-2 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder:text-zinc-400"
-          />
-        </div>
-      </div>
-      <div className="flex-1 overflow-auto p-2">
-        {brands.map((brand) => {
-          const cars = byBrand[brand.id] || [];
-          const open = openBrands[brand.id] ?? false;
-          return (
-            <div key={brand.id}>
-              <button
-                onClick={() => toggle(brand.id)}
-                className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50"
-              >
-                {open ? (
-                  <FiChevronDown size={13} className="text-zinc-400" />
-                ) : (
-                  <FiChevronRight size={13} className="text-zinc-400" />
-                )}
-                {open ? (
-                  <FiFolderPlus size={15} className="text-indigo-500" />
-                ) : (
-                  <FiFolder size={15} className="text-zinc-400" />
-                )}
-                <span className="flex-1 truncate">{brand.label}</span>
-                <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-[9px] tabular-nums text-zinc-500">
-                  {cars.length}
-                </span>
-              </button>
-              {open &&
-                (cars.length === 0 ? (
-                  <p className="ml-7 py-1.5 text-[10.5px] text-zinc-400">
-                    Noch keine Fahrzeuge.
-                  </p>
-                ) : (
-                  <ul className="ml-3 border-l border-zinc-100 pl-1.5">
-                    {cars.map((v) => {
-                      const on = v.id === activeVehicleId;
-                      const n = marksByVehicle[v.id]?.length || 0;
-                      return (
-                        <li key={v.id} className="group/leaf">
-                          <div
-                            className={`flex items-center gap-1 rounded-lg pr-1 transition ${on ? "bg-indigo-50 ring-1 ring-indigo-200" : "hover:bg-zinc-50"}`}
-                          >
-                            <button
-                              onClick={() => onSelect(v.id)}
-                              className={`flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left text-xs ${on ? "font-medium text-indigo-700" : "text-zinc-600"}`}
-                            >
-                              <FiTruck
-                                size={13}
-                                className={`flex-shrink-0 ${on ? "text-indigo-500" : "text-zinc-400"}`}
-                              />
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate">{v.name}</span>
-                                {v.fin && (
-                                  <span className="block truncate text-[9.5px] font-normal text-zinc-400">
-                                    {v.fin}
-                                  </span>
-                                )}
-                              </span>
-                              {n > 0 && (
-                                <span
-                                  className={`flex-shrink-0 rounded-full px-1.5 py-0.5 text-[9px] tabular-nums ${on ? "bg-indigo-100 text-indigo-600" : "bg-zinc-100 text-zinc-500"}`}
-                                >
-                                  {n}
-                                </span>
-                              )}
-                            </button>
-                            <button
-                              onClick={() => onDeleteVehicle(v.id)}
-                              title="Entfernen"
-                              className="flex-shrink-0 rounded p-1 text-zinc-300 opacity-0 transition hover:text-red-500 group-hover/leaf:opacity-100"
-                            >
-                              <FiTrash2 size={12} />
-                            </button>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ))}
-            </div>
-          );
-        })}
-      </div>
-      <div className="border-t border-zinc-100 px-3.5 py-2.5">
-        <p className="text-[10px] leading-relaxed text-zinc-400">
-          Marken-Modelle definierst du in{" "}
-          <code className="rounded bg-zinc-100 px-1 text-[9px]">BRANDS</code>.
-          Fahrzeuge legst du hier mit „Neu" an.
-        </p>
-      </div>
-    </aside>
-  );
-}
-
+/* =========================================================
+   ADD VEHICLE MODAL
+========================================================= */
 function AddVehicleModal({ brands, onClose, onAdd }) {
   const [brandId, setBrandId] = useState(brands[0]?.id || "");
   const [name, setName] = useState("");
   const [fin, setFin] = useState("");
   const valid = brandId && name.trim();
+
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-zinc-900/40 p-4 backdrop-blur-sm">
       <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white shadow-2xl">
@@ -1755,6 +1854,12 @@ function AddVehicleModal({ brands, onClose, onAdd }) {
               className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-xs font-mono outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
             />
           </Field>
+          {brands.length === 0 && (
+            <p className="text-[11px] text-red-500">
+              Keine Marken definiert. Trage zuerst eine Marke in{" "}
+              <code>BRANDS</code> ein.
+            </p>
+          )}
         </div>
         <div className="flex justify-end gap-2 border-t border-zinc-100 px-5 py-3">
           <button
@@ -1776,9 +1881,790 @@ function AddVehicleModal({ brands, onClose, onAdd }) {
   );
 }
 
-function Panel({ title, action, children }) {
+/* =========================================================
+   VEHICLE TREE  (folder = brand, leaf = user vehicle)
+========================================================= */
+function VehicleTree({
+  brands,
+  vehicles,
+  activeVehicleId,
+  onSelect,
+  onAdd,
+  onDeleteVehicle,
+  marksByVehicle,
+}) {
+  const [query, setQuery] = useState("");
+  const [openBrands, setOpenBrands] = useState({});
+
+  const byBrand = useMemo(() => {
+    const g = {};
+    brands.forEach((b) => (g[b.id] = []));
+    vehicles.forEach((v) => {
+      if (
+        query &&
+        !`${v.name} ${v.fin}`.toLowerCase().includes(query.toLowerCase())
+      )
+        return;
+      (g[v.brandId] ||= []).push(v);
+    });
+    return g;
+  }, [brands, vehicles, query]);
+
+  useEffect(() => {
+    const v = vehicles.find((x) => x.id === activeVehicleId);
+    if (v) setOpenBrands((p) => ({ ...p, [v.brandId]: true }));
+  }, [activeVehicleId, vehicles]);
+
+  const toggle = (id) => setOpenBrands((p) => ({ ...p, [id]: !p[id] }));
+
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+    <aside className="flex flex-col rounded-2xl border border-zinc-200 bg-white shadow-[0_1px_3px_rgba(24,24,27,.05)]">
+      <div className="flex items-center justify-between border-b border-zinc-100 px-3.5 py-3">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+          Fahrzeuge
+        </h2>
+        <button
+          onClick={onAdd}
+          title="Fahrzeug hinzufügen"
+          className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-2 py-1 text-[10px] font-semibold text-white hover:bg-indigo-700"
+        >
+          <FiPlus size={12} /> Neu
+        </button>
+      </div>
+
+      <div className="px-3 pt-3">
+        <div className="relative">
+          <FiSearch
+            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
+            size={13}
+          />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Suchen…"
+            className="h-8 w-full rounded-lg border border-zinc-200 pl-7 pr-2 text-xs outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder:text-zinc-400"
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto p-2">
+        {brands.length === 0 ? (
+          <p className="px-2 py-4 text-center text-[11px] text-zinc-400">
+            Keine Marken definiert.
+          </p>
+        ) : (
+          brands.map((brand) => {
+            const cars = byBrand[brand.id] || [];
+            const open = openBrands[brand.id] ?? false;
+            return (
+              <div key={brand.id} className="mb-0.5">
+                <button
+                  onClick={() => toggle(brand.id)}
+                  className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50"
+                >
+                  {open ? (
+                    <FiChevronDown
+                      size={13}
+                      className="flex-shrink-0 text-zinc-400"
+                    />
+                  ) : (
+                    <FiChevronRight
+                      size={13}
+                      className="flex-shrink-0 text-zinc-400"
+                    />
+                  )}
+                  {open ? (
+                    <FiFolderPlus
+                      size={15}
+                      className="flex-shrink-0 text-indigo-500"
+                    />
+                  ) : (
+                    <FiFolder
+                      size={15}
+                      className="flex-shrink-0 text-zinc-400"
+                    />
+                  )}
+                  <span className="flex-1 truncate">{brand.label}</span>
+                  <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-[9px] tabular-nums text-zinc-500">
+                    {cars.length}
+                  </span>
+                </button>
+                {open &&
+                  (cars.length === 0 ? (
+                    <p className="ml-7 py-1.5 text-[10.5px] text-zinc-400">
+                      Noch keine Fahrzeuge.
+                    </p>
+                  ) : (
+                    <ul className="ml-3 border-l border-zinc-100 pl-1.5">
+                      {cars.map((v) => {
+                        const on = v.id === activeVehicleId;
+                        const n = marksByVehicle[v.id]?.length || 0;
+                        return (
+                          <li key={v.id} className="group/leaf">
+                            <div
+                              className={`flex items-center gap-1 rounded-lg pr-1 transition ${on ? "bg-indigo-50 ring-1 ring-indigo-200" : "hover:bg-zinc-50"}`}
+                            >
+                              <button
+                                onClick={() => onSelect(v.id)}
+                                className={`flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left text-xs ${on ? "font-medium text-indigo-700" : "text-zinc-600"}`}
+                              >
+                                <FiTruck
+                                  size={13}
+                                  className={`flex-shrink-0 ${on ? "text-indigo-500" : "text-zinc-400"}`}
+                                />
+                                <span className="min-w-0 flex-1">
+                                  <span className="block truncate">
+                                    {v.name}
+                                  </span>
+                                  {v.fin && (
+                                    <span className="block truncate text-[9.5px] font-normal text-zinc-400">
+                                      {v.fin}
+                                    </span>
+                                  )}
+                                </span>
+                                {n > 0 && (
+                                  <span
+                                    className={`flex-shrink-0 rounded-full px-1.5 py-0.5 text-[9px] tabular-nums ${on ? "bg-indigo-100 text-indigo-600" : "bg-zinc-100 text-zinc-500"}`}
+                                  >
+                                    {n}
+                                  </span>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => onDeleteVehicle(v.id)}
+                                title="Entfernen"
+                                className="flex-shrink-0 rounded p-1 text-zinc-300 opacity-0 transition hover:text-red-500 group-hover/leaf:opacity-100"
+                              >
+                                <FiTrash2 size={12} />
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ))}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <div className="border-t border-zinc-100 px-3.5 py-2.5">
+        <p className="text-[10px] leading-relaxed text-zinc-400">
+          Marken-Modelle definierst du in{" "}
+          <code className="rounded bg-zinc-100 px-1 text-[9px]">BRANDS</code>.
+          Fahrzeuge legst du hier mit „Neu" an.
+        </p>
+      </div>
+    </aside>
+  );
+}
+
+/* damage textures */
+function buildDamageTextures(THREE) {
+  // Realistic, semi-transparent damage drawn on a transparent canvas so the
+  // car's paint shows through (reads as damage ON the panel, not a sticker).
+  // Type is colour-coded by the numbered pin, so these focus on realism.
+  const S = 512;
+  const tex = (draw) => {
+    const c = document.createElement("canvas");
+    c.width = c.height = S;
+    const ctx = c.getContext("2d");
+    ctx.clearRect(0, 0, S, S);
+    draw(ctx);
+    const t = new THREE.CanvasTexture(c);
+    t.anisotropy = 8;
+    t.needsUpdate = true;
+    return t;
+  };
+  const M = S / 2;
+  // soft circular alpha falloff so every decal feathers into the paint
+  const vignette = (ctx, rad, inner) => {
+    const g = ctx.createRadialGradient(M, M, rad * inner, M, M, rad);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    return g;
+  };
+
+  // long axis = canvas X (matches decal width = length for elongated types)
+  const scratch = tex((ctx) => {
+    const lines = 5;
+    for (let i = 0; i < lines; i++) {
+      const yy = M + (i - (lines - 1) / 2) * 14 + (Math.random() * 8 - 4);
+      const len = 0.6 + Math.random() * 0.34; // fraction of width
+      const x0 = M - (len * S) / 2;
+      const x1 = M + (len * S) / 2;
+      const wob = Math.random() * 14 - 7;
+      // dark groove
+      ctx.lineCap = "round";
+      ctx.strokeStyle = `rgba(35,32,38,${0.3 + Math.random() * 0.3})`;
+      ctx.lineWidth = 2 + Math.random() * 2.5;
+      ctx.beginPath();
+      ctx.moveTo(x0, yy);
+      ctx.bezierCurveTo(M - 60, yy + wob, M + 60, yy - wob, x1, yy);
+      ctx.stroke();
+      // bright metal highlight just above the groove
+      ctx.strokeStyle = `rgba(255,255,255,${0.45 + Math.random() * 0.3})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x0, yy - 1.4);
+      ctx.bezierCurveTo(
+        M - 60,
+        yy + wob - 1.4,
+        M + 60,
+        yy - wob - 1.4,
+        x1,
+        yy - 1.4,
+      );
+      ctx.stroke();
+    }
+    // fade the ends
+    const grad = ctx.createLinearGradient(0, 0, S, 0);
+    grad.addColorStop(0, "rgba(255,255,255,1)");
+    grad.addColorStop(0.12, "rgba(255,255,255,0)");
+    grad.addColorStop(0.88, "rgba(255,255,255,0)");
+    grad.addColorStop(1, "rgba(255,255,255,1)");
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, S, S);
+    ctx.globalCompositeOperation = "source-over";
+  });
+
+  const dent = tex((ctx) => {
+    // concave illusion: dark pool + shadow lower-right, highlight upper-left
+    const shadow = ctx.createRadialGradient(M + 26, M + 30, 8, M, M, M * 0.92);
+    shadow.addColorStop(0, "rgba(14,14,20,0.52)");
+    shadow.addColorStop(0.55, "rgba(28,28,36,0.24)");
+    shadow.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = shadow;
+    ctx.beginPath();
+    ctx.ellipse(M, M, M * 0.92, M * 0.78, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // specular highlight crescent (upper-left rim)
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const hi = ctx.createRadialGradient(
+      M - 40,
+      M - 46,
+      4,
+      M - 30,
+      M - 34,
+      M * 0.7,
+    );
+    hi.addColorStop(0, "rgba(255,255,255,0.55)");
+    hi.addColorStop(0.4, "rgba(255,255,255,0.12)");
+    hi.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = hi;
+    ctx.beginPath();
+    ctx.ellipse(M - 24, M - 26, M * 0.6, M * 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // crisp deepest point
+    const core = ctx.createRadialGradient(
+      M + 14,
+      M + 16,
+      1,
+      M + 14,
+      M + 16,
+      26,
+    );
+    core.addColorStop(0, "rgba(8,8,12,0.55)");
+    core.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = core;
+    ctx.beginPath();
+    ctx.arc(M + 14, M + 16, 26, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  const paint = tex((ctx) => {
+    // chipped paint: irregular patch with exposed lighter primer + dark rim
+    const pts = 16;
+    const radii = [];
+    ctx.beginPath();
+    for (let i = 0; i <= pts; i++) {
+      const a = (i / pts) * Math.PI * 2;
+      const r = M * (0.46 + Math.random() * 0.34);
+      radii.push(r);
+      const x = M + Math.cos(a) * r;
+      const y = M + Math.sin(a) * r;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    // dark chipped edge
+    ctx.fillStyle = "rgba(46,34,36,0.42)";
+    ctx.fill();
+    // primer/metal showing in the middle
+    ctx.save();
+    ctx.clip();
+    const pg = ctx.createRadialGradient(M, M, 4, M, M, M * 0.7);
+    pg.addColorStop(0, "rgba(214,212,216,0.62)");
+    pg.addColorStop(0.7, "rgba(190,186,190,0.32)");
+    pg.addColorStop(1, "rgba(150,120,120,0.05)");
+    ctx.fillStyle = pg;
+    ctx.fillRect(0, 0, S, S);
+    ctx.restore();
+    // flaking chips around the edge
+    for (let i = 0; i < 14; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = M * (0.45 + Math.random() * 0.4);
+      ctx.fillStyle = `rgba(40,30,32,${0.25 + Math.random() * 0.4})`;
+      ctx.beginPath();
+      ctx.arc(
+        M + Math.cos(a) * r,
+        M + Math.sin(a) * r,
+        2 + Math.random() * 5,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+    }
+  });
+
+  const rust = tex((ctx) => {
+    // organic orange-brown stain with grain and pitting
+    const g = ctx.createRadialGradient(M, M, 4, M, M, M * 0.96);
+    g.addColorStop(0, "rgba(120,55,18,0.72)");
+    g.addColorStop(0.45, "rgba(150,82,28,0.5)");
+    g.addColorStop(0.8, "rgba(168,98,40,0.22)");
+    g.addColorStop(1, "rgba(168,98,40,0)");
+    ctx.fillStyle = g;
+    // irregular blob outline
+    ctx.beginPath();
+    const pts = 18;
+    for (let i = 0; i <= pts; i++) {
+      const a = (i / pts) * Math.PI * 2;
+      const r = M * (0.6 + Math.sin(i * 1.7) * 0.12 + Math.random() * 0.22);
+      const x = M + Math.cos(a) * r;
+      const y = M + Math.sin(a) * r;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    // grain
+    for (let i = 0; i < 1400; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = Math.random() * M * 0.82;
+      const x = M + Math.cos(a) * r;
+      const y = M + Math.sin(a) * r;
+      const shade = Math.random();
+      ctx.fillStyle =
+        shade < 0.5
+          ? `rgba(${90 + Math.random() * 60},${40 + Math.random() * 35},12,${Math.random() * 0.5})`
+          : `rgba(${40 + Math.random() * 30},20,8,${Math.random() * 0.45})`;
+      ctx.fillRect(x, y, 2, 2);
+    }
+  });
+
+  const crack = tex((ctx) => {
+    // sharp jagged branching crack with a faint highlight for depth
+    const branch = (x, y, ang, len, depth) => {
+      if (depth <= 0 || len < 4) return;
+      const nx = x + Math.cos(ang) * len;
+      const ny = y + Math.sin(ang) * len;
+      ctx.strokeStyle = `rgba(20,16,24,${0.55 + depth * 0.08})`;
+      ctx.lineWidth = depth * 1.1;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(nx, ny);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.lineWidth = Math.max(0.6, depth * 0.4);
+      ctx.beginPath();
+      ctx.moveTo(x + 1, y - 1);
+      ctx.lineTo(nx + 1, ny - 1);
+      ctx.stroke();
+      branch(nx, ny, ang + (Math.random() - 0.5) * 0.9, len * 0.72, depth - 1);
+      if (Math.random() > 0.45)
+        branch(nx, ny, ang + (Math.random() - 0.5) * 1.8, len * 0.6, depth - 1);
+    };
+    const a0 = (Math.random() - 0.5) * 0.7; // bias along the long (X) axis
+    branch(M, M, a0, S * 0.2, 5);
+    branch(M, M, a0 + Math.PI + (Math.random() - 0.5) * 0.5, S * 0.2, 5);
+  });
+
+  const other = tex((ctx) => {
+    // subtle neutral marker — faint disc, thin ring, centre dot
+    const g = ctx.createRadialGradient(M, M, 2, M, M, M * 0.7);
+    g.addColorStop(0, "rgba(82,82,91,0.22)");
+    g.addColorStop(1, "rgba(82,82,91,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(M, M, M * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(82,82,91,0.55)";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([10, 8]);
+    ctx.beginPath();
+    ctx.arc(M, M, M * 0.55, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(82,82,91,0.8)";
+    ctx.beginPath();
+    ctx.arc(M, M, 7, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  return { scratch, dent, paint, rust, crack, other };
+}
+function pinTexture(THREE, n, color, selected) {
+  const S = 128;
+  const c = document.createElement("canvas");
+  c.width = c.height = S;
+  const ctx = c.getContext("2d");
+  const cx = S / 2,
+    cy = S / 2;
+  const r = selected ? S * 0.4 : S * 0.36;
+  // soft drop shadow + accent halo when selected
+  ctx.save();
+  ctx.shadowColor = "rgba(24,24,27,0.35)";
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 3;
+  if (selected) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+  // white outer ring
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  // colored badge
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r - 7, 0, Math.PI * 2);
+  ctx.fill();
+  // number
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `bold ${selected ? 46 : 42}px system-ui, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(String(n), cx, cy + 1);
+  const t = new THREE.CanvasTexture(c);
+  t.anisotropy = 4;
+  t.userData = { ephemeral: true };
+  return t;
+}
+function softHaloTexture(THREE) {
+  // soft radial glow used as a subtle selection cue (no hard edges)
+  const S = 128;
+  const c = document.createElement("canvas");
+  c.width = c.height = S;
+  const ctx = c.getContext("2d");
+  const g = ctx.createRadialGradient(S / 2, S / 2, 2, S / 2, S / 2, S / 2);
+  g.addColorStop(0, "rgba(79,70,229,0.55)");
+  g.addColorStop(0.5, "rgba(79,70,229,0.18)");
+  g.addColorStop(1, "rgba(79,70,229,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, S, S);
+  const t = new THREE.CanvasTexture(c);
+  t.anisotropy = 4;
+  t.userData = { ephemeral: true };
+  return t;
+}
+function dotTexture(THREE, color) {
+  const S = 64;
+  const c = document.createElement("canvas");
+  c.width = c.height = S;
+  const ctx = c.getContext("2d");
+  const cx = S / 2,
+    cy = S / 2;
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(cx, cy, S * 0.34, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(cx, cy, S * 0.22, 0, Math.PI * 2);
+  ctx.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.anisotropy = 4;
+  t.userData = { ephemeral: true };
+  return t;
+}
+function circleRingTexture_REMOVED() {}
+
+/* Grabbable size-handle knob: white disc, indigo ring, soft shadow. `accent`
+   makes the core indigo (radius/width handles) vs hollow (endpoints). */
+function handleKnobTexture(THREE, accent) {
+  const S = 96;
+  const c = document.createElement("canvas");
+  c.width = c.height = S;
+  const ctx = c.getContext("2d");
+  const cx = S / 2,
+    cy = S / 2,
+    r = S * 0.3;
+  ctx.save();
+  ctx.shadowColor = "rgba(24,24,27,0.4)";
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 2;
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = "#4f46e5";
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+  if (accent) {
+    ctx.fillStyle = "#4f46e5";
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.anisotropy = 4;
+  t.userData = { ephemeral: true };
+  return t;
+}
+
+/* Dispose every child of a group, but only dispose EPHEMERAL textures —
+   shared damage textures and CACHED ui textures are reused and must survive. */
+function disposeMarkGroup(group) {
+  while (group.children.length) {
+    const c = group.children.pop();
+    c.geometry?.dispose?.();
+    const mats = Array.isArray(c.material) ? c.material : [c.material];
+    mats.forEach((mm) => {
+      if (!mm) return;
+      if (mm.map && mm.map.userData && mm.map.userData.ephemeral)
+        mm.map.dispose?.();
+      mm.dispose?.();
+    });
+  }
+}
+
+/* Cache canvas textures on the shared `t` object so dragging (which rebuilds
+   the marker meshes every frame) never regenerates a canvas — the old code
+   redrew every pin/dot/halo each pointermove, which was the main source of
+   stutter. Cached textures are NOT ephemeral, so they survive disposal. */
+function cachedTex(t, key, make) {
+  if (!t._tex) t._tex = {};
+  if (t._tex[key]) return t._tex[key];
+  const tex = make();
+  tex.userData = { cached: true };
+  t._tex[key] = tex;
+  return tex;
+}
+
+/* Build all three.js objects for ONE mark spec and add them to `group`.
+   Used for BOTH committed marks and the live draw preview, so a damage looks
+   identical the moment you start drawing it. Only the decal grows with size;
+   the anchor dot and numbered pin stay a constant size. `number` may be null
+   (draft) to skip the pin. */
+function addMarkVisual(t, group, spec, number, isSel, draft) {
+  const { THREE, textures } = t;
+  const type = DAMAGE_TYPES.find((x) => x.id === spec.type);
+  const color = type?.color || "#111";
+  const pos = new THREE.Vector3(...spec.local);
+  const nrm = new THREE.Vector3(...(spec.normal || [0, 0, 1])).normalize();
+  const quat = new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 0, 1),
+    nrm,
+  );
+  const cl = (v, a, b) => Math.min(b, Math.max(a, v));
+  const R = t.localCarRadius || 2;
+  const isElong = ELONGATED.has(spec.type);
+  const sizeFrac = cl(spec.size, 0.02, 0.35);
+  const lenFrac = cl(spec.length || sizeFrac, 0.04, 0.6);
+  const width = isElong ? lenFrac * R : sizeFrac * R;
+  const height = isElong ? sizeFrac * 0.6 * R : sizeFrac * R;
+  const offset = R * 0.006;
+  const surfacePos = pos.clone().add(nrm.clone().multiplyScalar(offset));
+  const markId = spec.id;
+
+  // (a) damage decal. depthTest:false so it ALWAYS shows on the bodywork — a
+  // flat plane on a curved panel would otherwise sink below the surface and
+  // vanish. renderOrder keeps it above the car but below dot/pin.
+  const decal = new THREE.Mesh(
+    new THREE.PlaneGeometry(width * 2, height * 2),
+    new THREE.MeshBasicMaterial({
+      map: textures[spec.type] || textures.other,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      opacity: draft ? 0.9 : 1.0,
+    }),
+  );
+  decal.position.copy(surfacePos);
+  decal.quaternion.copy(quat);
+  decal.rotateZ(spec.rotation || 0);
+  decal.userData.markId = markId;
+  decal.userData.pick = true; // ONLY the decal footprint is selectable
+  decal.renderOrder = 10;
+  group.add(decal);
+
+  // (b) selection cue: a very soft, low-opacity halo ONLY when selected — no
+  // hard ring around the damage. Extent and resize are shown by the handles.
+  if (isSel && !draft) {
+    const halo = new THREE.Mesh(
+      new THREE.PlaneGeometry(width * 2 * 1.7, height * 2 * 1.7),
+      new THREE.MeshBasicMaterial({
+        map: cachedTex(t, "halo", () => softHaloTexture(THREE)),
+        transparent: true,
+        depthWrite: false,
+        depthTest: false,
+        opacity: 0.5,
+      }),
+    );
+    halo.position
+      .copy(pos)
+      .add(nrm.clone().multiplyScalar(offset + R * 0.0005));
+    halo.quaternion.copy(quat);
+    halo.rotateZ(spec.rotation || 0);
+    halo.renderOrder = 8;
+    group.add(halo);
+  }
+
+  // (c) constant-size anchor dot at the exact damage point
+  const dot = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: cachedTex(t, "dot_" + color, () => dotTexture(THREE, color)),
+      depthTest: false,
+      transparent: true,
+    }),
+  );
+  const dotSize = R * 0.02;
+  dot.scale.set(dotSize, dotSize, 1);
+  dot.position.copy(surfacePos);
+  dot.renderOrder = 18;
+  group.add(dot);
+
+  if (number == null) return; // draft: no pin / leader
+
+  // (d+e) numbered pin floating above on a thin leader — CONSTANT size
+  const pinSize = R * (isSel ? 0.115 : 0.088);
+  const lift = R * 0.12 + (isSel ? R * 0.02 : 0);
+  const pinPos = surfacePos
+    .clone()
+    .add(new THREE.Vector3(0, Math.max(height, width) + lift, 0));
+  const leader = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      surfacePos.clone(),
+      pinPos.clone(),
+    ]),
+    new THREE.LineBasicMaterial({
+      color: new THREE.Color(color),
+      transparent: true,
+      opacity: 0.55,
+      depthTest: false,
+    }),
+  );
+  leader.renderOrder = 20;
+  group.add(leader);
+
+  const pin = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: cachedTex(
+        t,
+        "pin_" + number + "_" + color + "_" + (isSel ? 1 : 0),
+        () => pinTexture(THREE, number, color, isSel),
+      ),
+      depthTest: false,
+      transparent: true,
+    }),
+  );
+  pin.center.set(0.5, 0);
+  pin.scale.set(pinSize, pinSize, 1);
+  pin.position.copy(pinPos);
+  pin.renderOrder = 22;
+  group.add(pin);
+}
+
+/* Draggable size handles for the SELECTED mark, placed on the bodywork.
+   Round damage -> one rim handle (radius). Scratch/crack -> two end handles
+   (length + angle) and one side handle (width). These replace the sidebar
+   sliders with direct, on-car manipulation. */
+function addHandles(t, group, m) {
+  const { THREE } = t;
+  const nrm = new THREE.Vector3(...(m.normal || [0, 0, 1])).normalize();
+  const q = new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 0, 1),
+    nrm,
+  );
+  const ex = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
+  const ey = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
+  const center = new THREE.Vector3(...m.local);
+  const R = t.localCarRadius || 2;
+  const lift = nrm.clone().multiplyScalar(R * 0.008);
+  const knobSize = R * 0.055;
+
+  const addKnob = (localPos, handle, accent) => {
+    const sp = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: cachedTex(t, "knob_" + (accent ? 1 : 0), () =>
+          handleKnobTexture(THREE, accent),
+        ),
+        depthTest: false,
+        transparent: true,
+      }),
+    );
+    sp.scale.set(knobSize, knobSize, 1);
+    sp.position.copy(localPos).add(lift);
+    sp.userData.handle = handle;
+    sp.userData.markId = m.id;
+    sp.renderOrder = 26;
+    group.add(sp);
+  };
+
+  // faint guide line(s) so the user reads the handles as a control rig
+  const addGuide = (a, b) => {
+    const ln = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        a.clone().add(lift),
+        b.clone().add(lift),
+      ]),
+      new THREE.LineBasicMaterial({
+        color: new THREE.Color("#4f46e5"),
+        transparent: true,
+        opacity: 0.5,
+        depthTest: false,
+      }),
+    );
+    ln.renderOrder = 25;
+    group.add(ln);
+  };
+
+  if (!ELONGATED.has(m.type)) {
+    const radius = (m.size || 0.06) * R;
+    const rim = center.clone().add(ex.clone().multiplyScalar(radius));
+    addGuide(center, rim);
+    addKnob(rim, "radius", true);
+    return;
+  }
+
+  const rot = m.rotation || 0;
+  const axis = ex
+    .clone()
+    .multiplyScalar(Math.cos(rot))
+    .add(ey.clone().multiplyScalar(Math.sin(rot)));
+  const perp = ex
+    .clone()
+    .multiplyScalar(-Math.sin(rot))
+    .add(ey.clone().multiplyScalar(Math.cos(rot)));
+  const half = (m.length || 0.14) * R;
+  const endA = center.clone().add(axis.clone().multiplyScalar(-half));
+  const endB = center.clone().add(axis.clone().multiplyScalar(half));
+  const wOff = (m.size || 0.04) * 0.6 * R + R * 0.05;
+  const widthH = center.clone().add(perp.clone().multiplyScalar(wOff));
+  addGuide(endA, endB);
+  addGuide(center, widthH);
+  addKnob(endA, "endA", false);
+  addKnob(endB, "endB", false);
+  addKnob(widthH, "width", true);
+}
+
+/* UI primitives */
+function Panel({ title, action, children, className = "" }) {
+  return (
+    <div
+      className={`rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_1px_3px_rgba(24,24,27,.05)] ${className}`}
+    >
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
           {title}
@@ -1847,453 +2733,3 @@ const fontStack = {
   fontFamily:
     "'Söhne','Geist','Manrope',ui-sans-serif,system-ui,-apple-system,sans-serif",
 };
-
-// Texture and visual helpers (exactly as your original – long but required)
-function buildDamageTextures(THREE) {
-  const S = 512;
-  const tex = (draw) => {
-    const c = document.createElement("canvas");
-    c.width = c.height = S;
-    const ctx = c.getContext("2d");
-    ctx.clearRect(0, 0, S, S);
-    draw(ctx, S);
-    const t = new THREE.CanvasTexture(c);
-    t.anisotropy = 4;
-    return t;
-  };
-  const scratch = tex((ctx, S) => {
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    for (let i = 0; i < 7; i++) {
-      const y = S * (0.42 + (Math.random() - 0.5) * 0.18);
-      const x1 = S * (0.16 + Math.random() * 0.08);
-      const x2 = S * (0.84 - Math.random() * 0.08);
-      ctx.strokeStyle = i < 2 ? "rgba(255,255,255,.9)" : "rgba(15,23,42,.72)";
-      ctx.lineWidth = i < 2 ? 2.2 : 1.2 + Math.random() * 1.5;
-      ctx.beginPath();
-      ctx.moveTo(x1, y);
-      ctx.bezierCurveTo(
-        S * 0.35,
-        y + (Math.random() - 0.5) * 20,
-        S * 0.62,
-        y + (Math.random() - 0.5) * 18,
-        x2,
-        y + (Math.random() - 0.5) * 10,
-      );
-      ctx.stroke();
-    }
-  });
-  const dent = tex((ctx, S) => {
-    const g = ctx.createRadialGradient(
-      S / 2,
-      S / 2,
-      S * 0.03,
-      S / 2,
-      S / 2,
-      S * 0.36,
-    );
-    g.addColorStop(0, "rgba(0,0,0,.38)");
-    g.addColorStop(0.45, "rgba(0,0,0,.13)");
-    g.addColorStop(0.7, "rgba(255,255,255,.18)");
-    g.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(S / 2, S / 2, S * 0.34, S * 0.22, -0.35, 0, Math.PI * 2);
-    ctx.fill();
-  });
-  const paint = tex((ctx, S) => {
-    ctx.fillStyle = "rgba(225,29,72,.85)";
-    ctx.beginPath();
-    ctx.moveTo(S * 0.28, S * 0.34);
-    ctx.bezierCurveTo(S * 0.43, S * 0.22, S * 0.7, S * 0.3, S * 0.73, S * 0.46);
-    ctx.bezierCurveTo(
-      S * 0.77,
-      S * 0.65,
-      S * 0.47,
-      S * 0.76,
-      S * 0.3,
-      S * 0.62,
-    );
-    ctx.bezierCurveTo(
-      S * 0.18,
-      S * 0.51,
-      S * 0.18,
-      S * 0.42,
-      S * 0.28,
-      S * 0.34,
-    );
-    ctx.fill();
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.fillStyle = "rgba(0,0,0,.45)";
-    for (let i = 0; i < 10; i++) {
-      ctx.beginPath();
-      ctx.arc(
-        S * (0.35 + Math.random() * 0.3),
-        S * (0.4 + Math.random() * 0.2),
-        3 + Math.random() * 8,
-        0,
-        Math.PI * 2,
-      );
-      ctx.fill();
-    }
-    ctx.globalCompositeOperation = "source-over";
-  });
-  const rust = tex((ctx, S) => {
-    const colors = [
-      "rgba(120,53,15,.75)",
-      "rgba(180,83,9,.75)",
-      "rgba(217,119,6,.55)",
-      "rgba(69,26,3,.45)",
-    ];
-    for (let i = 0; i < 70; i++) {
-      ctx.fillStyle = colors[i % colors.length];
-      ctx.beginPath();
-      ctx.arc(
-        S * (0.25 + Math.random() * 0.5),
-        S * (0.28 + Math.random() * 0.44),
-        3 + Math.random() * 16,
-        0,
-        Math.PI * 2,
-      );
-      ctx.fill();
-    }
-  });
-  const crack = tex((ctx, S) => {
-    ctx.strokeStyle = "rgba(17,24,39,.9)";
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.lineWidth = 4;
-    let x = S * 0.18;
-    let y = S * 0.5;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    for (let i = 0; i < 8; i++) {
-      x += S * 0.08;
-      y += (Math.random() - 0.5) * S * 0.12;
-      ctx.lineTo(x, y);
-      if (i === 2 || i === 5) {
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + S * 0.08, y + (Math.random() > 0.5 ? 1 : -1) * S * 0.12);
-        ctx.moveTo(x, y);
-      }
-    }
-    ctx.stroke();
-  });
-  const other = tex((ctx, S) => {
-    ctx.fillStyle = "rgba(82,82,91,.85)";
-    ctx.beginPath();
-    ctx.arc(S / 2, S / 2, S * 0.12, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(82,82,91,.55)";
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.arc(S / 2, S / 2, S * 0.24, 0, Math.PI * 2);
-    ctx.stroke();
-  });
-  return { scratch, dent, paint, rust, crack, other };
-}
-
-function addMarkVisual(t, group, spec, number, isSel, draft) {
-  const { THREE, textures } = t;
-  const type = DAMAGE_TYPES.find((x) => x.id === spec.type);
-  const color = type?.color || "#111827";
-  const pos = new THREE.Vector3(...spec.local);
-  const nrm = new THREE.Vector3(...(spec.normal || [0, 0, 1])).normalize();
-  const quat = new THREE.Quaternion().setFromUnitVectors(
-    new THREE.Vector3(0, 0, 1),
-    nrm,
-  );
-  const cl = (v, a, b) => Math.min(b, Math.max(a, v));
-  const R = t.localCarRadius || 2;
-  const isElong = ELONGATED.has(spec.type);
-  const sizeFrac = cl(spec.size || 0.06, 0.018, 0.28);
-  const lenFrac = cl(spec.length || sizeFrac, 0.04, 0.55);
-  const width = isElong ? lenFrac * R : sizeFrac * R;
-  const height = isElong ? sizeFrac * 0.55 * R : sizeFrac * R;
-  const offset = R * 0.005;
-  const surfacePos = pos.clone().add(nrm.clone().multiplyScalar(offset));
-  const markId = spec.id;
-  const decal = new THREE.Mesh(
-    new THREE.PlaneGeometry(width * 2, height * 2),
-    new THREE.MeshBasicMaterial({
-      map: textures[spec.type] || textures.other,
-      transparent: true,
-      depthWrite: false,
-      depthTest: true,
-      polygonOffset: true,
-      polygonOffsetFactor: -8,
-      polygonOffsetUnits: -8,
-      opacity: draft ? 0.72 : isSel ? 0.96 : 0.84,
-    }),
-  );
-  decal.position.copy(surfacePos);
-  decal.quaternion.copy(quat);
-  decal.rotateZ(spec.rotation || 0);
-  decal.userData.markId = markId;
-  decal.renderOrder = 10;
-  group.add(decal);
-  if (isSel || draft) {
-    const halo = new THREE.Mesh(
-      new THREE.PlaneGeometry(
-        isElong ? width * 2.35 : width * 2.25,
-        isElong ? height * 2.75 : height * 2.25,
-      ),
-      new THREE.MeshBasicMaterial({
-        map: softHaloTexture(THREE, color),
-        transparent: true,
-        depthWrite: false,
-        depthTest: false,
-        opacity: draft ? 0.35 : 0.28,
-      }),
-    );
-    halo.position.copy(pos).add(nrm.clone().multiplyScalar(offset + R * 0.001));
-    halo.quaternion.copy(quat);
-    halo.rotateZ(spec.rotation || 0);
-    halo.userData.markId = markId;
-    halo.renderOrder = 11;
-    group.add(halo);
-  }
-  const dot = new THREE.Sprite(
-    new THREE.SpriteMaterial({
-      map: tinyAnchorTexture(THREE, color, isSel),
-      depthTest: false,
-      transparent: true,
-    }),
-  );
-  const dotSize = R * (isSel ? 0.032 : 0.024);
-  dot.scale.set(dotSize, dotSize, 1);
-  dot.position.copy(surfacePos);
-  dot.userData.markId = markId;
-  dot.renderOrder = 18;
-  group.add(dot);
-  if (number == null) return;
-  const badge = new THREE.Sprite(
-    new THREE.SpriteMaterial({
-      map: compactBadgeTexture(THREE, number, color, isSel),
-      depthTest: false,
-      transparent: true,
-    }),
-  );
-  const badgeSize = R * (isSel ? 0.105 : 0.082);
-  const tangentLift = Math.max(width, height) * 0.8 + R * 0.055;
-  const badgePos = surfacePos.clone().add(new THREE.Vector3(0, tangentLift, 0));
-  badge.center.set(0.5, 0.5);
-  badge.scale.set(badgeSize, badgeSize, 1);
-  badge.position.copy(badgePos);
-  badge.userData.markId = markId;
-  badge.renderOrder = 22;
-  group.add(badge);
-}
-function softHaloTexture(THREE, color) {
-  const S = 256;
-  const c = document.createElement("canvas");
-  c.width = c.height = S;
-  const ctx = c.getContext("2d");
-  const g = ctx.createRadialGradient(
-    S / 2,
-    S / 2,
-    S * 0.18,
-    S / 2,
-    S / 2,
-    S * 0.5,
-  );
-  g.addColorStop(0, "rgba(255,255,255,0)");
-  g.addColorStop(0.55, "rgba(255,255,255,0)");
-  g.addColorStop(0.78, hexToRgba(color, 0.34));
-  g.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, S, S);
-  const t = new THREE.CanvasTexture(c);
-  t.anisotropy = 4;
-  t.userData = { ephemeral: true };
-  return t;
-}
-function tinyAnchorTexture(THREE, color, selected) {
-  const S = 96;
-  const c = document.createElement("canvas");
-  c.width = c.height = S;
-  const ctx = c.getContext("2d");
-  const cx = S / 2,
-    cy = S / 2;
-  ctx.fillStyle = "rgba(255,255,255,.82)";
-  ctx.beginPath();
-  ctx.arc(cx, cy, selected ? S * 0.22 : S * 0.18, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(cx, cy, selected ? S * 0.13 : S * 0.1, 0, Math.PI * 2);
-  ctx.fill();
-  const t = new THREE.CanvasTexture(c);
-  t.anisotropy = 4;
-  t.userData = { ephemeral: true };
-  return t;
-}
-function compactBadgeTexture(THREE, n, color, selected) {
-  const S = 128;
-  const c = document.createElement("canvas");
-  c.width = c.height = S;
-  const ctx = c.getContext("2d");
-  const cx = S / 2,
-    cy = S / 2;
-  const r = selected ? 38 : 33;
-  ctx.save();
-  ctx.shadowColor = "rgba(15,23,42,.25)";
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetY = 2;
-  ctx.fillStyle = "rgba(255,255,255,.92)";
-  ctx.beginPath();
-  ctx.arc(cx, cy, r + 7, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#fff";
-  ctx.font = `700 ${selected ? 42 : 38}px system-ui, sans-serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(String(n), cx, cy + 1);
-  const t = new THREE.CanvasTexture(c);
-  t.anisotropy = 4;
-  t.userData = { ephemeral: true };
-  return t;
-}
-function hexToRgba(hex, alpha) {
-  const h = String(hex).replace("#", "");
-  const full =
-    h.length === 3
-      ? h
-          .split("")
-          .map((x) => x + x)
-          .join("")
-      : h;
-  const num = parseInt(full, 16);
-  const r = (num >> 16) & 255,
-    g = (num >> 8) & 255,
-    b = num & 255;
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-function addHandles(t, group, m) {
-  const { THREE } = t;
-  const nrm = new THREE.Vector3(...(m.normal || [0, 0, 1])).normalize();
-  const q = new THREE.Quaternion().setFromUnitVectors(
-    new THREE.Vector3(0, 0, 1),
-    nrm,
-  );
-  const ex = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
-  const ey = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
-  const center = new THREE.Vector3(...m.local);
-  const R = t.localCarRadius || 2;
-  const lift = nrm.clone().multiplyScalar(R * 0.008);
-  const knobSize = R * 0.045;
-  const addKnob = (localPos, handle, accent) => {
-    const sp = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        map: handleKnobTexture(THREE, accent),
-        depthTest: false,
-        transparent: true,
-      }),
-    );
-    sp.scale.set(knobSize, knobSize, 1);
-    sp.position.copy(localPos).add(lift);
-    sp.userData.handle = handle;
-    sp.userData.markId = m.id;
-    sp.renderOrder = 26;
-    group.add(sp);
-  };
-  const addGuide = (a, b) => {
-    const ln = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([
-        a.clone().add(lift),
-        b.clone().add(lift),
-      ]),
-      new THREE.LineBasicMaterial({
-        color: new THREE.Color("#4f46e5"),
-        transparent: true,
-        opacity: 0.22,
-        depthTest: false,
-      }),
-    );
-    ln.renderOrder = 25;
-    group.add(ln);
-  };
-  if (!ELONGATED.has(m.type)) {
-    const radius = (m.size || 0.06) * R;
-    const rim = center.clone().add(ex.clone().multiplyScalar(radius));
-    addGuide(center, rim);
-    addKnob(rim, "radius", true);
-    return;
-  }
-  const rot = m.rotation || 0;
-  const axis = ex
-    .clone()
-    .multiplyScalar(Math.cos(rot))
-    .add(ey.clone().multiplyScalar(Math.sin(rot)));
-  const perp = ex
-    .clone()
-    .multiplyScalar(-Math.sin(rot))
-    .add(ey.clone().multiplyScalar(Math.cos(rot)));
-  const half = (m.length || 0.14) * R;
-  const endA = center.clone().add(axis.clone().multiplyScalar(-half));
-  const endB = center.clone().add(axis.clone().multiplyScalar(half));
-  const wOff = (m.size || 0.04) * 0.6 * R + R * 0.05;
-  const widthH = center.clone().add(perp.clone().multiplyScalar(wOff));
-  addGuide(endA, endB);
-  addGuide(center, widthH);
-  addKnob(endA, "endA", false);
-  addKnob(endB, "endB", false);
-  addKnob(widthH, "width", true);
-}
-function handleKnobTexture(THREE, accent) {
-  const S = 96;
-  const c = document.createElement("canvas");
-  c.width = c.height = S;
-  const ctx = c.getContext("2d");
-  const cx = S / 2,
-    cy = S / 2,
-    r = S * 0.3;
-  ctx.save();
-  ctx.shadowColor = "rgba(24,24,27,0.4)";
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetY = 2;
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-  ctx.lineWidth = 6;
-  ctx.strokeStyle = "rgba(79,70,229,.75)";
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.stroke();
-  if (accent) {
-    ctx.fillStyle = "rgba(79,70,229,.85)";
-    ctx.beginPath();
-    ctx.arc(cx, cy, r * 0.45, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.anisotropy = 4;
-  t.userData = { ephemeral: true };
-  return t;
-}
-function disposeMarkGroup(group) {
-  while (group.children.length) {
-    const c = group.children.pop();
-
-    c.geometry?.dispose?.();
-
-    const mats = Array.isArray(c.material) ? c.material : [c.material];
-
-    mats.forEach((mm) => {
-      if (!mm) return;
-
-      if (mm.map && mm.map.userData && mm.map.userData.ephemeral) {
-        mm.map.dispose?.();
-      }
-
-      mm.dispose?.();
-    });
-  }
-}
