@@ -660,272 +660,273 @@ export default function ScheinTable({
 
   return (
     <>
-      {/* Table Wrapper */}
-      <div
-        className={`rounded-lg border transition-colors duration-300 ${borderColor} ${cardBg} shadow-sm`}
-      >
-        <div className="w-full overflow-x-auto custom-scroll">
-          <table className="min-w-full divide-y transition-colors duration-300">
-            <thead
-              className={`transition-colors duration-300 ${
-                darkMode ? "bg-gray-800" : "bg-gray-50"
-              }`}
-            >
-              <tr
-                className={`text-left text-xs font-medium uppercase tracking-wider transition-colors duration-300 ${
-                  darkMode ? "text-gray-400" : "text-gray-500"
+      <div className="w-full max-w-screen-2xl mx-auto">
+        {/* Table Wrapper */}
+        <div
+          className={`rounded-lg border transition-colors duration-300 ${borderColor} ${cardBg} shadow-sm`}
+        >
+          <div className="w-full overflow-x-auto custom-scroll">
+            <table className="min-w-full divide-y transition-colors duration-300">
+              <thead
+                className={`transition-colors duration-300 ${
+                  darkMode ? "bg-gray-800" : "bg-gray-50"
                 }`}
               >
-                <th className="px-3 py-2">Fahrzeug</th>
-                <th className="px-16 py-2">FIN</th>
-                <th className="px-9 py-2 text-right">Garantie</th>
-                <th className="px-18 py-2 text-right">Phase</th>
-                <th className="px-11 py-2 text-right">Aktionen</th>
-              </tr>
-            </thead>
-            <tbody
-              className={`divide-y transition-colors duration-300 tracking-wide ${
-                darkMode
-                  ? "divide-gray-700 bg-gray-800"
-                  : "divide-gray-200 bg-white"
-              }`}
-            >
-              {loading ? (
-                [...Array(6)].map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    {Array.from({ length: 5 }).map((__, j) => (
-                      <td key={j} className="px-3 py-3">
-                        <div
-                          className={`h-4 w-20 rounded transition-colors duration-300 ${
-                            darkMode ? "bg-gray-700" : "bg-gray-200"
-                          }`}
-                        />
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              ) : totalItems === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-3 py-8 text-center">
-                    <div className="mx-auto max-w-md">
-                      <div
-                        className={`mb-1 text-sm font-medium transition-colors duration-300  ${
-                          darkMode ? "text-gray-300" : "text-gray-700"
-                        }`}
-                      >
-                        Keine Scheine gefunden
-                      </div>
-                      <p
-                        className={`transition-colors duration-300 ${
-                          darkMode ? "text-gray-400" : "text-gray-500"
-                        } text-xs`}
-                      >
-                        Suchbegriff oder Filter anpassen
-                      </p>
-                    </div>
-                  </td>
+                <tr
+                  className={`text-left text-xs font-medium uppercase tracking-wider transition-colors duration-300 ${
+                    darkMode ? "text-gray-400" : "text-gray-500"
+                  }`}
+                >
+                  <th className="px-3 py-2">Fahrzeug</th>
+                  <th className="px-16 py-2">FIN</th>
+                  <th className="px-9 py-2 text-right">Garantie</th>
+                  <th className="px-18 py-2 text-right">Phase</th>
+                  <th className="px-11 py-2 text-right">Aktionen</th>
                 </tr>
-              ) : (
-                paginatedScheins.map((schein) => (
-                  <tr
-                    key={schein._id}
-                    className={` transition-colors duration-300 ${hoverBg}`}
-                  >
-                    {/* Fahrzeug + Datum + Badges */}
-                    <td className="px-3 py-2 max-w-[260px]">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span
-                          className={`text-sm font-medium transition-colors duration-300 ${textPrimary} truncate`}
-                        >
-                          {schein.carName}
-                        </span>
-
-                        {/* FUEL */}
-                        {schein.fuelNeeded && (
-                          <span
-                            title="Tank leer"
-                            className={`inline-flex items-center justify-center rounded-full p-1.5 transition-colors duration-300 ${
-                              darkMode
-                                ? "bg-green-500 text-white"
-                                : "bg-green-300 text-green-950"
+              </thead>
+              <tbody
+                className={`divide-y transition-colors duration-300 tracking-wide ${
+                  darkMode
+                    ? "divide-gray-700 bg-gray-800"
+                    : "divide-gray-200 bg-white"
+                }`}
+              >
+                {loading ? (
+                  [...Array(6)].map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      {Array.from({ length: 5 }).map((__, j) => (
+                        <td key={j} className="px-3 py-3">
+                          <div
+                            className={`h-4 w-20 rounded transition-colors duration-300 ${
+                              darkMode ? "bg-gray-700" : "bg-gray-200"
                             }`}
-                          >
-                            <FiDroplet size={14} />
-                          </span>
-                        )}
-                      </div>
-
-                      <div
-                        className={`mt-0.5 text-[11px] transition-colors duration-300 ${textMuted}`}
-                      >
-                        {schein.createdAt
-                          ? new Date(schein.createdAt).toLocaleDateString()
-                          : "--"}
-                      </div>
-                    </td>
-
-                    {/* FIN */}
-                    <td className="px-3 py-2">
-                      <div
-                        className={`text-sm transition-colors duration-300 ${textPrimary}`}
-                      >
-                        {schein.finNumber || "-"}
-                      </div>
-                    </td>
-
-                    {/* Garantie / Reklamation */}
-                    <td className="px-15 py-2 text-right">
-                      <div className="flex justify-end">
-                        <WarrantyReklamationButton
-                          schein={schein}
-                          darkMode={darkMode}
-                          onUpdated={onUpdateSchein} // so table updates after saving
-                        />
-                      </div>
-                    </td>
-                    {/* ✅ Stage / Pipeline */}
-                    <td className="px-3 py-2 text-right">
-                      <div className="flex justify-end">
-                        <StageManagerButton
-                          schein={schein}
-                          darkMode={darkMode}
-                          onUpdated={onUpdateSchein}
-                        />
-                      </div>
-                    </td>
-
-                    {/* Aktionen */}
-                    <td className="px-3 py-2 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => openKeyModal(schein)}
-                          className={`rounded cursor-pointer p-1 transition-colors duration-300 ${
-                            darkMode
-                              ? "text-gray-400 hover:bg-gray-700 hover:text-white"
-                              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                          }`}
-                          title="Schlüssel / Status"
-                        >
-                          <FiKey
-                            size={16}
-                            className={
-                              schein.keyNumber ||
-                              schein.keySold ||
-                              schein.fuelNeeded
-                                ? darkMode
-                                  ? "text-gray-300"
-                                  : "text-gray-700"
-                                : "text-blue-600"
-                            }
                           />
-                        </button>
-
-                        <button
-                          onClick={() => handlePrintImage(schein)}
-                          className={`rounded p-1 cursor-pointer transition-colors duration-300 ${
-                            darkMode
-                              ? "text-gray-400 hover:bg-gray-700 hover:text-white"
-                              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : totalItems === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-3 py-8 text-center">
+                      <div className="mx-auto max-w-md">
+                        <div
+                          className={`mb-1 text-sm font-medium transition-colors duration-300  ${
+                            darkMode ? "text-gray-300" : "text-gray-700"
                           }`}
-                          title="Drucken"
                         >
-                          <FiPrinter size={16} />
-                        </button>
-
-                        <button
-                          onClick={() => openInfoModal(schein)}
-                          className={`rounded p-1 cursor-pointer transition-colors duration-300 ${
-                            darkMode
-                              ? "text-gray-400 hover:bg-gray-700 hover:text-white"
-                              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                          }`}
-                          title="Details"
+                          Keine Scheine gefunden
+                        </div>
+                        <p
+                          className={`transition-colors duration-300 ${
+                            darkMode ? "text-gray-400" : "text-gray-500"
+                          } text-xs`}
                         >
-                          <FiMessageSquare size={16} />
-                        </button>
-
-                        <button
-                          onClick={() => openImagePreview(schein)}
-                          className={`rounded p-1 cursor-pointer transition-colors duration-300 ${
-                            darkMode
-                              ? "text-gray-400 hover:bg-gray-700 hover:text-white"
-                              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                          }`}
-                          title="Vorschau"
-                        >
-                          <FiImage size={16} />
-                        </button>
-
-                        <button
-                          onClick={() =>
-                            handleDelete(schein._id, schein.publicId)
-                          }
-                          className={`rounded p-1 cursor-pointer transition-colors duration-300 ${
-                            darkMode
-                              ? "text-red-400 hover:bg-red-900 hover:text-red-300"
-                              : "text-red-600 hover:bg-red-50"
-                          }`}
-                          title="Löschen"
-                        >
-                          <FiTrash2 size={16} />
-                        </button>
+                          Suchbegriff oder Filter anpassen
+                        </p>
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  paginatedScheins.map((schein) => (
+                    <tr
+                      key={schein._id}
+                      className={` transition-colors duration-300 ${hoverBg}`}
+                    >
+                      {/* Fahrzeug + Datum + Badges */}
+                      <td className="px-3 py-2 max-w-[260px]">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`text-sm font-medium transition-colors duration-300 ${textPrimary} truncate`}
+                          >
+                            {schein.carName}
+                          </span>
 
-        {/* Pagination Bar */}
-        {!loading && totalItems > 0 && (
-          <div
-            className={`flex items-center justify-between px-3 py-2 border-t-2 text-xs transition-colors duration-300 ${
-              darkMode
-                ? "bg-gray-800 border-gray-700 text-gray-400"
-                : "bg-gray-50 border-gray-200 text-gray-400"
-            }`}
-          >
-            <div>
-              Zeige{" "}
-              <span className="font-medium">
-                {startItem}–{endItem}
-              </span>{" "}
-              von <span className="font-medium">{totalItems}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-                className={`inline-flex items-center rounded border px-2 py-1 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-300 ${
-                  darkMode
-                    ? "border-gray-600 hover:bg-gray-700 text-gray-400"
-                    : "border-gray-300 hover:bg:white text-gray-600"
-                }`}
-              >
-                <FiChevronLeft className="mr-1" size={12} />
-              </button>
-              <span className="px-2">
-                Seite <span className="font-medium">{currentPage}</span> /{" "}
-                <span className="font-medium">{totalPages}</span>
-              </span>
-              <button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                className={`inline-flex items-center rounded border px-2 py-1 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-300 ${
-                  darkMode
-                    ? "border-gray-600 hover:bg-gray-700 text-gray-400"
-                    : "border-gray-400 hover:bg:white text-gray-600"
-                }`}
-              >
-                <FiChevronRight className="ml-1" size={12} />
-              </button>
-            </div>
+                          {/* FUEL */}
+                          {schein.fuelNeeded && (
+                            <span
+                              title="Tank leer"
+                              className={`inline-flex items-center justify-center rounded-full p-1.5 transition-colors duration-300 ${
+                                darkMode
+                                  ? "bg-green-500 text-white"
+                                  : "bg-green-300 text-green-950"
+                              }`}
+                            >
+                              <FiDroplet size={14} />
+                            </span>
+                          )}
+                        </div>
+
+                        <div
+                          className={`mt-0.5 text-[11px] transition-colors duration-300 ${textMuted}`}
+                        >
+                          {schein.createdAt
+                            ? new Date(schein.createdAt).toLocaleDateString()
+                            : "--"}
+                        </div>
+                      </td>
+
+                      {/* FIN */}
+                      <td className="px-3 py-2">
+                        <div
+                          className={`text-sm transition-colors duration-300 ${textPrimary}`}
+                        >
+                          {schein.finNumber || "-"}
+                        </div>
+                      </td>
+
+                      {/* Garantie / Reklamation */}
+                      <td className="px-15 py-2 text-right">
+                        <div className="flex justify-end">
+                          <WarrantyReklamationButton
+                            schein={schein}
+                            darkMode={darkMode}
+                            onUpdated={onUpdateSchein} // so table updates after saving
+                          />
+                        </div>
+                      </td>
+                      {/* ✅ Stage / Pipeline */}
+                      <td className="px-3 py-2 text-right">
+                        <div className="flex justify-end">
+                          <StageManagerButton
+                            schein={schein}
+                            darkMode={darkMode}
+                            onUpdated={onUpdateSchein}
+                          />
+                        </div>
+                      </td>
+
+                      {/* Aktionen */}
+                      <td className="px-3 py-2 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => openKeyModal(schein)}
+                            className={`rounded cursor-pointer p-1 transition-colors duration-300 ${
+                              darkMode
+                                ? "text-gray-400 hover:bg-gray-700 hover:text-white"
+                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                            }`}
+                            title="Schlüssel / Status"
+                          >
+                            <FiKey
+                              size={16}
+                              className={
+                                schein.keyNumber ||
+                                schein.keySold ||
+                                schein.fuelNeeded
+                                  ? darkMode
+                                    ? "text-gray-300"
+                                    : "text-gray-700"
+                                  : "text-blue-600"
+                              }
+                            />
+                          </button>
+
+                          <button
+                            onClick={() => handlePrintImage(schein)}
+                            className={`rounded p-1 cursor-pointer transition-colors duration-300 ${
+                              darkMode
+                                ? "text-gray-400 hover:bg-gray-700 hover:text-white"
+                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                            }`}
+                            title="Drucken"
+                          >
+                            <FiPrinter size={16} />
+                          </button>
+
+                          <button
+                            onClick={() => openInfoModal(schein)}
+                            className={`rounded p-1 cursor-pointer transition-colors duration-300 ${
+                              darkMode
+                                ? "text-gray-400 hover:bg-gray-700 hover:text-white"
+                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                            }`}
+                            title="Details"
+                          >
+                            <FiMessageSquare size={16} />
+                          </button>
+
+                          <button
+                            onClick={() => openImagePreview(schein)}
+                            className={`rounded p-1 cursor-pointer transition-colors duration-300 ${
+                              darkMode
+                                ? "text-gray-400 hover:bg-gray-700 hover:text-white"
+                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                            }`}
+                            title="Vorschau"
+                          >
+                            <FiImage size={16} />
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              handleDelete(schein._id, schein.publicId)
+                            }
+                            className={`rounded p-1 cursor-pointer transition-colors duration-300 ${
+                              darkMode
+                                ? "text-red-400 hover:bg-red-900 hover:text-red-300"
+                                : "text-red-600 hover:bg-red-50"
+                            }`}
+                            title="Löschen"
+                          >
+                            <FiTrash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
 
+          {/* Pagination Bar */}
+          {!loading && totalItems > 0 && (
+            <div
+              className={`flex items-center justify-between px-3 py-2 border-t-2 text-xs transition-colors duration-300 ${
+                darkMode
+                  ? "bg-gray-800 border-gray-700 text-gray-400"
+                  : "bg-gray-50 border-gray-200 text-gray-400"
+              }`}
+            >
+              <div>
+                Zeige{" "}
+                <span className="font-medium">
+                  {startItem}–{endItem}
+                </span>{" "}
+                von <span className="font-medium">{totalItems}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                  className={`inline-flex items-center rounded border px-2 py-1 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-300 ${
+                    darkMode
+                      ? "border-gray-600 hover:bg-gray-700 text-gray-400"
+                      : "border-gray-300 hover:bg:white text-gray-600"
+                  }`}
+                >
+                  <FiChevronLeft className="mr-1" size={12} />
+                </button>
+                <span className="px-2">
+                  Seite <span className="font-medium">{currentPage}</span> /{" "}
+                  <span className="font-medium">{totalPages}</span>
+                </span>
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className={`inline-flex items-center rounded border px-2 py-1 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-300 ${
+                    darkMode
+                      ? "border-gray-600 hover:bg-gray-700 text-gray-400"
+                      : "border-gray-400 hover:bg:white text-gray-600"
+                  }`}
+                >
+                  <FiChevronRight className="ml-1" size={12} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
       {/* Info Modal */}
       {showInfoModal && selectedSchein && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">

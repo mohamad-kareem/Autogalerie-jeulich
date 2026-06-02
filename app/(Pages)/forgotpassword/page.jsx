@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FiMail, FiArrowRight } from "react-icons/fi";
+import {
+  FiMail,
+  FiArrowRight,
+  FiLock,
+  FiAlertCircle,
+  FiCheck,
+} from "react-icons/fi";
+
+const inputBase =
+  "h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 text-sm font-medium text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:bg-white focus:ring-4 focus:ring-gray-200/70 disabled:cursor-not-allowed disabled:opacity-60";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -12,141 +21,136 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isLoading) return;
+
     setError("");
     setIsLoading(true);
 
     try {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+        }),
       });
 
-      if (!res.ok) throw new Error("Fehler beim Senden des Reset-Links");
+      if (!res.ok) {
+        throw new Error("Fehler beim Senden des Reset-Links");
+      }
+
       setSubmitted(true);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Ein Fehler ist aufgetreten.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-700 to-slate-900 px-4">
-      {/* Background Glow */}
-      <div className="absolute top-0 left-1/3 w-48 h-48 bg-blue-500/10 blur-3xl rounded-full" />
-      <div className="absolute bottom-0 right-1/3 w-48 h-48 bg-sky-400/10 blur-3xl rounded-full" />
-
-      <div className="w-full max-w-sm relative z-10">
-        <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-xl">
-          <div className="p-6">
-            {/* Icon */}
-            <div className="flex justify-center mb-3">
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center border border-slate-600 bg-slate-900">
-                <svg
-                  className="w-7 h-7 text-slate-200"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
+    <main className="min-h-screen flex items-center justify-center bg-[#f5f6f4] px-4 py-6">
+      <section className="w-full max-w-sm sm:max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl shadow-black/10">
+        {/* Header */}
+        <div className="border-b border-gray-100 bg-white px-5 py-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-700">
+              {submitted ? (
+                <FiCheck className="h-5 w-5 text-[#146c2e]" />
+              ) : (
+                <FiLock className="h-5 w-5" />
+              )}
             </div>
 
-            {/* Title */}
-            <h1 className="text-xl font-semibold text-center text-slate-100">
-              Passwort zurücksetzen
-            </h1>
+            <div className="min-w-0">
+              <h1 className="mt-1 text-xl font-semibold tracking-tight text-gray-950">
+                Passwort zurücksetzen
+              </h1>
 
-            {/* Info text (unchanged content) */}
-            <p className="text-center text-slate-400 text-xs mt-2 mb-5 leading-relaxed">
-              {submitted
-                ? "Wenn Ihre E-Mail in unserem System vorhanden ist, erhalten Sie in Kürze eine Anleitung zum Zurücksetzen."
-                : "Geben Sie Ihre E-Mail-Adresse ein, um einen Link zum Zurücksetzen des Passworts zu erhalten."}
-            </p>
-
-            {/* Error */}
-            {error && (
-              <div className="mb-4 text-xs text-red-300 bg-red-900/40 border border-red-700/70 rounded-md px-3 py-2">
-                {error}
-              </div>
-            )}
-
-            {/* Form */}
-            {!submitted && (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Email */}
-                <div>
-                  <label className="block text-xs text-slate-300 mb-1">
-                    E-Mail-Adresse
-                  </label>
-                  <div className="relative">
-                    <FiMail className="absolute left-3 top-2.5 text-slate-500 text-sm" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      placeholder="admin@firma.de"
-                      className="w-full pl-9 pr-3 py-2 text-sm bg-slate-900 border border-slate-700 rounded-md text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Button */}
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-slate-600 hover:bg-slate-700 rounded-md transition disabled:opacity-70"
-                >
-                  {isLoading ? (
-                    <>
-                      <svg
-                        className="w-4 h-4 animate-spin"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                        />
-                      </svg>
-                      Senden…
-                    </>
-                  ) : (
-                    <>
-                      Reset-Link senden <FiArrowRight />
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
-
-            {/* Back */}
-            <div className="mt-5 text-center text-xs">
-              <Link
-                href="/login"
-                className="text-blue-400 hover:text-blue-300 font-medium"
-              >
-                Zurück zur Anmeldung
-              </Link>
+              <p className="mt-1 text-sm leading-5 text-gray-500">
+                {submitted
+                  ? "Wenn Ihre E-Mail vorhanden ist, erhalten Sie in Kürze eine Anleitung."
+                  : "Geben Sie Ihre E-Mail-Adresse ein, um einen Reset-Link zu erhalten."}
+              </p>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+
+        <div className="px-5 py-5">
+          {/* Error */}
+          {error && (
+            <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+              <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Success */}
+          {submitted && (
+            <div className="mb-4 flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs font-medium text-green-700">
+              <FiCheck className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Die Anfrage wurde gesendet. Bitte prüfen Sie Ihr
+                E-Mail-Postfach.
+              </span>
+            </div>
+          )}
+
+          {!submitted && (
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-600">
+                  E-Mail-Adresse
+                </label>
+
+                <div className="relative">
+                  <FiMail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    placeholder="admin@firma.de"
+                    autoComplete="email"
+                    className={inputBase}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="mt-2 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-green-900 px-4 text-sm font-semibold text-white shadow-md shadow-black/15 transition hover:bg-green-950 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isLoading ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                    Senden...
+                  </>
+                ) : (
+                  <>
+                    Reset-Link senden
+                    <FiArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          <div className="mt-5 text-center">
+            <Link
+              href="/login"
+              className="text-xs font-semibold text-[#146c2e] transition hover:text-[#0f5724]"
+            >
+              Zurück zur Anmeldung
+            </Link>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }

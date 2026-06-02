@@ -137,7 +137,7 @@ export default function CarScheinPage() {
     <div
       className={`min-h-screen transition-colors duration-300 ${bgClass} p-2 sm:p-4`}
     >
-      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
+      <div className="w-full max-w-screen-2xl mx-auto">
         {/* Header */}
         <header className="mb-3 sm:mb-4 flex items-center gap-4">
           {/* Mobile hamburger */}

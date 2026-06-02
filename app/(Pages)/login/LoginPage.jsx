@@ -3,22 +3,43 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { FiMail, FiLock, FiArrowRight } from "react-icons/fi";
 import Link from "next/link";
+import {
+  FiMail,
+  FiLock,
+  FiArrowRight,
+  FiAlertCircle,
+  FiUser,
+} from "react-icons/fi";
+
+const inputBase =
+  "h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 text-sm font-medium text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:bg-white focus:ring-4 focus:ring-gray-200/70 disabled:cursor-not-allowed disabled:opacity-60";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [credentials, setCredentials] = useState({ email: "", password: "" });
+
+  const [credentials, setCredentials] = useState({
+    email: "",
+    password: "",
+  });
+
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setCredentials((prev) => ({ ...prev, [name]: value }));
+
+    setCredentials((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isLoading) return;
+
     setIsLoading(true);
     setError("");
 
@@ -29,135 +50,133 @@ export default function LoginPage() {
         password: credentials.password,
       });
 
-      if (result?.error) throw new Error();
+      if (result?.error) {
+        throw new Error("Invalid credentials");
+      }
+
       router.push("/AdminDashboard");
     } catch {
       setError("E-Mail oder Passwort ist falsch.");
-      setCredentials((p) => ({ ...p, password: "" }));
+      setCredentials((prev) => ({
+        ...prev,
+        password: "",
+      }));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-700 to-slate-900 px-4">
-      <div className="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-xl shadow-xl">
-        <div className="p-6">
-          {/* Avatar */}
-          <div className="flex justify-center mb-3">
-            <div className="w-14 h-14 rounded-xl bg-slate-900 border border-slate-600 flex items-center justify-center">
-              <svg
-                className="w-7 h-7 text-slate-200"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                  clipRule="evenodd"
-                />
-              </svg>
+    <main className="min-h-screen flex items-center justify-center bg-[#f5f6f4] px-4 py-6">
+      <section className="w-full max-w-sm sm:max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl shadow-black/10">
+        {/* Header */}
+        <div className="border-b border-gray-100 bg-white px-5 py-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-700">
+              <FiUser className="h-5 w-5" />
+            </div>
+
+            <div className="min-w-0">
+              <h1 className="mt-1 text-xl font-semibold tracking-tight text-gray-950">
+                Admin Login
+              </h1>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Bitte anmelden, um fortzufahren.
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Title */}
-          <h1 className="text-xl font-semibold text-center text-slate-100">
-            Admin Login
-          </h1>
-          <p className="text-xs text-center text-slate-400 mb-5">
-            Bitte anmelden
-          </p>
-
-          {/* Error */}
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-3 px-5 py-5">
           {error && (
-            <div className="mb-4 text-xs text-red-300 bg-red-900/40 border border-red-700/60 rounded-md px-3 py-2">
-              {error}
+            <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+              <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
-            <div>
-              <label className="text-xs text-slate-300">E-Mail</label>
-              <div className="relative mt-1">
-                <FiMail className="absolute left-3 top-2.5 text-slate-500 text-sm" />
-                <input
-                  name="email"
-                  type="email"
-                  value={credentials.email}
-                  onChange={handleChange}
-                  required
-                  placeholder="admin@firma.de"
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-slate-900 border border-slate-700 rounded-md text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
+          {/* Email */}
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-gray-600">
+              E-Mail
+            </label>
+
+            <div className="relative">
+              <FiMail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+
+              <input
+                name="email"
+                type="email"
+                value={credentials.email}
+                onChange={handleChange}
+                required
+                disabled={isLoading}
+                placeholder="admin@firma.de"
+                autoComplete="email"
+                className={inputBase}
+              />
+            </div>
+          </div>
+
+          {/* Password */}
+          <div>
+            <div className="mb-1.5 flex items-center justify-between gap-3">
+              <label className="block text-xs font-semibold text-gray-600">
+                Passwort
+              </label>
+
+              <Link
+                href="/forgotpassword"
+                className="text-xs font-semibold text-[#146c2e] transition hover:text-[#0f5724]"
+              >
+                Passwort vergessen?
+              </Link>
             </div>
 
-            {/* Password */}
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <label className="text-slate-300">Passwort</label>
-                <Link
-                  href="/forgotpassword"
-                  className="text-blue-400 hover:text-blue-300"
-                >
-                  Passwort vergessen?
-                </Link>
-              </div>
-              <div className="relative">
-                <FiLock className="absolute left-3 top-2.5 text-slate-500 text-sm" />
-                <input
-                  name="password"
-                  type="password"
-                  value={credentials.password}
-                  onChange={handleChange}
-                  required
-                  minLength={8}
-                  placeholder="••••••••"
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-slate-900 border border-slate-700 rounded-md text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
-            </div>
+            <div className="relative">
+              <FiLock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
 
-            {/* Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-slate-600 hover:bg-slate-700 rounded-md transition disabled:opacity-70"
-            >
-              {isLoading ? (
-                <>
-                  <svg
-                    className="w-4 h-4 animate-spin"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                    />
-                  </svg>
-                  Anmeldung…
-                </>
-              ) : (
-                <>
-                  Fortsetzen <FiArrowRight />
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+              <input
+                name="password"
+                type="password"
+                value={credentials.password}
+                onChange={handleChange}
+                required
+                minLength={8}
+                disabled={isLoading}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                className={inputBase}
+              />
+            </div>
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="mt-2 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-green-900 px-4 text-sm font-semibold text-white shadow-md shadow-black/15 transition hover:bg-green-950 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLoading ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                Anmeldung...
+              </>
+            ) : (
+              <>
+                Fortsetzen
+                <FiArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </button>
+
+          <p className="pt-1 text-center text-[11px] font-medium text-gray-400">
+            Geschützter Zugang für interne Verwaltung.
+          </p>
+        </form>
+      </section>
+    </main>
   );
 }
