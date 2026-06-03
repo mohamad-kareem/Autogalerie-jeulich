@@ -955,6 +955,15 @@ export default function CarLocationsPage() {
   const columnCount = 8;
 
   const RotbuchSidebar = () => {
+    const formatDate = (value) => {
+      if (!value) return "–";
+
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "–";
+
+      return date.toLocaleDateString("de-DE");
+    };
+
     return (
       <div
         className={`fixed top-0 right-0 h-full z-50 ${
@@ -1045,24 +1054,68 @@ export default function CarLocationsPage() {
                   }`}
                 >
                   <div className="flex items-center gap-3 p-3">
-                    <div className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-md bg-slate-200">
+                    <div
+                      className={`relative h-[82px] w-[116px] shrink-0 overflow-hidden rounded-xl border ${
+                        darkMode
+                          ? "border-slate-800 bg-slate-900"
+                          : "border-slate-200 bg-slate-100"
+                      }`}
+                    >
                       {car.imageUrl ? (
-                        <Image
-                          src={car.imageUrl}
-                          alt={car.carName}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                          sizes="(max-width: 768px) 96px, 96px"
-                        />
+                        <>
+                          <Image
+                            src={car.imageUrl}
+                            alt={car.carName || "Fahrzeug"}
+                            fill
+                            className={`object-cover ${
+                              car.isSold ? "grayscale-[45%] opacity-80" : ""
+                            }`}
+                            unoptimized
+                            sizes="116px"
+                          />
+
+                          {car.isSold && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/25">
+                              <span className="rotate-[-12deg] rounded-md border border-white/70 bg-white/90 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-900 shadow-sm">
+                                Verkauft
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      ) : car.isSold ? (
+                        <div
+                          className={`flex h-full w-full flex-col items-center justify-center px-2 text-center ${
+                            darkMode ? "bg-slate-900" : "bg-slate-100"
+                          }`}
+                        >
+                          <div
+                            className={`rotate-[-10deg] rounded-md border px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] shadow-sm ${
+                              darkMode
+                                ? "border-slate-500 bg-slate-800 text-slate-200"
+                                : "border-slate-400 bg-white text-slate-800"
+                            }`}
+                          >
+                            Verkauft
+                          </div>
+
+                          {car.soldAt && (
+                            <div
+                              className={`mt-2 text-[10px] font-medium ${
+                                darkMode ? "text-slate-400" : "text-slate-500"
+                              }`}
+                            >
+                              {formatDate(car.soldAt)}
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <div
-                          className={`h-full w-full flex items-center justify-center ${
-                            darkMode ? "bg-slate-700" : "bg-slate-200"
+                          className={`flex h-full w-full items-center justify-center ${
+                            darkMode ? "bg-slate-800" : "bg-slate-100"
                           }`}
                         >
                           <FiBook
-                            className={`w-8 h-8 ${
+                            className={`h-8 w-8 ${
                               darkMode ? "text-slate-600" : "text-slate-400"
                             }`}
                           />
