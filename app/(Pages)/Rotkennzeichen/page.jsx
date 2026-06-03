@@ -358,6 +358,10 @@ export default function CarLocationsPage() {
               rotKennzeichen: !!d.rotKennzeichen,
               rotPlateNumber: d.rotPlateNumber || "",
               boughtAt: d.boughtAt || null,
+
+              keySold: !!d.keySold,
+              soldAt: d.soldAt || null,
+              stage: d.stage || "",
             }))
           : [];
 
@@ -1169,11 +1173,14 @@ export default function CarLocationsPage() {
                           <span
                             className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                               darkMode
-                                ? "bg-emerald-900/40 text-emerald-300 border border-emerald-700/60"
-                                : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                                ? "bg-green-900/40 text-green-300 border border-green-700/60"
+                                : "bg-green-50 text-green-700 border border-green-200"
                             }`}
                           >
                             Verkauft
+                            {car.soldAt
+                              ? ` am ${new Date(car.soldAt).toLocaleDateString("de-DE")}`
+                              : ""}
                           </span>
                         )}
                       </div>
