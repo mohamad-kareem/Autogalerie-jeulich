@@ -175,7 +175,7 @@ const PublicAddCarPage = () => {
               <ContactRow
                 icon={<FiPhone />}
                 title="Telefon"
-                value="+49 (0)2461 9163780"
+                value="+49 (0)2461 916006613"
               />
 
               <Link

@@ -275,10 +275,10 @@ export default function ContactPage({ carId, carName, carLink }) {
 
             <aside className="flex flex-col gap-3 self-start">
               <ContactCard
-                href="tel:+4924619163780"
+                href="tel:+492461 916006613"
                 icon={<Phone />}
                 title="Anrufen"
-                text="02461 9163780"
+                text="02461 916006613"
               />
 
               <ContactCard

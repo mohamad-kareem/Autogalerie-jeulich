@@ -105,7 +105,7 @@ const Footbar = () => {
 
               <FooterInfo iconType="phone">
                 <a
-                  href="tel:+4924619163780"
+                  href="tel:+492461916006613"
                   className="transition hover:text-[#146c2e]"
                 >
                   +49 (0)2461 9163780

@@ -82,7 +82,7 @@ export default function FloatingContact() {
             </button>
 
             <a
-              href="tel:+4924619163780"
+              href="tel:+492461916006613"
               className="p-2.5 hover:bg-slate-800/90 transition-colors duration-200 flex items-center justify-center"
               title="Anrufen"
             >
@@ -148,10 +148,10 @@ export default function FloatingContact() {
                     Telefon :
                   </span>
                   <a
-                    href="tel:+4924619163780"
+                    href="tel:+492461916006613"
                     className="text-slate-900 hover:text-slate-700"
                   >
-                    +49 (0)2461 9163780
+                    +49 (0)2461 916006613
                   </a>
                 </p>
 

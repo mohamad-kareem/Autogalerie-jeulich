@@ -223,7 +223,7 @@ async function importKeys() {
         color: "",
         notes: "",
         needsBenzine: false,
-      }))
+      })),
     );
 
     console.log(`✅ ${inserted.length} keys inserted successfully.`);

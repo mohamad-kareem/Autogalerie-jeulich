@@ -35,8 +35,8 @@ const CARD =
   "rounded-2xl border border-black/[0.06] bg-white shadow-[0_10px_30px_-18px_rgba(7,17,31,0.18)]";
 
 const DEALER_EMAIL = "info@autogalerie-juelich.de";
-const DEALER_PHONE = "+4924619163780";
-const DEALER_PHONE_LABEL = "02461 9163780";
+const DEALER_PHONE = "+492461916006613";
+const DEALER_PHONE_LABEL = "02461 916006613";
 
 /* ================================================================== */
 /*  HELPERS (logic from old code, unchanged)                           */

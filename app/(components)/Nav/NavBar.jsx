@@ -538,11 +538,11 @@ export default function NavBar() {
               </span>
 
               <a
-                href="tel:+4924619163780"
+                href="tel:+492461916006613"
                 className="inline-flex items-center gap-1.5 transition hover:text-[#146c2e]"
               >
                 <Phone className="h-3.5 w-3.5 text-[#146c2e]" />
-                02461 9163780
+                02461 916006613
               </a>
             </div>
           </div>

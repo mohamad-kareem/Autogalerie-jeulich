@@ -15,7 +15,7 @@ const playfair = Playfair_Display({
 export const metadata = {
   title: "Autogalerie Jülich",
   description:
-    "Premium Fahrzeugflotte · Standort. Alte Dürenerstraße 4, 52428 Jülich · Telefon. +49 2461 9163780 · Email. info@autogalerie-juelich.de",
+    "Premium Fahrzeugflotte · Standort. Alte Dürenerstraße 4, 52428 Jülich · Telefon. +49 2461 916006613 · Email. info@autogalerie-juelich.de",
   icons: {
     icon: "/smcar.png",
     shortcut: "/smcar.png",

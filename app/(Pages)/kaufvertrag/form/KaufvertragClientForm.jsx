@@ -283,7 +283,7 @@ export default function KaufvertragClientForm() {
       <div className="flex flex-col sm:flex-row justify-between items-center border p-2 sm:p-7 bg-black text-white print:flex-row print:justify-between print:items-center print:p-2 print:px-6">
         <div className="text-left w-full md:w-auto mb-2 md:mb-0 print:mb-2 print:text-left print:w-full">
           <p className="font-semibold text-sm md:text-lg print:text-sm">
-            E-Mail: autogalerie.juelich@web.de / Tel.: 02461/9163780
+            E-Mail: autogalerie.juelich@web.de / Tel.: 02461/916006613
           </p>
         </div>
         <div className="text-right w-full md:w-auto print:w-1/2 print:text-right">
@@ -328,7 +328,7 @@ export default function KaufvertragClientForm() {
 
           <p className="font-mono text-sm md:text-lg print:text-sm">
             <span className="print:whitespace-nowrap">
-              Tel.:&nbsp;02461&nbsp;/&nbsp;9163780
+              Tel.:&nbsp;02461&nbsp;/&nbsp;916006613
             </span>
           </p>
         </div>
