@@ -22,6 +22,7 @@ import {
   FiLayout,
   FiSettings,
   FiUser,
+  FiPrinter,
 } from "react-icons/fi";
 
 import { FaCarSide, FaPaintRoller } from "react-icons/fa";
@@ -190,6 +191,13 @@ export default function Sidebar({
         label: "Fahrzeugverwaltung",
         badge: null,
         color: "text-blue-500",
+      },
+      {
+        href: "/preisschild",
+        icon: <FiPrinter />,
+        label: "Preisschild",
+        badge: null,
+        color: "text-emerald-500",
       },
       {
         href: "/Rotkennzeichen",
