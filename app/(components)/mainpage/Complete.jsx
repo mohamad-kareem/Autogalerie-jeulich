@@ -20,7 +20,7 @@ const Complete = () => {
       <HeroSection />
       <MovingWords />
       <Rating />
-
+      <ConsentBanner />
       <LandingChoices />
       <RandomCarSlider />
 
