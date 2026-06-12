@@ -108,7 +108,7 @@ const Footbar = () => {
                   href="tel:+492461916006613"
                   className="transition hover:text-[#146c2e]"
                 >
-                  +49 (0)2461 9163780
+                  +49 (0)2461 916006613
                 </a>
               </FooterInfo>
 

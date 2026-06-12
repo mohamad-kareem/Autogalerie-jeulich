@@ -63,7 +63,7 @@ export async function POST(req) {
     const current = await CarSchein.findOne({
       finNumber: { $in: [finNumber, finUpper] },
     })
-      .select("_id finNumber soldAt soldContactId")
+      .select("_id finNumber soldAt soldContactId notes")
       .lean();
 
     if (!current) return json({ error: "CarSchein not found" }, 404);
@@ -75,10 +75,19 @@ export async function POST(req) {
     let soldContactId = current.soldContactId || null;
     if (!soldContactId) {
       soldContactId = await findSoldContactIdByFin(
-        current.finNumber || finNumber
+        current.finNumber || finNumber,
       );
     }
+    const tuevValue = toStr(body.tuev);
+    const currentNotes = Array.isArray(current.notes) ? current.notes : [];
 
+    const cleanedNotes = currentNotes.filter(
+      (note) => !toStr(note).toLowerCase().startsWith("asu/tüv:"),
+    );
+
+    const nextNotes = tuevValue
+      ? [...cleanedNotes, `ASU/TÜV: ${tuevValue}`]
+      : cleanedNotes;
     const updated = await CarSchein.findByIdAndUpdate(
       current._id,
       {
@@ -86,10 +95,11 @@ export async function POST(req) {
           stage: "SOLD",
           keySold: true,
           soldAt,
+          notes: nextNotes,
           ...(soldContactId ? { soldContactId } : {}),
         },
       },
-      { new: true }
+      { new: true },
     )
       .populate("soldContactId", "customerName phone street postalCode city")
       .lean();

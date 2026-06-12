@@ -561,23 +561,6 @@ const DashboardContent = ({
                                 darkMode ? "text-gray-400" : "text-gray-600"
                               }
                             >
-                              Besitzer:
-                            </span>
-                            <span
-                              className={`font-medium ml-1 sm:ml-2 truncate max-w-[60px] sm:max-w-[80px] ${
-                                darkMode ? "text-white" : "text-gray-900"
-                              }`}
-                            >
-                              {schein.owner || "–"}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-center items-center text-[14px] sm:text-base">
-                            <span
-                              className={
-                                darkMode ? "text-gray-400" : "text-gray-600"
-                              }
-                            >
                               FIN:
                             </span>
                             <span
@@ -586,6 +569,71 @@ const DashboardContent = ({
                               {schein.finNumber || "–"}
                             </span>
                           </div>
+                          {/* Telefon */}
+                          {schein.soldContactId?.phone && (
+                            <div className="flex justify-center items-center text-[14px] sm:text-base">
+                              <span
+                                className={
+                                  darkMode ? "text-gray-400" : "text-gray-600"
+                                }
+                              >
+                                Tel:
+                              </span>
+
+                              <a
+                                href={`tel:${schein.soldContactId.phone}`}
+                                title={schein.soldContactId.phone}
+                                className={`font-medium ml-1 sm:ml-2 truncate max-w-[130px] transition-colors ${
+                                  darkMode
+                                    ? "text-blue-300 hover:text-blue-200"
+                                    : "text-blue-700 hover:text-blue-900"
+                                }`}
+                              >
+                                {schein.soldContactId.phone}
+                              </a>
+                            </div>
+                          )}
+
+                          {/* Complete address / Google Maps */}
+                          {(() => {
+                            const fullAddress = [
+                              schein.soldContactId?.street,
+                              schein.soldContactId?.postalCode,
+                              schein.soldContactId?.city,
+                            ]
+                              .filter(Boolean)
+                              .join(", ");
+
+                            if (!fullAddress) return null;
+
+                            return (
+                              <div className="flex justify-center items-center text-[14px] sm:text-base">
+                                <span
+                                  className={
+                                    darkMode ? "text-gray-400" : "text-gray-600"
+                                  }
+                                >
+                                  Adresse:
+                                </span>
+
+                                <a
+                                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                    fullAddress,
+                                  )}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={fullAddress}
+                                  className={`font-medium ml-1 sm:ml-2 truncate max-w-[190px] transition-colors ${
+                                    darkMode
+                                      ? "text-blue-300 hover:text-blue-200"
+                                      : "text-blue-700 hover:text-blue-900"
+                                  }`}
+                                >
+                                  {fullAddress}
+                                </a>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         <div

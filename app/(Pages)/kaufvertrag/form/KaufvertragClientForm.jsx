@@ -247,6 +247,7 @@ export default function KaufvertragClientForm() {
           body: JSON.stringify({
             finNumber: cleanedForm.vin.trim(),
             soldAt: cleanedForm.invoiceDate || null,
+            tuev: cleanedForm.tuev || "",
           }),
         });
 
@@ -305,7 +306,7 @@ export default function KaufvertragClientForm() {
         {/* Left: Logo + Name */}
         <div className="flex items-center gap-3 w-full md:w-auto mb-2 md:mb-0 print:mb-2 print:w-full">
           <Image
-            src={LogoKarim} // ✅ Karim logo
+            src={LogoKarim}
             alt="Autogalerie Jülich – Karim"
             width={55}
             height={55}

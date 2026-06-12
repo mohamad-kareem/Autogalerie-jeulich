@@ -54,6 +54,7 @@ const adminRoutes = [
   "/Kundenkontakte",
   "/lackieren",
   "/Preisschild",
+  "/Fotostudio",
 ];
 
 const hasSubMenu = (menu) =>
