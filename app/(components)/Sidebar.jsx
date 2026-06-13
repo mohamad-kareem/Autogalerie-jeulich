@@ -23,6 +23,7 @@ import {
   FiSettings,
   FiUser,
   FiPrinter,
+  FiCamera,
 } from "react-icons/fi";
 
 import { FaCarSide, FaPaintRoller } from "react-icons/fa";
@@ -191,6 +192,13 @@ export default function Sidebar({
         label: "Fahrzeugverwaltung",
         badge: null,
         color: "text-blue-500",
+      },
+      {
+        href: "/fotostudio",
+        icon: <FiCamera />,
+        label: "Fotostudio",
+        badge: null,
+        color: "text-cyan-500",
       },
       {
         href: "/preisschild",
