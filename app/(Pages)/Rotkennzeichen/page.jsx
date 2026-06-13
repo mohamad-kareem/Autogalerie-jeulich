@@ -123,6 +123,13 @@ function normalizeFin(val) {
     .replace(/[^a-z0-9]/gi, "")
     .toLowerCase();
 }
+function normalizeDriver(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
 function findOverlappingCids(rows) {
   const overlapping = new Set();
 
@@ -134,22 +141,36 @@ function findOverlappingCids(rows) {
     const aStart = new Date(a.startDateTime);
     const aEnd = new Date(a.endDateTime);
 
-    if (Number.isNaN(aStart.getTime()) || Number.isNaN(aEnd.getTime()))
+    if (Number.isNaN(aStart.getTime()) || Number.isNaN(aEnd.getTime())) {
       continue;
+    }
 
     for (let j = i + 1; j < rows.length; j++) {
       const b = rows[j];
 
-      if ((a.plateNumber || "") !== (b.plateNumber || "")) continue;
       if (!b.startDateTime || !b.endDateTime) continue;
 
       const bStart = new Date(b.startDateTime);
       const bEnd = new Date(b.endDateTime);
 
-      if (Number.isNaN(bStart.getTime()) || Number.isNaN(bEnd.getTime()))
+      if (Number.isNaN(bStart.getTime()) || Number.isNaN(bEnd.getTime())) {
         continue;
+      }
 
-      if (aStart < bEnd && aEnd > bStart) {
+      const timesOverlap = aStart < bEnd && aEnd > bStart;
+
+      if (!timesOverlap) continue;
+
+      const samePlate =
+        (a.plateNumber || "DN-06919") === (b.plateNumber || "DN-06919");
+
+      const driverA = normalizeDriver(a.driverInfo);
+      const driverB = normalizeDriver(b.driverInfo);
+
+      const sameDriver =
+        driverA !== "" && driverB !== "" && driverA === driverB;
+
+      if (samePlate || sameDriver) {
         overlapping.add(a._cid);
         overlapping.add(b._cid);
       }
@@ -1720,7 +1741,7 @@ export default function CarLocationsPage() {
 
                               {hasOverlap && (
                                 <div className="mt-1 text-[10px] font-semibold text-red-600 dark:text-red-300">
-                                  ⚠ Zeitüberschneidung
+                                  ⚠ Zeit- oder Fahrerüberschneidung
                                 </div>
                               )}
                               {hasInvalidBoughtDate && (
