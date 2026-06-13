@@ -194,7 +194,7 @@ export default function Sidebar({
         color: "text-blue-500",
       },
       {
-        href: "/fotostudio",
+        href: "/Fotostudio",
         icon: <FiCamera />,
         label: "Fotostudio",
         badge: null,
