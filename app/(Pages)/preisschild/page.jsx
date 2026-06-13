@@ -50,7 +50,7 @@ const EMPTY = {
   equipment: "",
   description: "",
   price: "",
-  vatNote: "MwSt. ausweisbar",
+
   imageDataUrl: null,
 };
 
@@ -468,13 +468,6 @@ body{font-family:Arial,sans-serif;background:#fff;color:#000;-webkit-print-color
                   onChange={s("price")}
                   placeholder="5999"
                 />
-              </LF>
-              <LF label="MwSt.-Hinweis">
-                <select value={f.vatNote} onChange={s("vatNote")}>
-                  <option>MwSt. ausweisbar</option>
-                  <option>MwSt. nicht ausweisbar</option>
-                  <option>inkl. MwSt.</option>
-                </select>
               </LF>
             </Row2>
           </FC>
