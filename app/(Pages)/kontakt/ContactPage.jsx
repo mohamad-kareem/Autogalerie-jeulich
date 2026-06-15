@@ -282,7 +282,7 @@ export default function ContactPage({ carId, carName, carLink }) {
               />
 
               <ContactCard
-                href="https://wa.me/4915234205041"
+                href="https://wa.me/4917647313765"
                 icon={<MessageSquare />}
                 title="WhatsApp"
                 text="Direkt schreiben"
