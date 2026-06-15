@@ -624,7 +624,7 @@ function ConversationDetails({
                 : "Archivieren"}
             </span>
           </button>
-
+          {/*
           <button
             type="button"
             onClick={onDelete}
@@ -639,6 +639,7 @@ function ConversationDetails({
               <Trash2 className="h-4 w-4" />
             )}
           </button>
+          */}
         </div>
       </header>
 
