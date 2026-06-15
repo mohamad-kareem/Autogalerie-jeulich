@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+
 import {
   User,
   Settings,
@@ -55,6 +56,7 @@ const adminRoutes = [
   "/lackieren",
   "/Preisschild",
   "/Fotostudio",
+  "/ai-chats",
 ];
 
 const hasSubMenu = (menu) =>

@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+
 import {
   FiKey,
   FiFileText,
@@ -24,6 +25,7 @@ import {
   FiUser,
   FiPrinter,
   FiCamera,
+  FiMessageCircle,
 } from "react-icons/fi";
 
 import { FaCarSide, FaPaintRoller } from "react-icons/fa";
@@ -152,6 +154,14 @@ export default function Sidebar({
         color: "text-violet-500",
       },
       {
+        href: "/ai-chats",
+        icon: <FiMessageCircle />,
+        label: "AI-Chats",
+        badge: null,
+        color: "text-emerald-500",
+      },
+
+      {
         href: "/aufgabenboard",
         icon: <FiGrid />,
         label: "Trello",
@@ -214,20 +224,7 @@ export default function Sidebar({
         badge: null,
         color: "text-red-400",
       },
-      {
-        href: "/punsh",
-        icon: <FiClock />,
-        label: "Stempeluhr",
-        badge: null,
-        color: "text-orange-400",
-      },
-      {
-        href: "/kaufvertrag/auswahl",
-        icon: <FiFileText />,
-        label: "Neuer Vertrag",
-        badge: null,
-        color: "text-teal-400",
-      },
+
       {
         href: "/Zeiterfassungsverwaltung",
         icon: <FiClock />,
@@ -248,6 +245,20 @@ export default function Sidebar({
         label: "Posteingang",
         badge: sidebarUnreadCount > 0 ? sidebarUnreadCount : null,
         color: "text-pink-400",
+      },
+      {
+        href: "/kaufvertrag/auswahl",
+        icon: <FiFileText />,
+        label: "Neuer Vertrag",
+        badge: null,
+        color: "text-teal-400",
+      },
+      {
+        href: "/punsh",
+        icon: <FiClock />,
+        label: "Stempeluhr",
+        badge: null,
+        color: "text-orange-400",
       },
       {
         href: "/Autoteil",

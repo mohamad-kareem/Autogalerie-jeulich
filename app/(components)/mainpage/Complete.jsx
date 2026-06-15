@@ -14,12 +14,11 @@ import DiscountPopup from "./popup.jsx";
 import ConsentBanner from "../helpers/ConsentBanner";
 import MovingWords from "./movingwords";
 import SideAd from "../helpers/SideAd";
-
+import FloatingContact from "../helpers/FloatingContact";
 const Complete = () => {
   return (
     <main className="relative bg-black text-white">
       <div className="relative">
-        {/* Independent left-side advertisement */}
         <div
           className="
             absolute
@@ -29,13 +28,12 @@ const Complete = () => {
             min-[1680px]:block
           "
           style={{
-            right: "calc(50% - 590px - 270px)",
+            left: "calc(50% - 590px - 270px)",
           }}
         >
           <SideAd />
         </div>
 
-        {/* Your original Hero is unchanged */}
         <HeroSection />
       </div>
 
@@ -46,6 +44,9 @@ const Complete = () => {
       <RandomCarSlider />
       <SellCarYourWay />
       <Footbar />
+
+      {/* Floating contact widget */}
+      <FloatingContact />
     </main>
   );
 };
