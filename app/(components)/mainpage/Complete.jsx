@@ -10,20 +10,40 @@ import Rating from "./Rating";
 import Reviews from "./CustomerReviews";
 import GridBackground from "../helpers/Grid";
 import RandomCarSlider from "./RandomCarSlider";
-import DiscountPopup from "./popup.jsx"; // Import the popup component
-import ConsentBanner from "../helpers/ConsentBanner"; // adjust path if needed
+import DiscountPopup from "./popup.jsx";
+import ConsentBanner from "../helpers/ConsentBanner";
 import MovingWords from "./movingwords";
+import SideAd from "../helpers/SideAd";
+
 const Complete = () => {
   return (
     <main className="relative bg-black text-white">
-      {/*  Grid SVG in the background */}
-      <HeroSection />
+      <div className="relative">
+        {/* Independent left-side advertisement */}
+        <div
+          className="
+            absolute
+            top-5
+            z-20
+            hidden
+            min-[1680px]:block
+          "
+          style={{
+            right: "calc(50% - 590px - 270px)",
+          }}
+        >
+          <SideAd />
+        </div>
+
+        {/* Your original Hero is unchanged */}
+        <HeroSection />
+      </div>
+
       <MovingWords />
       <Rating />
       <ConsentBanner />
       <LandingChoices />
       <RandomCarSlider />
-
       <SellCarYourWay />
       <Footbar />
     </main>

@@ -687,7 +687,7 @@ function Sheet({ f, fmtReg, fmtKm, fmtPrice }) {
         </div>
         <div
           style={{
-            width: "180px",
+            width: "190px",
             height: "56px",
             display: "flex",
             alignItems: "center",
@@ -699,8 +699,8 @@ function Sheet({ f, fmtReg, fmtKm, fmtPrice }) {
             src="/logo11.png"
             alt="Autogalerie Jülich"
             style={{
-              width: "160px",
-              height: "auto",
+              width: "190px",
+              height: "250px",
               objectFit: "contain",
               objectPosition: "right center",
               display: "block",
