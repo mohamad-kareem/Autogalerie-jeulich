@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import { Pause, Play, Volume2, VolumeX, Car } from "lucide-react";
+import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 
 export default function AdvertisementVideo() {
   const videoRef = useRef(null);
+  const isRestartingRef = useRef(false);
 
   const { ref, inView } = useInView({
     threshold: 0.45,
@@ -15,58 +16,122 @@ export default function AdvertisementVideo() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
 
+  const playVideo = useCallback(async () => {
+    const video = videoRef.current;
+
+    if (!video) return false;
+
+    try {
+      await video.play();
+      setIsPlaying(true);
+      return true;
+    } catch (error) {
+      console.error("Video playback failed:", error);
+      setIsPlaying(false);
+      return false;
+    }
+  }, []);
+
+  const restartVideo = useCallback(async () => {
+    const video = videoRef.current;
+
+    if (!video || isRestartingRef.current) return;
+
+    isRestartingRef.current = true;
+
+    try {
+      video.pause();
+      video.currentTime = 0;
+
+      await video.play();
+
+      setIsPlaying(true);
+    } catch (error) {
+      console.error("Video restart failed:", error);
+      setIsPlaying(false);
+    } finally {
+      window.setTimeout(() => {
+        isRestartingRef.current = false;
+      }, 300);
+    }
+  }, []);
+
   useEffect(() => {
     const video = videoRef.current;
 
     if (!video) return;
 
-    const startVideo = async () => {
+    const handleViewportPlayback = async () => {
       if (!inView) {
         video.pause();
         setIsPlaying(false);
         return;
       }
 
-      try {
-        // Try to start with sound
-        video.muted = false;
-        setIsMuted(false);
+      /*
+       * First try playing with sound.
+       * Most browsers block automatic playback with sound.
+       */
+      video.muted = false;
+      setIsMuted(false);
 
+      try {
         await video.play();
         setIsPlaying(true);
-      } catch (error) {
-        // Browser blocked autoplay with sound
-        try {
-          video.muted = true;
-          setIsMuted(true);
+      } catch {
+        /*
+         * Fall back to muted autoplay if sound autoplay
+         * is blocked by the browser.
+         */
+        video.muted = true;
+        setIsMuted(true);
 
+        try {
           await video.play();
           setIsPlaying(true);
-        } catch (playError) {
-          console.error("Video autoplay failed:", playError);
+        } catch (error) {
+          console.error("Video autoplay failed:", error);
           setIsPlaying(false);
         }
       }
     };
 
-    startVideo();
+    handleViewportPlayback();
   }, [inView]);
+
+  const handleTimeUpdate = useCallback(() => {
+    const video = videoRef.current;
+
+    if (
+      !video ||
+      isRestartingRef.current ||
+      !Number.isFinite(video.duration) ||
+      video.duration <= 0
+    ) {
+      return;
+    }
+
+    const remainingTime = video.duration - video.currentTime;
+
+    /*
+     * Restart shortly before the last frame.
+     * This prevents the final black frame from remaining visible.
+     */
+    if (remainingTime <= 0.15) {
+      restartVideo();
+    }
+  }, [restartVideo]);
 
   const togglePlayback = async () => {
     const video = videoRef.current;
 
     if (!video) return;
 
-    try {
-      if (video.paused) {
-        await video.play();
-        setIsPlaying(true);
-      } else {
-        video.pause();
-        setIsPlaying(false);
-      }
-    } catch (error) {
-      console.error("Video playback failed:", error);
+    if (video.paused) {
+      await playVideo();
+    } else {
+      video.pause();
+      setIsPlaying(false);
     }
   };
 
@@ -81,27 +146,7 @@ export default function AdvertisementVideo() {
     setIsMuted(nextMutedState);
 
     if (video.paused) {
-      try {
-        await video.play();
-        setIsPlaying(true);
-      } catch (error) {
-        console.error("Video playback failed:", error);
-      }
-    }
-  };
-
-  const restartVideo = async () => {
-    const video = videoRef.current;
-
-    if (!video) return;
-
-    video.currentTime = 0;
-
-    try {
-      await video.play();
-      setIsPlaying(true);
-    } catch (error) {
-      console.error("Video restart failed:", error);
+      await playVideo();
     }
   };
 
@@ -115,41 +160,55 @@ export default function AdvertisementVideo() {
           duration: 0.7,
           ease: "easeOut",
         }}
-        className="mx-auto w-full max-w-[1180px] px-4  sm:px-6 lg:px-8"
+        className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-8"
       >
         <div className="relative overflow-hidden rounded-2xl bg-black shadow-xl shadow-black/20 sm:rounded-[24px]">
           <video
             ref={videoRef}
-            className="block aspect-video h-auto w-full object-cover"
+            className="block aspect-video h-auto w-full bg-black object-cover"
             playsInline
             preload="auto"
             muted={isMuted}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
+            loop
+            onTimeUpdate={handleTimeUpdate}
             onEnded={restartVideo}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => {
+              if (!isRestartingRef.current) {
+                setIsPlaying(false);
+              }
+            }}
+            onLoadedMetadata={(event) => {
+              event.currentTarget.currentTime = 0;
+            }}
+            onError={(event) => {
+              console.error("Video loading error:", {
+                code: event.currentTarget.error?.code,
+                message: event.currentTarget.error?.message,
+                source: event.currentTarget.currentSrc,
+              });
+            }}
           >
-            <source src="/video1.mp4" type="video/mp4" />
+            <source src="/video2.mp4" type="video/mp4" />
             Ihr Browser unterstützt dieses Video nicht.
           </video>
 
-          {/* Soft bottom gradient */}
+          {/* Bottom gradient */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
 
-          {/* Covers the watermark at the bottom-left */}
+          {/* Watermark cover */}
           <div className="absolute bottom-0 left-0 z-20">
             <div className="relative min-w-[190px] overflow-hidden rounded-tr-2xl bg-black px-4 py-3 shadow-lg sm:min-w-[220px] sm:px-5 sm:py-4">
               <div className="absolute inset-0 bg-gradient-to-r from-black via-[#07140b] to-[#0f5724]/90" />
 
-              <div className="relative flex items-center gap-3">
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/60 sm:text-[10px]">
-                    Autogalerie
-                  </p>
+              <div className="relative">
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/60 sm:text-[10px]">
+                  Autogalerie
+                </p>
 
-                  <p className="text-sm font-black leading-none text-white sm:text-base">
-                    Jülich
-                  </p>
-                </div>
+                <p className="text-sm font-black leading-none text-white sm:text-base">
+                  Jülich
+                </p>
               </div>
             </div>
           </div>
