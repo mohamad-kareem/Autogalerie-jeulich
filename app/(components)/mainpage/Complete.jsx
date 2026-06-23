@@ -15,6 +15,7 @@ import ConsentBanner from "../helpers/ConsentBanner";
 import MovingWords from "./movingwords";
 import SideAd from "../helpers/SideAd";
 import FloatingContact from "../helpers/FloatingContact";
+import AdvertisementVideo from "./AdvertisementVideo";
 const Complete = () => {
   return (
     <main className="relative bg-black text-white">
@@ -40,6 +41,7 @@ const Complete = () => {
       <MovingWords />
       <Rating />
       <ConsentBanner />
+      <AdvertisementVideo />
       <LandingChoices />
       <RandomCarSlider />
       <SellCarYourWay />
