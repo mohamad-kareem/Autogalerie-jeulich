@@ -1802,22 +1802,15 @@ export default function VehicleInspection3DPage() {
               <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_1px_3px_rgba(24,24,27,.05)]">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4">
                   <div className="flex items-center gap-3">
-                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-zinc-900 text-white">
+                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-green-700 text-white">
                       <FiDollarSign size={16} />
                     </span>
                     <div>
                       <h2 className="text-sm font-semibold text-zinc-900">
                         Abrechnung
                       </h2>
-                      <p className="text-[10.5px] text-zinc-400">
-                        Einzelpreise erfassen und Werkstattkosten automatisch
-                        berechnen
-                      </p>
                     </div>
                   </div>
-                  <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[10px] font-semibold text-zinc-500">
-                    Rechnungsentwurf
-                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-[1fr_260px]">

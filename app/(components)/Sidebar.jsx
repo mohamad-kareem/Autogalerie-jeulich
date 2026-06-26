@@ -176,7 +176,7 @@ export default function Sidebar({
         color: "text-slate-400",
       },
       {
-        href: "/lackieren",
+        href: "/Toni-Werkstatt",
         icon: <FaPaintRoller />,
         label: "Lackieren",
         badge: null,
