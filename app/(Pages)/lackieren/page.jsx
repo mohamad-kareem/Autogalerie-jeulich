@@ -14,14 +14,17 @@ import {
   FiChevronDown,
   FiChevronRight,
   FiAlertCircle,
-  FiMinus,
   FiPlus,
-  FiFolder,
-  FiFolderPlus,
   FiTruck,
   FiSearch,
   FiPlusCircle,
   FiClipboard,
+  FiTool,
+  FiDollarSign,
+  FiCheckCircle,
+  FiFolder,
+  FiCalendar,
+  FiFileText,
 } from "react-icons/fi";
 
 /* =========================================================
@@ -43,34 +46,44 @@ const BRANDS = [
   },
 
   {
-    id: "Peugeot",
+    id: "peugeot",
     label: "Peugeot",
     model: "/peugeot.glb",
   },
   {
-    id: "Ford",
+    id: "ford",
     label: "Ford",
     model: "/fordfocus.glb",
   },
   {
-    id: "Hyundai",
+    id: "hyundai",
     label: "Hyundai",
     model: "/hyundai.glb",
   },
   {
-    id: "Opel",
+    id: "opel",
     label: "Opel",
     model: "/opel.glb",
   },
   {
-    id: "Kia    ",
+    id: "kia",
     label: "Kia",
     model: "/kiapicanto.glb",
   },
   {
-    id: "Kia1    ",
+    id: "kia1",
     label: "Kia1",
     model: "/kiapicanto1.glb",
+  },
+  {
+    id: "mazda",
+    label: "Mazda",
+    model: "/mazda.glb",
+  },
+  {
+    id: "volkswagen",
+    label: "Volkswagen",
+    model: "/volkswagen.glb",
   },
 ];
 
@@ -87,7 +100,7 @@ const DAMAGE_TYPES = [
   { id: "crack", label: "Riss / Bruch", color: "#7c3aed" },
   { id: "other", label: "Sonstiges", color: "#52525b" },
 ];
-const ACTIONS = [
+const BODYWORK_ACTIONS = [
   "Spachteln",
   "Schleifen",
   "Grundieren",
@@ -96,11 +109,7 @@ const ACTIONS = [
   "Beule ausbeulen",
   "Teil tauschen",
 ];
-const SEVERITY = [
-  { id: "low", label: "Leicht", color: "#16a34a" },
-  { id: "mid", label: "Mittel", color: "#f59e0b" },
-  { id: "high", label: "Schwer", color: "#ef4444" },
-];
+
 const PANELS = [
   "Motorhaube",
   "Dach",
@@ -121,18 +130,24 @@ const PANELS = [
   "Felge",
 ];
 
+const MECHANICAL_AREAS = [
+  "Motor",
+  "Getriebe",
+  "Kupplung",
+  "Bremsanlage",
+  "Fahrwerk",
+  "Lenkung",
+  "Elektrik / Diagnose",
+  "Kühlung",
+  "Abgasanlage",
+  "Klimaanlage",
+  "Reifen / Räder",
+  "Inspektion / Service",
+  "Sonstiges",
+];
+
 // damage types that look like strokes (long & thin) get a length dimension
 const ELONGATED = new Set(["scratch", "crack"]);
-
-// vehicle-wide actions that don't need a point on the car
-const GLOBAL_ACTIONS = [
-  { id: "full_paint", label: "Komplett-Lackierung", icon: "🎨" },
-  { id: "full_polish", label: "Komplett-Politur", icon: "✨" },
-  { id: "hagel", label: "Hagelschaden", icon: "🌨" },
-  { id: "interior_clean", label: "Innenreinigung", icon: "🧽" },
-  { id: "underbody", label: "Unterbodenschutz", icon: "🛡" },
-  { id: "wheel_refinish", label: "Felgen aufbereiten", icon: "⚙" },
-];
 
 const makeMark = (local, normal, type) => ({
   id: `m_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -140,9 +155,9 @@ const makeMark = (local, normal, type) => ({
   normal,
   type,
   action: "Lackieren",
-  severity: "mid",
   panel: "",
   note: "",
+  price: "",
   size: 0.06, // 6% of car radius
   length: ELONGATED.has(type) ? 0.14 : 0.06, // 14% for elongated default
   rotation: 0,
@@ -150,10 +165,10 @@ const makeMark = (local, normal, type) => ({
 
 export default function VehicleInspection3DPage() {
   // vehicles (user-managed) + selection
-  const [vehicles, setVehicles] = useState(SEED_VEHICLES);
-  const [activeVehicleId, setActiveVehicleId] = useState(
-    SEED_VEHICLES[0]?.id || null,
-  );
+  const [vehicles, setVehicles] = useState([]);
+  const [activeVehicleId, setActiveVehicleId] = useState(null);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const activeVehicle = vehicles.find((v) => v.id === activeVehicleId) || null;
   const activeBrand = activeVehicle
     ? BRANDS.find((b) => b.id === activeVehicle.brandId)
@@ -161,9 +176,11 @@ export default function VehicleInspection3DPage() {
 
   // per-vehicle marks
   const [marksByVehicle, setMarksByVehicle] = useState({});
-  // vehicle-wide actions: { [vehicleId]: { actions: Set, custom: [string] } }
-  const [globalsByVehicle, setGlobalsByVehicle] = useState({});
+  // non-visual workshop data per vehicle
+  const [mechanicalByVehicle, setMechanicalByVehicle] = useState({});
   const marks = (activeVehicleId && marksByVehicle[activeVehicleId]) || [];
+  const mechanicalTasks =
+    (activeVehicleId && mechanicalByVehicle[activeVehicleId]) || [];
   const activeVehicleIdRef = useRef(activeVehicleId);
   activeVehicleIdRef.current = activeVehicleId;
   const setMarks = useCallback(
@@ -188,6 +205,13 @@ export default function VehicleInspection3DPage() {
   const [placing, setPlacing] = useState(true);
   const [autoSpin, setAutoSpin] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [showBillingPrint, setShowBillingPrint] = useState(false);
+  const [mechanicalDraft, setMechanicalDraft] = useState({
+    area: "",
+    job: "",
+    note: "",
+    price: "",
+  });
 
   const mountRef = useRef(null);
   const three = useRef({});
@@ -200,27 +224,117 @@ export default function VehicleInspection3DPage() {
 
   const currentModel = activeBrand?.model || null;
 
+  const applyInspectionToState = useCallback((inspection) => {
+    const id = String(inspection.id || inspection._id);
+    const vehicle = {
+      id,
+      brandId: inspection.vehicle?.brandId || "",
+      name: inspection.vehicle?.name || "",
+      fin: inspection.vehicle?.fin || "",
+      status: inspection.status || "draft",
+      createdAt: inspection.createdAt,
+      updatedAt: inspection.updatedAt,
+    };
+
+    setVehicles((current) => {
+      const exists = current.some((item) => item.id === id);
+      return exists
+        ? current.map((item) => (item.id === id ? vehicle : item))
+        : [vehicle, ...current];
+    });
+    setMarksByVehicle((current) => ({
+      ...current,
+      [id]: Array.isArray(inspection.bodywork) ? inspection.bodywork : [],
+    }));
+    setMechanicalByVehicle((current) => ({
+      ...current,
+      [id]: Array.isArray(inspection.mechanicalTasks)
+        ? inspection.mechanicalTasks
+        : [],
+    }));
+    return vehicle;
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadInspections = async () => {
+      try {
+        setDataLoading(true);
+        const response = await fetch("/api/workshop-inspections", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(
+            data.message || "Werkstattaufträge konnten nicht geladen werden.",
+          );
+        }
+
+        const inspections = Array.isArray(data.inspections)
+          ? data.inspections
+          : [];
+        const nextVehicles = [];
+        const nextMarks = {};
+        const nextMechanical = {};
+
+        inspections.forEach((inspection) => {
+          const id = String(inspection.id || inspection._id);
+          nextVehicles.push({
+            id,
+            brandId: inspection.vehicle?.brandId || "",
+            name: inspection.vehicle?.name || "",
+            fin: inspection.vehicle?.fin || "",
+            status: inspection.status || "draft",
+            createdAt: inspection.createdAt,
+            updatedAt: inspection.updatedAt,
+          });
+          nextMarks[id] = Array.isArray(inspection.bodywork)
+            ? inspection.bodywork
+            : [];
+          nextMechanical[id] = Array.isArray(inspection.mechanicalTasks)
+            ? inspection.mechanicalTasks
+            : [];
+        });
+
+        setVehicles(nextVehicles);
+        setMarksByVehicle(nextMarks);
+        setMechanicalByVehicle(nextMechanical);
+        setActiveVehicleId((current) =>
+          current && nextVehicles.some((vehicle) => vehicle.id === current)
+            ? current
+            : nextVehicles[0]?.id || null,
+        );
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error(error);
+          toast.error(error.message || "Daten konnten nicht geladen werden.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setDataLoading(false);
+      }
+    };
+
+    loadInspections();
+    return () => controller.abort();
+  }, []);
+
   /* ============ THREE setup once ============ */
   useEffect(() => {
     let disposed = false;
     let cleanup = () => {};
     (async () => {
       try {
-        const THREE = await import(
-          /* webpackIgnore: true */ "https://esm.sh/three@0.160.0"
-        );
-        const { OrbitControls } = await import(
-          /* webpackIgnore: true */ "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js"
-        );
-        const { GLTFLoader } = await import(
-          /* webpackIgnore: true */ "https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js"
-        );
-        const { DRACOLoader } = await import(
-          /* webpackIgnore: true */ "https://esm.sh/three@0.160.0/examples/jsm/loaders/DRACOLoader.js"
-        );
-        const { RoomEnvironment } = await import(
-          /* webpackIgnore: true */ "https://esm.sh/three@0.160.0/examples/jsm/environments/RoomEnvironment.js"
-        );
+        const THREE = await import("three");
+        const { OrbitControls } =
+          await import("three/examples/jsm/controls/OrbitControls.js");
+        const { GLTFLoader } =
+          await import("three/examples/jsm/loaders/GLTFLoader.js");
+        const { DRACOLoader } =
+          await import("three/examples/jsm/loaders/DRACOLoader.js");
+        const { RoomEnvironment } =
+          await import("three/examples/jsm/environments/RoomEnvironment.js");
         if (disposed) return;
 
         const mount = mountRef.current;
@@ -1020,43 +1134,54 @@ export default function VehicleInspection3DPage() {
     }
   };
 
-  // ---- global (whole-car) actions per vehicle ----
-  const activeGlobals = (activeVehicleId &&
-    globalsByVehicle[activeVehicleId]) || { actions: {}, custom: [] };
-  const [customGlobalInput, setCustomGlobalInput] = useState("");
-  const globalsCount =
-    Object.values(activeGlobals.actions || {}).filter(Boolean).length +
-    (activeGlobals.custom?.length || 0);
-
-  const setActiveGlobals = (updater) =>
-    setGlobalsByVehicle((prev) => {
+  // ---- mechanical tasks, ordered-parts references and final bill ----
+  const setMechanicalTasks = (updater) =>
+    setMechanicalByVehicle((prev) => {
       if (!activeVehicleId) return prev;
-      const cur = prev[activeVehicleId] || { actions: {}, custom: [] };
+      const cur = prev[activeVehicleId] || [];
       const next = typeof updater === "function" ? updater(cur) : updater;
       return { ...prev, [activeVehicleId]: next };
     });
-  const toggleGlobal = (id) =>
-    setActiveGlobals((cur) => ({
+
+  const addMechanicalTask = () => {
+    if (!activeVehicleId)
+      return toast.error("Bitte zuerst ein Fahrzeug wählen.");
+    const job = mechanicalDraft.job.trim();
+    if (!job) return toast.error("Bitte die mechanische Arbeit eintragen.");
+    setMechanicalTasks((cur) => [
       ...cur,
-      actions: { ...(cur.actions || {}), [id]: !cur.actions?.[id] },
-    }));
-  const addCustomGlobal = () => {
-    const v = customGlobalInput.trim();
-    if (!v) return;
-    setActiveGlobals((cur) => ({ ...cur, custom: [...(cur.custom || []), v] }));
-    setCustomGlobalInput("");
+      {
+        id: `mech_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+        area: mechanicalDraft.area,
+        job,
+        note: mechanicalDraft.note.trim(),
+        price: mechanicalDraft.price,
+        done: false,
+      },
+    ]);
+    setMechanicalDraft((draft) => ({ ...draft, job: "", note: "", price: "" }));
   };
-  const removeCustomGlobal = (i) =>
-    setActiveGlobals((cur) => ({
-      ...cur,
-      custom: (cur.custom || []).filter((_, idx) => idx !== i),
-    }));
+
+  const updateMechanicalTask = (id, patch) =>
+    setMechanicalTasks((cur) =>
+      cur.map((task) => (task.id === id ? { ...task, ...patch } : task)),
+    );
+
+  const removeMechanicalTask = (id) =>
+    setMechanicalTasks((cur) => cur.filter((task) => task.id !== id));
+
   const clearAllAufgaben = () => {
-    if (!confirm("Alle Aufgaben dieses Fahrzeugs entfernen?")) return;
+    if (
+      !confirm(
+        "Alle Karosserie- und Mechanikaufgaben dieses Fahrzeugs entfernen?",
+      )
+    )
+      return;
     setMarks([]);
     setSelectedMark(null);
-    setActiveGlobals({ actions: {}, custom: [] });
+    setMechanicalTasks([]);
   };
+
   const selectMark = (id) => {
     setSelectedMark(id);
     const m = marks.find((x) => x.id === id);
@@ -1064,102 +1189,288 @@ export default function VehicleInspection3DPage() {
   };
 
   /* ---- vehicle management ---- */
-  const addVehicle = ({ brandId, name, fin }) => {
-    const id = `v_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
-    const v = { id, brandId, name: name.trim(), fin: fin.trim() };
-    setVehicles((prev) => [...prev, v]);
-    setActiveVehicleId(id);
-    setShowAdd(false);
-    toast.success("Fahrzeug hinzugefügt");
-  };
-  const deleteVehicle = (id) => {
-    if (!confirm("Dieses Fahrzeug entfernen?")) return;
-    setVehicles((prev) => prev.filter((v) => v.id !== id));
-    setMarksByVehicle((prev) => {
-      const n = { ...prev };
-      delete n[id];
-      return n;
-    });
-    if (activeVehicleId === id) setActiveVehicleId(null);
+  const addVehicle = async ({ brandId, name, fin }) => {
+    const selectedBrand = BRANDS.find((brand) => brand.id === brandId);
+    const cleanName = String(name || "").trim();
+    const cleanFin = String(fin || "")
+      .trim()
+      .toUpperCase();
+
+    if (!selectedBrand) {
+      toast.error("Bitte eine Fahrzeugmarke auswählen.");
+      return;
+    }
+
+    if (!cleanName) {
+      toast.error("Bitte die Fahrzeugbezeichnung eintragen.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/workshop-inspections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vehicle: {
+            brandId: selectedBrand.id,
+            brandLabel: selectedBrand.label,
+            name: cleanName,
+            fin: cleanFin,
+          },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Fahrzeug konnte nicht angelegt werden.",
+        );
+      }
+
+      const vehicle = applyInspectionToState(data.inspection);
+      setActiveVehicleId(vehicle.id);
+      setSelectedMark(null);
+      setShowAdd(false);
+      toast.success("Fahrzeug hinzugefügt");
+    } catch (error) {
+      console.error("Add vehicle error:", error);
+      toast.error(error.message || "Fahrzeug konnte nicht angelegt werden.");
+    }
   };
 
-  const handleSave = async () => {
-    const globals = {
-      preset: Object.entries(activeGlobals.actions || {})
-        .filter(([, on]) => on)
-        .map(([id]) => id),
-      custom: activeGlobals.custom || [],
-    };
-    const payload = {
-      vehicle: activeVehicle,
-      brand: activeBrand?.label,
-      marks: marks.map(({ id, ...r }) => r),
-      globals,
-    };
+  const deleteVehicle = async (id) => {
+    if (!confirm("Dieses Fahrzeug und alle Werkstattdaten entfernen?")) return;
+
     try {
-      console.log("Inspection payload:", payload);
-      toast.success("Auftrag gespeichert (siehe Konsole)");
-    } catch {
-      toast.error("Speichern fehlgeschlagen");
+      const response = await fetch(`/api/workshop-inspections/${id}`, {
+        method: "DELETE",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Löschen fehlgeschlagen.");
+      }
+
+      const remaining = vehicles.filter((vehicle) => vehicle.id !== id);
+      setVehicles(remaining);
+      setMarksByVehicle((current) => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+      setMechanicalByVehicle((current) => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+      if (activeVehicleId === id) {
+        setActiveVehicleId(remaining[0]?.id || null);
+        setSelectedMark(null);
+      }
+      toast.success("Fahrzeug gelöscht");
+    } catch (error) {
+      console.error(error);
+      toast.error(error.message || "Löschen fehlgeschlagen.");
+    }
+  };
+
+  const bodyworkTotal = useMemo(
+    () => marks.reduce((sum, mark) => sum + parsePrice(mark.price), 0),
+    [marks],
+  );
+  const mechanicalTotal = useMemo(
+    () =>
+      mechanicalTasks.reduce((sum, task) => sum + parsePrice(task.price), 0),
+    [mechanicalTasks],
+  );
+  const workshopTotal = bodyworkTotal + mechanicalTotal;
+
+  const handleSave = async () => {
+    if (!activeVehicle) return;
+
+    try {
+      setSaving(true);
+      const response = await fetch(
+        `/api/workshop-inspections/${activeVehicle.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            vehicle: {
+              brandId: activeVehicle.brandId,
+              brandLabel: activeBrand?.label || "",
+              name: activeVehicle.name,
+              fin: activeVehicle.fin || "",
+            },
+            bodywork: marks,
+            mechanicalTasks,
+            status: activeVehicle.status || "draft",
+          }),
+        },
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Speichern fehlgeschlagen.");
+      }
+
+      applyInspectionToState(data.inspection);
+      toast.success("Werkstattauftrag gespeichert");
+    } catch (error) {
+      console.error(error);
+      toast.error(error.message || "Speichern fehlgeschlagen");
+    } finally {
+      setSaving(false);
     }
   };
 
   const handlePrint = () => {
-    const w = window.open("", "_blank", "width=900,height=1200");
+    const w = window.open("", "_blank", "width=960,height=1200");
     if (!w) return toast.error("Popup wurde blockiert.");
-    const esc = (s = "") =>
-      String(s ?? "").replace(
+    const esc = (value = "") =>
+      String(value ?? "").replace(
         /[&<>"']/g,
-        (c) =>
+        (char) =>
           ({
             "&": "&amp;",
             "<": "&lt;",
             ">": "&gt;",
             '"': "&quot;",
             "'": "&#039;",
-          })[c],
+          })[char],
       );
-    const globalRows = [
-      ...Object.entries(activeGlobals.actions || {})
-        .filter(([, on]) => on)
-        .map(([id]) => GLOBAL_ACTIONS.find((x) => x.id === id)?.label)
-        .filter(Boolean),
-      ...(activeGlobals.custom || []),
-    ];
-    const globalsHtml =
-      globalRows.length === 0
-        ? ""
-        : `
-      <h2 style="font-size:13px;margin:24px 0 6px;letter-spacing:.08em;text-transform:uppercase;color:#475569">Gesamtfahrzeug</h2>
-      <ul style="margin:0;padding-left:18px;font-size:13px">${globalRows.map((r) => `<li><b>${esc(r)}</b></li>`).join("")}</ul>`;
-    const rows = marks
-      .map((m, i) => {
-        const tp = DAMAGE_TYPES.find((x) => x.id === m.type);
-        const sv = SEVERITY.find((x) => x.id === m.severity);
-        return `<tr><td>${i + 1}</td><td><span class="dot" style="background:${tp?.color}"></span>${esc(tp?.label)}</td><td>${esc(m.panel) || "—"}</td><td><b>${esc(m.action)}</b></td><td><span class="sev" style="color:${sv?.color}">${esc(sv?.label)}</span></td><td>${esc(m.note) || "—"}</td></tr>`;
+
+    const bodyRows = marks
+      .map((mark, index) => {
+        const type = DAMAGE_TYPES.find((item) => item.id === mark.type);
+        return `<tr><td>${index + 1}</td><td><span class="dot" style="background:${type?.color}"></span>${esc(type?.label)}</td><td>${esc(mark.panel) || "—"}</td><td><b>${esc(mark.action)}</b></td><td>${esc(mark.note) || "—"}</td><td class="money">${formatEuro(mark.price)}</td></tr>`;
       })
       .join("");
+
+    const mechanicalRows = mechanicalTasks
+      .map(
+        (task, index) =>
+          `<tr><td>${index + 1}</td><td>${esc(task.area)}</td><td><b>${esc(task.job)}</b></td><td>${esc(task.note) || "—"}</td><td>${task.done ? "Erledigt" : "Offen"}</td><td class="money">${formatEuro(task.price)}</td></tr>`,
+      )
+      .join("");
+
     const title = activeVehicle
       ? `${activeBrand?.label || ""} ${activeVehicle.name}`
       : "Fahrzeug";
+    const bodyTotal = marks.reduce(
+      (sum, mark) => sum + parsePrice(mark.price),
+      0,
+    );
+    const mechanicalTotal = mechanicalTasks.reduce(
+      (sum, task) => sum + parsePrice(task.price),
+      0,
+    );
+    const grandTotal = bodyTotal + mechanicalTotal;
+
     w.document
-      .write(`<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><title>Lackier-Auftrag</title><style>
+      .write(`<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><title>Werkstattauftrag</title><style>
       *{box-sizing:border-box}body{font-family:'Segoe UI',system-ui,sans-serif;color:#0f172a;padding:40px}
       .top{display:flex;justify-content:space-between;border-bottom:2px solid #0f172a;padding-bottom:14px}
       .brand{font-size:18px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.doc{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.16em;text-align:right}
       h1{font-size:24px;margin:18px 0 2px}.sub{color:#64748b;font-size:13px;margin-bottom:20px}
+      h2{font-size:13px;margin:24px 0 6px;letter-spacing:.08em;text-transform:uppercase;color:#475569}
       table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #e2e8f0;vertical-align:top}
-      th{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#64748b}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle}
-      .sev{font-weight:700}.foot{margin-top:30px;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:12px}
-      </style></head><body onload="window.print();window.onafterprint=()=>window.close()">
-      <div class="top"><div class="brand">Autogalerie Jülich</div><div class="doc">Lackier- & Reparatur-Auftrag<br/>${new Date().toLocaleDateString("de-DE")}</div></div>
-      <h1>${esc(title)}</h1><div class="sub">${activeVehicle?.fin ? "FIN " + esc(activeVehicle.fin) + " · " : ""}${marks.length} Position(en) · ${globalRows.length} Gesamt-Maßnahme(n)</div>
-      ${globalsHtml}
-      <h2 style="font-size:13px;margin:24px 0 6px;letter-spacing:.08em;text-transform:uppercase;color:#475569">Einzelpositionen</h2>
-      <table><thead><tr><th>#</th><th>Schaden</th><th>Bauteil</th><th>Maßnahme</th><th>Grad</th><th>Notiz</th></tr></thead><tbody>${rows || '<tr><td colspan="6">Keine Markierungen</td></tr>'}</tbody></table>
-      <div class="foot">Erstellt mit dem 3D-Inspektionswerkzeug · Nur für den internen Gebrauch.</div></body></html>`);
+      th{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#64748b}.money{text-align:right;white-space:nowrap}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle}
+      .bill{margin-top:28px;padding:18px;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc}.bill strong{display:block;font-size:26px;margin-top:4px}
+      .foot{margin-top:30px;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:12px}
+    </style></head><body onload="window.print();window.onafterprint=()=>window.close()">
+      <div class="top"><div class="brand">Autogalerie Jülich</div><div class="doc">Karosserie- & Mechanikauftrag<br/>${new Date().toLocaleDateString("de-DE")}</div></div>
+      <h1>${esc(title)}</h1><div class="sub">${activeVehicle?.fin ? `FIN ${esc(activeVehicle.fin)} · ` : ""}${marks.length} Karosserieposition(en) · ${mechanicalTasks.length} Mechanikaufgabe(n)</div>
+      <h2>Karosserie / Lack</h2>
+      <table><thead><tr><th>#</th><th>Schadensart</th><th>Bauteil</th><th>Maßnahme</th><th>Notiz</th><th class="money">Preis</th></tr></thead><tbody>${bodyRows || '<tr><td colspan="6">Keine Karosseriepositionen</td></tr>'}</tbody></table>
+      <h2>Mechanik</h2>
+      <table><thead><tr><th>#</th><th>Bereich</th><th>Arbeit</th><th>Notiz</th><th>Status</th><th class="money">Preis</th></tr></thead><tbody>${mechanicalRows || '<tr><td colspan="6">Keine Mechanikaufgaben</td></tr>'}</tbody></table>
+      <div class="bill"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#64748b">Kostenübersicht</span><div style="display:flex;justify-content:space-between;margin-top:10px;font-size:13px"><span>Karosserie / Lack</span><b>${formatEuro(bodyTotal)}</b></div><div style="display:flex;justify-content:space-between;margin-top:6px;font-size:13px"><span>Mechanik</span><b>${formatEuro(mechanicalTotal)}</b></div><strong style="display:flex;justify-content:space-between;border-top:1px solid #cbd5e1;padding-top:12px"><span>Gesamt</span><span>${formatEuro(grandTotal)}</span></strong></div>
+      <div class="foot">Erstellt mit dem 3D-Werkstattwerkzeug · Nur für den internen Gebrauch.</div>
+    </body></html>`);
     w.document.close();
     w.focus();
+  };
+
+  const handleBillingRangePrint = ({ from, to }) => {
+    const start = from ? new Date(`${from}T00:00:00`) : null;
+    const end = to ? new Date(`${to}T23:59:59`) : null;
+    const selectedVehicles = vehicles.filter((vehicle) => {
+      const date = new Date(vehicle.createdAt || vehicle.addedAt || Date.now());
+      if (start && date < start) return false;
+      if (end && date > end) return false;
+      return true;
+    });
+
+    const rows = selectedVehicles.flatMap((vehicle) => {
+      const brand = BRANDS.find((item) => item.id === vehicle.brandId);
+      const body = marksByVehicle[vehicle.id] || [];
+      const mechanical = mechanicalByVehicle[vehicle.id] || [];
+      const bodyTotal = body.reduce(
+        (sum, item) => sum + parsePrice(item.price),
+        0,
+      );
+      const mechanicalTotal = mechanical.reduce(
+        (sum, item) => sum + parsePrice(item.price),
+        0,
+      );
+      const total = bodyTotal + mechanicalTotal;
+      if (!body.length && !mechanical.length && total === 0) return [];
+      return [
+        {
+          vehicle,
+          brand: brand?.label || "",
+          bodyCount: body.length,
+          mechanicalCount: mechanical.length,
+          bodyTotal,
+          mechanicalTotal,
+          total,
+        },
+      ];
+    });
+
+    if (!rows.length) {
+      toast.error("Für diesen Zeitraum wurden keine Abrechnungen gefunden.");
+      return;
+    }
+
+    const w = window.open("", "_blank", "width=1100,height=1200");
+    if (!w) return toast.error("Popup wurde blockiert.");
+    const esc = (value = "") =>
+      String(value ?? "").replace(
+        /[&<>"']/g,
+        (char) =>
+          ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;",
+          })[char],
+      );
+    const grandBody = rows.reduce((sum, row) => sum + row.bodyTotal, 0);
+    const grandMechanical = rows.reduce(
+      (sum, row) => sum + row.mechanicalTotal,
+      0,
+    );
+    const grandTotal = rows.reduce((sum, row) => sum + row.total, 0);
+    const rangeLabel = `${from ? formatVehicleDate(from) : "Beginn"} – ${
+      to ? formatVehicleDate(to) : "Heute"
+    }`;
+
+    w.document
+      .write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Abrechnungsübersicht</title><style>
+      *{box-sizing:border-box}body{font-family:Segoe UI,Arial,sans-serif;color:#18181b;padding:42px}header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #18181b;padding-bottom:16px}.brand{font-size:18px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.meta{text-align:right;font-size:11px;color:#71717a;text-transform:uppercase;letter-spacing:.1em}h1{font-size:26px;margin:24px 0 4px}.range{font-size:13px;color:#71717a;margin-bottom:24px}table{width:100%;border-collapse:collapse;font-size:12px}th{padding:10px;border-bottom:1px solid #d4d4d8;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#71717a}td{padding:12px 10px;border-bottom:1px solid #e4e4e7;vertical-align:top}.num{text-align:right;white-space:nowrap}.vehicle{font-weight:700}.sub{font-size:10px;color:#a1a1aa;margin-top:3px}.summary{margin-top:26px;margin-left:auto;width:360px;border:1px solid #d4d4d8;border-radius:12px;padding:18px;background:#fafafa}.line{display:flex;justify-content:space-between;margin:7px 0;font-size:12px}.total{display:flex;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid #d4d4d8;font-size:20px;font-weight:800}.foot{margin-top:34px;padding-top:12px;border-top:1px solid #e4e4e7;font-size:10px;color:#a1a1aa}
+    </style></head><body onload="window.print();window.onafterprint=()=>window.close()"><header><div class="brand">Autogalerie Jülich</div><div class="meta">Abrechnungsübersicht<br>${new Date().toLocaleDateString("de-DE")}</div></header><h1>Werkstatt-Abrechnungen</h1><div class="range">Zeitraum: ${esc(rangeLabel)} · ${rows.length} Fahrzeug(e)</div><table><thead><tr><th>Fahrzeug</th><th>Datum</th><th>Karosserie</th><th>Mechanik</th><th class="num">Karosserie</th><th class="num">Mechanik</th><th class="num">Gesamt</th></tr></thead><tbody>${rows
+      .map(
+        (row) =>
+          `<tr><td><div class="vehicle">${esc(`${row.brand} ${row.vehicle.name}`)}</div><div class="sub">${row.vehicle.fin ? `FIN ${esc(row.vehicle.fin)}` : "Keine FIN"}</div></td><td>${formatVehicleDate(row.vehicle.createdAt)}</td><td>${row.bodyCount} Pos.</td><td>${row.mechanicalCount} Pos.</td><td class="num">${formatEuro(row.bodyTotal)}</td><td class="num">${formatEuro(row.mechanicalTotal)}</td><td class="num"><b>${formatEuro(row.total)}</b></td></tr>`,
+      )
+      .join(
+        "",
+      )}</tbody></table><div class="summary"><div class="line"><span>Karosserie / Lack</span><b>${formatEuro(grandBody)}</b></div><div class="line"><span>Mechanik</span><b>${formatEuro(grandMechanical)}</b></div><div class="total"><span>Gesamt</span><span>${formatEuro(grandTotal)}</span></div></div><div class="foot">Zeitraumbezogene Abrechnungsübersicht · Autogalerie Jülich</div></body></html>`);
+    w.document.close();
+    w.focus();
+    setShowBillingPrint(false);
   };
 
   const selected = marks.find((m) => m.id === selectedMark);
@@ -1182,7 +1493,7 @@ export default function VehicleInspection3DPage() {
         }}
       />
 
-      <div className="relative mx-auto w-full max-w-[1600px] px-4 sm:px-6 py-5">
+      <div className="relative mx-auto w-full max-w-[1720px] px-4 sm:px-6 py-5">
         <header className="mb-5 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-zinc-900 text-white shadow-sm">
@@ -1190,22 +1501,27 @@ export default function VehicleInspection3DPage() {
             </div>
             <div>
               <h1 className="text-[15px] font-semibold leading-tight tracking-tight">
-                Lackier-Inspektion{" "}
+                Werkstatt-Inspektion{" "}
                 <span className="font-normal text-zinc-400">3D</span>
               </h1>
               <p className="text-[11px] text-zinc-500">
-                Fahrzeug wählen oder anlegen · Schäden markieren · an die
-                Werkstatt übergeben
+                Karosserie markieren · Mechanik erfassen · Auftrag abrechnen
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setShowBillingPrint(true)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3.5 text-xs font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50"
+            >
+              <FiFileText size={14} /> Abrechnungen
+            </button>
+            <button
               onClick={handleSave}
-              disabled={!activeVehicle}
+              disabled={!activeVehicle || saving}
               className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 text-xs font-medium text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-40"
             >
-              <FiSave size={14} /> Speichern
+              <FiSave size={14} /> {saving ? "Speichert…" : "Speichern"}
             </button>
             <button
               onClick={handlePrint}
@@ -1217,7 +1533,7 @@ export default function VehicleInspection3DPage() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_1fr_340px]">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[245px_minmax(0,1fr)_350px]">
           {/* TREE */}
           <VehicleTree
             brands={BRANDS}
@@ -1227,6 +1543,7 @@ export default function VehicleInspection3DPage() {
             onAdd={() => setShowAdd(true)}
             onDeleteVehicle={deleteVehicle}
             marksByVehicle={marksByVehicle}
+            mechanicalByVehicle={mechanicalByVehicle}
           />
 
           {/* CENTER: viewer + details strip */}
@@ -1240,7 +1557,17 @@ export default function VehicleInspection3DPage() {
                   cursor: placing ? "crosshair" : "grab",
                 }}
               >
-                {!activeVehicle && sceneReady && !errored && (
+                {dataLoading && (
+                  <div className="absolute inset-0 z-20 grid place-items-center bg-white/80 backdrop-blur-sm">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="h-7 w-7 animate-spin rounded-full border-2 border-zinc-200 border-t-indigo-600" />
+                      <span className="text-xs text-zinc-500">
+                        Werkstattdaten werden geladen
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {!activeVehicle && !dataLoading && sceneReady && !errored && (
                   <div className="absolute inset-0 grid place-items-center px-6">
                     <div className="flex max-w-xs flex-col items-center gap-3 text-center">
                       <div className="grid h-12 w-12 place-items-center rounded-full bg-zinc-100 text-zinc-400">
@@ -1327,10 +1654,9 @@ export default function VehicleInspection3DPage() {
               </div>
             </section>
 
-            {/* DETAILS + AUFGABEN SUMMARY (below the viewer) */}
+            {/* VEHICLE DETAILS AND TASKS */}
             {activeVehicle && (
-              <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {/* details */}
+              <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                 <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_1px_3px_rgba(24,24,27,.05)]">
                   <div className="mb-3 flex items-center gap-2">
                     <FiTruck className="text-zinc-400" size={14} />
@@ -1352,20 +1678,30 @@ export default function VehicleInspection3DPage() {
                       value={activeVehicle.fin || "—"}
                       mono
                     />
-                    <DetailRow label="Markierungen" value={`${marks.length}`} />
+                    <DetailRow
+                      label="Angelegt"
+                      value={formatVehicleDate(activeVehicle.createdAt)}
+                    />
+                    <DetailRow
+                      label="Karosseriepositionen"
+                      value={`${marks.length}`}
+                    />
+                    <DetailRow
+                      label="Mechanikaufgaben"
+                      value={`${mechanicalTasks.length}`}
+                    />
                   </div>
                 </div>
 
-                {/* AUFGABEN — the actual list, not a summary */}
                 <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_1px_3px_rgba(24,24,27,.05)]">
                   <div className="mb-3 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <FiClipboard className="text-zinc-400" size={14} />
                       <h2 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
-                        Aufgaben · {marks.length + globalsCount}
+                        Aufgaben · {marks.length + mechanicalTasks.length}
                       </h2>
                     </div>
-                    {(marks.length > 0 || globalsCount > 0) && (
+                    {(marks.length > 0 || mechanicalTasks.length > 0) && (
                       <button
                         onClick={clearAllAufgaben}
                         className="text-[11px] font-medium text-red-600 hover:text-red-700"
@@ -1374,139 +1710,269 @@ export default function VehicleInspection3DPage() {
                       </button>
                     )}
                   </div>
-
-                  {marks.length === 0 && globalsCount === 0 ? (
+                  {marks.length === 0 && mechanicalTasks.length === 0 ? (
                     <p className="py-2 text-[11px] text-zinc-400">
-                      Noch keine Aufgaben.
+                      Noch keine Karosserie- oder Mechanikaufgaben.
                     </p>
                   ) : (
-                    <ul className="-mx-1 max-h-72 space-y-0.5 overflow-auto px-1">
-                      {/* whole-car preset actions */}
-                      {Object.entries(activeGlobals.actions || {})
-                        .filter(([, on]) => on)
-                        .map(([id]) => {
-                          const g = GLOBAL_ACTIONS.find((x) => x.id === id);
-                          return (
-                            <li
-                              key={`g_${id}`}
-                              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs hover:bg-zinc-50"
+                    <ul className="-mx-1 max-h-72 space-y-1 overflow-auto px-1">
+                      {marks.map((mark, index) => {
+                        const type = DAMAGE_TYPES.find(
+                          (item) => item.id === mark.type,
+                        );
+                        return (
+                          <li
+                            key={mark.id}
+                            onClick={() => selectMark(mark.id)}
+                            className={`group flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition ${selectedMark === mark.id ? "bg-indigo-50 ring-1 ring-indigo-200" : "hover:bg-zinc-50"}`}
+                          >
+                            <span
+                              className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full text-[10px] font-semibold text-white"
+                              style={{ background: type?.color }}
                             >
-                              <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-md bg-indigo-600 text-[10px] text-white">
-                                {g?.icon}
+                              {index + 1}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="font-semibold text-zinc-700">
+                                {mark.action}
                               </span>
-                              <span className="flex-1 truncate font-semibold text-zinc-700">
-                                {g?.label}
+                              <span className="mx-1.5 text-zinc-300">·</span>
+                              <span className="text-zinc-500">
+                                {mark.panel || type?.label}
                               </span>
-                              <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-indigo-700">
-                                Gesamt
-                              </span>
-                              <button
-                                onClick={() => toggleGlobal(id)}
-                                className="text-zinc-300 hover:text-red-500"
-                              >
-                                <FiX size={12} />
-                              </button>
-                            </li>
-                          );
-                        })}
-                      {(activeGlobals.custom || []).map((c, i) => (
+                              {mark.note && (
+                                <span className="block truncate text-[10.5px] text-zinc-400">
+                                  {mark.note}
+                                </span>
+                              )}
+                            </span>
+                            <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[9px] font-bold uppercase text-indigo-700">
+                              Karosserie
+                            </span>
+                          </li>
+                        );
+                      })}
+                      {mechanicalTasks.map((task) => (
                         <li
-                          key={`gc_${i}`}
+                          key={task.id}
                           className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs hover:bg-zinc-50"
                         >
-                          <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-md bg-zinc-900 text-[10px] text-white">
-                            ★
+                          <button
+                            onClick={() =>
+                              updateMechanicalTask(task.id, {
+                                done: !task.done,
+                              })
+                            }
+                            className={`grid h-5 w-5 flex-shrink-0 place-items-center rounded-full border ${task.done ? "border-emerald-600 bg-emerald-600 text-white" : "border-zinc-300 text-transparent"}`}
+                          >
+                            <FiCheckCircle size={12} />
+                          </button>
+                          <span className="min-w-0 flex-1">
+                            <span
+                              className={`font-semibold ${task.done ? "text-zinc-400 line-through" : "text-zinc-700"}`}
+                            >
+                              {task.job}
+                            </span>
+                            <span className="mx-1.5 text-zinc-300">·</span>
+                            <span className="text-zinc-500">{task.area}</span>
+                            {task.note && (
+                              <span className="block truncate text-[10.5px] text-zinc-400">
+                                {task.note}
+                              </span>
+                            )}
                           </span>
-                          <span className="flex-1 truncate font-semibold text-zinc-700">
-                            {c}
-                          </span>
-                          <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-zinc-600">
-                            Gesamt
+                          <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-700">
+                            Mechanik
                           </span>
                           <button
-                            onClick={() => removeCustomGlobal(i)}
+                            onClick={() => removeMechanicalTask(task.id)}
                             className="text-zinc-300 hover:text-red-500"
                           >
                             <FiX size={12} />
                           </button>
                         </li>
                       ))}
-                      {/* per-mark positions */}
-                      {marks.map((m, i) => {
-                        const t = DAMAGE_TYPES.find((x) => x.id === m.type);
-                        const sv = SEVERITY.find((x) => x.id === m.severity);
-                        const on = selectedMark === m.id;
-                        return (
-                          <li
-                            key={m.id}
-                            onClick={() => selectMark(m.id)}
-                            className={`group flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs transition ${on ? "bg-indigo-50 ring-1 ring-indigo-200" : "hover:bg-zinc-50"}`}
-                          >
-                            <span
-                              className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full text-[10px] font-semibold text-white"
-                              style={{ background: t?.color }}
-                            >
-                              {i + 1}
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="flex items-center gap-1.5">
-                                <span className="font-semibold text-zinc-700">
-                                  {m.action}
-                                </span>
-                                <span className="h-1 w-1 rounded-full bg-zinc-300" />
-                                <span className="truncate text-zinc-500">
-                                  {m.panel || t?.label}
-                                </span>
-                              </span>
-                              {m.note && (
-                                <span className="block truncate text-[10.5px] text-zinc-400">
-                                  {m.note}
-                                </span>
-                              )}
-                            </span>
-                            <span
-                              className="flex-shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
-                              style={{
-                                color: sv?.color,
-                                background: `${sv?.color}1a`,
-                              }}
-                            >
-                              {sv?.label}
-                            </span>
-                            <FiTarget
-                              className="flex-shrink-0 text-zinc-300 opacity-0 transition group-hover:opacity-100"
-                              size={13}
-                            />
-                          </li>
-                        );
-                      })}
                     </ul>
                   )}
+                </div>
+              </section>
+            )}
 
-                  {/* severity tally */}
-                  {marks.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-3 border-t border-zinc-100 pt-3">
-                      {SEVERITY.map((s) => {
-                        const n = marks.filter(
-                          (m) => m.severity === s.id,
-                        ).length;
-                        if (!n) return null;
-                        return (
-                          <span
-                            key={s.id}
-                            className="inline-flex items-center gap-1 text-[11px] font-semibold"
-                            style={{ color: s.color }}
-                          >
-                            <span
-                              className="h-2 w-2 rounded-full"
-                              style={{ background: s.color }}
-                            />
-                            {n} {s.label}
-                          </span>
-                        );
-                      })}
+            {activeVehicle && (
+              <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_1px_3px_rgba(24,24,27,.05)]">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-zinc-900 text-white">
+                      <FiDollarSign size={16} />
+                    </span>
+                    <div>
+                      <h2 className="text-sm font-semibold text-zinc-900">
+                        Abrechnung
+                      </h2>
+                      <p className="text-[10.5px] text-zinc-400">
+                        Einzelpreise erfassen und Werkstattkosten automatisch
+                        berechnen
+                      </p>
                     </div>
-                  )}
+                  </div>
+                  <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[10px] font-semibold text-zinc-500">
+                    Rechnungsentwurf
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-[1fr_260px]">
+                  <div className="min-w-0 overflow-x-auto">
+                    <table className="w-full min-w-[720px] border-collapse text-left">
+                      <thead>
+                        <tr className="border-b border-zinc-200 bg-zinc-50/80 text-[9px] font-semibold uppercase tracking-[.12em] text-zinc-400">
+                          <th className="w-14 px-4 py-3">Pos.</th>
+                          <th className="w-28 px-3 py-3">Bereich</th>
+                          <th className="px-3 py-3">Leistung</th>
+                          <th className="px-3 py-3">Zuordnung</th>
+                          <th className="w-36 px-4 py-3 text-right">Betrag</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100">
+                        {marks.map((mark, index) => {
+                          const type = DAMAGE_TYPES.find(
+                            (item) => item.id === mark.type,
+                          );
+                          return (
+                            <tr
+                              key={mark.id}
+                              className="group hover:bg-zinc-50/60"
+                            >
+                              <td className="px-4 py-3 text-[11px] font-semibold tabular-nums text-zinc-400">
+                                {String(index + 1).padStart(2, "0")}
+                              </td>
+                              <td className="px-3 py-3">
+                                <span className="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-1 text-[9.5px] font-semibold text-indigo-700">
+                                  <span
+                                    className="h-1.5 w-1.5 rounded-full"
+                                    style={{ background: type?.color }}
+                                  />
+                                  Karosserie
+                                </span>
+                              </td>
+                              <td className="px-3 py-3">
+                                <p className="text-[11px] font-semibold text-zinc-800">
+                                  {mark.action ||
+                                    type?.label ||
+                                    "Arbeitsposition"}
+                                </p>
+                                {mark.note && (
+                                  <p className="mt-0.5 max-w-[360px] truncate text-[9.5px] text-zinc-400">
+                                    {mark.note}
+                                  </p>
+                                )}
+                              </td>
+                              <td className="px-3 py-3 text-[10.5px] text-zinc-500">
+                                {mark.panel || type?.label || "—"}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <MoneyInput
+                                  value={mark.price || ""}
+                                  onChange={(value) =>
+                                    updateMark(mark.id, { price: value })
+                                  }
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
+
+                        {mechanicalTasks.map((task, index) => (
+                          <tr
+                            key={task.id}
+                            className="group hover:bg-zinc-50/60"
+                          >
+                            <td className="px-4 py-3 text-[11px] font-semibold tabular-nums text-zinc-400">
+                              {String(marks.length + index + 1).padStart(
+                                2,
+                                "0",
+                              )}
+                            </td>
+                            <td className="px-3 py-3">
+                              <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2 py-1 text-[9.5px] font-semibold text-amber-700">
+                                <FiTool size={10} /> Mechanik
+                              </span>
+                            </td>
+                            <td className="px-3 py-3">
+                              <p className="text-[11px] font-semibold text-zinc-800">
+                                {task.job || "Mechanische Arbeit"}
+                              </p>
+                              {task.note && (
+                                <p className="mt-0.5 max-w-[360px] truncate text-[9.5px] text-zinc-400">
+                                  {task.note}
+                                </p>
+                              )}
+                            </td>
+                            <td className="px-3 py-3 text-[10.5px] text-zinc-500">
+                              {task.area || "—"}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <MoneyInput
+                                value={task.price || ""}
+                                onChange={(value) =>
+                                  updateMechanicalTask(task.id, {
+                                    price: value,
+                                  })
+                                }
+                              />
+                            </td>
+                          </tr>
+                        ))}
+
+                        {marks.length === 0 && mechanicalTasks.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="px-5 py-10 text-center">
+                              <FiDollarSign
+                                className="mx-auto mb-2 text-zinc-300"
+                                size={20}
+                              />
+                              <p className="text-[11px] font-medium text-zinc-500">
+                                Noch keine abrechenbaren Positionen
+                              </p>
+                              <p className="mt-1 text-[10px] text-zinc-400">
+                                Karosserie- und Mechanikaufgaben erscheinen
+                                automatisch hier.
+                              </p>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="border-t border-zinc-200 bg-zinc-50/70 p-5 xl:border-l xl:border-t-0">
+                    <p className="text-[9px] font-semibold uppercase tracking-[.14em] text-zinc-400">
+                      Kostenübersicht
+                    </p>
+                    <div className="mt-4 space-y-3">
+                      <BillingSummaryRow
+                        label={`Karosserie / Lack (${marks.length})`}
+                        value={formatEuro(bodyworkTotal)}
+                      />
+                      <BillingSummaryRow
+                        label={`Mechanik (${mechanicalTasks.length})`}
+                        value={formatEuro(mechanicalTotal)}
+                      />
+                    </div>
+                    <div className="my-4 border-t border-dashed border-zinc-300" />
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-[9px] font-semibold uppercase tracking-[.12em] text-zinc-400">
+                          Gesamtbetrag
+                        </p>
+                        <p className="mt-1 text-[9.5px] text-zinc-400">
+                          Summe aller Positionen
+                        </p>
+                      </div>
+                      <strong className="text-xl font-semibold tabular-nums tracking-tight text-zinc-900">
+                        {formatEuro(workshopTotal)}
+                      </strong>
+                    </div>
+                  </div>
                 </div>
               </section>
             )}
@@ -1547,7 +2013,7 @@ export default function VehicleInspection3DPage() {
 
             {selected ? (
               <Panel
-                title="2 · Maßnahme & Größe"
+                title={`Position ${marks.findIndex((item) => item.id === selected.id) + 1} bearbeiten`}
                 action={
                   <button
                     onClick={() => setSelectedMark(null)}
@@ -1558,156 +2024,46 @@ export default function VehicleInspection3DPage() {
                 }
               >
                 <div className="space-y-3">
-                  <Field label="Schadensart">
-                    <div className="flex flex-wrap gap-2">
-                      {DAMAGE_TYPES.map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() =>
-                            updateMark(selected.id, {
-                              type: t.id,
-                              length: ELONGATED.has(t.id)
-                                ? Math.max(selected.length || 0.14, 0.1)
-                                : selected.size,
-                            })
-                          }
-                          title={t.label}
-                          className="h-7 w-7 rounded-full border-2 transition"
-                          style={{
-                            background: t.color,
-                            borderColor:
-                              selected.type === t.id
-                                ? "#0f172a"
-                                : "transparent",
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </Field>
-
-                  {(() => {
-                    const isE = ELONGATED.has(selected.type);
-                    const cm = (f) => (f * 200).toFixed(f < 0.05 ? 1 : 0);
-                    const presets = isE
-                      ? [
-                          ["S", 0.1],
-                          ["M", 0.2],
-                          ["L", 0.35],
-                        ]
-                      : [
-                          ["S", 0.05],
-                          ["M", 0.1],
-                          ["L", 0.2],
-                        ];
-                    return (
-                      <div className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-3">
-                        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-700">
-                          <FiCrosshair size={13} /> Direkt am Fahrzeug ziehen
-                        </div>
-                        <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
-                          {isE
-                            ? "Die beiden End-Griffe ziehen für Länge & Richtung, den seitlichen Griff für die Breite."
-                            : "Den Griff am Rand ziehen, um die Größe einzustellen."}{" "}
-                          Den Schaden selbst ziehen, um ihn zu verschieben.
-                        </p>
-                        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                          {isE ? (
-                            <>
-                              <span className="rounded-md bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 ring-1 ring-zinc-200">
-                                Länge {cm(selected.length)} cm
-                              </span>
-                              <span className="rounded-md bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 ring-1 ring-zinc-200">
-                                Breite {cm(selected.size)} cm
-                              </span>
-                            </>
-                          ) : (
-                            <span className="rounded-md bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 ring-1 ring-zinc-200">
-                              Ø {cm(selected.size)} cm
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-2.5 flex items-center gap-1.5">
-                          <span className="text-[10px] uppercase tracking-wide text-zinc-400">
-                            Schnell
-                          </span>
-                          {presets.map(([lbl, val]) => (
-                            <button
-                              key={lbl}
-                              onClick={() =>
-                                updateMark(
-                                  selected.id,
-                                  isE ? { length: val } : { size: val },
-                                )
-                              }
-                              className="grid h-6 w-7 place-items-center rounded-md border border-zinc-200 bg-white text-[11px] font-medium text-zinc-600 transition hover:border-indigo-300 hover:text-indigo-700"
-                            >
-                              {lbl}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
                   <Field label="Maßnahme">
                     <Select
                       value={selected.action}
-                      onChange={(v) => updateMark(selected.id, { action: v })}
-                      options={ACTIONS}
+                      onChange={(value) =>
+                        updateMark(selected.id, { action: value })
+                      }
+                      options={BODYWORK_ACTIONS}
                     />
                   </Field>
                   <Field label="Bauteil">
                     <Select
                       value={selected.panel}
-                      onChange={(v) => updateMark(selected.id, { panel: v })}
+                      onChange={(value) =>
+                        updateMark(selected.id, { panel: value })
+                      }
                       options={["", ...PANELS]}
-                      placeholder="(optional)"
+                      placeholder="Bauteil wählen (optional)"
                     />
-                  </Field>
-                  <Field label="Schweregrad">
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {SEVERITY.map((s) => {
-                        const on = selected.severity === s.id;
-                        return (
-                          <button
-                            key={s.id}
-                            onClick={() =>
-                              updateMark(selected.id, { severity: s.id })
-                            }
-                            className={`rounded-lg border px-2 py-1.5 text-[11px] font-semibold transition ${on ? "text-white shadow-sm" : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"}`}
-                            style={
-                              on
-                                ? { background: s.color, borderColor: s.color }
-                                : {}
-                            }
-                          >
-                            {s.label}
-                          </button>
-                        );
-                      })}
-                    </div>
                   </Field>
                   <Field label="Notiz">
                     <textarea
                       value={selected.note}
-                      onChange={(e) =>
-                        updateMark(selected.id, { note: e.target.value })
+                      onChange={(event) =>
+                        updateMark(selected.id, { note: event.target.value })
                       }
-                      placeholder="z. B. tiefer Kratzer, ca. 15 cm …"
-                      rows={2}
-                      className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-xs outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                      placeholder="z. B. tiefer Kratzer, Kante beachten …"
+                      rows={3}
+                      className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                     />
                   </Field>
                   <div className="flex items-center justify-between pt-1">
                     <button
                       onClick={() => flyToMark(selected)}
-                      className="inline-flex items-center gap-1.5 text-[11px] font-medium text-indigo-600 hover:text-indigo-700"
+                      className="inline-flex items-center gap-1.5 text-[11px] font-medium text-indigo-600"
                     >
                       <FiTarget size={13} /> Zur Stelle springen
                     </button>
                     <button
                       onClick={() => deleteMark(selected.id)}
-                      className="inline-flex items-center gap-1.5 text-[11px] font-medium text-red-600 hover:text-red-700"
+                      className="inline-flex items-center gap-1.5 text-[11px] font-medium text-red-600"
                     >
                       <FiTrash2 size={13} /> Entfernen
                     </button>
@@ -1715,85 +2071,131 @@ export default function VehicleInspection3DPage() {
                 </div>
               </Panel>
             ) : (
-              <Panel title="2 · Maßnahme & Größe">
-                <div className="flex flex-col items-center gap-2 py-5 text-center">
+              <Panel title="Karosserieposition bearbeiten">
+                <div className="flex flex-col items-center gap-2 py-4 text-center">
                   <div className="grid h-10 w-10 place-items-center rounded-full bg-zinc-100 text-zinc-400">
                     <FiCrosshair size={18} />
                   </div>
-                  <p className="max-w-[210px] text-[11px] leading-relaxed text-zinc-400">
+                  <p className="max-w-[230px] text-[11px] leading-relaxed text-zinc-400">
                     {activeVehicle
-                      ? "Wähle eine Markierung, um Größe, Ausrichtung und Maßnahme festzulegen."
+                      ? "Markiere einen Schaden am Fahrzeug oder wähle eine vorhandene Position. Größe und Ausrichtung steuerst du direkt am 3D-Fahrzeug."
                       : "Wähle zuerst ein Fahrzeug."}
                   </p>
                 </div>
               </Panel>
             )}
 
-            {/* Gesamtfahrzeug-Maßnahmen */}
-            {activeVehicle && (
-              <Panel title="Gesamtfahrzeug-Maßnahmen">
-                <div className="grid grid-cols-2 gap-1.5">
-                  {GLOBAL_ACTIONS.map((g) => {
-                    const on = !!activeGlobals.actions?.[g.id];
-                    return (
-                      <button
-                        key={g.id}
-                        onClick={() => toggleGlobal(g.id)}
-                        className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-[11px] font-medium transition ${on ? "border-indigo-600 bg-indigo-50 text-indigo-700" : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"}`}
-                      >
-                        <span className="text-base leading-none">{g.icon}</span>
-                        <span className="flex-1">{g.label}</span>
-                        {on && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-indigo-600" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-                {/* custom global action input */}
-                <div className="mt-2 flex gap-1.5">
+            <Panel title="2 · Mechanische Arbeiten">
+              <div className="space-y-3">
+                <Field label="Bereich / Baugruppe">
                   <input
-                    value={customGlobalInput}
-                    onChange={(e) => setCustomGlobalInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") addCustomGlobal();
-                    }}
-                    placeholder="Eigene Maßnahme hinzufügen…"
-                    className="flex-1 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                    value={mechanicalDraft.area}
+                    onChange={(event) =>
+                      setMechanicalDraft((draft) => ({
+                        ...draft,
+                        area: event.target.value,
+                      }))
+                    }
+                    placeholder="z. B. Vorderachse, Motor, Bremsanlage …"
+                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                   />
-                  <button
-                    onClick={addCustomGlobal}
-                    disabled={!customGlobalInput.trim()}
-                    className="grid h-8 w-8 place-items-center rounded-lg bg-zinc-900 text-white transition hover:bg-black disabled:opacity-40"
-                  >
-                    <FiPlus size={14} />
-                  </button>
-                </div>
-                {activeGlobals.custom?.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {activeGlobals.custom.map((c, i) => (
-                      <span
-                        key={i}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] text-zinc-700"
-                      >
-                        {c}
-                        <button
-                          onClick={() => removeCustomGlobal(i)}
-                          className="text-zinc-400 hover:text-red-500"
+                </Field>
+                <Field label="Arbeit frei eintragen">
+                  <textarea
+                    value={mechanicalDraft.job}
+                    onChange={(event) =>
+                      setMechanicalDraft((draft) => ({
+                        ...draft,
+                        job: event.target.value,
+                      }))
+                    }
+                    rows={2}
+                    placeholder="Beliebige Arbeit eintragen, z. B. Bremsscheiben und Beläge vorne wechseln"
+                    className="w-full resize-none rounded-lg border border-zinc-200 px-3 py-2 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </Field>
+                <Field label="Notiz">
+                  <textarea
+                    value={mechanicalDraft.note}
+                    onChange={(event) =>
+                      setMechanicalDraft((draft) => ({
+                        ...draft,
+                        note: event.target.value,
+                      }))
+                    }
+                    rows={2}
+                    placeholder="z. B. Geräusch vorne rechts, Diagnose durchführen …"
+                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </Field>
+                <button
+                  onClick={addMechanicalTask}
+                  disabled={!activeVehicle || !mechanicalDraft.job.trim()}
+                  className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-semibold text-white transition hover:bg-amber-600 disabled:opacity-40"
+                >
+                  <FiTool size={14} /> Mechanikaufgabe hinzufügen
+                </button>
+                {mechanicalTasks.length > 0 && (
+                  <div className="border-t border-zinc-100 pt-3">
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+                      Aktive Mechanikaufgaben · {mechanicalTasks.length}
+                    </p>
+                    <div className="space-y-1.5">
+                      {mechanicalTasks.map((task) => (
+                        <div
+                          key={task.id}
+                          className="flex items-start gap-2 rounded-lg bg-zinc-50 px-2.5 py-2 text-[11px]"
                         >
-                          <FiX size={11} />
-                        </button>
-                      </span>
-                    ))}
+                          <button
+                            onClick={() =>
+                              updateMechanicalTask(task.id, {
+                                done: !task.done,
+                              })
+                            }
+                            className={`mt-0.5 grid h-4 w-4 place-items-center rounded border ${task.done ? "border-emerald-600 bg-emerald-600 text-white" : "border-zinc-300 text-transparent"}`}
+                          >
+                            <FiCheckCircle size={10} />
+                          </button>
+                          <span className="min-w-0 flex-1">
+                            <b
+                              className={
+                                task.done
+                                  ? "text-zinc-400 line-through"
+                                  : "text-zinc-700"
+                              }
+                            >
+                              {task.job}
+                            </b>
+                            <span className="block text-zinc-400">
+                              {task.area}
+                              {task.note ? ` · ${task.note}` : ""}
+                            </span>
+                          </span>
+                          <button
+                            onClick={() => removeMechanicalTask(task.id)}
+                            className="text-zinc-300 hover:text-red-500"
+                          >
+                            <FiX size={11} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-              </Panel>
-            )}
+              </div>
+            </Panel>
 
             {/* AUFGABEN — merged list (per-mark positions + global actions) */}
           </aside>
         </div>
       </div>
+
+      {showBillingPrint && (
+        <BillingRangeModal
+          onClose={() => setShowBillingPrint(false)}
+          onPrint={handleBillingRangePrint}
+        />
+      )}
 
       {showAdd && (
         <AddVehicleModal
@@ -1809,6 +2211,29 @@ export default function VehicleInspection3DPage() {
 /* =========================================================
    ADD VEHICLE MODAL
 ========================================================= */
+function parsePrice(value) {
+  const parsed = Number.parseFloat(String(value ?? "").replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatEuro(value) {
+  return parsePrice(value).toLocaleString("de-DE", {
+    style: "currency",
+    currency: "EUR",
+  });
+}
+
+function formatVehicleDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
 function AddVehicleModal({ brands, onClose, onAdd }) {
   const [brandId, setBrandId] = useState(brands[0]?.id || "");
   const [name, setName] = useState("");
@@ -1881,6 +2306,83 @@ function AddVehicleModal({ brands, onClose, onAdd }) {
   );
 }
 
+function BillingRangeModal({ onClose, onPrint }) {
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+    .toISOString()
+    .slice(0, 10);
+  const today = now.toISOString().slice(0, 10);
+  const [from, setFrom] = useState(firstDay);
+  const [to, setTo] = useState(today);
+
+  return (
+    <div className="fixed inset-0 z-[70] grid place-items-center bg-zinc-950/40 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="grid h-9 w-9 place-items-center rounded-lg bg-zinc-900 text-white">
+              <FiCalendar size={15} />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-900">
+                Abrechnungen drucken
+              </h3>
+              <p className="text-[10px] text-zinc-400">
+                Zeitraum für mehrere Fahrzeuge auswählen
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-zinc-400 hover:text-zinc-700"
+          >
+            <FiX size={16} />
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-3 px-5 py-5">
+          <Field label="Von">
+            <input
+              type="date"
+              value={from}
+              onChange={(event) => setFrom(event.target.value)}
+              className="h-10 w-full rounded-lg border border-zinc-200 px-3 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
+            />
+          </Field>
+          <Field label="Bis">
+            <input
+              type="date"
+              value={to}
+              min={from || undefined}
+              onChange={(event) => setTo(event.target.value)}
+              className="h-10 w-full rounded-lg border border-zinc-200 px-3 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
+            />
+          </Field>
+          <div className="col-span-2 rounded-xl border border-indigo-100 bg-indigo-50/60 px-3 py-2.5 text-[10.5px] leading-relaxed text-indigo-700">
+            Es wird eine gemeinsame Abrechnungsübersicht aller Fahrzeuge im
+            gewählten Zeitraum gedruckt. Einzelne Werkstattaufträge bleiben über
+            „Auftrag“ verfügbar.
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 border-t border-zinc-100 bg-zinc-50/60 px-5 py-3.5">
+          <button
+            onClick={onClose}
+            className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
+          >
+            Abbrechen
+          </button>
+          <button
+            onClick={() => onPrint({ from, to })}
+            disabled={!from || !to || from > to}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-40"
+          >
+            <FiPrinter size={13} /> Übersicht drucken
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* =========================================================
    VEHICLE TREE  (folder = brand, leaf = user vehicle)
 ========================================================= */
@@ -1892,171 +2394,233 @@ function VehicleTree({
   onAdd,
   onDeleteVehicle,
   marksByVehicle,
+  mechanicalByVehicle,
 }) {
   const [query, setQuery] = useState("");
+  const [timeFilter, setTimeFilter] = useState("all");
   const [openBrands, setOpenBrands] = useState({});
 
-  const byBrand = useMemo(() => {
-    const g = {};
-    brands.forEach((b) => (g[b.id] = []));
-    vehicles.forEach((v) => {
-      if (
-        query &&
-        !`${v.name} ${v.fin}`.toLowerCase().includes(query.toLowerCase())
-      )
-        return;
-      (g[v.brandId] ||= []).push(v);
+  const filteredBrands = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return brands.map((brand) => {
+      const brandVehicles = vehicles.filter((vehicle) => {
+        if (vehicle.brandId !== brand.id) return false;
+        const created = new Date(
+          vehicle.createdAt || vehicle.addedAt || Date.now(),
+        );
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfLastMonth = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          1,
+        );
+        const endOfLastMonth = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          0,
+          23,
+          59,
+          59,
+        );
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        if (timeFilter === "month" && created < startOfMonth) return false;
+        if (
+          timeFilter === "lastMonth" &&
+          (created < startOfLastMonth || created > endOfLastMonth)
+        )
+          return false;
+        if (timeFilter === "year" && created < startOfYear) return false;
+        if (!needle) return true;
+        return `${vehicle.name} ${vehicle.fin || ""} ${brand.label}`
+          .toLowerCase()
+          .includes(needle);
+      });
+      return { ...brand, vehicles: brandVehicles };
     });
-    return g;
-  }, [brands, vehicles, query]);
-
-  useEffect(() => {
-    const v = vehicles.find((x) => x.id === activeVehicleId);
-    if (v) setOpenBrands((p) => ({ ...p, [v.brandId]: true }));
-  }, [activeVehicleId, vehicles]);
-
-  const toggle = (id) => setOpenBrands((p) => ({ ...p, [id]: !p[id] }));
+  }, [brands, vehicles, query, timeFilter]);
 
   return (
-    <aside className="flex flex-col rounded-2xl border border-zinc-200 bg-white shadow-[0_1px_3px_rgba(24,24,27,.05)]">
-      <div className="flex items-center justify-between border-b border-zinc-100 px-3.5 py-3">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+    <aside className="flex min-h-[620px] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_1px_3px_rgba(24,24,27,.05)]">
+      <div className="flex items-center justify-between border-b border-zinc-100 px-3 py-3">
+        <h2 className="text-[10px] font-semibold uppercase tracking-[.12em] text-zinc-400">
           Fahrzeuge
         </h2>
         <button
           onClick={onAdd}
-          title="Fahrzeug hinzufügen"
-          className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-2 py-1 text-[10px] font-semibold text-white hover:bg-indigo-700"
+          className="inline-flex h-7 items-center gap-1 rounded-md bg-indigo-600 px-2.5 text-[10px] font-semibold text-white shadow-sm transition hover:bg-indigo-700"
         >
           <FiPlus size={12} /> Neu
         </button>
       </div>
 
-      <div className="px-3 pt-3">
+      <div className="px-2.5 py-3">
         <div className="relative">
           <FiSearch
-            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
             size={13}
           />
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Suchen…"
-            className="h-8 w-full rounded-lg border border-zinc-200 pl-7 pr-2 text-xs outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder:text-zinc-400"
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Suchen..."
+            className="h-8 w-full rounded-lg border border-zinc-200 bg-white pl-8 pr-3 text-[10.5px] outline-none transition placeholder:text-zinc-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10"
           />
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-2">
-        {brands.length === 0 ? (
-          <p className="px-2 py-4 text-center text-[11px] text-zinc-400">
-            Keine Marken definiert.
-          </p>
-        ) : (
-          brands.map((brand) => {
-            const cars = byBrand[brand.id] || [];
-            const open = openBrands[brand.id] ?? false;
-            return (
-              <div key={brand.id} className="mb-0.5">
-                <button
-                  onClick={() => toggle(brand.id)}
-                  className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50"
-                >
-                  {open ? (
-                    <FiChevronDown
-                      size={13}
-                      className="flex-shrink-0 text-zinc-400"
-                    />
-                  ) : (
-                    <FiChevronRight
-                      size={13}
-                      className="flex-shrink-0 text-zinc-400"
-                    />
-                  )}
-                  {open ? (
-                    <FiFolderPlus
-                      size={15}
-                      className="flex-shrink-0 text-indigo-500"
-                    />
-                  ) : (
-                    <FiFolder
-                      size={15}
-                      className="flex-shrink-0 text-zinc-400"
-                    />
-                  )}
-                  <span className="flex-1 truncate">{brand.label}</span>
-                  <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-[9px] tabular-nums text-zinc-500">
-                    {cars.length}
-                  </span>
-                </button>
-                {open &&
-                  (cars.length === 0 ? (
-                    <p className="ml-7 py-1.5 text-[10.5px] text-zinc-400">
-                      Noch keine Fahrzeuge.
-                    </p>
-                  ) : (
-                    <ul className="ml-3 border-l border-zinc-100 pl-1.5">
-                      {cars.map((v) => {
-                        const on = v.id === activeVehicleId;
-                        const n = marksByVehicle[v.id]?.length || 0;
-                        return (
-                          <li key={v.id} className="group/leaf">
-                            <div
-                              className={`flex items-center gap-1 rounded-lg pr-1 transition ${on ? "bg-indigo-50 ring-1 ring-indigo-200" : "hover:bg-zinc-50"}`}
-                            >
-                              <button
-                                onClick={() => onSelect(v.id)}
-                                className={`flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left text-xs ${on ? "font-medium text-indigo-700" : "text-zinc-600"}`}
-                              >
-                                <FiTruck
-                                  size={13}
-                                  className={`flex-shrink-0 ${on ? "text-indigo-500" : "text-zinc-400"}`}
-                                />
-                                <span className="min-w-0 flex-1">
-                                  <span className="block truncate">
-                                    {v.name}
-                                  </span>
-                                  {v.fin && (
-                                    <span className="block truncate text-[9.5px] font-normal text-zinc-400">
-                                      {v.fin}
-                                    </span>
-                                  )}
-                                </span>
-                                {n > 0 && (
-                                  <span
-                                    className={`flex-shrink-0 rounded-full px-1.5 py-0.5 text-[9px] tabular-nums ${on ? "bg-indigo-100 text-indigo-600" : "bg-zinc-100 text-zinc-500"}`}
-                                  >
-                                    {n}
-                                  </span>
-                                )}
-                              </button>
-                              <button
-                                onClick={() => onDeleteVehicle(v.id)}
-                                title="Entfernen"
-                                className="flex-shrink-0 rounded p-1 text-zinc-300 opacity-0 transition hover:text-red-500 group-hover/leaf:opacity-100"
-                              >
-                                <FiTrash2 size={12} />
-                              </button>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ))}
-              </div>
-            );
-          })
-        )}
+      <div className="px-2.5 pb-2">
+        <div className="grid grid-cols-4 rounded-lg border border-zinc-200 bg-zinc-50 p-0.5">
+          {[
+            ["all", "Alle"],
+            ["month", "Monat"],
+            ["lastMonth", "Letzter"],
+            ["year", "Jahr"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setTimeFilter(value)}
+              className={`rounded-md px-1 py-1.5 text-[9px] font-medium transition ${
+                timeFilter === value
+                  ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200"
+                  : "text-zinc-400 hover:text-zinc-600"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="border-t border-zinc-100 px-3.5 py-2.5">
-        <p className="text-[10px] leading-relaxed text-zinc-400">
-          Marken-Modelle definierst du in{" "}
-          <code className="rounded bg-zinc-100 px-1 text-[9px]">BRANDS</code>.
-          Fahrzeuge legst du hier mit „Neu" an.
-        </p>
+      <div className="flex-1 overflow-auto px-2 pb-3">
+        <ul className="space-y-0.5">
+          {filteredBrands.map((brand) => {
+            const open =
+              !!openBrands[brand.id] || (query && brand.vehicles.length > 0);
+            const total = brand.vehicles.length;
+            return (
+              <li key={brand.id}>
+                <button
+                  onClick={() =>
+                    setOpenBrands((prev) => ({
+                      ...prev,
+                      [brand.id]: !prev[brand.id],
+                    }))
+                  }
+                  className="group flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition hover:bg-zinc-50"
+                >
+                  <span className="text-zinc-400">
+                    {open ? (
+                      <FiChevronDown size={12} />
+                    ) : (
+                      <FiChevronRight size={12} />
+                    )}
+                  </span>
+                  <FiFolder size={15} className="flex-none text-zinc-400" />
+                  <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-zinc-700">
+                    {brand.label}
+                  </span>
+                  <span className="min-w-5 rounded-full bg-zinc-100 px-1.5 py-0.5 text-center text-[9px] font-medium tabular-nums text-zinc-500">
+                    {total}
+                  </span>
+                </button>
+
+                {open && (
+                  <div className="ml-[19px] border-l border-zinc-200 pl-2">
+                    {brand.vehicles.length === 0 ? (
+                      <p className="px-2 py-2 text-[9.5px] text-zinc-400">
+                        Keine Fahrzeuge
+                      </p>
+                    ) : (
+                      <ul className="space-y-0.5 py-0.5">
+                        {brand.vehicles.map((vehicle) => {
+                          const active = vehicle.id === activeVehicleId;
+                          const bodyCount =
+                            marksByVehicle[vehicle.id]?.length || 0;
+                          const mechCount =
+                            mechanicalByVehicle[vehicle.id]?.length || 0;
+                          return (
+                            <li key={vehicle.id} className="group/vehicle">
+                              <div
+                                className={`flex items-center rounded-lg transition ${
+                                  active
+                                    ? "bg-indigo-50 text-indigo-800"
+                                    : "text-zinc-600 hover:bg-zinc-50"
+                                }`}
+                              >
+                                <button
+                                  onClick={() => onSelect(vehicle.id)}
+                                  className="min-w-0 flex-1 px-2 py-2 text-left"
+                                >
+                                  <span className="block truncate text-[10.5px] font-medium">
+                                    {vehicle.name}
+                                  </span>
+                                  <span className="mt-0.5 flex items-center gap-1.5 text-[8.5px] text-zinc-400">
+                                    {vehicle.fin ? (
+                                      <span className="truncate font-mono">
+                                        {vehicle.fin}
+                                      </span>
+                                    ) : (
+                                      <span>Keine FIN</span>
+                                    )}
+                                    {(bodyCount > 0 || mechCount > 0) && (
+                                      <span className="flex-none">
+                                        · {bodyCount + mechCount} Aufgabe(n)
+                                      </span>
+                                    )}
+                                  </span>
+                                </button>
+                                <button
+                                  onClick={() => onDeleteVehicle(vehicle.id)}
+                                  className="mr-1 rounded p-1 text-zinc-300 opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover/vehicle:opacity-100"
+                                  title="Fahrzeug entfernen"
+                                >
+                                  <FiTrash2 size={11} />
+                                </button>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </aside>
+  );
+}
+
+function MoneyInput({ value, onChange }) {
+  return (
+    <div className="relative ml-auto w-28">
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="0,00"
+        className="h-8 w-full rounded-md border border-zinc-200 bg-white pl-2.5 pr-7 text-right text-[11px] font-semibold tabular-nums text-zinc-800 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10"
+      />
+      <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[9.5px] text-zinc-400">
+        €
+      </span>
+    </div>
+  );
+}
+
+function BillingSummaryRow({ label, value }) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-[10.5px]">
+      <span className="text-zinc-500">{label}</span>
+      <strong className="font-semibold tabular-nums text-zinc-800">
+        {value}
+      </strong>
+    </div>
   );
 }
 
