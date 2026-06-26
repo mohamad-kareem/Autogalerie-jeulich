@@ -53,7 +53,7 @@ const adminRoutes = [
   "/translator",
   "/Rotkennzeichen",
   "/Kundenkontakte",
-  "/lackieren",
+  "/Toni-Werkstatt",
   "/Preisschild",
   "/Fotostudio",
   "/ai-chats",
