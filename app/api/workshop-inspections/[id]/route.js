@@ -8,50 +8,74 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const ALLOWED_STATUSES = ["draft", "in_progress", "completed", "cancelled"];
+
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 function parsePrice(value) {
-  if (value === null || value === undefined || value === "") return 0;
-  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (value === null || value === undefined || value === "") {
+    return 0;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
   const normalized = String(value)
     .trim()
     .replace(/\s/g, "")
     .replace(/\./g, "")
     .replace(",", ".")
     .replace(/[^\d.-]/g, "");
+
   const number = Number.parseFloat(normalized);
+
   return Number.isFinite(number) ? number : 0;
 }
 
 function sanitizeBodywork(bodywork) {
-  if (!Array.isArray(bodywork)) return [];
+  if (!Array.isArray(bodywork)) {
+    return [];
+  }
+
   return bodywork.map((mark) => ({
     id: String(mark?.id || "").trim(),
+
     local: Array.isArray(mark?.local)
       ? mark.local.slice(0, 3).map((value) => Number(value) || 0)
       : [0, 0, 0],
+
     normal: Array.isArray(mark?.normal)
       ? mark.normal.slice(0, 3).map((value) => Number(value) || 0)
       : [0, 0, 1],
+
     type: String(mark?.type || "other").trim(),
     action: String(mark?.action || "").trim(),
     panel: String(mark?.panel || "").trim(),
     note: String(mark?.note || "").trim(),
     price: mark?.price ?? "",
+
     size: Number(mark?.size) || 0.06,
     length: Number(mark?.length) || 0.06,
     rotation: Number(mark?.rotation) || 0,
+
+    // Saves the Karosserie/Lackieren checkbox
+    done: Boolean(mark?.done),
   }));
 }
 
 function sanitizeMechanicalTasks(tasks) {
-  if (!Array.isArray(tasks)) return [];
+  if (!Array.isArray(tasks)) {
+    return [];
+  }
+
   return tasks.map((task) => ({
     id: String(task?.id || "").trim(),
     area: String(task?.area || "").trim(),
     job: String(task?.job || "").trim(),
     note: String(task?.note || "").trim(),
     price: task?.price ?? "",
+
+    // Saves the Mechanik checkbox
     done: Boolean(task?.done),
   }));
 }
@@ -61,10 +85,12 @@ function calculateTotals(bodywork, mechanicalTasks) {
     (sum, mark) => sum + parsePrice(mark.price),
     0,
   );
+
   const mechanicalTotal = mechanicalTasks.reduce(
     (sum, task) => sum + parsePrice(task.price),
     0,
   );
+
   return {
     bodywork: bodyworkTotal,
     mechanical: mechanicalTotal,
@@ -75,23 +101,41 @@ function calculateTotals(bodywork, mechanicalTasks) {
 export async function GET(request, { params }) {
   try {
     await connectDB();
+
     const { id } = await params;
+
     if (!isValidId(id)) {
       return NextResponse.json(
-        { success: false, message: "Ungültige Werkstattauftrag-ID." },
+        {
+          success: false,
+          message: "Ungültige Werkstattauftrag-ID.",
+        },
         { status: 400 },
       );
     }
+
     const inspection = await WorkshopInspection.findById(id).lean();
+
     if (!inspection) {
       return NextResponse.json(
-        { success: false, message: "Werkstattauftrag wurde nicht gefunden." },
+        {
+          success: false,
+          message: "Werkstattauftrag wurde nicht gefunden.",
+        },
         { status: 404 },
       );
     }
-    return NextResponse.json({ success: true, inspection }, { status: 200 });
+
+    return NextResponse.json(
+      {
+        success: true,
+        inspection,
+      },
+      { status: 200 },
+    );
   } catch (error) {
     console.error("GET workshop inspection by ID error:", error);
+
     return NextResponse.json(
       {
         success: false,
@@ -107,19 +151,29 @@ export async function GET(request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     await connectDB();
+
     const { id } = await params;
+
     if (!isValidId(id)) {
       return NextResponse.json(
-        { success: false, message: "Ungültige Werkstattauftrag-ID." },
+        {
+          success: false,
+          message: "Ungültige Werkstattauftrag-ID.",
+        },
         { status: 400 },
       );
     }
 
     const body = await request.json();
+
     const inspection = await WorkshopInspection.findById(id);
+
     if (!inspection) {
       return NextResponse.json(
-        { success: false, message: "Werkstattauftrag wurde nicht gefunden." },
+        {
+          success: false,
+          message: "Werkstattauftrag wurde nicht gefunden.",
+        },
         { status: 404 },
       );
     }
@@ -128,12 +182,15 @@ export async function PATCH(request, { params }) {
       const brandId = String(
         body.vehicle.brandId ?? inspection.vehicle.brandId ?? "",
       ).trim();
+
       const brandLabel = String(
         body.vehicle.brandLabel ?? inspection.vehicle.brandLabel ?? "",
       ).trim();
+
       const name = String(
         body.vehicle.name ?? inspection.vehicle.name ?? "",
       ).trim();
+
       const fin = String(body.vehicle.fin ?? inspection.vehicle.fin ?? "")
         .trim()
         .toUpperCase();
@@ -153,6 +210,7 @@ export async function PATCH(request, { params }) {
           _id: { $ne: id },
           "vehicle.fin": fin,
         }).lean();
+
         if (duplicate) {
           return NextResponse.json(
             {
@@ -164,39 +222,59 @@ export async function PATCH(request, { params }) {
           );
         }
       }
-      inspection.vehicle = { brandId, brandLabel, name, fin };
+
+      inspection.vehicle = {
+        brandId,
+        brandLabel,
+        name,
+        fin,
+      };
     }
 
     if (body.bodywork !== undefined) {
       inspection.bodywork = sanitizeBodywork(body.bodywork);
     }
+
     if (body.mechanicalTasks !== undefined) {
       inspection.mechanicalTasks = sanitizeMechanicalTasks(
         body.mechanicalTasks,
       );
     }
+
     if (body.status !== undefined) {
       if (!ALLOWED_STATUSES.includes(body.status)) {
         return NextResponse.json(
-          { success: false, message: "Ungültiger Werkstattstatus." },
+          {
+            success: false,
+            message: "Ungültiger Werkstattstatus.",
+          },
           { status: 400 },
         );
       }
+
       inspection.status = body.status;
     }
 
-    // Photos are intentionally not accepted through PATCH. They can only be
-    // added/deleted through /api/workshop-inspections/[id]/photos so clients
-    // cannot forge Cloudinary records.
+    /*
+      Photos are intentionally not accepted through PATCH.
+
+      Photos can only be added or deleted through:
+      /api/workshop-inspections/[id]/photos
+    */
+
     const cleanBodywork = sanitizeBodywork(inspection.bodywork);
+
     const cleanMechanicalTasks = sanitizeMechanicalTasks(
       inspection.mechanicalTasks,
     );
+
     inspection.bodywork = cleanBodywork;
     inspection.mechanicalTasks = cleanMechanicalTasks;
+
     inspection.totals = calculateTotals(cleanBodywork, cleanMechanicalTasks);
 
     await inspection.save();
+
     return NextResponse.json(
       {
         success: true,
@@ -207,6 +285,7 @@ export async function PATCH(request, { params }) {
     );
   } catch (error) {
     console.error("PATCH workshop inspection error:", error);
+
     if (error?.code === 11000) {
       return NextResponse.json(
         {
@@ -217,10 +296,12 @@ export async function PATCH(request, { params }) {
         { status: 409 },
       );
     }
+
     if (error?.name === "ValidationError") {
       const errors = Object.values(error.errors || {}).map(
         (item) => item.message,
       );
+
       return NextResponse.json(
         {
           success: false,
@@ -230,6 +311,7 @@ export async function PATCH(request, { params }) {
         { status: 400 },
       );
     }
+
     return NextResponse.json(
       {
         success: false,
@@ -245,18 +327,27 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await connectDB();
+
     const { id } = await params;
+
     if (!isValidId(id)) {
       return NextResponse.json(
-        { success: false, message: "Ungültige Werkstattauftrag-ID." },
+        {
+          success: false,
+          message: "Ungültige Werkstattauftrag-ID.",
+        },
         { status: 400 },
       );
     }
 
     const inspection = await WorkshopInspection.findById(id).lean();
+
     if (!inspection) {
       return NextResponse.json(
-        { success: false, message: "Werkstattauftrag wurde nicht gefunden." },
+        {
+          success: false,
+          message: "Werkstattauftrag wurde nicht gefunden.",
+        },
         { status: 404 },
       );
     }
@@ -267,6 +358,7 @@ export async function DELETE(request, { params }) {
 
     if (publicIds.length > 0) {
       const cloudinary = getWorkshopCloudinary();
+
       await cloudinary.api.delete_resources(publicIds, {
         resource_type: "image",
         type: "upload",
@@ -286,6 +378,7 @@ export async function DELETE(request, { params }) {
     );
   } catch (error) {
     console.error("DELETE workshop inspection error:", error);
+
     return NextResponse.json(
       {
         success: false,

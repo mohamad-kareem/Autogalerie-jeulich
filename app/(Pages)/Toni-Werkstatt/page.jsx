@@ -102,6 +102,7 @@ const makeMark = (local, normal, type) => ({
   size: 0.06,
   length: ELONGATED.has(type) ? 0.14 : 0.06,
   rotation: 0,
+  done: false,
 });
 
 /* ─── Utility ─────────────────────────────────────────── */
@@ -1902,7 +1903,13 @@ export default function VehicleInspection3DPage() {
                           </span>
 
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate font-medium text-[#1a1a1a]">
+                            <span
+                              className={`block truncate font-medium ${
+                                mark.done
+                                  ? "text-[#aaa] line-through"
+                                  : "text-[#1a1a1a]"
+                              }`}
+                            >
                               {mark.action || type?.label}
                             </span>
 
@@ -1913,48 +1920,56 @@ export default function VehicleInspection3DPage() {
                             )}
                           </span>
 
-                          <span className="mt-0.5 text-[9px] font-semibold uppercase text-[#3366cc]">
-                            Karr.
-                          </span>
+                          <div className="mt-0.5 flex flex-none items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                updateMark(mark.id, { done: !mark.done });
+                              }}
+                              className={`grid h-5 w-5 place-items-center rounded border text-[9px] transition ${
+                                mark.done
+                                  ? "border-[#22aa55] bg-[#22aa55] text-white"
+                                  : "border-[#cfcfcf] bg-white text-transparent hover:border-[#22aa55]"
+                              }`}
+                              aria-label={
+                                mark.done
+                                  ? "Lackieraufgabe wieder öffnen"
+                                  : "Lackieraufgabe erledigen"
+                              }
+                              title={
+                                mark.done
+                                  ? "Als offen markieren"
+                                  : "Als erledigt markieren"
+                              }
+                            >
+                              ✓
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              deleteMark(mark.id);
-                            }}
-                            className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded text-[#c4c4c4] hover:bg-[#fdecec] hover:text-[#cc3333]"
-                            aria-label="Karosserieaufgabe löschen"
-                            title="Aufgabe löschen"
-                          >
-                            <FiX size={12} />
-                          </button>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                deleteMark(mark.id);
+                              }}
+                              className="grid h-5 w-5 place-items-center rounded text-[#c4c4c4] transition hover:bg-[#fdecec] hover:text-[#cc3333]"
+                              aria-label="Karosserieaufgabe löschen"
+                              title="Aufgabe löschen"
+                            >
+                              <FiX size={12} />
+                            </button>
+                          </div>
                         </li>
                       );
                     })}
                     {mechanicalTasks.map((task) => (
                       <li
                         key={task.id}
-                        className="flex items-start gap-2 px-1 py-2 text-[11px]"
+                        className="flex items-start gap-2 rounded px-1 py-2 text-[11px]"
                       >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateMechanicalTask(task.id, { done: !task.done })
-                          }
-                          className={`mt-0.5 grid h-5 w-5 flex-none place-items-center rounded border text-[9px] ${
-                            task.done
-                              ? "border-[#22aa55] bg-[#22aa55] text-white"
-                              : "border-[#ccc]"
-                          }`}
-                          aria-label={
-                            task.done
-                              ? "Aufgabe wieder öffnen"
-                              : "Aufgabe erledigen"
-                          }
-                        >
-                          {task.done && "✓"}
-                        </button>
+                        <span className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded bg-[#eef2ff] text-[#4f46e5]">
+                          <FiTool size={11} />
+                        </span>
 
                         <span className="min-w-0 flex-1">
                           <span
@@ -1967,6 +1982,12 @@ export default function VehicleInspection3DPage() {
                             {task.job}
                           </span>
 
+                          {task.area && (
+                            <span className="block truncate text-[10px] text-[#888]">
+                              {task.area}
+                            </span>
+                          )}
+
                           {task.note && (
                             <span className="mt-0.5 block truncate text-[9.5px] text-[#9a9a9a]">
                               Notiz: {task.note}
@@ -1974,19 +1995,43 @@ export default function VehicleInspection3DPage() {
                           )}
                         </span>
 
-                        <span className="mt-0.5 text-[9px] font-semibold uppercase text-[#d97706]">
-                          Mech.
-                        </span>
+                        <div className="mt-0.5 flex flex-none items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateMechanicalTask(task.id, {
+                                done: !task.done,
+                              })
+                            }
+                            className={`grid h-5 w-5 place-items-center rounded border text-[9px] transition ${
+                              task.done
+                                ? "border-[#22aa55] bg-[#22aa55] text-white"
+                                : "border-[#cfcfcf] bg-white text-transparent hover:border-[#22aa55]"
+                            }`}
+                            aria-label={
+                              task.done
+                                ? "Mechanikaufgabe wieder öffnen"
+                                : "Mechanikaufgabe erledigen"
+                            }
+                            title={
+                              task.done
+                                ? "Als offen markieren"
+                                : "Als erledigt markieren"
+                            }
+                          >
+                            ✓
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={() => removeMechanicalTask(task.id)}
-                          className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded text-[#c4c4c4] hover:bg-[#fdecec] hover:text-[#cc3333]"
-                          aria-label="Mechanische Aufgabe löschen"
-                          title="Aufgabe löschen"
-                        >
-                          <FiX size={12} />
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => removeMechanicalTask(task.id)}
+                            className="grid h-5 w-5 place-items-center rounded text-[#c4c4c4] transition hover:bg-[#fdecec] hover:text-[#cc3333]"
+                            aria-label="Mechanische Aufgabe löschen"
+                            title="Aufgabe löschen"
+                          >
+                            <FiX size={12} />
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -2176,7 +2221,13 @@ export default function VehicleInspection3DPage() {
                             </span>
 
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate font-medium text-[#1a1a1a]">
+                              <span
+                                className={`block truncate font-medium ${
+                                  mark.done
+                                    ? "text-[#aaa] line-through"
+                                    : "text-[#1a1a1a]"
+                                }`}
+                              >
                                 {mark.action || tp?.label}
                               </span>
 
@@ -2187,22 +2238,45 @@ export default function VehicleInspection3DPage() {
                               )}
                             </span>
 
-                            <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#3366cc]">
-                              Karr.
-                            </span>
+                            <div className="mt-0.5 flex flex-none items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  updateMark(mark.id, { done: !mark.done });
+                                }}
+                                className={`grid h-5 w-5 place-items-center rounded border text-[9px] transition ${
+                                  mark.done
+                                    ? "border-[#22aa55] bg-[#22aa55] text-white"
+                                    : "border-[#cfcfcf] bg-white text-transparent hover:border-[#22aa55]"
+                                }`}
+                                aria-label={
+                                  mark.done
+                                    ? "Lackieraufgabe wieder öffnen"
+                                    : "Lackieraufgabe erledigen"
+                                }
+                                title={
+                                  mark.done
+                                    ? "Als offen markieren"
+                                    : "Als erledigt markieren"
+                                }
+                              >
+                                ✓
+                              </button>
 
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                deleteMark(mark.id);
-                              }}
-                              className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded text-[#c4c4c4] hover:bg-[#fdecec] hover:text-[#cc3333]"
-                              aria-label="Karosserieaufgabe löschen"
-                              title="Aufgabe löschen"
-                            >
-                              <FiX size={11} />
-                            </button>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  deleteMark(mark.id);
+                                }}
+                                className="grid h-5 w-5 place-items-center rounded text-[#c4c4c4] transition hover:bg-[#fdecec] hover:text-[#cc3333]"
+                                aria-label="Karosserieaufgabe löschen"
+                                title="Aufgabe löschen"
+                              >
+                                <FiX size={11} />
+                              </button>
+                            </div>
                           </li>
                         );
                       })}
@@ -2211,26 +2285,9 @@ export default function VehicleInspection3DPage() {
                           key={task.id}
                           className="flex items-start gap-2 rounded px-1 py-2 text-[11px]"
                         >
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateMechanicalTask(task.id, {
-                                done: !task.done,
-                              })
-                            }
-                            className={`mt-0.5 grid h-4 w-4 flex-none place-items-center rounded border text-[9px] ${
-                              task.done
-                                ? "border-[#22aa55] bg-[#22aa55] text-white"
-                                : "border-[#ccc]"
-                            }`}
-                            aria-label={
-                              task.done
-                                ? "Aufgabe wieder öffnen"
-                                : "Aufgabe erledigen"
-                            }
-                          >
-                            {task.done && "✓"}
-                          </button>
+                          <span className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded bg-[#eef2ff] text-[#4f46e5]">
+                            <FiTool size={11} />
+                          </span>
 
                           <span className="min-w-0 flex-1">
                             <span
@@ -2243,6 +2300,12 @@ export default function VehicleInspection3DPage() {
                               {task.job}
                             </span>
 
+                            {task.area && (
+                              <span className="block truncate text-[10px] text-[#888]">
+                                {task.area}
+                              </span>
+                            )}
+
                             {task.note && (
                               <span className="mt-0.5 block truncate text-[9px] text-[#9a9a9a]">
                                 Notiz: {task.note}
@@ -2250,19 +2313,43 @@ export default function VehicleInspection3DPage() {
                             )}
                           </span>
 
-                          <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#d97706]">
-                            Mech.
-                          </span>
+                          <div className="mt-0.5 flex flex-none items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateMechanicalTask(task.id, {
+                                  done: !task.done,
+                                })
+                              }
+                              className={`grid h-5 w-5 place-items-center rounded border text-[9px] transition ${
+                                task.done
+                                  ? "border-[#22aa55] bg-[#22aa55] text-white"
+                                  : "border-[#cfcfcf] bg-white text-transparent hover:border-[#22aa55]"
+                              }`}
+                              aria-label={
+                                task.done
+                                  ? "Mechanikaufgabe wieder öffnen"
+                                  : "Mechanikaufgabe erledigen"
+                              }
+                              title={
+                                task.done
+                                  ? "Als offen markieren"
+                                  : "Als erledigt markieren"
+                              }
+                            >
+                              ✓
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={() => removeMechanicalTask(task.id)}
-                            className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded text-[#c4c4c4] hover:bg-[#fdecec] hover:text-[#cc3333]"
-                            aria-label="Mechanische Aufgabe löschen"
-                            title="Aufgabe löschen"
-                          >
-                            <FiX size={11} />
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => removeMechanicalTask(task.id)}
+                              className="grid h-5 w-5 place-items-center rounded text-[#c4c4c4] transition hover:bg-[#fdecec] hover:text-[#cc3333]"
+                              aria-label="Mechanische Aufgabe löschen"
+                              title="Aufgabe löschen"
+                            >
+                              <FiX size={11} />
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ul>
