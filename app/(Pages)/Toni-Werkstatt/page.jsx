@@ -1415,7 +1415,7 @@ export default function VehicleInspection3DPage() {
                 <tr>
                   <th class="position">Pos.</th>
                   <th>Typ</th>
-                  <th>Aufgabe</th>
+                  <th>Aufgabe / Leistung</th>
                   <th>Bereich / Bauteil</th>
                   <th>Notiz</th>
                   <th class="number">Preis</th>
@@ -1787,14 +1787,6 @@ export default function VehicleInspection3DPage() {
                 </span>
                 <span className="sm:hidden">Werkstatt</span>
               </div>
-              {activeVehicle && (
-                <>
-                  <span className="text-[#aaa]">/</span>
-                  <span className="max-w-[120px] truncate text-[11px] text-[#555] sm:max-w-none sm:text-[13px]">
-                    {activeBrand?.label} {activeVehicle.name}
-                  </span>
-                </>
-              )}
             </div>
             <div className="flex items-center gap-1.5">
               <div className="hidden items-center gap-1.5 md:flex">
@@ -1914,10 +1906,6 @@ export default function VehicleInspection3DPage() {
                               {mark.action || type?.label}
                             </span>
 
-                            <span className="block truncate text-[10px] text-[#888]">
-                              {mark.panel || type?.label || "Ohne Bereich"}
-                            </span>
-
                             {mark.note && (
                               <span className="mt-0.5 block truncate text-[9.5px] text-[#9a9a9a]">
                                 Notiz: {mark.note}
@@ -1977,10 +1965,6 @@ export default function VehicleInspection3DPage() {
                             }`}
                           >
                             {task.job}
-                          </span>
-
-                          <span className="block truncate text-[10px] text-[#888]">
-                            {task.area || "Ohne Bereich"}
                           </span>
 
                           {task.note && (
@@ -2196,10 +2180,6 @@ export default function VehicleInspection3DPage() {
                                 {mark.action || tp?.label}
                               </span>
 
-                              <span className="block truncate text-[9.5px] text-[#888]">
-                                {mark.panel || tp?.label || "Ohne Bereich"}
-                              </span>
-
                               {mark.note && (
                                 <span className="mt-0.5 block truncate text-[9px] text-[#9a9a9a]">
                                   Notiz: {mark.note}
@@ -2261,10 +2241,6 @@ export default function VehicleInspection3DPage() {
                               }`}
                             >
                               {task.job}
-                            </span>
-
-                            <span className="block truncate text-[9.5px] text-[#888]">
-                              {task.area || "Ohne Bereich"}
                             </span>
 
                             {task.note && (
@@ -2587,19 +2563,6 @@ export default function VehicleInspection3DPage() {
                 title="Mechanische Arbeiten"
               />
               <div className="mt-2 space-y-2">
-                <SysField label="Bereich">
-                  <input
-                    value={mechanicalDraft.area}
-                    onChange={(e) =>
-                      setMechanicalDraft((d) => ({
-                        ...d,
-                        area: e.target.value,
-                      }))
-                    }
-                    placeholder="z. B. Motor, Bremsanlage …"
-                    className="w-full rounded border border-[#d0d0d0] bg-white px-2.5 py-1.5 text-[11px] outline-none focus:border-[#555]"
-                  />
-                </SysField>
                 <SysField label="Arbeit">
                   <textarea
                     value={mechanicalDraft.job}
@@ -2632,49 +2595,6 @@ export default function VehicleInspection3DPage() {
                 >
                   <FiPlus size={12} /> Aufgabe hinzufügen
                 </button>
-                {mechanicalTasks.length > 0 && (
-                  <div className="border-t border-[#ebebeb] pt-2 mt-1">
-                    <p className="text-[9px] font-semibold uppercase tracking-[.08em] text-[#aaa] mb-1.5">
-                      Aktiv ({mechanicalTasks.length})
-                    </p>
-                    <div className="space-y-1 max-h-48 overflow-auto">
-                      {mechanicalTasks.map((task) => (
-                        <div
-                          key={task.id}
-                          className="flex items-start gap-2 rounded border border-[#ebebeb] bg-[#fafafa] px-2.5 py-1.5"
-                        >
-                          <button
-                            onClick={() =>
-                              updateMechanicalTask(task.id, {
-                                done: !task.done,
-                              })
-                            }
-                            className={`mt-0.5 grid h-3.5 w-3.5 flex-none place-items-center rounded-sm border text-[8px] ${task.done ? "border-[#22aa55] bg-[#22aa55] text-white" : "border-[#ccc]"}`}
-                          >
-                            {task.done && "✓"}
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <p
-                              className={`text-[10.5px] font-medium ${task.done ? "text-[#aaa] line-through" : "text-[#1a1a1a]"}`}
-                            >
-                              {task.job}
-                            </p>
-                            <p className="text-[9.5px] text-[#aaa]">
-                              {task.area}
-                              {task.note ? ` · ${task.note}` : ""}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => removeMechanicalTask(task.id)}
-                            className="text-[#ccc] hover:text-[#cc3333] flex-none"
-                          >
-                            <FiX size={10} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </SysCard>
           </aside>
