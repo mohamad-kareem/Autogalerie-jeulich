@@ -1309,10 +1309,10 @@ export default function VehicleInspection3DPage() {
                     )
                   }
                   disabled={saving}
-                  className={`inline-flex h-7 items-center gap-1.5 rounded border px-2 text-[10px] font-semibold sm:px-2.5 sm:text-[11px] ${
+                  className={`inline-flex h-7 items-center cursor-pointer gap-1.5 rounded  border px-2 text-[10px] font-semibold sm:px-2.5 sm:text-[11px] ${
                     activeVehicle.status === "completed"
                       ? "border-[#86b996] bg-[#edf8f0] text-[#25633a]"
-                      : "border-[#d6a448] bg-[#fff7e5] text-[#855b12]"
+                      : "border-[#7fa8dd] bg-[#eef5ff] text-[#2f63a8]"
                   }`}
                 >
                   <FiCheckCircle size={12} />
@@ -2174,7 +2174,7 @@ function SysPrimaryButton({ onClick, disabled, icon, label }) {
     <button
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex h-7 items-center gap-1.5 rounded border border-[#1a1a1a] bg-[#1a1a1a] px-2.5 text-[11px] font-medium text-white hover:bg-[#333] disabled:opacity-40 transition"
+      className="inline-flex h-7 items-center gap-1.5 cursor-pointer rounded border border-[#1a1a1a] bg-[#1a1a1a] px-2.5 text-[11px] font-medium text-white hover:bg-[#333] disabled:opacity-40 transition"
       style={{
         boxShadow:
           "0 1px 2px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.08)",
@@ -2283,7 +2283,7 @@ function BillingRangeModal({ onClose, onPrint }) {
         <div className="flex items-center justify-between border-b border-[#e8e8e8] px-4 py-3">
           <div className="flex items-center gap-2">
             <FiCalendar size={13} className="text-[#555]" />
-            <h3 className="text-[12px] font-semibold text-[#1a1a1a]">
+            <h3 className="text-[12px] font-semibold text-[#1a1a1a] ">
               Abrechnungen drucken
             </h3>
           </div>
@@ -2314,7 +2314,7 @@ function BillingRangeModal({ onClose, onPrint }) {
             zusammengefasst.
           </p>
         </div>
-        <div className="flex justify-end gap-2 border-t border-[#e8e8e8] px-4 py-3">
+        <div className="flex justify-end gap-2 border-t  border-[#e8e8e8] px-4 py-3">
           <SysButton onClick={onClose} label="Abbrechen" />
           <SysPrimaryButton
             onClick={() => onPrint({ from, to })}
@@ -2458,7 +2458,11 @@ function VehicleTree({
                 onClick={() =>
                   setOpenBrands((p) => ({ ...p, [brand.id]: !p[brand.id] }))
                 }
-                className={`group flex w-full items-center gap-1.5 px-2.5 py-1.5 text-left ${unfinishedCount > 0 ? "bg-[#fff8e8] hover:bg-[#fff2cf]" : "hover:bg-[#f5f5f5]"}`}
+                className={`group flex w-full items-center gap-1.5 px-2.5 py-1.5 text-left ${
+                  unfinishedCount > 0
+                    ? "bg-[#eef5ff] hover:bg-[#e2edfc]"
+                    : "hover:bg-[#f5f5f5]"
+                }`}
               >
                 <span className="text-[#bbb] flex-none">
                   {open ? (
@@ -2469,7 +2473,7 @@ function VehicleTree({
                 </span>
                 <FiFolder
                   size={12}
-                  className={`flex-none ${unfinishedCount > 0 ? "text-[#d18a16]" : "text-[#7aa486]"}`}
+                  className={`flex-none ${unfinishedCount > 0 ? "text-[#3974c6]" : "text-[#7aa486]"}`}
                 />
                 <span className="flex-1 min-w-0 truncate text-[11px] font-medium text-[#333]">
                   {brand.label}
@@ -2500,7 +2504,7 @@ function VehicleTree({
                               ? "border-[#1a4db3] bg-[#e8eef8]"
                               : completed
                                 ? "border-[#72a981] bg-[#f3faf5] hover:bg-[#eaf6ed]"
-                                : "border-[#e3a52f] bg-[#fffaf0] hover:bg-[#fff3d8]"
+                                : "border-[#7fa8dd] bg-[#f3f7fd] hover:bg-[#e8f1fc]"
                           }`}
                         >
                           <button
@@ -2533,7 +2537,7 @@ function VehicleTree({
                             className={`mr-0.5 grid h-6 w-6 flex-none place-items-center rounded ${
                               completed
                                 ? "text-[#2f7a46] hover:bg-[#dff0e4]"
-                                : "text-[#c58010] hover:bg-[#ffebbd]"
+                                : "text-[#3974c6] hover:bg-[#dceafd]"
                             }`}
                           >
                             <FiCheckCircle size={12} />
