@@ -25,6 +25,7 @@ import {
   FiFolder,
   FiCalendar,
   FiFileText,
+  FiMenu,
 } from "react-icons/fi";
 
 const BRANDS = [
@@ -127,6 +128,7 @@ export default function VehicleInspection3DPage() {
   const [activeVehicleId, setActiveVehicleId] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [mobileTreeOpen, setMobileTreeOpen] = useState(false);
 
   const activeVehicle = vehicles.find((v) => v.id === activeVehicleId) || null;
   const activeBrand = activeVehicle
@@ -317,7 +319,7 @@ export default function VehicleInspection3DPage() {
         fill.position.set(-7, 5, -5);
         scene.add(fill);
         const floor = new THREE.Mesh(
-          new THREE.CircleGeometry(16, 80),
+          new THREE.CircleGeometry(10, 80),
           new THREE.MeshStandardMaterial({
             color: 0xf5f5f5,
             roughness: 0.95,
@@ -1095,6 +1097,49 @@ export default function VehicleInspection3DPage() {
     }
   };
 
+  const handleStatusChange = async (vehicleId, nextStatus) => {
+    const vehicle = vehicles.find((item) => item.id === vehicleId);
+    if (!vehicle) return;
+
+    const vehicleBrand = BRANDS.find((brand) => brand.id === vehicle.brandId);
+    const vehicleMarks = marksByVehicle[vehicleId] || [];
+    const vehicleTasks = mechanicalByVehicle[vehicleId] || [];
+
+    try {
+      setSaving(true);
+      const res = await fetch(`/api/workshop-inspections/${vehicleId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vehicle: {
+            brandId: vehicle.brandId,
+            brandLabel: vehicleBrand?.label || "",
+            name: vehicle.name,
+            fin: vehicle.fin || "",
+          },
+          bodywork: vehicleMarks,
+          mechanicalTasks: vehicleTasks,
+          status: nextStatus,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok)
+        throw new Error(data.message || "Status konnte nicht geändert werden.");
+
+      applyInspectionToState(data.inspection);
+      toast.success(
+        nextStatus === "completed"
+          ? "Fahrzeug als abgeschlossen markiert."
+          : "Fahrzeug wieder als offen markiert.",
+      );
+    } catch (error) {
+      toast.error(error.message || "Status konnte nicht geändert werden.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handlePrint = () => {
     const w = window.open("", "_blank", "width=960,height=1200");
     if (!w) return toast.error("Popup blockiert.");
@@ -1214,34 +1259,70 @@ export default function VehicleInspection3DPage() {
         style={{ boxShadow: "0 1px 0 rgba(255,255,255,0.6) inset" }}
       >
         <div className="mx-auto max-w-[1720px] px-4 sm:px-6">
-          <div className="flex h-11 items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+          <div className="flex min-h-11 items-center justify-between gap-2 py-2 sm:gap-4">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <button
+                onClick={() => setMobileTreeOpen(true)}
+                className="grid h-8 w-8 flex-none place-items-center rounded border border-[#c8c8c8] bg-white text-[#333] shadow-sm lg:hidden"
+                aria-label="Fahrzeugordner öffnen"
+              >
+                <FiMenu size={15} />
+              </button>
               <div className="flex items-center gap-1.5 text-[13px] font-medium text-[#1a1a1a]">
                 <FiTarget size={14} className="text-[#555]" />
-                <span>Werkstatt-Inspektion 3D</span>
+                <span className="hidden sm:inline">
+                  Werkstatt-Inspektion 3D
+                </span>
+                <span className="sm:hidden">Werkstatt</span>
               </div>
               {activeVehicle && (
                 <>
                   <span className="text-[#aaa]">/</span>
-                  <span className="text-[13px] text-[#555]">
+                  <span className="max-w-[120px] truncate text-[11px] text-[#555] sm:max-w-none sm:text-[13px]">
                     {activeBrand?.label} {activeVehicle.name}
                   </span>
                 </>
               )}
             </div>
             <div className="flex items-center gap-1.5">
-              <SysButton
-                onClick={() => setShowBillingPrint(true)}
-                icon={<FiFileText size={12} />}
-                label="Abrechnungen"
-              />
-              <div className="mx-1 h-4 w-px bg-[#c8c8c8]" />
-              <SysButton
-                onClick={handlePrint}
-                disabled={!activeVehicle}
-                icon={<FiPrinter size={12} />}
-                label="Drucken"
-              />
+              <div className="hidden items-center gap-1.5 md:flex">
+                <SysButton
+                  onClick={() => setShowBillingPrint(true)}
+                  icon={<FiFileText size={12} />}
+                  label="Abrechnungen"
+                />
+                <SysButton
+                  onClick={handlePrint}
+                  disabled={!activeVehicle}
+                  icon={<FiPrinter size={12} />}
+                  label="Drucken"
+                />
+              </div>
+              {activeVehicle && (
+                <button
+                  onClick={() =>
+                    handleStatusChange(
+                      activeVehicle.id,
+                      activeVehicle.status === "completed"
+                        ? "in_progress"
+                        : "completed",
+                    )
+                  }
+                  disabled={saving}
+                  className={`inline-flex h-7 items-center gap-1.5 rounded border px-2 text-[10px] font-semibold sm:px-2.5 sm:text-[11px] ${
+                    activeVehicle.status === "completed"
+                      ? "border-[#86b996] bg-[#edf8f0] text-[#25633a]"
+                      : "border-[#d6a448] bg-[#fff7e5] text-[#855b12]"
+                  }`}
+                >
+                  <FiCheckCircle size={12} />
+                  <span className="hidden sm:inline">
+                    {activeVehicle.status === "completed"
+                      ? "Wieder öffnen"
+                      : "Abschließen"}
+                  </span>
+                </button>
+              )}
               <SysPrimaryButton
                 onClick={handleSave}
                 disabled={!activeVehicle || saving}
@@ -1253,29 +1334,120 @@ export default function VehicleInspection3DPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1720px] px-4 sm:px-6 py-4">
+      <div className="mx-auto max-w-[1720px] px-2 py-2 sm:px-6 sm:py-4">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[220px_minmax(0,1fr)_316px]">
           {/* ── LEFT: Vehicle Tree ── */}
-          <VehicleTree
-            brands={BRANDS}
-            vehicles={vehicles}
-            activeVehicleId={activeVehicleId}
-            onSelect={setActiveVehicleId}
-            onAdd={() => setShowAdd(true)}
-            onDeleteVehicle={deleteVehicle}
-            marksByVehicle={marksByVehicle}
-            mechanicalByVehicle={mechanicalByVehicle}
-          />
+          <div className="hidden lg:block">
+            <VehicleTree
+              brands={BRANDS}
+              vehicles={vehicles}
+              activeVehicleId={activeVehicleId}
+              onSelect={setActiveVehicleId}
+              onAdd={() => setShowAdd(true)}
+              onDeleteVehicle={deleteVehicle}
+              onStatusChange={handleStatusChange}
+              marksByVehicle={marksByVehicle}
+              mechanicalByVehicle={mechanicalByVehicle}
+            />
+          </div>
 
           {/* ── CENTER ── */}
           <div className="flex flex-col gap-3">
+            {activeVehicle && (
+              <SysCard className="md:hidden">
+                <div className="flex items-center justify-between">
+                  <SectionHeader
+                    icon={<FiClipboard size={12} />}
+                    title={`Aufgaben (${marks.length + mechanicalTasks.length})`}
+                  />
+                  {(marks.length > 0 || mechanicalTasks.length > 0) && (
+                    <button
+                      onClick={clearAllAufgaben}
+                      className="text-[10px] text-[#cc3333] hover:underline"
+                    >
+                      Alle löschen
+                    </button>
+                  )}
+                </div>
+                {marks.length === 0 && mechanicalTasks.length === 0 ? (
+                  <p className="mt-3 text-[11px] text-[#aaa]">
+                    Noch keine Aufgaben vorhanden.
+                  </p>
+                ) : (
+                  <ul className="mt-2 max-h-64 overflow-auto divide-y divide-[#ebebeb]">
+                    {marks.map((mark, index) => {
+                      const type = DAMAGE_TYPES.find(
+                        (item) => item.id === mark.type,
+                      );
+                      return (
+                        <li
+                          key={mark.id}
+                          onClick={() => selectMark(mark.id)}
+                          className={`flex cursor-pointer items-center gap-2 rounded px-1 py-2 text-[11px] ${selectedMark === mark.id ? "bg-[#e8eef8]" : "hover:bg-[#f5f5f5]"}`}
+                        >
+                          <span
+                            className="grid h-5 w-5 flex-none place-items-center rounded-full text-[9px] font-bold text-white"
+                            style={{ background: type?.color }}
+                          >
+                            {index + 1}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-medium text-[#1a1a1a]">
+                              {mark.action || type?.label}
+                            </span>
+                            <span className="block truncate text-[10px] text-[#888]">
+                              {mark.panel || type?.label}
+                            </span>
+                          </span>
+                          <span className="text-[9px] font-semibold uppercase text-[#3366cc]">
+                            Karr.
+                          </span>
+                        </li>
+                      );
+                    })}
+                    {mechanicalTasks.map((task) => (
+                      <li
+                        key={task.id}
+                        className="flex items-center gap-2 px-1 py-2 text-[11px]"
+                      >
+                        <button
+                          onClick={() =>
+                            updateMechanicalTask(task.id, { done: !task.done })
+                          }
+                          className={`grid h-5 w-5 flex-none place-items-center rounded border text-[9px] ${task.done ? "border-[#22aa55] bg-[#22aa55] text-white" : "border-[#ccc]"}`}
+                        >
+                          {task.done && "✓"}
+                        </button>
+                        <span className="min-w-0 flex-1">
+                          <span
+                            className={`block truncate font-medium ${task.done ? "text-[#aaa] line-through" : "text-[#1a1a1a]"}`}
+                          >
+                            {task.job}
+                          </span>
+                          <span className="block truncate text-[10px] text-[#888]">
+                            {task.area}
+                          </span>
+                        </span>
+                        <button
+                          onClick={() => removeMechanicalTask(task.id)}
+                          className="text-[#ccc] hover:text-[#cc3333]"
+                        >
+                          <FiX size={12} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </SysCard>
+            )}
+
             {/* 3D Viewer */}
             <SysCard noPad>
               <div
                 ref={mountRef}
                 className="relative w-full touch-none"
                 style={{
-                  aspectRatio: "16/9",
+                  aspectRatio: "16/10",
                   background: "linear-gradient(160deg,#f7f7f8 0%,#ebebed 100%)",
                   cursor: placing ? "crosshair" : "grab",
                 }}
@@ -1405,7 +1577,7 @@ export default function VehicleInspection3DPage() {
                   </table>
                 </SysCard>
 
-                <SysCard>
+                <SysCard className="hidden md:block">
                   <div className="flex items-center justify-between">
                     <SectionHeader
                       icon={<FiClipboard size={12} />}
@@ -1498,7 +1670,7 @@ export default function VehicleInspection3DPage() {
 
             {/* Billing */}
             {activeVehicle && (
-              <SysCard noPad>
+              <SysCard noPad className="hidden md:block">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-[#e0e0e0]">
                   <div className="flex items-center gap-2">
                     <FiDollarSign size={13} className="text-[#555]" />
@@ -1872,6 +2044,47 @@ export default function VehicleInspection3DPage() {
         </div>
       </div>
 
+      {mobileTreeOpen && (
+        <div className="fixed inset-0 z-[80] lg:hidden">
+          <button
+            className="absolute inset-0 bg-black/35"
+            onClick={() => setMobileTreeOpen(false)}
+            aria-label="Fahrzeugordner schließen"
+          />
+          <div className="absolute inset-y-0 left-0 w-[88vw] max-w-[340px] bg-white p-2 shadow-2xl">
+            <div className="mb-2 flex items-center justify-between px-1 py-1">
+              <span className="text-[12px] font-semibold text-[#333]">
+                Fahrzeuge
+              </span>
+              <button
+                onClick={() => setMobileTreeOpen(false)}
+                className="grid h-8 w-8 place-items-center rounded border border-[#ddd] bg-white text-[#555]"
+              >
+                <FiX size={15} />
+              </button>
+            </div>
+            <VehicleTree
+              brands={BRANDS}
+              vehicles={vehicles}
+              activeVehicleId={activeVehicleId}
+              onSelect={(id) => {
+                setActiveVehicleId(id);
+                setMobileTreeOpen(false);
+              }}
+              onAdd={() => {
+                setMobileTreeOpen(false);
+                setShowAdd(true);
+              }}
+              onDeleteVehicle={deleteVehicle}
+              onStatusChange={handleStatusChange}
+              marksByVehicle={marksByVehicle}
+              mechanicalByVehicle={mechanicalByVehicle}
+              mobile
+            />
+          </div>
+        </div>
+      )}
+
       {showBillingPrint && (
         <BillingRangeModal
           onClose={() => setShowBillingPrint(false)}
@@ -2123,12 +2336,28 @@ function VehicleTree({
   onSelect,
   onAdd,
   onDeleteVehicle,
+  onStatusChange,
   marksByVehicle,
   mechanicalByVehicle,
+  mobile = false,
 }) {
   const [query, setQuery] = useState("");
   const [timeFilter, setTimeFilter] = useState("all");
   const [openBrands, setOpenBrands] = useState({});
+
+  useEffect(() => {
+    setOpenBrands((current) => {
+      const next = { ...current };
+      brands.forEach((brand) => {
+        const hasUnfinished = vehicles.some(
+          (vehicle) =>
+            vehicle.brandId === brand.id && vehicle.status !== "completed",
+        );
+        if (hasUnfinished) next[brand.id] = true;
+      });
+      return next;
+    });
+  }, [brands, vehicles]);
 
   const filteredBrands = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -2154,7 +2383,9 @@ function VehicleTree({
   }, [brands, vehicles, query, timeFilter]);
 
   return (
-    <div className="flex min-h-[600px] flex-col overflow-hidden rounded-lg border border-[#d4d4d4] bg-white shadow-[0_1px_2px_rgba(0,0,0,.06)]">
+    <div
+      className={`flex flex-col overflow-hidden rounded-lg border border-[#d4d4d4] bg-white shadow-[0_1px_2px_rgba(0,0,0,.06)] ${mobile ? "h-[calc(100vh-64px)]" : "min-h-[600px]"}`}
+    >
       {/* Header */}
       <div
         className="flex items-center justify-between border-b border-[#e8e8e8] bg-[#f5f5f5] px-3 py-2"
@@ -2214,15 +2445,20 @@ function VehicleTree({
       {/* Tree */}
       <div className="flex-1 overflow-auto py-1">
         {filteredBrands.map((brand) => {
+          const unfinishedCount = brand.vehicles.filter(
+            (vehicle) => vehicle.status !== "completed",
+          ).length;
           const open =
-            !!openBrands[brand.id] || (query && brand.vehicles.length > 0);
+            !!openBrands[brand.id] ||
+            unfinishedCount > 0 ||
+            (query && brand.vehicles.length > 0);
           return (
             <div key={brand.id}>
               <button
                 onClick={() =>
                   setOpenBrands((p) => ({ ...p, [brand.id]: !p[brand.id] }))
                 }
-                className="group flex w-full items-center gap-1.5 px-2.5 py-1.5 text-left hover:bg-[#f5f5f5]"
+                className={`group flex w-full items-center gap-1.5 px-2.5 py-1.5 text-left ${unfinishedCount > 0 ? "bg-[#fff8e8] hover:bg-[#fff2cf]" : "hover:bg-[#f5f5f5]"}`}
               >
                 <span className="text-[#bbb] flex-none">
                   {open ? (
@@ -2231,12 +2467,17 @@ function VehicleTree({
                     <FiChevronRight size={11} />
                   )}
                 </span>
-                <FiFolder size={12} className="flex-none text-[#bbb]" />
+                <FiFolder
+                  size={12}
+                  className={`flex-none ${unfinishedCount > 0 ? "text-[#d18a16]" : "text-[#7aa486]"}`}
+                />
                 <span className="flex-1 min-w-0 truncate text-[11px] font-medium text-[#333]">
                   {brand.label}
                 </span>
                 <span className="text-[9px] tabular-nums text-[#bbb] flex-none">
-                  {brand.vehicles.length}
+                  {unfinishedCount > 0
+                    ? `${unfinishedCount} offen`
+                    : brand.vehicles.length}
                 </span>
               </button>
               {open && (
@@ -2250,10 +2491,17 @@ function VehicleTree({
                       const active = v.id === activeVehicleId;
                       const bc = marksByVehicle[v.id]?.length || 0;
                       const mc = mechanicalByVehicle[v.id]?.length || 0;
+                      const completed = v.status === "completed";
                       return (
                         <div
                           key={v.id}
-                          className={`group flex items-center rounded ${active ? "bg-[#e8eef8]" : "hover:bg-[#f5f5f5]"}`}
+                          className={`group flex items-center rounded border-l-2 ${
+                            active
+                              ? "border-[#1a4db3] bg-[#e8eef8]"
+                              : completed
+                                ? "border-[#72a981] bg-[#f3faf5] hover:bg-[#eaf6ed]"
+                                : "border-[#e3a52f] bg-[#fffaf0] hover:bg-[#fff3d8]"
+                          }`}
                         >
                           <button
                             onClick={() => onSelect(v.id)}
@@ -2265,9 +2513,30 @@ function VehicleTree({
                               {v.name}
                             </p>
                             <p className="text-[9.5px] text-[#aaa] mt-0.5 truncate">
-                              {v.fin ? v.fin : "Keine FIN"}
+                              {completed ? "Abgeschlossen" : "Offen"}
+                              {v.fin ? ` · ${v.fin}` : " · Keine FIN"}
                               {bc + mc > 0 ? ` · ${bc + mc} Aufg.` : ""}
                             </p>
+                          </button>
+                          <button
+                            onClick={() =>
+                              onStatusChange(
+                                v.id,
+                                completed ? "in_progress" : "completed",
+                              )
+                            }
+                            title={
+                              completed
+                                ? "Wieder öffnen"
+                                : "Als abgeschlossen markieren"
+                            }
+                            className={`mr-0.5 grid h-6 w-6 flex-none place-items-center rounded ${
+                              completed
+                                ? "text-[#2f7a46] hover:bg-[#dff0e4]"
+                                : "text-[#c58010] hover:bg-[#ffebbd]"
+                            }`}
+                          >
+                            <FiCheckCircle size={12} />
                           </button>
                           <button
                             onClick={() => onDeleteVehicle(v.id)}
