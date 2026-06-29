@@ -46,9 +46,6 @@ const Complete = () => {
       <RandomCarSlider />
       <SellCarYourWay />
       <Footbar />
-
-      {/* Floating contact widget */}
-      <FloatingContact />
     </main>
   );
 };

@@ -3,29 +3,41 @@
 import { usePathname } from "next/navigation";
 import FloatingContact from "./FloatingContact";
 
+const ADMIN_PATHS = [
+  "/admin",
+  "/forms",
+  "/schlussel",
+  "/AdminDashboard",
+  "/PersonalData",
+  "/Posteingang",
+  "/punsh",
+  "/Zeiterfassungsverwaltung",
+  "/excel",
+  "/Reg",
+  "/kaufvertrag",
+  "/Auto-scheins",
+  "/Autoteil",
+  "/aufgabenboard",
+  "/ai-chats",
+  "/Toni-Werkstatt",
+  "/Fahrzeugverwaltung",
+  "/Fotostudio",
+  "/preisschild",
+  "/Rotkennzeichen",
+  "/Kundenkontakte",
+];
+
 export default function LayoutWrapper({ children }) {
   const pathname = usePathname();
 
-  // 🚫 Define admin-only paths
-  const isAdminPage =
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/forms") ||
-    pathname.startsWith("/schlussel") ||
-    pathname.startsWith("/AdminDashboard") ||
-    pathname.startsWith("/PersonalData") ||
-    pathname.startsWith("/Posteingang") ||
-    pathname.startsWith("/punsh") ||
-    pathname.startsWith("/Zeiterfassungsverwaltung") ||
-    pathname.startsWith("/excel") ||
-    pathname.startsWith("/Reg") ||
-    pathname.startsWith("/kaufvertrag") ||
-    pathname.startsWith("/Auto-scheins") ||
-    pathname.startsWith("/Autoteil") ||
-    pathname.startsWith("/aufgabenboard");
+  const isAdminPage = ADMIN_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
 
   return (
     <>
       {children}
+
       {!isAdminPage && <FloatingContact />}
     </>
   );
