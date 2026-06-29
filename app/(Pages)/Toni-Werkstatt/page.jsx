@@ -26,6 +26,10 @@ import {
   FiCalendar,
   FiFileText,
   FiMenu,
+  FiCamera,
+  FiUploadCloud,
+  FiImage,
+  FiExternalLink,
 } from "react-icons/fi";
 
 const BRANDS = [
@@ -137,9 +141,14 @@ export default function VehicleInspection3DPage() {
 
   const [marksByVehicle, setMarksByVehicle] = useState({});
   const [mechanicalByVehicle, setMechanicalByVehicle] = useState({});
+  const [photosByVehicle, setPhotosByVehicle] = useState({});
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const photoInputRef = useRef(null);
   const marks = (activeVehicleId && marksByVehicle[activeVehicleId]) || [];
   const mechanicalTasks =
     (activeVehicleId && mechanicalByVehicle[activeVehicleId]) || [];
+  const beforeRepairPhotos =
+    (activeVehicleId && photosByVehicle[activeVehicleId]) || [];
   const activeVehicleIdRef = useRef(activeVehicleId);
   activeVehicleIdRef.current = activeVehicleId;
 
@@ -211,6 +220,12 @@ export default function VehicleInspection3DPage() {
         ? inspection.mechanicalTasks
         : [],
     }));
+    setPhotosByVehicle((cur) => ({
+      ...cur,
+      [id]: Array.isArray(inspection.beforeRepairPhotos)
+        ? inspection.beforeRepairPhotos
+        : [],
+    }));
     return vehicle;
   }, []);
 
@@ -230,7 +245,8 @@ export default function VehicleInspection3DPage() {
           : [];
         const nv = [],
           nm = {},
-          nk = {};
+          nk = {},
+          np = {};
         inspections.forEach((ins) => {
           const id = String(ins.id || ins._id);
           nv.push({
@@ -246,10 +262,14 @@ export default function VehicleInspection3DPage() {
           nk[id] = Array.isArray(ins.mechanicalTasks)
             ? ins.mechanicalTasks
             : [];
+          np[id] = Array.isArray(ins.beforeRepairPhotos)
+            ? ins.beforeRepairPhotos
+            : [];
         });
         setVehicles(nv);
         setMarksByVehicle(nm);
         setMechanicalByVehicle(nk);
+        setPhotosByVehicle(np);
         setActiveVehicleId((cur) =>
           cur && nv.some((v) => v.id === cur) ? cur : nv[0]?.id || null,
         );
@@ -1047,6 +1067,11 @@ export default function VehicleInspection3DPage() {
         delete n[id];
         return n;
       });
+      setPhotosByVehicle((cur) => {
+        const n = { ...cur };
+        delete n[id];
+        return n;
+      });
       if (activeVehicleId === id) {
         setActiveVehicleId(remaining[0]?.id || null);
         setSelectedMark(null);
@@ -1054,6 +1079,64 @@ export default function VehicleInspection3DPage() {
       toast.success("Fahrzeug gelöscht");
     } catch (e) {
       toast.error(e.message || "Fehler.");
+    }
+  };
+
+  const handlePhotoSelection = async (event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+
+    if (!activeVehicle || files.length === 0) return;
+
+    const invalid = files.find(
+      (file) => !file.type.startsWith("image/") || file.size > 10 * 1024 * 1024,
+    );
+    if (invalid) {
+      toast.error("Nur Bilddateien bis maximal 10 MB pro Foto sind erlaubt.");
+      return;
+    }
+
+    try {
+      setUploadingPhotos(true);
+      const formData = new FormData();
+      files.forEach((file) => formData.append("photos", file));
+
+      const res = await fetch(
+        `/api/workshop-inspections/${activeVehicle.id}/photos`,
+        { method: "POST", body: formData },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Upload fehlgeschlagen.");
+
+      applyInspectionToState(data.inspection);
+      toast.success(data.message || "Fotos hochgeladen.");
+    } catch (error) {
+      toast.error(error.message || "Fotos konnten nicht hochgeladen werden.");
+    } finally {
+      setUploadingPhotos(false);
+    }
+  };
+
+  const deleteBeforeRepairPhoto = async (photo) => {
+    if (!activeVehicle || !photo?.publicId) return;
+    if (!confirm("Dieses Foto endgültig löschen?")) return;
+
+    try {
+      const res = await fetch(
+        `/api/workshop-inspections/${activeVehicle.id}/photos`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ publicId: photo.publicId }),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Löschen fehlgeschlagen.");
+
+      applyInspectionToState(data.inspection);
+      toast.success("Foto gelöscht.");
+    } catch (error) {
+      toast.error(error.message || "Foto konnte nicht gelöscht werden.");
     }
   };
 
@@ -1180,58 +1263,487 @@ export default function VehicleInspection3DPage() {
   const handleBillingRangePrint = ({ from, to }) => {
     const start = from ? new Date(`${from}T00:00:00`) : null;
     const end = to ? new Date(`${to}T23:59:59`) : null;
+
     const rows = vehicles
-      .filter((v) => {
-        const d = new Date(v.createdAt || Date.now());
-        if (start && d < start) return false;
-        if (end && d > end) return false;
+      .filter((vehicle) => {
+        const createdAt = new Date(vehicle.createdAt || Date.now());
+
+        if (start && createdAt < start) return false;
+        if (end && createdAt > end) return false;
+
         return true;
       })
-      .flatMap((v) => {
-        const brand = BRANDS.find((b) => b.id === v.brandId);
-        const body = marksByVehicle[v.id] || [],
-          mech = mechanicalByVehicle[v.id] || [];
-        const bt = body.reduce((s, i) => s + parsePrice(i.price), 0),
-          mt = mech.reduce((s, i) => s + parsePrice(i.price), 0);
-        if (!body.length && !mech.length) return [];
-        return [
-          {
-            v,
-            brand: brand?.label || "",
-            bt,
-            mt,
-            total: bt + mt,
-            bc: body.length,
-            mc: mech.length,
-          },
-        ];
-      });
+      .map((vehicle) => {
+        const brand = BRANDS.find((item) => item.id === vehicle.brandId);
+        const bodywork = marksByVehicle[vehicle.id] || [];
+        const mechanical = mechanicalByVehicle[vehicle.id] || [];
+
+        const bodyworkTotal = bodywork.reduce(
+          (sum, item) => sum + parsePrice(item.price),
+          0,
+        );
+
+        const mechanicalTotal = mechanical.reduce(
+          (sum, item) => sum + parsePrice(item.price),
+          0,
+        );
+
+        return {
+          vehicle,
+          brand: brand?.label || "",
+          bodywork,
+          mechanical,
+          bodyworkTotal,
+          mechanicalTotal,
+          total: bodyworkTotal + mechanicalTotal,
+        };
+      })
+      .filter((row) => row.bodywork.length > 0 || row.mechanical.length > 0);
+
     if (!rows.length) {
       toast.error("Keine Abrechnungen im Zeitraum.");
       return;
     }
-    const w = window.open("", "_blank", "width=1100,height=1200");
-    if (!w) return toast.error("Popup blockiert.");
-    const esc = (v) =>
-      String(v ?? "").replace(
+
+    const printWindow = window.open("", "_blank", "width=1100,height=1200");
+
+    if (!printWindow) {
+      toast.error("Popup blockiert.");
+      return;
+    }
+
+    const escapeHtml = (value) =>
+      String(value ?? "").replace(
         /[&<>"']/g,
-        (c) =>
+        (character) =>
           ({
             "&": "&amp;",
             "<": "&lt;",
             ">": "&gt;",
             '"': "&quot;",
             "'": "&#039;",
-          })[c],
+          })[character],
       );
-    const gb = rows.reduce((s, r) => s + r.bt, 0),
-      gm = rows.reduce((s, r) => s + r.mt, 0),
-      gt = rows.reduce((s, r) => s + r.total, 0);
-    w.document.write(
-      `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Abrechnungsübersicht</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:#111;padding:32px}.header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:16px;border-bottom:2px solid #111;margin-bottom:24px}.co{font-size:16px;font-weight:700}.meta{font-size:10px;color:#666;text-align:right}h1{font-size:20px;font-weight:600;margin-bottom:4px}.range{font-size:11px;color:#666;margin-bottom:20px}table{width:100%;border-collapse:collapse}th{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#888;padding:6px 8px;border-bottom:1px solid #ddd;text-align:left}td{padding:10px 8px;border-bottom:1px solid #eee}.name{font-weight:600}.fin{font-size:10px;color:#888;margin-top:2px}.num{text-align:right}.totals{margin-top:24px;margin-left:auto;width:280px}.tot-row{display:flex;justify-content:space-between;padding:6px 0;font-size:11px;border-bottom:1px solid #eee}.tot-grand{display:flex;justify-content:space-between;padding:10px 0;font-size:14px;font-weight:700;border-top:2px solid #111;margin-top:4px}.foot{margin-top:32px;font-size:9px;color:#aaa;border-top:1px solid #eee;padding-top:10px}</style></head><body onload="window.print();window.onafterprint=()=>window.close()"><div class="header"><div class="co">Autogalerie Jülich</div><div class="meta">Abrechnungsübersicht<br>${new Date().toLocaleDateString("de-DE")}</div></div><h1>Werkstatt-Abrechnungen</h1><div class="range">Zeitraum: ${from ? formatDate(from) : "Beginn"} – ${to ? formatDate(to) : "Heute"} · ${rows.length} Fahrzeug(e)</div><table><thead><tr><th>Fahrzeug</th><th>Datum</th><th>Karosserie</th><th>Mechanik</th><th class="num">Karosserie</th><th class="num">Mechanik</th><th class="num">Gesamt</th></tr></thead><tbody>${rows.map((r) => `<tr><td><div class="name">${esc(`${r.brand} ${r.v.name}`)}</div><div class="fin">${r.v.fin ? `FIN ${esc(r.v.fin)}` : "Keine FIN"}</div></td><td>${formatDate(r.v.createdAt)}</td><td>${r.bc} Pos.</td><td>${r.mc} Pos.</td><td class="num">${formatEuro(r.bt)}</td><td class="num">${formatEuro(r.mt)}</td><td class="num"><strong>${formatEuro(r.total)}</strong></td></tr>`).join("")}</tbody></table><div class="totals"><div class="tot-row"><span>Karosserie</span><span>${formatEuro(gb)}</span></div><div class="tot-row"><span>Mechanik</span><span>${formatEuro(gm)}</span></div><div class="tot-grand"><span>Gesamt</span><span>${formatEuro(gt)}</span></div></div><div class="foot">Autogalerie Jülich · Nur für internen Gebrauch</div></body></html>`,
+
+    const bodyworkGrandTotal = rows.reduce(
+      (sum, row) => sum + row.bodyworkTotal,
+      0,
     );
-    w.document.close();
-    w.focus();
+
+    const mechanicalGrandTotal = rows.reduce(
+      (sum, row) => sum + row.mechanicalTotal,
+      0,
+    );
+
+    const grandTotal = bodyworkGrandTotal + mechanicalGrandTotal;
+
+    const vehicleSections = rows
+      .map((row, vehicleIndex) => {
+        const vehicleName = `${row.brand} ${row.vehicle.name}`.trim();
+
+        const bodyworkRows = row.bodywork
+          .map((task, index) => {
+            const damageType = DAMAGE_TYPES.find(
+              (item) => item.id === task.type,
+            );
+
+            return `
+              <tr>
+                <td class="position">${index + 1}</td>
+                <td><span class="type type-body">Karosserie</span></td>
+                <td>
+                  <div class="task-title">${escapeHtml(
+                    task.action || damageType?.label || "Karosseriearbeit",
+                  )}</div>
+                  <div class="task-meta">${escapeHtml(
+                    damageType?.label || "Schaden",
+                  )}</div>
+                </td>
+                <td>${escapeHtml(task.panel || damageType?.label || "—")}</td>
+                <td class="note">${escapeHtml(task.note || "—")}</td>
+                <td class="number">${formatEuro(task.price)}</td>
+              </tr>
+            `;
+          })
+          .join("");
+
+        const mechanicalRows = row.mechanical
+          .map(
+            (task, index) => `
+              <tr>
+                <td class="position">${row.bodywork.length + index + 1}</td>
+                <td><span class="type type-mechanical">Mechanik</span></td>
+                <td>
+                  <div class="task-title">${escapeHtml(task.job || "—")}</div>
+                  <div class="task-meta">${
+                    task.done ? "Erledigt" : "Offen"
+                  }</div>
+                </td>
+                <td>${escapeHtml(task.area || "Ohne Bereich")}</td>
+                <td class="note">${escapeHtml(task.note || "—")}</td>
+                <td class="number">${formatEuro(task.price)}</td>
+              </tr>
+            `,
+          )
+          .join("");
+
+        return `
+          <section class="vehicle-section ${
+            vehicleIndex > 0 ? "vehicle-break" : ""
+          }">
+            <div class="vehicle-header">
+              <div>
+                <h2>${escapeHtml(vehicleName || "Fahrzeug")}</h2>
+                <div class="vehicle-meta">
+                  ${
+                    row.vehicle.fin
+                      ? `FIN ${escapeHtml(row.vehicle.fin)} · `
+                      : ""
+                  }
+                  Angelegt am ${formatDate(row.vehicle.createdAt)}
+                </div>
+              </div>
+
+              <div class="vehicle-total">
+                <span>Fahrzeug gesamt</span>
+                <strong>${formatEuro(row.total)}</strong>
+              </div>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th class="position">Pos.</th>
+                  <th>Typ</th>
+                  <th>Aufgabe</th>
+                  <th>Bereich / Bauteil</th>
+                  <th>Notiz</th>
+                  <th class="number">Preis</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                ${
+                  bodyworkRows || mechanicalRows
+                    ? `${bodyworkRows}${mechanicalRows}`
+                    : '<tr><td colspan="6" class="empty">Keine Aufgaben</td></tr>'
+                }
+              </tbody>
+            </table>
+
+            <div class="vehicle-summary">
+              <div>
+                <span>Karosserie</span>
+                <strong>${formatEuro(row.bodyworkTotal)}</strong>
+              </div>
+              <div>
+                <span>Mechanik</span>
+                <strong>${formatEuro(row.mechanicalTotal)}</strong>
+              </div>
+              <div class="vehicle-summary-total">
+                <span>Gesamt</span>
+                <strong>${formatEuro(row.total)}</strong>
+              </div>
+            </div>
+          </section>
+        `;
+      })
+      .join("");
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html lang="de">
+        <head>
+          <meta charset="utf-8" />
+          <title>Werkstatt-Abrechnungen</title>
+
+          <style>
+            * {
+              box-sizing: border-box;
+              margin: 0;
+              padding: 0;
+            }
+
+            body {
+              background: #ffffff;
+              color: #111111;
+              font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+              font-size: 11px;
+              padding: 30px;
+            }
+
+            .document-header {
+              align-items: flex-end;
+              border-bottom: 2px solid #111111;
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 24px;
+              padding-bottom: 15px;
+            }
+
+            .company {
+              font-size: 16px;
+              font-weight: 700;
+            }
+
+            .document-meta {
+              color: #666666;
+              font-size: 10px;
+              text-align: right;
+            }
+
+            h1 {
+              font-size: 21px;
+              font-weight: 650;
+              margin-bottom: 4px;
+            }
+
+            .range {
+              color: #666666;
+              font-size: 11px;
+              margin-bottom: 24px;
+            }
+
+            .vehicle-section {
+              border: 1px solid #dcdcdc;
+              border-radius: 5px;
+              margin-bottom: 22px;
+              overflow: hidden;
+            }
+
+            .vehicle-header {
+              align-items: center;
+              background: #f5f5f5;
+              border-bottom: 1px solid #dcdcdc;
+              display: flex;
+              justify-content: space-between;
+              padding: 12px 14px;
+            }
+
+            .vehicle-header h2 {
+              font-size: 14px;
+              font-weight: 650;
+              margin-bottom: 2px;
+            }
+
+            .vehicle-meta {
+              color: #777777;
+              font-size: 9.5px;
+            }
+
+            .vehicle-total {
+              align-items: flex-end;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            }
+
+            .vehicle-total span {
+              color: #777777;
+              font-size: 9px;
+              text-transform: uppercase;
+            }
+
+            .vehicle-total strong {
+              font-size: 14px;
+            }
+
+            table {
+              border-collapse: collapse;
+              width: 100%;
+            }
+
+            th {
+              background: #fafafa;
+              border-bottom: 1px solid #dddddd;
+              color: #777777;
+              font-size: 8.5px;
+              font-weight: 650;
+              letter-spacing: 0.05em;
+              padding: 7px 8px;
+              text-align: left;
+              text-transform: uppercase;
+            }
+
+            td {
+              border-bottom: 1px solid #eeeeee;
+              padding: 8px;
+              vertical-align: top;
+            }
+
+            tbody tr:last-child td {
+              border-bottom: 0;
+            }
+
+            .position {
+              text-align: center;
+              width: 42px;
+            }
+
+            .number {
+              text-align: right;
+              white-space: nowrap;
+            }
+
+            .task-title {
+              font-weight: 600;
+            }
+
+            .task-meta {
+              color: #999999;
+              font-size: 9px;
+              margin-top: 2px;
+            }
+
+            .note {
+              color: #666666;
+              max-width: 210px;
+              overflow-wrap: anywhere;
+            }
+
+            .type {
+              border-radius: 3px;
+              display: inline-block;
+              font-size: 8px;
+              font-weight: 700;
+              letter-spacing: 0.04em;
+              padding: 3px 5px;
+              text-transform: uppercase;
+            }
+
+            .type-body {
+              background: #eef4ff;
+              color: #285eaa;
+            }
+
+            .type-mechanical {
+              background: #fff5e7;
+              color: #a35d00;
+            }
+
+            .empty {
+              color: #999999;
+              padding: 14px;
+              text-align: center;
+            }
+
+            .vehicle-summary {
+              border-top: 1px solid #dddddd;
+              display: flex;
+              justify-content: flex-end;
+              padding: 8px 14px;
+            }
+
+            .vehicle-summary > div {
+              display: flex;
+              gap: 14px;
+              justify-content: space-between;
+              min-width: 155px;
+              padding: 4px 10px;
+            }
+
+            .vehicle-summary span {
+              color: #777777;
+            }
+
+            .vehicle-summary-total {
+              border-left: 1px solid #dddddd;
+              font-size: 11.5px;
+            }
+
+            .grand-summary {
+              margin-left: auto;
+              margin-top: 26px;
+              width: 310px;
+            }
+
+            .grand-row {
+              border-bottom: 1px solid #eeeeee;
+              display: flex;
+              justify-content: space-between;
+              padding: 7px 0;
+            }
+
+            .grand-total {
+              border-top: 2px solid #111111;
+              font-size: 15px;
+              font-weight: 700;
+              margin-top: 4px;
+              padding-top: 10px;
+            }
+
+            .footer {
+              border-top: 1px solid #eeeeee;
+              color: #aaaaaa;
+              font-size: 9px;
+              margin-top: 34px;
+              padding-top: 10px;
+            }
+
+            @media print {
+              body {
+                padding: 18px;
+              }
+
+              .vehicle-section {
+                break-inside: avoid;
+              }
+            }
+          </style>
+        </head>
+
+        <body onload="window.print(); window.onafterprint = () => window.close();">
+          <div class="document-header">
+            <div class="company">Autogalerie Jülich</div>
+            <div class="document-meta">
+              Werkstatt-Abrechnungsübersicht<br />
+              ${new Date().toLocaleDateString("de-DE")}
+            </div>
+          </div>
+
+          <h1>Werkstatt-Abrechnungen</h1>
+
+          <div class="range">
+            Zeitraum:
+            ${from ? formatDate(from) : "Beginn"}
+            –
+            ${to ? formatDate(to) : "Heute"}
+            ·
+            ${rows.length} Fahrzeug(e)
+          </div>
+
+          ${vehicleSections}
+
+          <div class="grand-summary">
+            <div class="grand-row">
+              <span>Karosserie gesamt</span>
+              <strong>${formatEuro(bodyworkGrandTotal)}</strong>
+            </div>
+
+            <div class="grand-row">
+              <span>Mechanik gesamt</span>
+              <strong>${formatEuro(mechanicalGrandTotal)}</strong>
+            </div>
+
+            <div class="grand-row grand-total">
+              <span>Gesamtsumme</span>
+              <strong>${formatEuro(grandTotal)}</strong>
+            </div>
+          </div>
+
+          <div class="footer">
+            Autogalerie Jülich · Nur für internen Gebrauch
+          </div>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
     setShowBillingPrint(false);
   };
 
@@ -1379,58 +1891,115 @@ export default function VehicleInspection3DPage() {
                       const type = DAMAGE_TYPES.find(
                         (item) => item.id === mark.type,
                       );
+
                       return (
                         <li
                           key={mark.id}
                           onClick={() => selectMark(mark.id)}
-                          className={`flex cursor-pointer items-center gap-2 rounded px-1 py-2 text-[11px] ${selectedMark === mark.id ? "bg-[#e8eef8]" : "hover:bg-[#f5f5f5]"}`}
+                          className={`flex cursor-pointer items-start gap-2 rounded px-1 py-2 text-[11px] ${
+                            selectedMark === mark.id
+                              ? "bg-[#e8eef8]"
+                              : "hover:bg-[#f5f5f5]"
+                          }`}
                         >
                           <span
-                            className="grid h-5 w-5 flex-none place-items-center rounded-full text-[9px] font-bold text-white"
+                            className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded-full text-[9px] font-bold text-white"
                             style={{ background: type?.color }}
                           >
                             {index + 1}
                           </span>
+
                           <span className="min-w-0 flex-1">
                             <span className="block truncate font-medium text-[#1a1a1a]">
                               {mark.action || type?.label}
                             </span>
+
                             <span className="block truncate text-[10px] text-[#888]">
-                              {mark.panel || type?.label}
+                              {mark.panel || type?.label || "Ohne Bereich"}
                             </span>
+
+                            {mark.note && (
+                              <span className="mt-0.5 block truncate text-[9.5px] text-[#9a9a9a]">
+                                Notiz: {mark.note}
+                              </span>
+                            )}
                           </span>
-                          <span className="text-[9px] font-semibold uppercase text-[#3366cc]">
+
+                          <span className="mt-0.5 text-[9px] font-semibold uppercase text-[#3366cc]">
                             Karr.
                           </span>
+
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              deleteMark(mark.id);
+                            }}
+                            className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded text-[#c4c4c4] hover:bg-[#fdecec] hover:text-[#cc3333]"
+                            aria-label="Karosserieaufgabe löschen"
+                            title="Aufgabe löschen"
+                          >
+                            <FiX size={12} />
+                          </button>
                         </li>
                       );
                     })}
                     {mechanicalTasks.map((task) => (
                       <li
                         key={task.id}
-                        className="flex items-center gap-2 px-1 py-2 text-[11px]"
+                        className="flex items-start gap-2 px-1 py-2 text-[11px]"
                       >
                         <button
+                          type="button"
                           onClick={() =>
                             updateMechanicalTask(task.id, { done: !task.done })
                           }
-                          className={`grid h-5 w-5 flex-none place-items-center rounded border text-[9px] ${task.done ? "border-[#22aa55] bg-[#22aa55] text-white" : "border-[#ccc]"}`}
+                          className={`mt-0.5 grid h-5 w-5 flex-none place-items-center rounded border text-[9px] ${
+                            task.done
+                              ? "border-[#22aa55] bg-[#22aa55] text-white"
+                              : "border-[#ccc]"
+                          }`}
+                          aria-label={
+                            task.done
+                              ? "Aufgabe wieder öffnen"
+                              : "Aufgabe erledigen"
+                          }
                         >
                           {task.done && "✓"}
                         </button>
+
                         <span className="min-w-0 flex-1">
                           <span
-                            className={`block truncate font-medium ${task.done ? "text-[#aaa] line-through" : "text-[#1a1a1a]"}`}
+                            className={`block truncate font-medium ${
+                              task.done
+                                ? "text-[#aaa] line-through"
+                                : "text-[#1a1a1a]"
+                            }`}
                           >
                             {task.job}
                           </span>
+
                           <span className="block truncate text-[10px] text-[#888]">
-                            {task.area}
+                            {task.area || "Ohne Bereich"}
                           </span>
+
+                          {task.note && (
+                            <span className="mt-0.5 block truncate text-[9.5px] text-[#9a9a9a]">
+                              Notiz: {task.note}
+                            </span>
+                          )}
                         </span>
+
+                        <span className="mt-0.5 text-[9px] font-semibold uppercase text-[#d97706]">
+                          Mech.
+                        </span>
+
                         <button
+                          type="button"
                           onClick={() => removeMechanicalTask(task.id)}
-                          className="text-[#ccc] hover:text-[#cc3333]"
+                          className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded text-[#c4c4c4] hover:bg-[#fdecec] hover:text-[#cc3333]"
+                          aria-label="Mechanische Aufgabe löschen"
+                          title="Aufgabe löschen"
                         >
                           <FiX size={12} />
                         </button>
@@ -1560,6 +2129,10 @@ export default function VehicleInspection3DPage() {
                         ["Angelegt", formatDate(activeVehicle.createdAt)],
                         ["Karosserie", `${marks.length} Position(en)`],
                         ["Mechanik", `${mechanicalTasks.length} Aufgabe(n)`],
+                        [
+                          "Fotos vorher",
+                          `${beforeRepairPhotos.length} Foto(s)`,
+                        ],
                       ].map(([l, v, mono]) => (
                         <tr
                           key={l}
@@ -1600,63 +2173,117 @@ export default function VehicleInspection3DPage() {
                     <ul className="mt-2 max-h-56 overflow-auto divide-y divide-[#ebebeb]">
                       {marks.map((mark, i) => {
                         const tp = DAMAGE_TYPES.find((t) => t.id === mark.type);
+
                         return (
                           <li
                             key={mark.id}
                             onClick={() => selectMark(mark.id)}
-                            className={`flex items-center gap-2 py-1.5 px-1 cursor-pointer text-[11px] rounded ${selectedMark === mark.id ? "bg-[#e8eef8]" : "hover:bg-[#f5f5f5]"}`}
+                            className={`flex cursor-pointer items-start gap-2 rounded px-1 py-2 text-[11px] ${
+                              selectedMark === mark.id
+                                ? "bg-[#e8eef8]"
+                                : "hover:bg-[#f5f5f5]"
+                            }`}
                           >
                             <span
-                              className="grid h-4 w-4 flex-none place-items-center rounded-full text-[9px] font-bold text-white"
+                              className="mt-0.5 grid h-4 w-4 flex-none place-items-center rounded-full text-[9px] font-bold text-white"
                               style={{ background: tp?.color }}
                             >
                               {i + 1}
                             </span>
-                            <span className="flex-1 min-w-0">
-                              <span className="font-medium text-[#1a1a1a]">
-                                {mark.action}
+
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate font-medium text-[#1a1a1a]">
+                                {mark.action || tp?.label}
                               </span>
-                              <span className="mx-1 text-[#ccc]">·</span>
-                              <span className="text-[#888]">
-                                {mark.panel || tp?.label}
+
+                              <span className="block truncate text-[9.5px] text-[#888]">
+                                {mark.panel || tp?.label || "Ohne Bereich"}
                               </span>
+
+                              {mark.note && (
+                                <span className="mt-0.5 block truncate text-[9px] text-[#9a9a9a]">
+                                  Notiz: {mark.note}
+                                </span>
+                              )}
                             </span>
-                            <span className="text-[9px] uppercase tracking-wide text-[#3366cc] font-semibold">
+
+                            <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#3366cc]">
                               Karr.
                             </span>
+
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                deleteMark(mark.id);
+                              }}
+                              className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded text-[#c4c4c4] hover:bg-[#fdecec] hover:text-[#cc3333]"
+                              aria-label="Karosserieaufgabe löschen"
+                              title="Aufgabe löschen"
+                            >
+                              <FiX size={11} />
+                            </button>
                           </li>
                         );
                       })}
                       {mechanicalTasks.map((task) => (
                         <li
                           key={task.id}
-                          className="flex items-center gap-2 py-1.5 px-1 text-[11px]"
+                          className="flex items-start gap-2 rounded px-1 py-2 text-[11px]"
                         >
                           <button
+                            type="button"
                             onClick={() =>
                               updateMechanicalTask(task.id, {
                                 done: !task.done,
                               })
                             }
-                            className={`grid h-4 w-4 flex-none place-items-center rounded border text-[9px] ${task.done ? "border-[#22aa55] bg-[#22aa55] text-white" : "border-[#ccc]"}`}
+                            className={`mt-0.5 grid h-4 w-4 flex-none place-items-center rounded border text-[9px] ${
+                              task.done
+                                ? "border-[#22aa55] bg-[#22aa55] text-white"
+                                : "border-[#ccc]"
+                            }`}
+                            aria-label={
+                              task.done
+                                ? "Aufgabe wieder öffnen"
+                                : "Aufgabe erledigen"
+                            }
                           >
                             {task.done && "✓"}
                           </button>
-                          <span className="flex-1 min-w-0">
+
+                          <span className="min-w-0 flex-1">
                             <span
-                              className={`font-medium ${task.done ? "text-[#aaa] line-through" : "text-[#1a1a1a]"}`}
+                              className={`block truncate font-medium ${
+                                task.done
+                                  ? "text-[#aaa] line-through"
+                                  : "text-[#1a1a1a]"
+                              }`}
                             >
                               {task.job}
                             </span>
-                            <span className="mx-1 text-[#ccc]">·</span>
-                            <span className="text-[#888]">{task.area}</span>
+
+                            <span className="block truncate text-[9.5px] text-[#888]">
+                              {task.area || "Ohne Bereich"}
+                            </span>
+
+                            {task.note && (
+                              <span className="mt-0.5 block truncate text-[9px] text-[#9a9a9a]">
+                                Notiz: {task.note}
+                              </span>
+                            )}
                           </span>
-                          <span className="text-[9px] uppercase tracking-wide text-[#d97706] font-semibold">
+
+                          <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#d97706]">
                             Mech.
                           </span>
+
                           <button
+                            type="button"
                             onClick={() => removeMechanicalTask(task.id)}
-                            className="text-[#ccc] hover:text-[#cc3333]"
+                            className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded text-[#c4c4c4] hover:bg-[#fdecec] hover:text-[#cc3333]"
+                            aria-label="Mechanische Aufgabe löschen"
+                            title="Aufgabe löschen"
                           >
                             <FiX size={11} />
                           </button>
@@ -1666,6 +2293,16 @@ export default function VehicleInspection3DPage() {
                   )}
                 </SysCard>
               </div>
+            )}
+
+            {activeVehicle && (
+              <BeforeRepairPhotos
+                photos={beforeRepairPhotos}
+                uploading={uploadingPhotos}
+                inputRef={photoInputRef}
+                onSelectFiles={handlePhotoSelection}
+                onDelete={deleteBeforeRepairPhoto}
+              />
             )}
 
             {/* Billing */}
@@ -2099,6 +2736,114 @@ export default function VehicleInspection3DPage() {
         />
       )}
     </div>
+  );
+}
+
+function BeforeRepairPhotos({
+  photos,
+  uploading,
+  inputRef,
+  onSelectFiles,
+  onDelete,
+}) {
+  return (
+    <SysCard noPad>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e0e0e0] px-4 py-3">
+        <div className="flex items-center gap-2">
+          <FiCamera size={13} className="text-[#555]" />
+          <div>
+            <div className="text-[12px] font-semibold text-[#1a1a1a]">
+              Schadensfotos vor der Reparatur
+            </div>
+            <div className="text-[10px] text-[#888]">
+              {photos.length} Foto(s)
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+            capture="environment"
+            multiple
+            onChange={onSelectFiles}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="inline-flex h-8 items-center gap-1.5 rounded border border-[#bfc7d2] bg-white px-3 text-[11px] font-semibold text-[#344054] shadow-sm hover:bg-[#f7f8fa] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {uploading ? (
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#cfd4dc] border-t-[#344054]" />
+            ) : (
+              <FiUploadCloud size={13} />
+            )}
+            {uploading ? "Wird hochgeladen…" : "Fotos aufnehmen / wählen"}
+          </button>
+        </div>
+      </div>
+
+      {photos.length === 0 ? (
+        <div className="flex min-h-36 flex-col items-center justify-center gap-2 px-4 py-8 text-center">
+          <FiImage size={24} className="text-[#c1c1c1]" />
+          <p className="max-w-md text-[11px] leading-relaxed text-[#888]">
+            Noch keine Fotos vorhanden.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 xl:grid-cols-4">
+          {photos.map((photo, index) => (
+            <div
+              key={photo._id || photo.publicId}
+              className="group relative overflow-hidden rounded border border-[#d8d8d8] bg-[#f4f4f4]"
+            >
+              <a
+                href={photo.secureUrl || photo.url}
+                target="_blank"
+                rel="noreferrer"
+                className="block aspect-[4/3]"
+              >
+                <img
+                  src={photo.secureUrl || photo.url}
+                  alt={`Schadensfoto vor Reparatur ${index + 1}`}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              </a>
+
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/65 px-2 py-1.5 text-white">
+                <span className="truncate text-[9px]">
+                  Foto {index + 1} · {formatDate(photo.takenAt)}
+                </span>
+                <div className="flex items-center gap-1">
+                  <a
+                    href={photo.secureUrl || photo.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Groß öffnen"
+                    className="grid h-6 w-6 place-items-center rounded bg-white/15 hover:bg-white/25"
+                  >
+                    <FiExternalLink size={11} />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(photo)}
+                    title="Foto löschen"
+                    className="grid h-6 w-6 place-items-center rounded bg-white/15 hover:bg-[#b42318]"
+                  >
+                    <FiTrash2 size={11} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </SysCard>
   );
 }
 

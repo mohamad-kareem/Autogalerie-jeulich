@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
+import { getWorkshopCloudinary } from "@/lib/workshopCloudinary";
 import WorkshopInspection from "@/models/WorkshopInspection";
 
 export const runtime = "nodejs";
@@ -184,6 +185,9 @@ export async function PATCH(request, { params }) {
       inspection.status = body.status;
     }
 
+    // Photos are intentionally not accepted through PATCH. They can only be
+    // added/deleted through /api/workshop-inspections/[id]/photos so clients
+    // cannot forge Cloudinary records.
     const cleanBodywork = sanitizeBodywork(inspection.bodywork);
     const cleanMechanicalTasks = sanitizeMechanicalTasks(
       inspection.mechanicalTasks,
@@ -248,17 +252,34 @@ export async function DELETE(request, { params }) {
         { status: 400 },
       );
     }
-    const deletedInspection = await WorkshopInspection.findByIdAndDelete(id);
-    if (!deletedInspection) {
+
+    const inspection = await WorkshopInspection.findById(id).lean();
+    if (!inspection) {
       return NextResponse.json(
         { success: false, message: "Werkstattauftrag wurde nicht gefunden." },
         { status: 404 },
       );
     }
+
+    const publicIds = (inspection.beforeRepairPhotos || [])
+      .map((photo) => photo.publicId)
+      .filter(Boolean);
+
+    if (publicIds.length > 0) {
+      const cloudinary = getWorkshopCloudinary();
+      await cloudinary.api.delete_resources(publicIds, {
+        resource_type: "image",
+        type: "upload",
+        invalidate: true,
+      });
+    }
+
+    await WorkshopInspection.findByIdAndDelete(id);
+
     return NextResponse.json(
       {
         success: true,
-        message: "Werkstattauftrag wurde gelöscht.",
+        message: "Werkstattauftrag und Fotos wurden gelöscht.",
         deletedId: id,
       },
       { status: 200 },

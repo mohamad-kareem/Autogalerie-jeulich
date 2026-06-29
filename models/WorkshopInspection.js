@@ -87,6 +87,21 @@ const MechanicalTaskSchema = new Schema(
   { _id: false },
 );
 
+const WorkshopPhotoSchema = new Schema(
+  {
+    publicId: { type: String, required: true, trim: true },
+    url: { type: String, required: true, trim: true },
+    secureUrl: { type: String, required: true, trim: true },
+    width: { type: Number, min: 0, default: 0 },
+    height: { type: Number, min: 0, default: 0 },
+    format: { type: String, trim: true, default: "" },
+    bytes: { type: Number, min: 0, default: 0 },
+    originalFilename: { type: String, trim: true, default: "" },
+    takenAt: { type: Date, default: Date.now },
+  },
+  { _id: true },
+);
+
 const TotalsSchema = new Schema(
   {
     bodywork: { type: Number, min: 0, default: 0 },
@@ -101,6 +116,7 @@ const WorkshopInspectionSchema = new Schema(
     vehicle: { type: VehicleSchema, required: true },
     bodywork: { type: [BodyworkMarkSchema], default: [] },
     mechanicalTasks: { type: [MechanicalTaskSchema], default: [] },
+    beforeRepairPhotos: { type: [WorkshopPhotoSchema], default: [] },
     totals: {
       type: TotalsSchema,
       default: () => ({ bodywork: 0, mechanical: 0, total: 0 }),

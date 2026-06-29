@@ -5,6 +5,10 @@ import WorkshopInspection from "@/models/WorkshopInspection";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export async function GET(request) {
   try {
     await connectDB();
@@ -18,10 +22,11 @@ export async function GET(request) {
     if (status) filter.status = status;
 
     if (search) {
+      const safeSearch = escapeRegex(search);
       filter.$or = [
-        { "vehicle.name": { $regex: search, $options: "i" } },
-        { "vehicle.fin": { $regex: search, $options: "i" } },
-        { "vehicle.brandLabel": { $regex: search, $options: "i" } },
+        { "vehicle.name": { $regex: safeSearch, $options: "i" } },
+        { "vehicle.fin": { $regex: safeSearch, $options: "i" } },
+        { "vehicle.brandLabel": { $regex: safeSearch, $options: "i" } },
       ];
     }
 
@@ -109,6 +114,7 @@ export async function POST(request) {
       vehicle: { brandId, brandLabel, name, fin },
       bodywork: [],
       mechanicalTasks: [],
+      beforeRepairPhotos: [],
       totals: { bodywork: 0, mechanical: 0, total: 0 },
       status: "draft",
     });
