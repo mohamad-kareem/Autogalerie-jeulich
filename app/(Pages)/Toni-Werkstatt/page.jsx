@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "react-hot-toast";
 import {
   FiRotateCw,
+  FiRotateCcw,
+  FiDownload,
   FiTrash2,
   FiX,
   FiSave,
@@ -172,6 +174,10 @@ export default function VehicleInspection3DPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [showBillingPrint, setShowBillingPrint] = useState(false);
   const [showActiveVehicles, setShowActiveVehicles] = useState(false);
+  const [showScheinPreview, setShowScheinPreview] = useState(false);
+  const [scheinPreview, setScheinPreview] = useState(null);
+  const [scheinRotation, setScheinRotation] = useState(0);
+  const [scheinLoading, setScheinLoading] = useState(false);
   const [mechanicalDraft, setMechanicalDraft] = useState({
     area: "",
     job: "",
@@ -1841,6 +1847,81 @@ export default function VehicleInspection3DPage() {
     setShowBillingPrint(false);
   };
 
+  const normalizeFin = (value) =>
+    String(value || "")
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
+
+  const openActiveVehicleSchein = async () => {
+    if (!activeVehicle) {
+      toast.error("Bitte zuerst ein Fahrzeug wählen.");
+      return;
+    }
+
+    const activeFin = normalizeFin(activeVehicle.fin);
+
+    if (!activeFin) {
+      toast.error("Das ausgewählte Fahrzeug hat keine FIN.");
+      return;
+    }
+
+    try {
+      setScheinLoading(true);
+
+      const res = await fetch(
+        `/api/carschein?finNumber=${encodeURIComponent(activeFin)}&limit=1`,
+        {
+          method: "GET",
+          cache: "no-store",
+        },
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          data.error || data.message || "Schein konnte nicht geladen werden.",
+        );
+      }
+
+      const scheins = Array.isArray(data?.docs) ? data.docs : [];
+      const matchingSchein = scheins.find(
+        (schein) => normalizeFin(schein?.finNumber) === activeFin,
+      );
+
+      if (!matchingSchein) {
+        toast.error(`Kein Schein mit der FIN ${activeFin} gefunden.`);
+        return;
+      }
+
+      if (!matchingSchein.imageUrl) {
+        toast.error("Der Schein wurde gefunden, hat aber kein Bild.");
+        return;
+      }
+
+      const isTouchDevice =
+        typeof window !== "undefined" &&
+        ("ontouchstart" in window ||
+          navigator.maxTouchPoints > 0 ||
+          window.matchMedia("(pointer: coarse)").matches);
+
+      setScheinPreview(matchingSchein);
+      setScheinRotation(isTouchDevice ? 0 : 270);
+      setShowScheinPreview(true);
+    } catch (error) {
+      console.error("Schein lookup error:", error);
+      toast.error(error.message || "Schein konnte nicht geöffnet werden.");
+    } finally {
+      setScheinLoading(false);
+    }
+  };
+
+  const openScheinImageInNewTab = () => {
+    if (!scheinPreview?.imageUrl) return;
+    window.open(scheinPreview.imageUrl, "_blank", "noopener,noreferrer");
+  };
+
   const activeVehicles = useMemo(
     () =>
       vehicles
@@ -1902,6 +1983,12 @@ export default function VehicleInspection3DPage() {
                   onClick={() => setShowBillingPrint(true)}
                   icon={<FiFileText size={12} />}
                   label="Abrechnungen"
+                />
+                <SysButton
+                  onClick={openActiveVehicleSchein}
+                  disabled={!activeVehicle || scheinLoading}
+                  icon={<FiImage size={12} />}
+                  label={scheinLoading ? "Lädt…" : "Schein"}
                 />
                 <SysButton
                   onClick={handlePrint}
@@ -2858,6 +2945,74 @@ export default function VehicleInspection3DPage() {
               mechanicalByVehicle={mechanicalByVehicle}
               mobile
             />
+          </div>
+        </div>
+      )}
+
+      {showScheinPreview && scheinPreview && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 p-3 sm:p-5">
+          <div className="flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-[#c8c8c8] bg-white shadow-2xl">
+            <div className="flex min-h-11 items-center justify-between gap-3 border-b border-[#d4d4d4] bg-[#f3f3f3] px-3 py-2">
+              <div className="min-w-0">
+                <div className="truncate text-[13px] font-semibold text-[#222]">
+                  Schein Vorschau ·{" "}
+                  {scheinPreview.carName || activeVehicle?.name}
+                </div>
+                <div className="truncate text-[10px] text-[#666]">
+                  FIN: {scheinPreview.finNumber || activeVehicle?.fin || "—"}
+                </div>
+              </div>
+
+              <div className="flex flex-none items-center gap-1">
+                <button
+                  onClick={() =>
+                    setScheinRotation((rotation) => (rotation - 90 + 360) % 360)
+                  }
+                  className="grid h-8 w-8 cursor-pointer place-items-center rounded border border-[#c8c8c8] bg-white text-[#444] hover:bg-[#e9e9e9]"
+                  title="Nach links drehen"
+                >
+                  <FiRotateCcw size={15} />
+                </button>
+                <button
+                  onClick={() =>
+                    setScheinRotation((rotation) => (rotation + 90) % 360)
+                  }
+                  className="grid h-8 w-8 cursor-pointer place-items-center rounded border border-[#c8c8c8] bg-white text-[#444] hover:bg-[#e9e9e9]"
+                  title="Nach rechts drehen"
+                >
+                  <FiRotateCw size={15} />
+                </button>
+                <button
+                  onClick={openScheinImageInNewTab}
+                  className="grid h-8 w-8 cursor-pointer place-items-center rounded border border-[#c8c8c8] bg-white text-[#444] hover:bg-[#e9e9e9]"
+                  title="Bild öffnen"
+                >
+                  <FiDownload size={15} />
+                </button>
+                <button
+                  onClick={() => {
+                    setShowScheinPreview(false);
+                    setScheinPreview(null);
+                  }}
+                  className="grid h-8 w-8 cursor-pointer place-items-center rounded border border-[#c8c8c8] bg-white text-[#444] hover:bg-[#e9e9e9]"
+                  title="Schließen"
+                >
+                  <FiX size={15} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-[#dedede] p-3 sm:p-5">
+              <img
+                src={scheinPreview.imageUrl}
+                alt={`Fahrzeugschein ${scheinPreview.carName || ""}`}
+                className="max-h-[78vh] max-w-full object-contain shadow-lg"
+                style={{
+                  transform: `rotate(${scheinRotation}deg)`,
+                  transition: "transform 150ms ease-in-out",
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
