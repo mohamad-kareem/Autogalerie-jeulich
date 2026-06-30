@@ -3350,25 +3350,74 @@ function VehicleTree({
 
   const filteredBrands = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return brands.map((brand) => {
-      const bv = vehicles.filter((v) => {
-        if (v.brandId !== brand.id) return false;
-        const d = new Date(v.createdAt || Date.now()),
-          now = new Date();
-        const som = new Date(now.getFullYear(), now.getMonth(), 1);
-        const solm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const eolm = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
-        const soy = new Date(now.getFullYear(), 0, 1);
-        if (timeFilter === "month" && d < som) return false;
-        if (timeFilter === "lastMonth" && (d < solm || d > eolm)) return false;
-        if (timeFilter === "year" && d < soy) return false;
-        if (!needle) return true;
-        return `${v.name} ${v.fin || ""} ${brand.label}`
-          .toLowerCase()
-          .includes(needle);
+    return brands
+      .map((brand) => {
+        const bv = vehicles
+          .filter((v) => {
+            if (v.brandId !== brand.id) return false;
+            const d = new Date(v.createdAt || Date.now()),
+              now = new Date();
+            const som = new Date(now.getFullYear(), now.getMonth(), 1);
+            const solm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const eolm = new Date(
+              now.getFullYear(),
+              now.getMonth(),
+              0,
+              23,
+              59,
+              59,
+            );
+            const soy = new Date(now.getFullYear(), 0, 1);
+            if (timeFilter === "month" && d < som) return false;
+            if (timeFilter === "lastMonth" && (d < solm || d > eolm))
+              return false;
+            if (timeFilter === "year" && d < soy) return false;
+            if (!needle) return true;
+            return `${v.name} ${v.fin || ""} ${brand.label}`
+              .toLowerCase()
+              .includes(needle);
+          })
+          .sort((a, b) => {
+            const aCompleted = a.status === "completed";
+            const bCompleted = b.status === "completed";
+
+            // Keep active/open workshop cars above completed cars.
+            if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
+
+            // Inside each status group, show the most recently updated car first.
+            const aDate = new Date(a.updatedAt || a.createdAt || 0).getTime();
+            const bDate = new Date(b.updatedAt || b.createdAt || 0).getTime();
+
+            if (aDate !== bDate) return bDate - aDate;
+
+            return String(a.name || "").localeCompare(
+              String(b.name || ""),
+              "de",
+            );
+          });
+        return {
+          ...brand,
+          vehicles: bv,
+          activeCount: bv.filter((vehicle) => vehicle.status !== "completed")
+            .length,
+          originalOrder: brands.findIndex((item) => item.id === brand.id),
+        };
+      })
+      .sort((a, b) => {
+        // Brand folders with active/open cars appear first.
+        const aHasActive = a.activeCount > 0;
+        const bHasActive = b.activeCount > 0;
+
+        if (aHasActive !== bHasActive) return aHasActive ? -1 : 1;
+
+        // Brands with more active cars appear above brands with fewer active cars.
+        if (a.activeCount !== b.activeCount) {
+          return b.activeCount - a.activeCount;
+        }
+
+        // Keep the configured brand order when the active count is equal.
+        return a.originalOrder - b.originalOrder;
       });
-      return { ...brand, vehicles: bv };
-    });
   }, [brands, vehicles, query, timeFilter]);
 
   return (
