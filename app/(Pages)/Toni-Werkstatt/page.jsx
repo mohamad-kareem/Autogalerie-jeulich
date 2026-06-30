@@ -33,18 +33,14 @@ import {
 } from "react-icons/fi";
 
 const BRANDS = [
-  {
-    id: "mercedes",
-    label: "Mercedes-Benz",
-    model: "/uploads_files_5489305_Glk.glb",
-  },
-  { id: "mercedes1", label: "Mercedes-Benz 1", model: "/mercedes.glb" },
+  { id: "mercedes", label: "Mercedes-Benz", model: "/mercedes.glb" },
   { id: "peugeot", label: "Peugeot", model: "/peugeot.glb" },
+  { id: "audi", label: "Audi", model: "/Audi.glb" },
   { id: "ford", label: "Ford", model: "/fordfocus.glb" },
   { id: "hyundai", label: "Hyundai", model: "/hyundai.glb" },
   { id: "opel", label: "Opel", model: "/opel.glb" },
   { id: "kia", label: "Kia", model: "/kiapicanto.glb" },
-  { id: "kia1", label: "Kia 1", model: "/kiapicanto1.glb" },
+
   { id: "mazda", label: "Mazda", model: "/mazda.glb" },
   { id: "volkswagen", label: "Volkswagen", model: "/volkswagen.glb" },
 ];
@@ -175,6 +171,7 @@ export default function VehicleInspection3DPage() {
   const [autoSpin, setAutoSpin] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [showBillingPrint, setShowBillingPrint] = useState(false);
+  const [showActiveVehicles, setShowActiveVehicles] = useState(false);
   const [mechanicalDraft, setMechanicalDraft] = useState({
     area: "",
     job: "",
@@ -271,8 +268,11 @@ export default function VehicleInspection3DPage() {
         setMarksByVehicle(nm);
         setMechanicalByVehicle(nk);
         setPhotosByVehicle(np);
+        // Do not automatically open the first vehicle after a fresh page load.
+        // The user must explicitly choose a vehicle from the active-car window
+        // or from the folder tree.
         setActiveVehicleId((cur) =>
-          cur && nv.some((v) => v.id === cur) ? cur : nv[0]?.id || null,
+          cur && nv.some((v) => v.id === cur) ? cur : null,
         );
       } catch (e) {
         if (e.name !== "AbortError")
@@ -1083,34 +1083,127 @@ export default function VehicleInspection3DPage() {
     }
   };
 
+  const readApiResponse = async (response) => {
+    const text = await response.text();
+
+    if (!text) return {};
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error(
+        response.ok
+          ? "Der Server hat eine ungültige Antwort gesendet."
+          : `Serverfehler (${response.status}). Bitte Foto erneut versuchen.`,
+      );
+    }
+  };
+
   const handlePhotoSelection = async (event) => {
     const files = Array.from(event.target.files || []);
     event.target.value = "";
 
     if (!activeVehicle || files.length === 0) return;
 
-    const invalid = files.find(
-      (file) => !file.type.startsWith("image/") || file.size > 10 * 1024 * 1024,
-    );
+    if (files.length > 10) {
+      toast.error(
+        "Es können höchstens 10 Fotos gleichzeitig hochgeladen werden.",
+      );
+      return;
+    }
+
+    const allowedExtensions = ["jpg", "jpeg", "png", "webp", "heic", "heif"];
+    const invalid = files.find((file) => {
+      const extension = String(file.name || "")
+        .split(".")
+        .pop()
+        ?.toLowerCase();
+      const validType = file.type.startsWith("image/") || !file.type;
+      return (
+        !validType ||
+        !allowedExtensions.includes(extension) ||
+        file.size > 10 * 1024 * 1024
+      );
+    });
+
     if (invalid) {
-      toast.error("Nur Bilddateien bis maximal 10 MB pro Foto sind erlaubt.");
+      toast.error(
+        "Nur JPG, PNG, WebP, HEIC oder HEIF bis maximal 10 MB pro Foto sind erlaubt.",
+      );
       return;
     }
 
     try {
       setUploadingPhotos(true);
-      const formData = new FormData();
-      files.forEach((file) => formData.append("photos", file));
+      const endpoint = `/api/workshop-inspections/${activeVehicle.id}/photos`;
 
-      const res = await fetch(
-        `/api/workshop-inspections/${activeVehicle.id}/photos`,
-        { method: "POST", body: formData },
-      );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Upload fehlgeschlagen.");
+      const signatureResponse = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "signature", count: files.length }),
+      });
+      const signatureData = await readApiResponse(signatureResponse);
+      if (!signatureResponse.ok) {
+        throw new Error(
+          signatureData.message || "Upload konnte nicht vorbereitet werden.",
+        );
+      }
 
-      applyInspectionToState(data.inspection);
-      toast.success(data.message || "Fotos hochgeladen.");
+      const upload = signatureData.upload;
+      const uploadedPhotos = [];
+
+      for (const file of files) {
+        const cloudinaryForm = new FormData();
+        cloudinaryForm.append("file", file);
+        cloudinaryForm.append("api_key", upload.apiKey);
+        cloudinaryForm.append("timestamp", String(upload.timestamp));
+        cloudinaryForm.append("signature", upload.signature);
+        cloudinaryForm.append("folder", upload.folder);
+        cloudinaryForm.append("context", upload.context);
+        cloudinaryForm.append("transformation", upload.transformation);
+        cloudinaryForm.append("unique_filename", "true");
+        cloudinaryForm.append("overwrite", "false");
+        cloudinaryForm.append("use_filename", "false");
+
+        const cloudinaryResponse = await fetch(
+          `https://api.cloudinary.com/v1_1/${upload.cloudName}/image/upload`,
+          { method: "POST", body: cloudinaryForm },
+        );
+        const cloudinaryData = await readApiResponse(cloudinaryResponse);
+
+        if (!cloudinaryResponse.ok || !cloudinaryData.public_id) {
+          throw new Error(
+            cloudinaryData.error?.message ||
+              `${file.name}: Upload fehlgeschlagen.`,
+          );
+        }
+
+        uploadedPhotos.push({
+          publicId: cloudinaryData.public_id,
+          url: cloudinaryData.url || "",
+          secureUrl: cloudinaryData.secure_url || cloudinaryData.url || "",
+          width: Number(cloudinaryData.width) || 0,
+          height: Number(cloudinaryData.height) || 0,
+          format: String(cloudinaryData.format || ""),
+          bytes: Number(cloudinaryData.bytes) || 0,
+          originalFilename: file.name,
+        });
+      }
+
+      const saveResponse = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "save", photos: uploadedPhotos }),
+      });
+      const saveData = await readApiResponse(saveResponse);
+      if (!saveResponse.ok) {
+        throw new Error(
+          saveData.message || "Fotos konnten nicht gespeichert werden.",
+        );
+      }
+
+      applyInspectionToState(saveData.inspection);
+      toast.success(saveData.message || "Fotos hochgeladen.");
     } catch (error) {
       toast.error(error.message || "Fotos konnten nicht hochgeladen werden.");
     } finally {
@@ -1748,6 +1841,20 @@ export default function VehicleInspection3DPage() {
     setShowBillingPrint(false);
   };
 
+  const activeVehicles = useMemo(
+    () =>
+      vehicles
+        .filter((vehicle) => vehicle.status !== "completed")
+        .sort(
+          (a, b) =>
+            new Date(b.updatedAt || b.createdAt || 0) -
+            new Date(a.updatedAt || a.createdAt || 0),
+        ),
+    [vehicles],
+  );
+
+  const activeVehicleCount = activeVehicles.length;
+
   const selected = marks.find((m) => m.id === selectedMark);
   const counts = useMemo(
     () =>
@@ -1801,6 +1908,11 @@ export default function VehicleInspection3DPage() {
                   disabled={!activeVehicle}
                   icon={<FiPrinter size={12} />}
                   label="Drucken"
+                />
+                <SysButton
+                  onClick={() => setShowActiveVehicles(true)}
+                  icon={<FiTruck size={12} />}
+                  label={`${activeVehicleCount} aktiv`}
                 />
               </div>
               {activeVehicle && (
@@ -2060,20 +2172,41 @@ export default function VehicleInspection3DPage() {
                     </div>
                   </div>
                 )}
-                {!activeVehicle && !dataLoading && sceneReady && !errored && (
-                  <div className="absolute inset-0 grid place-items-center">
-                    <div className="flex flex-col items-center gap-3 text-center">
-                      <FiTruck size={28} className="text-[#bbb]" />
-                      <p className="text-[12px] text-[#888] max-w-[200px]">
-                        Kein Fahrzeug ausgewählt. Wähle links ein Fahrzeug oder
-                        lege eines an.
-                      </p>
-                      <button
-                        onClick={() => setShowAdd(true)}
-                        className="inline-flex items-center gap-1.5 rounded bg-[#1a1a1a] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#333]"
-                      >
-                        <FiPlusCircle size={12} /> Fahrzeug anlegen
-                      </button>
+                {!activeVehicle && !dataLoading && !errored && (
+                  <div className="absolute inset-0 z-10 grid place-items-center">
+                    <div className="flex max-w-[310px] flex-col items-center gap-3 px-5 text-center">
+                      <span className="grid h-11 w-11 place-items-center rounded-full border border-[#d5d5d5] bg-white text-[#666] shadow-sm">
+                        <FiTruck size={20} />
+                      </span>
+
+                      <div>
+                        <p className="text-[13px] font-semibold text-[#333]">
+                          Bitte ein Fahrzeug auswählen
+                        </p>
+                        <p className="mt-1 text-[11px] leading-4 text-[#888]">
+                          Öffne die aktiven Fahrzeuge oder wähle ein Fahrzeug
+                          aus einem Ordner auf der linken Seite.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowActiveVehicles(true)}
+                          className="inline-flex h-7 items-center gap-1.5 rounded border border-[#c8c8c8] bg-white px-2.5 text-[11px] font-medium text-[#333] shadow-sm hover:bg-[#f5f5f5]"
+                        >
+                          <FiTruck size={12} />
+                          {activeVehicles.length} aktiv
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowAdd(true)}
+                          className="inline-flex h-7 items-center gap-1.5 rounded border border-[#1a1a1a] bg-[#1a1a1a] px-2.5 text-[11px] font-medium text-white shadow-sm hover:bg-[#333]"
+                        >
+                          <FiPlusCircle size={12} /> Fahrzeug anlegen
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -2729,6 +2862,21 @@ export default function VehicleInspection3DPage() {
         </div>
       )}
 
+      {showActiveVehicles && (
+        <ActiveVehiclesModal
+          vehicles={activeVehicles}
+          brands={BRANDS}
+          activeVehicleId={activeVehicleId}
+          marksByVehicle={marksByVehicle}
+          mechanicalByVehicle={mechanicalByVehicle}
+          onClose={() => setShowActiveVehicles(false)}
+          onSelect={(vehicleId) => {
+            setActiveVehicleId(vehicleId);
+            setSelectedMark(null);
+            setShowActiveVehicles(false);
+          }}
+        />
+      )}
       {showBillingPrint && (
         <BillingRangeModal
           onClose={() => setShowBillingPrint(false)}
@@ -2742,6 +2890,110 @@ export default function VehicleInspection3DPage() {
           onAdd={addVehicle}
         />
       )}
+    </div>
+  );
+}
+
+function ActiveVehiclesModal({
+  vehicles,
+  brands,
+  activeVehicleId,
+  marksByVehicle,
+  mechanicalByVehicle,
+  onClose,
+  onSelect,
+}) {
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-start justify-center bg-black/25 px-3 pt-16 backdrop-blur-[1px] sm:pt-20"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="w-full max-w-[460px] overflow-hidden rounded-md border border-[#bdbdbd] bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#dddddd] bg-[#f2f2f2] px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <FiTruck size={14} className="text-[#2563a8]" />
+            <div>
+              <div className="text-[12px] font-semibold text-[#222]">
+                Aktive Fahrzeuge
+              </div>
+              <div className="text-[9.5px] text-[#777]">
+                {vehicles.length} Fahrzeug{vehicles.length === 1 ? "" : "e"} in
+                Bearbeitung
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-7 w-7 place-items-center rounded border border-[#cccccc] bg-white text-[#555] hover:bg-[#f8f8f8]"
+            aria-label="Fenster schließen"
+          >
+            <FiX size={14} />
+          </button>
+        </div>
+
+        {vehicles.length === 0 ? (
+          <div className="px-4 py-8 text-center text-[11px] text-[#888]">
+            Keine aktiven Fahrzeuge vorhanden.
+          </div>
+        ) : (
+          <div className="max-h-[60vh] overflow-y-auto p-1.5">
+            {vehicles.map((vehicle) => {
+              const brand = brands.find((item) => item.id === vehicle.brandId);
+              const bodyworkCount = (marksByVehicle[vehicle.id] || []).length;
+              const mechanicalCount = (mechanicalByVehicle[vehicle.id] || [])
+                .length;
+              const taskCount = bodyworkCount + mechanicalCount;
+              const isSelected = vehicle.id === activeVehicleId;
+
+              return (
+                <button
+                  key={vehicle.id}
+                  type="button"
+                  onClick={() => onSelect(vehicle.id)}
+                  className={`flex w-full items-center gap-3 rounded px-3 py-2.5 text-left transition ${
+                    isSelected
+                      ? "bg-[#eaf2ff] ring-1 ring-inset ring-[#9ab9e8]"
+                      : "hover:bg-[#f4f4f4]"
+                  }`}
+                >
+                  <span className="grid h-8 w-8 flex-none place-items-center rounded border border-[#d8d8d8] bg-white text-[#4f4f4f]">
+                    <FiTruck size={14} />
+                  </span>
+
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[11.5px] font-semibold text-[#222]">
+                      {[brand?.label, vehicle.name].filter(Boolean).join(" ") ||
+                        "Fahrzeug"}
+                    </span>
+                    <span className="mt-0.5 block truncate text-[9.5px] text-[#777]">
+                      {vehicle.fin ? `FIN ${vehicle.fin} · ` : ""}
+                      {taskCount} Aufgabe{taskCount === 1 ? "" : "n"}
+                    </span>
+                  </span>
+
+                  <span className="flex-none text-[9px] font-semibold text-[#2f63a8]">
+                    {isSelected ? "Geöffnet" : "Öffnen"}
+                  </span>
+                  <FiChevronRight size={13} className="flex-none text-[#999]" />
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -3096,20 +3348,6 @@ function VehicleTree({
   const [timeFilter, setTimeFilter] = useState("all");
   const [openBrands, setOpenBrands] = useState({});
 
-  useEffect(() => {
-    setOpenBrands((current) => {
-      const next = { ...current };
-      brands.forEach((brand) => {
-        const hasUnfinished = vehicles.some(
-          (vehicle) =>
-            vehicle.brandId === brand.id && vehicle.status !== "completed",
-        );
-        if (hasUnfinished) next[brand.id] = true;
-      });
-      return next;
-    });
-  }, [brands, vehicles]);
-
   const filteredBrands = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return brands.map((brand) => {
@@ -3201,8 +3439,7 @@ function VehicleTree({
           ).length;
           const open =
             !!openBrands[brand.id] ||
-            unfinishedCount > 0 ||
-            (query && brand.vehicles.length > 0);
+            Boolean(query && brand.vehicles.length > 0);
           return (
             <div key={brand.id}>
               <button
