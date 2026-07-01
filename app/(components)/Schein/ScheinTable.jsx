@@ -1191,50 +1191,76 @@ export default function ScheinTable({
       )}
 
       {/* Image Preview Modal */}
-      {showPreviewModal && (
-        <div className="fixed inset-0 bg-gray-700/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-5xl w-full shadow-xl max-h-[95vh] flex flex-col">
-            <div className="p-2 border-b flex justify-between items-center gap-2">
-              <span className="text-sm font-medium truncate">
-                Schein Vorschau
-                {selectedSchein?.carName ? ` · ${selectedSchein.carName}` : ""}
-              </span>
-              <div className="flex items-center gap-1">
+      {showPreviewModal && selectedSchein && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 p-3 sm:p-5">
+          <div className="flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-[#c8c8c8] bg-white shadow-2xl">
+            <div className="flex min-h-11 items-center justify-between gap-3 border-b border-[#d4d4d4] bg-[#f3f3f3] px-3 py-2">
+              <div className="min-w-0">
+                <div className="truncate text-[13px] font-semibold text-[#222]">
+                  Schein Vorschau ·{" "}
+                  {selectedSchein.carName || "Unbekanntes Fahrzeug"}
+                </div>
+                <div className="truncate text-[10px] text-[#666]">
+                  FIN: {selectedSchein.finNumber || "—"}
+                </div>
+              </div>
+
+              <div className="flex flex-none items-center gap-1">
                 <button
-                  onClick={() => setImageRotation((r) => (r - 90 + 360) % 360)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
+                  type="button"
+                  onClick={() =>
+                    setImageRotation((rotation) => (rotation - 90 + 360) % 360)
+                  }
+                  className="grid h-8 w-8 cursor-pointer place-items-center rounded border border-[#c8c8c8] bg-white text-[#444] transition-colors hover:bg-[#e9e9e9]"
                   title="Nach links drehen"
+                  aria-label="Bild nach links drehen"
                 >
-                  <FiRotateCcw size={16} />
+                  <FiRotateCcw size={15} />
                 </button>
+
                 <button
-                  onClick={() => setImageRotation((r) => (r + 90) % 360)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
+                  type="button"
+                  onClick={() =>
+                    setImageRotation((rotation) => (rotation + 90) % 360)
+                  }
+                  className="grid h-8 w-8 cursor-pointer place-items-center rounded border border-[#c8c8c8] bg-white text-[#444] transition-colors hover:bg-[#e9e9e9]"
                   title="Nach rechts drehen"
+                  aria-label="Bild nach rechts drehen"
                 >
-                  <FiRotateCw size={16} />
+                  <FiRotateCw size={15} />
                 </button>
+
                 <button
+                  type="button"
                   onClick={handleDownloadCurrentImage}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
-                  title="Bild herunterladen"
+                  className="grid h-8 w-8 cursor-pointer place-items-center rounded border border-[#c8c8c8] bg-white text-[#444] transition-colors hover:bg-[#e9e9e9]"
+                  title="Bild öffnen"
+                  aria-label="Bild öffnen"
                 >
-                  <FiDownload size={16} />
+                  <FiDownload size={15} />
                 </button>
+
                 <button
-                  onClick={() => setShowPreviewModal(false)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100"
+                  type="button"
+                  onClick={() => {
+                    setShowPreviewModal(false);
+                    setSelectedSchein(null);
+                    setModalImageUrl("");
+                  }}
+                  className="grid h-8 w-8 cursor-pointer place-items-center rounded border border-[#c8c8c8] bg-white text-[#444] transition-colors hover:bg-[#e9e9e9]"
                   title="Schließen"
+                  aria-label="Vorschau schließen"
                 >
-                  <FiX size={16} />
+                  <FiX size={15} />
                 </button>
               </div>
             </div>
-            <div className="p-2 md:p-3 flex-1 overflow-auto flex items-center justify-center">
+
+            <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-[#dedede] p-3 sm:p-5">
               <img
                 src={modalImageUrl}
-                alt="Vorschau"
-                className="max-w-full object-contain max-h-[70vh]  lg:max-h-[100vh]"
+                alt={`Fahrzeugschein ${selectedSchein.carName || ""}`}
+                className="max-h-[78vh] max-w-full object-contain shadow-lg"
                 style={{
                   transform: `rotate(${imageRotation}deg)`,
                   transition: "transform 150ms ease-in-out",
