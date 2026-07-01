@@ -25,11 +25,11 @@ export default function ScheinForm({
   const initialNotes = Array.isArray(schein?.notes)
     ? schein.notes
     : schein?.notes
-    ? String(schein.notes)
-        .split("\n")
-        .map((n) => n.trim())
-        .filter(Boolean)
-    : [];
+      ? String(schein.notes)
+          .split("\n")
+          .map((n) => n.trim())
+          .filter(Boolean)
+      : [];
 
   const [tasks, setTasks] = useState(initialNotes);
   const [noteInput, setNoteInput] = useState("");
@@ -96,7 +96,7 @@ export default function ScheinForm({
 
         const cloudRes = await fetch(
           "https://api.cloudinary.com/v1_1/dclgxdwrc/image/upload",
-          { method: "POST", body: formData }
+          { method: "POST", body: formData },
         );
 
         const cloudData = await cloudRes.json();
@@ -488,8 +488,8 @@ export default function ScheinForm({
                   {loading
                     ? "Wird gespeichert..."
                     : isCreate
-                    ? "Schein hochladen"
-                    : "Änderungen speichern"}
+                      ? "Schein hochladen"
+                      : "Änderungen speichern"}
                 </button>
               </div>
             </div>

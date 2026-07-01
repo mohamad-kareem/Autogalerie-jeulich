@@ -16,10 +16,14 @@ const CarLocationSchema = new mongoose.Schema(
     routeSummary: { type: String, default: "" },
     driverInfo: { type: String, default: "" },
 
-    // ✅ ADD THIS
     marked: {
       type: Boolean,
       default: false,
+    },
+
+    markNote: {
+      type: String,
+      default: "",
     },
   },
   { timestamps: true },

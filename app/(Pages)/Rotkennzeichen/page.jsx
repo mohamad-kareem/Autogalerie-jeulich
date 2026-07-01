@@ -12,6 +12,8 @@ import {
   FiBook,
   FiMenu,
   FiCheckCircle,
+  FiAlertTriangle,
+  FiMessageSquare,
 } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
@@ -205,6 +207,43 @@ function findInvalidBoughtDateCids(rows, carOptions) {
 
   return invalid;
 }
+
+function getWrongPlateInfo(row, carOptions) {
+  if (!row?.vehicleId) {
+    return {
+      isWrongPlate: false,
+      assignedPlate: "",
+      currentPlate: row?.plateNumber || "",
+    };
+  }
+
+  const normalizedVehicleId = normalizeFin(row.vehicleId);
+
+  const selectedCar = carOptions.find(
+    (car) => normalizeFin(car.finNumber) === normalizedVehicleId,
+  );
+
+  if (!selectedCar) {
+    return {
+      isWrongPlate: false,
+      assignedPlate: "",
+      currentPlate: row.plateNumber || "",
+    };
+  }
+
+  const assignedPlate = selectedCar.rotPlateNumber || "";
+  const currentPlate = row.plateNumber || "";
+
+  return {
+    isWrongPlate:
+      assignedPlate !== "" &&
+      assignedPlate !== "BEIDE" &&
+      assignedPlate !== currentPlate,
+    assignedPlate,
+    currentPlate,
+  };
+}
+
 function makeCid() {
   return `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
@@ -268,6 +307,9 @@ export default function CarLocationsPage() {
   const [rotCarsDraft, setRotCarsDraft] = useState([]);
   const [rotSearch, setRotSearch] = useState("");
   const [savingRotCars, setSavingRotCars] = useState(false);
+  const [openNoteCid, setOpenNoteCid] = useState(null);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
   const updateCarDropdownPosition = useCallback((cid) => {
     const el = carInputRefs.current[cid];
     if (!el) return;
@@ -408,6 +450,7 @@ export default function CarLocationsPage() {
                 routeSummary: item.routeSummary || "",
                 driverInfo: item.driverInfo || "",
                 marked: !!item.marked,
+                markNote: item.markNote || "",
               };
             })
           : [];
@@ -571,8 +614,21 @@ export default function CarLocationsPage() {
 
     const nextMarked = !row.marked;
 
+    if (!nextMarked && openNoteCid === row._cid) {
+      setOpenNoteCid(null);
+      setNoteDraft("");
+    }
+
     setRows((prev) =>
-      prev.map((r) => (r._cid === row._cid ? { ...r, marked: nextMarked } : r)),
+      prev.map((r) =>
+        r._cid === row._cid
+          ? {
+              ...r,
+              marked: nextMarked,
+              markNote: nextMarked ? r.markNote || "" : "",
+            }
+          : r,
+      ),
     );
 
     try {
@@ -582,6 +638,7 @@ export default function CarLocationsPage() {
         body: JSON.stringify({
           id: row._id,
           marked: nextMarked,
+          markNote: nextMarked ? row.markNote || "" : "",
         }),
       });
 
@@ -603,7 +660,13 @@ export default function CarLocationsPage() {
 
       setRows((prev) =>
         prev.map((r) =>
-          r._cid === row._cid ? { ...r, marked: !!data.marked } : r,
+          r._cid === row._cid
+            ? {
+                ...r,
+                marked: !!data.marked,
+                markNote: data.markNote || "",
+              }
+            : r,
         ),
       );
     } catch (err) {
@@ -617,6 +680,71 @@ export default function CarLocationsPage() {
       );
     }
   };
+  const openMarkedNote = (row) => {
+    if (!row?.marked) return;
+
+    setOpenNoteCid(row._cid);
+    setNoteDraft(row.markNote || "");
+  };
+
+  const closeMarkedNote = () => {
+    if (savingNote) return;
+
+    setOpenNoteCid(null);
+    setNoteDraft("");
+  };
+
+  const saveMarkNote = async () => {
+    const row = rows.find((item) => item._cid === openNoteCid);
+
+    if (!row?._id || !row.marked) {
+      closeMarkedNote();
+      return;
+    }
+
+    try {
+      setSavingNote(true);
+
+      const res = await fetch("/api/car-locations", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: row._id,
+          marked: true,
+          markNote: noteDraft,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data?.error || "Notiz konnte nicht gespeichert werden.");
+        return;
+      }
+
+      setRows((prev) =>
+        prev.map((item) =>
+          item._cid === row._cid
+            ? {
+                ...item,
+                marked: !!data.marked,
+                markNote: data.markNote || "",
+              }
+            : item,
+        ),
+      );
+
+      setOpenNoteCid(null);
+      setNoteDraft("");
+      toast.success("Notiz gespeichert");
+    } catch (err) {
+      console.error(err);
+      toast.error("Notiz konnte nicht gespeichert werden.");
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
   const updateRowField = (cid, field, value) => {
     setRows((prev) =>
       prev.map((r) => {
@@ -638,6 +766,42 @@ export default function CarLocationsPage() {
         };
       }),
     );
+  };
+
+  const selectCarForRow = (cid, car) => {
+    const currentRow = rows.find((row) => row._cid === cid);
+    if (!currentRow) return;
+
+    const rowPlate = currentRow.plateNumber || activePlate;
+    const assignedPlate = car.rotPlateNumber || "";
+
+    setRows((prev) =>
+      prev.map((row) =>
+        row._cid === cid
+          ? {
+              ...row,
+              manufacturer: car.carName || "",
+              vehicleId: car.finNumber || "",
+            }
+          : row,
+      ),
+    );
+
+    closeCarDropdown();
+
+    if (
+      assignedPlate &&
+      assignedPlate !== "BEIDE" &&
+      assignedPlate !== rowPlate
+    ) {
+      toast(
+        `${car.carName || "Dieses Fahrzeug"} ist für ${assignedPlate} eingetragen, nicht für ${rowPlate}.`,
+        {
+          icon: "⚠️",
+          duration: 6000,
+        },
+      );
+    }
   };
 
   const openCarDropdown = (cid) => {
@@ -678,6 +842,8 @@ export default function CarLocationsPage() {
       vehicleId: "",
       routeSummary: "",
       driverInfo: "",
+      marked: false,
+      markNote: "",
     };
 
     setRows((prev) => [...prev, newRow]);
@@ -710,6 +876,18 @@ export default function CarLocationsPage() {
       (car) => car.finNumber === row.vehicleId,
     );
 
+    const wrongPlateInfo = getWrongPlateInfo(row, carOptions);
+
+    if (wrongPlateInfo.isWrongPlate) {
+      toast(
+        `${row.manufacturer || "Dieses Fahrzeug"} ist für ${wrongPlateInfo.assignedPlate} eingetragen, nicht für ${wrongPlateInfo.currentPlate}.`,
+        {
+          icon: "⚠️",
+          duration: 6000,
+        },
+      );
+    }
+
     if (selectedCar?.boughtAt && row.startDateTime) {
       const boughtDate = new Date(selectedCar.boughtAt);
       const startDate = new Date(row.startDateTime);
@@ -731,6 +909,8 @@ export default function CarLocationsPage() {
       vehicleId: row.vehicleId || "",
       routeSummary: row.routeSummary || "",
       driverInfo: row.driverInfo || "",
+      marked: !!row.marked,
+      markNote: row.marked ? row.markNote || "" : "",
     };
 
     try {
@@ -772,6 +952,8 @@ export default function CarLocationsPage() {
             vehicleId: data?.vehicleId ?? r.vehicleId,
             routeSummary: data?.routeSummary ?? r.routeSummary,
             driverInfo: data?.driverInfo ?? r.driverInfo,
+            marked: data?.marked ?? r.marked ?? false,
+            markNote: data?.markNote ?? r.markNote ?? "",
           };
         }),
       );
@@ -1661,11 +1843,13 @@ export default function CarLocationsPage() {
                     const hasOverlap = overlapCids.has(cid);
                     const hasInvalidBoughtDate = invalidBoughtDateCids.has(cid);
                     const isMarked = !!row.marked;
+                    const wrongPlateInfo = getWrongPlateInfo(row, carOptions);
+                    const isWrongPlate = wrongPlateInfo.isWrongPlate;
                     return (
                       <tr
                         key={cid}
                         className={`border-t ${borderColor} ${
-                          hasOverlap || hasInvalidBoughtDate
+                          hasOverlap || hasInvalidBoughtDate || isWrongPlate
                             ? darkMode
                               ? "bg-red-950/50 hover:bg-red-950/70"
                               : "bg-red-100 hover:bg-red-200"
@@ -1842,14 +2026,9 @@ export default function CarLocationsPage() {
                                         key={opt.id}
                                         type="button"
                                         onMouseDown={(e) => e.preventDefault()}
-                                        onClick={() => {
-                                          updateRowField(
-                                            cid,
-                                            "manufacturer",
-                                            opt.carName,
-                                          );
-                                          closeCarDropdown();
-                                        }}
+                                        onClick={() =>
+                                          selectCarForRow(cid, opt)
+                                        }
                                         className={`block w-full px-2 py-1.5 text-left text-[11px] sm:text-xs ${
                                           darkMode
                                             ? "hover:bg-slate-800"
@@ -1864,13 +2043,36 @@ export default function CarLocationsPage() {
                               )}
                             </div>
                           ) : (
-                            <span
-                              className={`text-[11px] sm:text-xs truncate block ${textPrimary}`}
-                            >
-                              {(row.manufacturer || "-")
-                                .trim()
-                                .split(/\s+/)[0] || "-"}
-                            </span>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <span
+                                className={`text-[11px] sm:text-xs truncate block ${textPrimary}`}
+                              >
+                                {(row.manufacturer || "-")
+                                  .trim()
+                                  .split(/\s+/)[0] || "-"}
+                              </span>
+
+                              {isWrongPlate && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    toast(
+                                      `${row.manufacturer || "Dieses Fahrzeug"} ist für ${wrongPlateInfo.assignedPlate} eingetragen. Dieser Eintrag befindet sich unter ${wrongPlateInfo.currentPlate}.`,
+                                      { icon: "⚠️", duration: 6000 },
+                                    )
+                                  }
+                                  className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition ${
+                                    darkMode
+                                      ? "border-red-700 bg-red-950/70 text-red-300 hover:bg-red-900/70"
+                                      : "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
+                                  }`}
+                                  title={`Falsches Kennzeichen: ${wrongPlateInfo.assignedPlate}`}
+                                  aria-label="Falsches Kennzeichen"
+                                >
+                                  <FiAlertTriangle size={12} />
+                                </button>
+                              )}
+                            </div>
                           )}
                         </td>
 
@@ -1971,11 +2173,44 @@ export default function CarLocationsPage() {
                             </div>
                           ) : (
                             <div className="flex items-center justify-between gap-2">
-                              <span
-                                className={`text-[11px] sm:text-xs truncate block ${textPrimary}`}
-                              >
-                                {row.driverInfo || "-"}
-                              </span>
+                              <div className="flex min-w-0 items-center gap-1.5">
+                                <span
+                                  className={`text-[11px] sm:text-xs truncate block ${textPrimary}`}
+                                >
+                                  {row.driverInfo || "-"}
+                                </span>
+
+                                {isMarked && (
+                                  <button
+                                    type="button"
+                                    onClick={() => openMarkedNote(row)}
+                                    className={`relative inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition ${
+                                      row.markNote
+                                        ? darkMode
+                                          ? "border-amber-500/70 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25"
+                                          : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                        : darkMode
+                                          ? "border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700"
+                                          : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                                    }`}
+                                    aria-label={
+                                      row.markNote
+                                        ? "Notiz anzeigen"
+                                        : "Notiz hinzufügen"
+                                    }
+                                    title={
+                                      row.markNote
+                                        ? "Notiz anzeigen oder bearbeiten"
+                                        : "Notiz hinzufügen"
+                                    }
+                                  >
+                                    <FiMessageSquare size={13} />
+                                    {row.markNote && (
+                                      <span className="absolute right-[3px] top-[3px] h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                    )}
+                                  </button>
+                                )}
+                              </div>
 
                               {isSelected && (
                                 <div className="flex items-center gap-1.5 shrink-0">
@@ -1993,6 +2228,7 @@ export default function CarLocationsPage() {
                                   >
                                     <FiCheckCircle size={14} />
                                   </button>
+
                                   <button
                                     onClick={() => {
                                       setEditCid(cid);
@@ -2045,6 +2281,123 @@ export default function CarLocationsPage() {
       </div>
 
       {showRotbuch && <RotbuchSidebar />}
+
+      {openNoteCid && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-[2px]"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeMarkedNote();
+          }}
+        >
+          <div
+            className={`w-full max-w-[460px] overflow-hidden rounded-2xl border shadow-2xl ${
+              darkMode
+                ? "border-slate-700 bg-slate-900"
+                : "border-slate-200 bg-white"
+            }`}
+          >
+            <div
+              className={`flex items-center justify-between border-b px-4 py-3 ${
+                darkMode ? "border-slate-700" : "border-slate-200"
+              }`}
+            >
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                    darkMode
+                      ? "bg-amber-500/15 text-amber-300"
+                      : "bg-amber-50 text-amber-700"
+                  }`}
+                >
+                  <FiMessageSquare size={15} />
+                </div>
+
+                <div className="min-w-0">
+                  <h3
+                    className={`truncate text-sm font-semibold ${textPrimary}`}
+                  >
+                    Markierungsnotiz
+                  </h3>
+                  <p className={`truncate text-[11px] ${textSecondary}`}>
+                    {rows.find((item) => item._cid === openNoteCid)
+                      ?.manufacturer || "Fahrzeugeintrag"}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeMarkedNote}
+                disabled={savingNote}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${
+                  darkMode
+                    ? "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                } disabled:opacity-50`}
+                aria-label="Schließen"
+              >
+                <FiX size={16} />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <textarea
+                autoFocus
+                value={noteDraft}
+                onChange={(event) => setNoteDraft(event.target.value)}
+                placeholder="Notiz zur Markierung eingeben..."
+                rows={5}
+                maxLength={1000}
+                className={`min-h-[128px] w-full resize-y rounded-xl border px-3.5 py-3 text-sm leading-5 outline-none transition ${
+                  darkMode
+                    ? "border-slate-700 bg-slate-950 text-slate-100 placeholder-slate-500 focus:border-slate-500 focus:ring-2 focus:ring-slate-700/60"
+                    : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                }`}
+              />
+
+              <div className="mt-2 flex items-center justify-between">
+                <span className={`text-[10px] ${textSecondary}`}>
+                  {noteDraft.length}/1000
+                </span>
+                <span className={`text-[10px] ${textSecondary}`}>
+                  Die Notiz ist nur bei gelber Markierung sichtbar.
+                </span>
+              </div>
+            </div>
+
+            <div
+              className={`flex items-center justify-end gap-2 border-t px-4 py-3 ${
+                darkMode
+                  ? "border-slate-700 bg-slate-900"
+                  : "border-slate-200 bg-slate-50"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={closeMarkedNote}
+                disabled={savingNote}
+                className={`h-9 rounded-lg border px-4 text-xs font-semibold transition ${
+                  darkMode
+                    ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+                    : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+                } disabled:opacity-50`}
+              >
+                Abbrechen
+              </button>
+
+              <button
+                type="button"
+                onClick={saveMarkNote}
+                disabled={savingNote}
+                className="inline-flex h-9 items-center gap-2 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+              >
+                <FiSave size={13} />
+                {savingNote ? "Speichern..." : "Speichern"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         .kv-checkbox {

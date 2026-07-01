@@ -14,6 +14,7 @@ function idToString(id) {
   if (!id) return "";
   if (typeof id === "string") return id;
   if (typeof id === "object" && id.$oid) return String(id.$oid);
+
   return String(id);
 }
 
@@ -25,6 +26,7 @@ function normalizeDoc(doc) {
     _id: idToString(doc._id),
     plateNumber: doc.plateNumber || "DN-06919",
     marked: !!doc.marked,
+    markNote: doc.markNote || "",
   };
 }
 
@@ -32,6 +34,7 @@ function toDateOrNull(value) {
   if (!value) return null;
 
   const date = new Date(value);
+
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -40,7 +43,9 @@ function normalizePlateNumber(value) {
     .trim()
     .toUpperCase();
 
-  if (plate === "DN-06921") return "DN-06921";
+  if (plate === "DN-06921") {
+    return "DN-06921";
+  }
 
   return "DN-06919";
 }
@@ -50,7 +55,10 @@ export async function GET() {
     await connectDB();
 
     const docs = await CarLocation.find()
-      .sort({ startDateTime: 1, createdAt: 1 })
+      .sort({
+        startDateTime: 1,
+        createdAt: 1,
+      })
       .lean();
 
     return jsonResponse(
@@ -61,7 +69,13 @@ export async function GET() {
     );
   } catch (err) {
     console.error("GET /api/car-locations error:", err);
-    return jsonResponse({ error: err.message }, 500);
+
+    return jsonResponse(
+      {
+        error: err.message,
+      },
+      500,
+    );
   }
 }
 
@@ -70,23 +84,34 @@ export async function POST(req) {
     await connectDB();
 
     const session = await getServerSession(authOptions);
+
     if (!session) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
+      return jsonResponse(
+        {
+          error: "Unauthorized",
+        },
+        401,
+      );
     }
 
     const body = await req.json();
+
+    const marked = !!body.marked;
 
     const doc = await CarLocation.create({
       plateNumber: normalizePlateNumber(body.plateNumber),
 
       startDateTime: toDateOrNull(body.startDateTime),
       endDateTime: toDateOrNull(body.endDateTime),
+
       vehicleType: body.vehicleType || "",
       manufacturer: body.manufacturer || "",
       vehicleId: body.vehicleId || "",
       routeSummary: body.routeSummary || "",
       driverInfo: body.driverInfo || "",
-      marked: !!body.marked,
+
+      marked,
+      markNote: marked ? String(body.markNote || "").trim() : "",
     });
 
     const obj = doc?.toObject ? doc.toObject() : doc;
@@ -94,7 +119,13 @@ export async function POST(req) {
     return jsonResponse(normalizeDoc(obj), 201);
   } catch (err) {
     console.error("POST /api/car-locations error:", err);
-    return jsonResponse({ error: err.message }, 500);
+
+    return jsonResponse(
+      {
+        error: err.message,
+      },
+      500,
+    );
   }
 }
 
@@ -103,14 +134,25 @@ export async function PUT(req) {
     await connectDB();
 
     const session = await getServerSession(authOptions);
+
     if (!session) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
+      return jsonResponse(
+        {
+          error: "Unauthorized",
+        },
+        401,
+      );
     }
 
     const body = await req.json();
 
     if (!body?.id) {
-      return jsonResponse({ error: "Missing id" }, 400);
+      return jsonResponse(
+        {
+          error: "Missing id",
+        },
+        400,
+      );
     }
 
     const updateFields = {};
@@ -149,6 +191,18 @@ export async function PUT(req) {
 
     if (body.marked !== undefined) {
       updateFields.marked = !!body.marked;
+
+      if (body.marked === false) {
+        updateFields.markNote = "";
+      }
+    }
+
+    if (body.markNote !== undefined) {
+      updateFields.markNote = String(body.markNote || "").trim();
+    }
+
+    if (body.marked === false) {
+      updateFields.markNote = "";
     }
 
     const updated = await CarLocation.findByIdAndUpdate(body.id, updateFields, {
@@ -156,13 +210,24 @@ export async function PUT(req) {
     }).lean();
 
     if (!updated) {
-      return jsonResponse({ error: "Not found" }, 404);
+      return jsonResponse(
+        {
+          error: "Not found",
+        },
+        404,
+      );
     }
 
     return jsonResponse(normalizeDoc(updated), 200);
   } catch (err) {
     console.error("PUT /api/car-locations error:", err);
-    return jsonResponse({ error: err.message }, 500);
+
+    return jsonResponse(
+      {
+        error: err.message,
+      },
+      500,
+    );
   }
 }
 
@@ -171,28 +236,55 @@ export async function DELETE(req) {
     await connectDB();
 
     const session = await getServerSession(authOptions);
+
     if (!session) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
+      return jsonResponse(
+        {
+          error: "Unauthorized",
+        },
+        401,
+      );
     }
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
     if (!id) {
-      return jsonResponse({ error: "Missing id" }, 400);
+      return jsonResponse(
+        {
+          error: "Missing id",
+        },
+        400,
+      );
     }
 
     const doc = await CarLocation.findById(id).select("_id").lean();
 
     if (!doc) {
-      return jsonResponse({ error: "Not found" }, 404);
+      return jsonResponse(
+        {
+          error: "Not found",
+        },
+        404,
+      );
     }
 
     await CarLocation.findByIdAndDelete(id);
 
-    return jsonResponse({ success: true }, 200);
+    return jsonResponse(
+      {
+        success: true,
+      },
+      200,
+    );
   } catch (err) {
     console.error("DELETE /api/car-locations error:", err);
-    return jsonResponse({ error: err.message }, 500);
+
+    return jsonResponse(
+      {
+        error: err.message,
+      },
+      500,
+    );
   }
 }
