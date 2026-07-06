@@ -138,6 +138,7 @@ export default function VehicleInspection3DPage() {
   const activeBrand = activeVehicle
     ? BRANDS.find((b) => b.id === activeVehicle.brandId)
     : null;
+  const activeVehicleIsCompleted = activeVehicle?.status === "completed";
 
   const [marksByVehicle, setMarksByVehicle] = useState({});
   const [mechanicalByVehicle, setMechanicalByVehicle] = useState({});
@@ -2014,16 +2015,16 @@ export default function VehicleInspection3DPage() {
                     )
                   }
                   disabled={saving}
-                  className={`inline-flex h-7 items-center cursor-pointer gap-1.5 rounded  border px-2 text-[10px] font-semibold sm:px-2.5 sm:text-[11px] ${
+                  className={`inline-flex h-7 items-center cursor-pointer gap-1.5 rounded border px-2 text-[10px] font-semibold shadow-sm transition sm:px-2.5 sm:text-[11px] ${
                     activeVehicle.status === "completed"
-                      ? "border-[#86b996] bg-[#edf8f0] text-[#25633a]"
-                      : "border-[#7fa8dd] bg-[#eef5ff] text-[#2f63a8]"
+                      ? "border-[#2f8f4e] bg-[#2f8f4e] text-white hover:bg-[#277840]"
+                      : "border-[#7fa8dd] bg-[#eef5ff] text-[#2f63a8] hover:bg-[#e1edff]"
                   }`}
                 >
                   <FiCheckCircle size={12} />
                   <span className="hidden sm:inline">
                     {activeVehicle.status === "completed"
-                      ? "Wieder öffnen"
+                      ? "Abgeschlossen"
                       : "Abschließen"}
                   </span>
                 </button>
@@ -2320,8 +2321,30 @@ export default function VehicleInspection3DPage() {
                 )}
                 {ready === true && activeVehicle && (
                   <>
+                    {activeVehicleIsCompleted && (
+                      <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+                        <div className="-rotate-6 rounded-2xl border-2 border-[#2f8f4e] bg-white/88 px-6 py-4 text-center shadow-[0_18px_50px_rgba(20,90,45,.22)] backdrop-blur-sm sm:px-8 sm:py-5">
+                          <div className="mx-auto mb-2 grid h-11 w-11 place-items-center rounded-full bg-[#2f8f4e] text-white shadow-sm">
+                            <FiCheckCircle size={25} />
+                          </div>
+                          <div className="text-[22px] font-black uppercase tracking-[.12em] text-[#1f6f39] sm:text-[30px]">
+                            Abgeschlossen
+                          </div>
+                          <div className="mt-1 text-[10px] font-semibold uppercase tracking-[.18em] text-[#5f8f6d]">
+                            Fahrzeug ist fertig
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Status chips */}
-                    <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-1.5">
+                    <div className="pointer-events-none absolute left-3 top-3 z-20 flex items-center gap-1.5">
+                      {activeVehicleIsCompleted && (
+                        <span className="inline-flex items-center gap-1 rounded border border-[#8cc89c] bg-[#edf8f0]/95 px-2 py-1 text-[10px] font-semibold text-[#25633a] shadow-sm">
+                          <FiCheckCircle size={11} />
+                          Fertig
+                        </span>
+                      )}
                       <span
                         className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[10px] font-medium border ${placing ? "bg-[#1a1a1a] text-white border-[#1a1a1a]" : "bg-white/90 text-[#555] border-[#d0d0d0]"}`}
                       >
@@ -2332,7 +2355,7 @@ export default function VehicleInspection3DPage() {
                       </span>
                     </div>
                     {/* Viewer controls */}
-                    <div className="absolute right-3 top-3 flex flex-col gap-1">
+                    <div className="absolute right-3 top-3 z-20 flex flex-col gap-1">
                       <ViewerIconBtn
                         onClick={() => setAutoSpin((s) => !s)}
                         active={autoSpin}
@@ -2370,6 +2393,14 @@ export default function VehicleInspection3DPage() {
                     icon={<FiTruck size={12} />}
                     title="Fahrzeugdetails"
                   />
+                  {activeVehicleIsCompleted && (
+                    <div className="mt-3 flex items-center gap-2 rounded border border-[#b7ddc0] bg-[#f0faf2] px-3 py-2 text-[11px] font-semibold text-[#25633a]">
+                      <span className="grid h-5 w-5 place-items-center rounded-full bg-[#2f8f4e] text-white">
+                        <FiCheckCircle size={12} />
+                      </span>
+                      Dieses Fahrzeug ist abgeschlossen und fertig.
+                    </div>
+                  )}
                   <table className="w-full text-[11px] mt-2">
                     <tbody>
                       {[
@@ -2379,6 +2410,12 @@ export default function VehicleInspection3DPage() {
                         ["Angelegt", formatDate(activeVehicle.createdAt)],
                         ["Karosserie", `${marks.length} Position(en)`],
                         ["Mechanik", `${mechanicalTasks.length} Aufgabe(n)`],
+                        [
+                          "Status",
+                          activeVehicleIsCompleted
+                            ? "Abgeschlossen / fertig"
+                            : "Offen",
+                        ],
                         [
                           "Fotos vorher",
                           `${beforeRepairPhotos.length} Foto(s)`,
@@ -3692,28 +3729,47 @@ function VehicleTree({
                       return (
                         <div
                           key={v.id}
-                          className={`group flex items-center rounded border-l-2 ${
+                          className={`group flex items-center rounded-md border-l-[3px] transition ${
                             active
-                              ? "border-[#1a4db3] bg-[#e8eef8]"
+                              ? completed
+                                ? "border-[#2f8f4e] bg-[#eaf7ee] shadow-[inset_0_0_0_1px_rgba(47,143,78,.18)]"
+                                : "border-[#1a4db3] bg-[#e8eef8]"
                               : completed
-                                ? "border-[#72a981] bg-[#f3faf5] hover:bg-[#eaf6ed]"
+                                ? "border-[#2f8f4e] bg-[#f0faf3] shadow-[inset_0_0_0_1px_rgba(47,143,78,.12)] hover:bg-[#e6f5eb]"
                                 : "border-[#7fa8dd] bg-[#f3f7fd] hover:bg-[#e8f1fc]"
                           }`}
                         >
                           <button
                             onClick={() => onSelect(v.id)}
-                            className="flex-1 min-w-0 px-2 py-1.5 text-left"
+                            className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left"
                           >
-                            <p
-                              className={`truncate text-[11px] font-medium ${active ? "text-[#1a4db3]" : "text-[#1a1a1a]"}`}
-                            >
-                              {v.name}
-                            </p>
-                            <p className="text-[9.5px] text-[#aaa] mt-0.5 truncate">
-                              {completed ? "Abgeschlossen" : "Offen"}
-                              {v.fin ? ` · ${v.fin}` : " · Keine FIN"}
-                              {bc + mc > 0 ? ` · ${bc + mc} Aufg.` : ""}
-                            </p>
+                            {completed && (
+                              <span className="grid h-7 w-7 flex-none place-items-center rounded-full bg-[#2f8f4e] text-white shadow-sm">
+                                <FiCheckCircle size={15} />
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1">
+                              <span
+                                className={`block truncate text-[11px] font-semibold ${
+                                  active
+                                    ? completed
+                                      ? "text-[#25633a]"
+                                      : "text-[#1a4db3]"
+                                    : "text-[#1a1a1a]"
+                                }`}
+                              >
+                                {v.name}
+                              </span>
+                              <span className="mt-0.5 block truncate text-[9.5px] text-[#8a8a8a]">
+                                {v.fin ? v.fin : "Keine FIN"}
+                                {bc + mc > 0 ? ` · ${bc + mc} Aufg.` : ""}
+                              </span>
+                            </span>
+                            {completed && (
+                              <span className="hidden flex-none rounded-full border border-[#b7ddc0] bg-white/80 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-[.08em] text-[#25633a] xl:inline-flex">
+                                Fertig
+                              </span>
+                            )}
                           </button>
                           <button
                             onClick={() =>
