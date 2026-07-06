@@ -12,17 +12,23 @@ function escapeRegex(value) {
 export async function GET(request) {
   try {
     await connectDB();
+
     const { searchParams } = new URL(request.url);
+
     const search = searchParams.get("search")?.trim() || "";
     const status = searchParams.get("status")?.trim() || "";
     const from = searchParams.get("from");
     const to = searchParams.get("to");
+
     const filter = {};
 
-    if (status) filter.status = status;
+    if (status) {
+      filter.status = status;
+    }
 
     if (search) {
       const safeSearch = escapeRegex(search);
+
       filter.$or = [
         { "vehicle.name": { $regex: safeSearch, $options: "i" } },
         { "vehicle.fin": { $regex: safeSearch, $options: "i" } },
@@ -32,15 +38,26 @@ export async function GET(request) {
 
     if (from || to) {
       filter.createdAt = {};
+
       if (from) {
         const fromDate = new Date(`${from}T00:00:00.000Z`);
-        if (!Number.isNaN(fromDate.getTime())) filter.createdAt.$gte = fromDate;
+
+        if (!Number.isNaN(fromDate.getTime())) {
+          filter.createdAt.$gte = fromDate;
+        }
       }
+
       if (to) {
         const toDate = new Date(`${to}T23:59:59.999Z`);
-        if (!Number.isNaN(toDate.getTime())) filter.createdAt.$lte = toDate;
+
+        if (!Number.isNaN(toDate.getTime())) {
+          filter.createdAt.$lte = toDate;
+        }
       }
-      if (Object.keys(filter.createdAt).length === 0) delete filter.createdAt;
+
+      if (Object.keys(filter.createdAt).length === 0) {
+        delete filter.createdAt;
+      }
     }
 
     const inspections = await WorkshopInspection.find(filter)
@@ -48,11 +65,16 @@ export async function GET(request) {
       .lean();
 
     return NextResponse.json(
-      { success: true, count: inspections.length, inspections },
+      {
+        success: true,
+        count: inspections.length,
+        inspections,
+      },
       { status: 200 },
     );
   } catch (error) {
     console.error("GET workshop inspections error:", error);
+
     return NextResponse.json(
       {
         success: false,
@@ -68,29 +90,43 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     await connectDB();
+
     const body = await request.json();
+
     const brandId = String(body?.vehicle?.brandId || "").trim();
     const brandLabel = String(body?.vehicle?.brandLabel || "").trim();
     const name = String(body?.vehicle?.name || "").trim();
+
     const fin = String(body?.vehicle?.fin || "")
       .trim()
       .toUpperCase();
 
     if (!brandId) {
       return NextResponse.json(
-        { success: false, message: "Bitte eine Fahrzeugmarke auswählen." },
+        {
+          success: false,
+          message: "Bitte eine Fahrzeugmarke auswählen.",
+        },
         { status: 400 },
       );
     }
+
     if (!brandLabel) {
       return NextResponse.json(
-        { success: false, message: "Der Markenname fehlt." },
+        {
+          success: false,
+          message: "Der Markenname fehlt.",
+        },
         { status: 400 },
       );
     }
+
     if (!name) {
       return NextResponse.json(
-        { success: false, message: "Bitte die Fahrzeugbezeichnung eintragen." },
+        {
+          success: false,
+          message: "Bitte die Fahrzeugbezeichnung eintragen.",
+        },
         { status: 400 },
       );
     }
@@ -99,6 +135,7 @@ export async function POST(request) {
       const existingInspection = await WorkshopInspection.findOne({
         "vehicle.fin": fin,
       }).lean();
+
       if (existingInspection) {
         return NextResponse.json(
           {
@@ -111,20 +148,37 @@ export async function POST(request) {
     }
 
     const inspection = await WorkshopInspection.create({
-      vehicle: { brandId, brandLabel, name, fin },
+      vehicle: {
+        brandId,
+        brandLabel,
+        name,
+        fin,
+      },
+
       bodywork: [],
       mechanicalTasks: [],
       beforeRepairPhotos: [],
-      totals: { bodywork: 0, mechanical: 0, total: 0 },
+
+      totals: {
+        bodywork: 0,
+        mechanical: 0,
+        total: 0,
+      },
+
       status: "draft",
     });
 
     return NextResponse.json(
-      { success: true, message: "Fahrzeug wurde angelegt.", inspection },
+      {
+        success: true,
+        message: "Fahrzeug wurde angelegt.",
+        inspection,
+      },
       { status: 201 },
     );
   } catch (error) {
     console.error("POST workshop inspection error:", error);
+
     if (error?.code === 11000) {
       return NextResponse.json(
         {
@@ -134,10 +188,12 @@ export async function POST(request) {
         { status: 409 },
       );
     }
+
     if (error?.name === "ValidationError") {
       const errors = Object.values(error.errors || {}).map(
         (item) => item.message,
       );
+
       return NextResponse.json(
         {
           success: false,
@@ -147,6 +203,7 @@ export async function POST(request) {
         { status: 400 },
       );
     }
+
     return NextResponse.json(
       {
         success: false,

@@ -41,6 +41,7 @@ const BRANDS = [
   { id: "ford", label: "Ford Fiesta", model: "/fordfocus.glb" },
   { id: "ford-Kuga", label: "Ford Kuga", model: "/kuga.glb" },
   { id: "hyundai", label: "Hyundai", model: "/hyundai.glb" },
+  { id: "hyundai-Blau", label: "Hyundai-Blau", model: "/hyundai-active.glb" },
   { id: "opel", label: "Opel", model: "/opel.glb" },
   { id: "kia", label: "Kia", model: "/kiapicanto.glb" },
 
@@ -54,6 +55,12 @@ const DAMAGE_TYPES = [
   { id: "paint", label: "Lackschaden", color: "#dc2626" },
   { id: "rust", label: "Rost", color: "#92400e" },
   { id: "crack", label: "Riss / Bruch", color: "#7c3aed" },
+
+  // New Schadenarten
+  { id: "repair", label: "Reparieren", color: "#16a34a" },
+  { id: "adjust", label: "Einstellen / Anpassen", color: "#0f766e" },
+  { id: "polish", label: "Polieren", color: "#9333ea" },
+
   { id: "other", label: "Sonstiges", color: "#52525b" },
 ];
 
@@ -63,6 +70,9 @@ const BODYWORK_ACTIONS = [
   "Grundieren",
   "Lackieren",
   "Polieren",
+  "Reparieren",
+  "Einstellen / Anpassen",
+  "Ausbessern",
   "Beule ausbeulen",
   "Teil tauschen",
 ];
@@ -89,12 +99,19 @@ const PANELS = [
 
 const ELONGATED = new Set(["scratch", "crack"]);
 
+function getDefaultBodyworkAction(type) {
+  if (type === "polish") return "Polieren";
+  if (type === "repair") return "Reparieren";
+  if (type === "adjust") return "Einstellen / Anpassen";
+  return "Lackieren";
+}
+
 const makeMark = (local, normal, type) => ({
   id: `m_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
   local,
   normal,
   type,
-  action: "Lackieren",
+  action: getDefaultBodyworkAction(type),
   panel: "",
   note: "",
   price: "",
@@ -1343,20 +1360,20 @@ export default function VehicleInspection3DPage() {
     const bodyRows = marks
       .map((m, i) => {
         const tp = DAMAGE_TYPES.find((t) => t.id === m.type);
-        return `<tr><td>${i + 1}</td><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${tp?.color};margin-right:6px;"></span>${esc(tp?.label)}</td><td>${esc(m.panel) || "—"}</td><td>${esc(m.action)}</td><td>${esc(m.note) || "—"}</td><td style="text-align:right">${formatEuro(m.price)}</td></tr>`;
+        return `<tr><td>${i + 1}</td><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${tp?.color};margin-right:6px;"></span>${esc(tp?.label)}</td><td>${esc(m.panel) || "—"}</td><td>${esc(m.action)}</td><td class="note-cell">${esc(m.note) || "—"}</td><td style="text-align:right">${formatEuro(m.price)}</td></tr>`;
       })
       .join("");
     const mechRows = mechanicalTasks
       .map(
         (t, i) =>
-          `<tr><td>${i + 1}</td><td>${esc(t.area)}</td><td>${esc(t.job)}</td><td>${esc(t.note) || "—"}</td><td>${t.done ? "✓ Erledigt" : "Offen"}</td><td style="text-align:right">${formatEuro(t.price)}</td></tr>`,
+          `<tr><td>${i + 1}</td><td>${esc(t.area)}</td><td>${esc(t.job)}</td><td class="note-cell">${esc(t.note) || "—"}</td><td>${t.done ? "✓ Erledigt" : "Offen"}</td><td style="text-align:right">${formatEuro(t.price)}</td></tr>`,
       )
       .join("");
     const title = activeVehicle
       ? `${activeBrand?.label || ""} ${activeVehicle.name}`
       : "Fahrzeug";
     w.document.write(
-      `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><title>Werkstattauftrag</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:#111;padding:32px;background:#fff}.header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:16px;border-bottom:2px solid #111;margin-bottom:24px}.co{font-size:16px;font-weight:700;letter-spacing:.05em}.meta{font-size:10px;color:#666;text-align:right}h1{font-size:20px;font-weight:600;margin-bottom:4px}.sub{font-size:11px;color:#666;margin-bottom:20px}h2{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#666;margin:20px 0 8px}table{width:100%;border-collapse:collapse}th{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#888;padding:6px 8px;border-bottom:1px solid #ddd;text-align:left}td{padding:8px;border-bottom:1px solid #eee;vertical-align:top}.totals{margin-top:24px;margin-left:auto;width:280px}.tot-row{display:flex;justify-content:space-between;padding:6px 0;font-size:11px;border-bottom:1px solid #eee}.tot-grand{display:flex;justify-content:space-between;padding:10px 0;font-size:14px;font-weight:700;border-top:2px solid #111;margin-top:4px}.foot{margin-top:32px;font-size:9px;color:#aaa;border-top:1px solid #eee;padding-top:10px}</style></head><body onload="window.print();window.onafterprint=()=>window.close()"><div class="header"><div class="co">Autogalerie Jülich</div><div class="meta">Werkstattauftrag<br>${new Date().toLocaleDateString("de-DE")}</div></div><h1>${esc(title)}</h1><div class="sub">${activeVehicle?.fin ? `FIN ${esc(activeVehicle.fin)} · ` : ""}${marks.length} Karosserieposition(en) · ${mechanicalTasks.length} Mechanikaufgabe(n)</div><h2>Karosserie / Lack</h2><table><thead><tr><th>#</th><th>Art</th><th>Bauteil</th><th>Maßnahme</th><th>Notiz</th><th style="text-align:right">Preis</th></tr></thead><tbody>${bodyRows || '<tr><td colspan="6" style="color:#aaa;padding:12px 8px">Keine Positionen</td></tr>'}</tbody></table><h2>Mechanik</h2><table><thead><tr><th>#</th><th>Bereich</th><th>Arbeit</th><th>Notiz</th><th>Status</th><th style="text-align:right">Preis</th></tr></thead><tbody>${mechRows || '<tr><td colspan="6" style="color:#aaa;padding:12px 8px">Keine Aufgaben</td></tr>'}</tbody></table><div class="totals"><div class="tot-row"><span>Karosserie / Lack</span><span>${formatEuro(bodyworkTotal)}</span></div><div class="tot-row"><span>Mechanik</span><span>${formatEuro(mechanicalTotal)}</span></div><div class="tot-grand"><span>Gesamt</span><span>${formatEuro(workshopTotal)}</span></div></div><div class="foot">Nur für internen Gebrauch · Autogalerie Jülich</div></body></html>`,
+      `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><title>Werkstattauftrag</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:#111;padding:32px;background:#fff}.header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:16px;border-bottom:2px solid #111;margin-bottom:24px}.co{font-size:16px;font-weight:700;letter-spacing:.05em}.meta{font-size:10px;color:#666;text-align:right}h1{font-size:20px;font-weight:600;margin-bottom:4px}.sub{font-size:11px;color:#666;margin-bottom:20px}h2{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#666;margin:20px 0 8px}table{width:100%;border-collapse:collapse}th{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#888;padding:6px 8px;border-bottom:1px solid #ddd;text-align:left}td{padding:8px;border-bottom:1px solid #eee;vertical-align:top}.note-cell{max-width:260px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45;color:#444}.totals{margin-top:24px;margin-left:auto;width:280px}.tot-row{display:flex;justify-content:space-between;padding:6px 0;font-size:11px;border-bottom:1px solid #eee}.tot-grand{display:flex;justify-content:space-between;padding:10px 0;font-size:14px;font-weight:700;border-top:2px solid #111;margin-top:4px}.foot{margin-top:32px;font-size:9px;color:#aaa;border-top:1px solid #eee;padding-top:10px}</style></head><body onload="window.print();window.onafterprint=()=>window.close()"><div class="header"><div class="co">Autogalerie Jülich</div><div class="meta">Werkstattauftrag<br>${new Date().toLocaleDateString("de-DE")}</div></div><h1>${esc(title)}</h1><div class="sub">${activeVehicle?.fin ? `FIN ${esc(activeVehicle.fin)} · ` : ""}${marks.length} Karosserieposition(en) · ${mechanicalTasks.length} Mechanikaufgabe(n)</div><h2>Karosserie / Lack</h2><table><thead><tr><th>#</th><th>Art</th><th>Bauteil</th><th>Maßnahme</th><th>Notiz</th><th style="text-align:right">Preis</th></tr></thead><tbody>${bodyRows || '<tr><td colspan="6" style="color:#aaa;padding:12px 8px">Keine Positionen</td></tr>'}</tbody></table><h2>Mechanik</h2><table><thead><tr><th>#</th><th>Bereich</th><th>Arbeit</th><th>Notiz</th><th>Status</th><th style="text-align:right">Preis</th></tr></thead><tbody>${mechRows || '<tr><td colspan="6" style="color:#aaa;padding:12px 8px">Keine Aufgaben</td></tr>'}</tbody></table><div class="totals"><div class="tot-row"><span>Karosserie / Lack</span><span>${formatEuro(bodyworkTotal)}</span></div><div class="tot-row"><span>Mechanik</span><span>${formatEuro(mechanicalTotal)}</span></div><div class="tot-grand"><span>Gesamt</span><span>${formatEuro(workshopTotal)}</span></div></div><div class="foot">Nur für internen Gebrauch · Autogalerie Jülich</div></body></html>`,
     );
     w.document.close();
     w.focus();
@@ -1702,9 +1719,15 @@ export default function VehicleInspection3DPage() {
             }
 
             .note {
-              color: #666666;
-              max-width: 210px;
+              background: #fafafa;
+              border: 1px solid #eeeeee;
+              border-radius: 4px;
+              color: #444444;
+              line-height: 1.45;
+              max-width: 280px;
               overflow-wrap: anywhere;
+              padding: 6px 7px;
+              white-space: pre-wrap;
             }
 
             .type {
@@ -2114,11 +2137,7 @@ export default function VehicleInspection3DPage() {
                               {mark.action || type?.label}
                             </span>
 
-                            {mark.note && (
-                              <span className="mt-0.5 block truncate text-[9.5px] text-[#9a9a9a]">
-                                Notiz: {mark.note}
-                              </span>
-                            )}
+                            <TaskNote note={mark.note} />
                           </span>
 
                           <div className="mt-0.5 flex flex-none items-center gap-1">
@@ -2189,11 +2208,7 @@ export default function VehicleInspection3DPage() {
                             </span>
                           )}
 
-                          {task.note && (
-                            <span className="mt-0.5 block truncate text-[9.5px] text-[#9a9a9a]">
-                              Notiz: {task.note}
-                            </span>
-                          )}
+                          <TaskNote note={task.note} />
                         </span>
 
                         <div className="mt-0.5 flex flex-none items-center gap-1">
@@ -2489,11 +2504,7 @@ export default function VehicleInspection3DPage() {
                                 {mark.action || tp?.label}
                               </span>
 
-                              {mark.note && (
-                                <span className="mt-0.5 block truncate text-[9px] text-[#9a9a9a]">
-                                  Notiz: {mark.note}
-                                </span>
-                              )}
+                              <TaskNote note={mark.note} />
                             </span>
 
                             <div className="mt-0.5 flex flex-none items-center gap-1">
@@ -2564,11 +2575,7 @@ export default function VehicleInspection3DPage() {
                               </span>
                             )}
 
-                            {task.note && (
-                              <span className="mt-0.5 block truncate text-[9px] text-[#9a9a9a]">
-                                Notiz: {task.note}
-                              </span>
-                            )}
+                            <TaskNote note={task.note} />
                           </span>
 
                           <div className="mt-0.5 flex flex-none items-center gap-1">
@@ -2688,11 +2695,7 @@ export default function VehicleInspection3DPage() {
                                 <p className="font-medium text-[#1a1a1a]">
                                   {m.action || tp?.label}
                                 </p>
-                                {m.note && (
-                                  <p className="text-[#aaa] text-[9.5px] truncate max-w-[240px]">
-                                    {m.note}
-                                  </p>
-                                )}
+                                <TaskNote note={m.note} table />
                               </td>
                               <td className="px-3 py-2 text-[#888]">
                                 {m.panel || tp?.label || "—"}
@@ -2722,11 +2725,7 @@ export default function VehicleInspection3DPage() {
                               <p className="font-medium text-[#1a1a1a]">
                                 {task.job}
                               </p>
-                              {task.note && (
-                                <p className="text-[#aaa] text-[9.5px] truncate max-w-[240px]">
-                                  {task.note}
-                                </p>
-                              )}
+                              <TaskNote note={task.note} table />
                             </td>
                             <td className="px-3 py-2 text-[#888]">
                               {task.area || "—"}
@@ -2864,9 +2863,9 @@ export default function VehicleInspection3DPage() {
                       onChange={(e) =>
                         updateMark(selected.id, { note: e.target.value })
                       }
-                      rows={3}
-                      placeholder="z. B. tiefer Kratzer, Kante beachten …"
-                      className="w-full rounded border border-[#d0d0d0] bg-white px-2.5 py-1.5 text-[11px] text-[#1a1a1a] outline-none focus:border-[#555] focus:ring-1 focus:ring-[#555]/20 resize-none"
+                      rows={5}
+                      placeholder="z. B. tiefer Kratzer, Kante beachten, zuerst anpassen und danach polieren …"
+                      className="w-full min-h-[96px] rounded border border-[#d0d0d0] bg-white px-3 py-2 text-[12px] leading-relaxed text-[#1a1a1a] outline-none focus:border-[#555] focus:ring-1 focus:ring-[#555]/20 resize-y"
                     />
                   </SysField>
                   <div className="flex items-center justify-between pt-1 border-t border-[#ebebeb]">
@@ -3393,6 +3392,39 @@ function ViewerIconBtn({ children, onClick, active, title }) {
     </button>
   );
 }
+
+function TaskNote({ note, table = false }) {
+  if (!note) return null;
+
+  if (table) {
+    return (
+      <div className="mt-1.5 max-w-[440px] rounded-lg border border-[#cbd5e1] bg-[#f8fafc] px-3 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.06)]">
+        <div className="mb-1 flex items-center gap-1.5 text-[8.5px] font-bold uppercase tracking-[0.08em] text-[#64748b]">
+          <FiFileText size={10} />
+          Notiz
+        </div>
+
+        <p className="whitespace-pre-wrap break-words text-[11.5px] font-semibold leading-5 text-[#334155]">
+          {note}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2.5 rounded-lg border border-[#b6c3d5] bg-[#f8fbff] px-3 py-2.5 shadow-[0_1px_4px_rgba(15,23,42,0.1)]">
+      <div className="mb-1.5 flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-[0.08em] text-[#475569]">
+        <FiFileText size={11} />
+        Notiz
+      </div>
+
+      <p className="whitespace-pre-wrap break-words text-[12.5px] font-semibold leading-5 text-[#111827]">
+        {note}
+      </p>
+    </div>
+  );
+}
+
 function MoneyInput({ value, onChange }) {
   return (
     <div className="relative inline-block w-24">

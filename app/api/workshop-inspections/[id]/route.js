@@ -9,6 +9,30 @@ export const dynamic = "force-dynamic";
 
 const ALLOWED_STATUSES = ["draft", "in_progress", "completed", "cancelled"];
 
+const ALLOWED_BODYWORK_TYPES = [
+  "scratch",
+  "dent",
+  "paint",
+  "rust",
+  "crack",
+  "repair",
+  "adjust",
+  "polish",
+  "other",
+];
+
+const DEFAULT_ACTION_BY_TYPE = {
+  scratch: "Lackieren",
+  dent: "Beule ausbeulen",
+  paint: "Lackieren",
+  rust: "Rost entfernen",
+  crack: "Reparieren",
+  repair: "Reparieren",
+  adjust: "Einstellen / Anpassen",
+  polish: "Polieren",
+  other: "",
+};
+
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 function parsePrice(value) {
@@ -32,35 +56,51 @@ function parsePrice(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
+function normalizeBodyworkType(type) {
+  const cleanType = String(type || "other").trim();
+
+  if (ALLOWED_BODYWORK_TYPES.includes(cleanType)) {
+    return cleanType;
+  }
+
+  return "other";
+}
+
 function sanitizeBodywork(bodywork) {
   if (!Array.isArray(bodywork)) {
     return [];
   }
 
-  return bodywork.map((mark) => ({
-    id: String(mark?.id || "").trim(),
+  return bodywork.map((mark) => {
+    const type = normalizeBodyworkType(mark?.type);
+    const action = String(
+      mark?.action || DEFAULT_ACTION_BY_TYPE[type] || "",
+    ).trim();
 
-    local: Array.isArray(mark?.local)
-      ? mark.local.slice(0, 3).map((value) => Number(value) || 0)
-      : [0, 0, 0],
+    return {
+      id: String(mark?.id || "").trim(),
 
-    normal: Array.isArray(mark?.normal)
-      ? mark.normal.slice(0, 3).map((value) => Number(value) || 0)
-      : [0, 0, 1],
+      local: Array.isArray(mark?.local)
+        ? mark.local.slice(0, 3).map((value) => Number(value) || 0)
+        : [0, 0, 0],
 
-    type: String(mark?.type || "other").trim(),
-    action: String(mark?.action || "").trim(),
-    panel: String(mark?.panel || "").trim(),
-    note: String(mark?.note || "").trim(),
-    price: mark?.price ?? "",
+      normal: Array.isArray(mark?.normal)
+        ? mark.normal.slice(0, 3).map((value) => Number(value) || 0)
+        : [0, 0, 1],
 
-    size: Number(mark?.size) || 0.06,
-    length: Number(mark?.length) || 0.06,
-    rotation: Number(mark?.rotation) || 0,
+      type,
+      action,
+      panel: String(mark?.panel || "").trim(),
+      note: String(mark?.note || "").trim(),
+      price: mark?.price ?? "",
 
-    // Saves the Karosserie/Lackieren checkbox
-    done: Boolean(mark?.done),
-  }));
+      size: Number(mark?.size) || 0.06,
+      length: Number(mark?.length) || 0.06,
+      rotation: Number(mark?.rotation) || 0,
+
+      done: Boolean(mark?.done),
+    };
+  });
 }
 
 function sanitizeMechanicalTasks(tasks) {
@@ -74,8 +114,6 @@ function sanitizeMechanicalTasks(tasks) {
     job: String(task?.job || "").trim(),
     note: String(task?.note || "").trim(),
     price: task?.price ?? "",
-
-    // Saves the Mechanik checkbox
     done: Boolean(task?.done),
   }));
 }

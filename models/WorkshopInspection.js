@@ -64,7 +64,17 @@ const BodyworkMarkSchema = new Schema(
 
     type: {
       type: String,
-      enum: ["scratch", "dent", "paint", "rust", "crack", "other"],
+      enum: [
+        "scratch",
+        "dent",
+        "paint",
+        "rust",
+        "crack",
+        "repair",
+        "adjust",
+        "polish",
+        "other",
+      ],
       default: "other",
     },
 
@@ -109,7 +119,6 @@ const BodyworkMarkSchema = new Schema(
       default: 0,
     },
 
-    // Saves the Karosserie/Lackieren checkbox
     done: {
       type: Boolean,
       default: false,
@@ -151,7 +160,6 @@ const MechanicalTaskSchema = new Schema(
       default: "",
     },
 
-    // Saves the Mechanik checkbox
     done: {
       type: Boolean,
       default: false,
