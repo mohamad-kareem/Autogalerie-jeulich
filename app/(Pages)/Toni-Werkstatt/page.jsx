@@ -44,7 +44,7 @@ const BRANDS = [
   { id: "hyundai-Blau", label: "Hyundai-Blau", model: "/hyundai-active.glb" },
   { id: "opel", label: "Opel", model: "/opel.glb" },
   { id: "kia", label: "Kia", model: "/kiapicanto.glb" },
-
+  { id: "fiat", label: "Fiat", model: "/fiat.glb" },
   { id: "mazda", label: "Mazda", model: "/mazda.glb" },
   { id: "volkswagen", label: "Volkswagen", model: "/volkswagen.glb" },
 ];
