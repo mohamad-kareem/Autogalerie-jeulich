@@ -31,7 +31,6 @@ import {
   FiCamera,
   FiUploadCloud,
   FiImage,
-  FiExternalLink,
 } from "react-icons/fi";
 
 const BRANDS = [
@@ -197,6 +196,8 @@ export default function VehicleInspection3DPage() {
   const [scheinPreview, setScheinPreview] = useState(null);
   const [scheinRotation, setScheinRotation] = useState(0);
   const [scheinLoading, setScheinLoading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoPreviewRotation, setPhotoPreviewRotation] = useState(0);
   const [mechanicalDraft, setMechanicalDraft] = useState({
     area: "",
     job: "",
@@ -1257,6 +1258,22 @@ export default function VehicleInspection3DPage() {
     } catch (error) {
       toast.error(error.message || "Foto konnte nicht gelöscht werden.");
     }
+  };
+
+  const openBeforeRepairPhotoPreview = (photo, index = 0) => {
+    const imageUrl = photo?.secureUrl || photo?.url;
+
+    if (!imageUrl) {
+      toast.error("Foto konnte nicht geöffnet werden.");
+      return;
+    }
+
+    setPhotoPreview({
+      ...photo,
+      imageUrl,
+      previewIndex: index,
+    });
+    setPhotoPreviewRotation(0);
   };
 
   const bodyworkTotal = useMemo(
@@ -2630,6 +2647,7 @@ export default function VehicleInspection3DPage() {
                 inputRef={photoInputRef}
                 onSelectFiles={handlePhotoSelection}
                 onDelete={deleteBeforeRepairPhoto}
+                onPreview={openBeforeRepairPhotoPreview}
               />
             )}
 
@@ -3054,6 +3072,72 @@ export default function VehicleInspection3DPage() {
         </div>
       )}
 
+      {photoPreview && (
+        <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/55 p-3 sm:p-5">
+          <div className="flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-[#c8c8c8] bg-white shadow-2xl">
+            <div className="flex min-h-11 items-center justify-between gap-3 border-b border-[#d4d4d4] bg-[#f3f3f3] px-3 py-2">
+              <div className="min-w-0">
+                <div className="truncate text-[13px] font-semibold text-[#222]">
+                  Foto Vorschau · {activeVehicle?.name || "Fahrzeug"}
+                </div>
+                <div className="truncate text-[10px] text-[#666]">
+                  {photoPreview.originalFilename ||
+                    `Schadensfoto ${Number(photoPreview.previewIndex || 0) + 1}`}
+                  {photoPreview.takenAt
+                    ? ` · ${formatDate(photoPreview.takenAt)}`
+                    : ""}
+                </div>
+              </div>
+
+              <div className="flex flex-none items-center gap-1">
+                <button
+                  onClick={() =>
+                    setPhotoPreviewRotation(
+                      (rotation) => (rotation - 90 + 360) % 360,
+                    )
+                  }
+                  className="grid h-8 w-8 cursor-pointer place-items-center rounded border border-[#c8c8c8] bg-white text-[#444] hover:bg-[#e9e9e9]"
+                  title="Nach links drehen"
+                >
+                  <FiRotateCcw size={15} />
+                </button>
+                <button
+                  onClick={() =>
+                    setPhotoPreviewRotation((rotation) => (rotation + 90) % 360)
+                  }
+                  className="grid h-8 w-8 cursor-pointer place-items-center rounded border border-[#c8c8c8] bg-white text-[#444] hover:bg-[#e9e9e9]"
+                  title="Nach rechts drehen"
+                >
+                  <FiRotateCw size={15} />
+                </button>
+                <button
+                  onClick={() => {
+                    setPhotoPreview(null);
+                    setPhotoPreviewRotation(0);
+                  }}
+                  className="grid h-8 w-8 cursor-pointer place-items-center rounded border border-[#c8c8c8] bg-white text-[#444] hover:bg-[#e9e9e9]"
+                  title="Schließen"
+                >
+                  <FiX size={15} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-[#dedede] p-3 sm:p-5">
+              <img
+                src={photoPreview.imageUrl}
+                alt={photoPreview.originalFilename || "Schadensfoto Vorschau"}
+                className="max-h-[78vh] max-w-full object-contain shadow-lg"
+                style={{
+                  transform: `rotate(${photoPreviewRotation}deg)`,
+                  transition: "transform 150ms ease-in-out",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {showActiveVehicles && (
         <ActiveVehiclesModal
           vehicles={activeVehicles}
@@ -3196,6 +3280,7 @@ function BeforeRepairPhotos({
   inputRef,
   onSelectFiles,
   onDelete,
+  onPreview,
 }) {
   return (
     <SysCard noPad>
@@ -3251,34 +3336,33 @@ function BeforeRepairPhotos({
               key={photo._id || photo.publicId}
               className="group relative overflow-hidden rounded border border-[#d8d8d8] bg-[#f4f4f4]"
             >
-              <a
-                href={photo.secureUrl || photo.url}
-                target="_blank"
-                rel="noreferrer"
-                className="block aspect-[4/3]"
+              <button
+                type="button"
+                onClick={() => onPreview(photo, index)}
+                className="block aspect-[4/3] w-full cursor-zoom-in text-left"
+                title="Foto ansehen"
               >
                 <img
                   src={photo.secureUrl || photo.url}
                   alt={`Schadensfoto vor Reparatur ${index + 1}`}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover transition duration-150 group-hover:scale-[1.03]"
                   loading="lazy"
                 />
-              </a>
+              </button>
 
               <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/65 px-2 py-1.5 text-white">
                 <span className="truncate text-[9px]">
                   Foto {index + 1} · {formatDate(photo.takenAt)}
                 </span>
                 <div className="flex items-center gap-1">
-                  <a
-                    href={photo.secureUrl || photo.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    title="Groß öffnen"
+                  <button
+                    type="button"
+                    onClick={() => onPreview(photo, index)}
+                    title="Groß ansehen"
                     className="grid h-6 w-6 place-items-center rounded bg-white/15 hover:bg-white/25"
                   >
-                    <FiExternalLink size={11} />
-                  </a>
+                    <FiMaximize size={11} />
+                  </button>
                   <button
                     type="button"
                     onClick={() => onDelete(photo)}
