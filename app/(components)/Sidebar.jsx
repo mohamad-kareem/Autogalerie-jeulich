@@ -26,6 +26,7 @@ import {
   FiPrinter,
   FiCamera,
   FiMessageCircle,
+  FiBarChart2,
 } from "react-icons/fi";
 
 import { FaCarSide, FaPaintRoller } from "react-icons/fa";
@@ -160,7 +161,13 @@ export default function Sidebar({
         badge: null,
         color: "text-emerald-500",
       },
-
+      {
+        href: "/marktanalyse",
+        icon: <FiBarChart2 />,
+        label: "Marktanalyse",
+        badge: null,
+        color: "text-cyan-500",
+      },
       {
         href: "/aufgabenboard",
         icon: <FiGrid />,

@@ -1,5 +1,4 @@
 import OpenAI from "openai";
-import { chromium } from "playwright";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -8,491 +7,172 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 180;
 
-const OPENAI_MODEL = process.env.OPENAI_MARKET_MODEL || "gpt-5-nano";
+// API-only market research. This route never launches a browser and never
+// fetches marketplace pages directly. Perplexity Search supplies URLs and
+// indexed text; OpenAI only converts that evidence into structured data.
 
-const PERPLEXITY_MODEL = process.env.PERPLEXITY_MODEL || "sonar-pro";
-
-const PERPLEXITY_ENDPOINT = "https://api.perplexity.ai/chat/completions";
-
-const SUPPORTED_DOMAINS = ["autoscout24.de", "mobile.de", "kleinanzeigen.de"];
+const OPENAI_MODEL = process.env.OPENAI_MARKET_MODEL || "gpt-5-mini";
+const PERPLEXITY_SEARCH_ENDPOINT = "https://api.perplexity.ai/search";
+const PIPELINE_TIMEOUT_MS = 150_000;
 
 const MARKETPLACES = [
-  {
-    name: "AutoScout24",
-    domain: "autoscout24.de",
-  },
-  {
-    name: "mobile.de",
-    domain: "mobile.de",
-  },
-  {
-    name: "Kleinanzeigen",
-    domain: "kleinanzeigen.de",
-  },
+  { id: "AUTOSCOUT24", name: "AutoScout24", domain: "autoscout24.de" },
+  { id: "MOBILE_DE", name: "mobile.de", domain: "mobile.de" },
+  { id: "KLEINANZEIGEN", name: "Kleinanzeigen", domain: "kleinanzeigen.de" },
 ];
 
-const BROWSER_TIMEOUT_MS = 45_000;
-const PERPLEXITY_TIMEOUT_MS = 45_000;
+const POLICY = Object.freeze({
+  maximumRawResults: 24,
+  maximumFinalComparables: 8,
+  minimumComparableScore: 50,
+  maximumAgeGapMonths: 60,
+  maximumMileageGapKm: 120_000,
+  maximumMileageRatio: 4,
+  searchTimeoutMs: 35_000,
+  searchRetries: 3,
+  defaultPreparationCosts: 500,
+  defaultRepairReserve: 700,
+  defaultWarrantyReserve: 400,
+  defaultNegotiationReserve: 500,
+  minimumDealerMargin: 1_500,
+  expectedSalePriceFactor: 0.975,
+  adjustmentPerYear: 700,
+  adjustmentPer10kKm: 170,
+  adjustmentPer10Ps: 80,
+  privateToDealerAdjustment: 700,
+});
 
-// -----------------------------------------------------------------------------
-// JSON schemas
-// -----------------------------------------------------------------------------
+const TRACKING_PARAMETERS = new Set([
+  "source",
+  "position",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_term",
+  "utm_content",
+  "ref",
+  "referrer",
+  "ipc",
+  "ipl",
+  "ap_tier",
+]);
 
-const nullableString = {
-  anyOf: [{ type: "string" }, { type: "null" }],
-};
+const nullableString = { anyOf: [{ type: "string" }, { type: "null" }] };
+const nullableNumber = { anyOf: [{ type: "number" }, { type: "null" }] };
 
-const nullableNumber = {
-  anyOf: [{ type: "number" }, { type: "null" }],
-};
-
-const vehicleSchema = {
-  type: "object",
-  additionalProperties: false,
-
-  properties: {
-    title: nullableString,
-    make: nullableString,
-    model: nullableString,
-    generation: nullableString,
-    variant: nullableString,
-
-    price: nullableNumber,
-    firstRegistration: nullableString,
-    mileageKm: nullableNumber,
-
-    fuelType: nullableString,
-    transmission: nullableString,
-
-    powerPs: nullableNumber,
-    powerKw: nullableNumber,
-    engineCapacityCcm: nullableNumber,
-
-    tuvUntil: nullableString,
-
-    serviceHistory: {
-      type: "string",
-      enum: ["YES", "NO", "UNKNOWN"],
-    },
-
-    accidentStatus: {
-      type: "string",
-      enum: ["ACCIDENT_FREE", "DAMAGED", "REPAIRED_DAMAGE", "UNKNOWN"],
-    },
-
-    damageDescription: nullableString,
-
-    sellerType: {
-      type: "string",
-      enum: ["DEALER", "PRIVATE", "UNKNOWN"],
-    },
-
-    bodyType: nullableString,
-    color: nullableString,
-    location: nullableString,
-    listingUrl: nullableString,
-
-    confidence: {
-      type: "integer",
-      minimum: 0,
-      maximum: 100,
-    },
-
-    missingFields: {
-      type: "array",
-      maxItems: 20,
-      items: {
-        type: "string",
-      },
-    },
+const vehicleProperties = {
+  title: nullableString,
+  make: nullableString,
+  model: nullableString,
+  generation: nullableString,
+  variant: nullableString,
+  price: nullableNumber,
+  firstRegistration: nullableString,
+  mileageKm: nullableNumber,
+  fuelType: nullableString,
+  transmission: nullableString,
+  powerPs: nullableNumber,
+  powerKw: nullableNumber,
+  engineCapacityCcm: nullableNumber,
+  tuvUntil: nullableString,
+  serviceHistory: { type: "string", enum: ["YES", "NO", "UNKNOWN"] },
+  accidentStatus: {
+    type: "string",
+    enum: ["ACCIDENT_FREE", "DAMAGED", "REPAIRED_DAMAGE", "UNKNOWN"],
   },
-
-  required: [
-    "title",
-    "make",
-    "model",
-    "generation",
-    "variant",
-    "price",
-    "firstRegistration",
-    "mileageKm",
-    "fuelType",
-    "transmission",
-    "powerPs",
-    "powerKw",
-    "engineCapacityCcm",
-    "tuvUntil",
-    "serviceHistory",
-    "accidentStatus",
-    "damageDescription",
-    "sellerType",
-    "bodyType",
-    "color",
-    "location",
-    "listingUrl",
-    "confidence",
-    "missingFields",
-  ],
-};
-
-const marketplaceCandidateSchema = {
-  type: "object",
-  additionalProperties: false,
-
-  properties: {
-    title: nullableString,
-    make: nullableString,
-    model: nullableString,
-    generation: nullableString,
-    variant: nullableString,
-
-    price: nullableNumber,
-    firstRegistration: nullableString,
-    mileageKm: nullableNumber,
-
-    fuelType: nullableString,
-    transmission: nullableString,
-    powerPs: nullableNumber,
-
-    sellerType: {
-      type: "string",
-      enum: ["DEALER", "PRIVATE", "UNKNOWN"],
-    },
-
-    bodyType: nullableString,
-    location: nullableString,
-
-    listingUrl: nullableString,
-
-    evidence: nullableString,
+  damageDescription: nullableString,
+  sellerType: { type: "string", enum: ["DEALER", "PRIVATE", "UNKNOWN"] },
+  bodyType: nullableString,
+  color: nullableString,
+  location: nullableString,
+  confidence: { type: "integer", minimum: 0, maximum: 100 },
+  missingFields: {
+    type: "array",
+    maxItems: 20,
+    items: { type: "string" },
   },
-
-  required: [
-    "title",
-    "make",
-    "model",
-    "generation",
-    "variant",
-    "price",
-    "firstRegistration",
-    "mileageKm",
-    "fuelType",
-    "transmission",
-    "powerPs",
-    "sellerType",
-    "bodyType",
-    "location",
-    "listingUrl",
-    "evidence",
-  ],
 };
 
-const marketplaceSearchSchema = {
+const targetVehicleSchema = {
   type: "object",
   additionalProperties: false,
+  properties: vehicleProperties,
+  required: Object.keys(vehicleProperties),
+};
 
+const candidateProperties = {
+  resultIndex: { type: "integer", minimum: 0 },
+  title: nullableString,
+  make: nullableString,
+  model: nullableString,
+  generation: nullableString,
+  variant: nullableString,
+  price: nullableNumber,
+  firstRegistration: nullableString,
+  mileageKm: nullableNumber,
+  fuelType: nullableString,
+  transmission: nullableString,
+  powerPs: nullableNumber,
+  sellerType: { type: "string", enum: ["DEALER", "PRIVATE", "UNKNOWN"] },
+  bodyType: nullableString,
+  location: nullableString,
+  evidence: nullableString,
+};
+
+const comparableExtractionSchema = {
+  type: "object",
+  additionalProperties: false,
   properties: {
     candidates: {
       type: "array",
-      maxItems: 8,
-      items: marketplaceCandidateSchema,
-    },
-
-    warnings: {
-      type: "array",
-      maxItems: 8,
-      items: {
-        type: "string",
-      },
-    },
-  },
-
-  required: ["candidates", "warnings"],
-};
-
-const comparableSchema = {
-  type: "object",
-  additionalProperties: false,
-
-  properties: {
-    title: nullableString,
-    make: nullableString,
-    model: nullableString,
-    generation: nullableString,
-    variant: nullableString,
-
-    price: nullableNumber,
-    adjustedPrice: nullableNumber,
-
-    firstRegistration: nullableString,
-    mileageKm: nullableNumber,
-
-    fuelType: nullableString,
-    transmission: nullableString,
-    powerPs: nullableNumber,
-
-    sellerType: {
-      type: "string",
-      enum: ["DEALER", "PRIVATE", "UNKNOWN"],
-    },
-
-    bodyType: nullableString,
-    location: nullableString,
-
-    listingUrl: nullableString,
-
-    sourceType: {
-      type: "string",
-      enum: ["DIRECT_LISTING", "SEARCH_SNIPPET"],
-    },
-
-    similarityScore: {
-      type: "integer",
-      minimum: 0,
-      maximum: 100,
-    },
-
-    comparisonReason: {
-      type: "string",
-    },
-
-    adjustmentExplanation: {
-      type: "string",
-    },
-
-    mainDifferences: {
-      type: "array",
-      maxItems: 6,
-      items: {
-        type: "string",
-      },
-    },
-  },
-
-  required: [
-    "title",
-    "make",
-    "model",
-    "generation",
-    "variant",
-    "price",
-    "adjustedPrice",
-    "firstRegistration",
-    "mileageKm",
-    "fuelType",
-    "transmission",
-    "powerPs",
-    "sellerType",
-    "bodyType",
-    "location",
-    "listingUrl",
-    "sourceType",
-    "similarityScore",
-    "comparisonReason",
-    "adjustmentExplanation",
-    "mainDifferences",
-  ],
-};
-
-const finalAnalysisSchema = {
-  type: "object",
-  additionalProperties: false,
-
-  properties: {
-    comparableVehicles: {
-      type: "array",
-      maxItems: 6,
-      items: comparableSchema,
-    },
-
-    rejectedCandidates: {
-      type: "array",
-      maxItems: 18,
-
+      maxItems: POLICY.maximumRawResults,
       items: {
         type: "object",
         additionalProperties: false,
-
-        properties: {
-          title: nullableString,
-          listingUrl: nullableString,
-
-          reason: {
-            type: "string",
-          },
-        },
-
-        required: ["title", "listingUrl", "reason"],
+        properties: candidateProperties,
+        required: Object.keys(candidateProperties),
       },
     },
-
-    marketStatistics: {
-      type: "object",
-      additionalProperties: false,
-
-      properties: {
-        comparableCount: {
-          type: "integer",
-          minimum: 0,
-        },
-
-        minimumPrice: nullableNumber,
-        maximumPrice: nullableNumber,
-        averagePrice: nullableNumber,
-        medianPrice: nullableNumber,
-        weightedMarketPrice: nullableNumber,
-
-        estimatedRetailPriceFrom: nullableNumber,
-        estimatedRetailPriceTo: nullableNumber,
-
-        priceDifferenceToMarket: nullableNumber,
-
-        explanation: {
-          type: "string",
-        },
-      },
-
-      required: [
-        "comparableCount",
-        "minimumPrice",
-        "maximumPrice",
-        "averagePrice",
-        "medianPrice",
-        "weightedMarketPrice",
-        "estimatedRetailPriceFrom",
-        "estimatedRetailPriceTo",
-        "priceDifferenceToMarket",
-        "explanation",
-      ],
-    },
-
-    dealerAssessment: {
-      type: "object",
-      additionalProperties: false,
-
-      properties: {
-        recommendedPurchasePriceFrom: nullableNumber,
-        recommendedPurchasePriceTo: nullableNumber,
-
-        negotiationTarget: nullableNumber,
-        absoluteMaximumPurchasePrice: nullableNumber,
-
-        estimatedPreparationCosts: nullableNumber,
-        estimatedRepairReserve: nullableNumber,
-        estimatedWarrantyReserve: nullableNumber,
-
-        estimatedProfitAtAskingPrice: nullableNumber,
-
-        explanation: {
-          type: "string",
-        },
-      },
-
-      required: [
-        "recommendedPurchasePriceFrom",
-        "recommendedPurchasePriceTo",
-        "negotiationTarget",
-        "absoluteMaximumPurchasePrice",
-        "estimatedPreparationCosts",
-        "estimatedRepairReserve",
-        "estimatedWarrantyReserve",
-        "estimatedProfitAtAskingPrice",
-        "explanation",
-      ],
-    },
-
-    recommendation: {
-      type: "object",
-      additionalProperties: false,
-
-      properties: {
-        rating: {
-          type: "string",
-          enum: [
-            "VERY_GOOD",
-            "GOOD",
-            "CONDITIONAL",
-            "TOO_EXPENSIVE",
-            "INSUFFICIENT_DATA",
-          ],
-        },
-
-        confidence: {
-          type: "integer",
-          minimum: 0,
-          maximum: 100,
-        },
-
-        headline: {
-          type: "string",
-        },
-
-        summary: {
-          type: "string",
-        },
-
-        reasons: {
-          type: "array",
-          maxItems: 8,
-          items: {
-            type: "string",
-          },
-        },
-
-        risks: {
-          type: "array",
-          maxItems: 8,
-          items: {
-            type: "string",
-          },
-        },
-
-        questionsForSeller: {
-          type: "array",
-          maxItems: 10,
-          items: {
-            type: "string",
-          },
-        },
-      },
-
-      required: [
-        "rating",
-        "confidence",
-        "headline",
-        "summary",
-        "reasons",
-        "risks",
-        "questionsForSeller",
-      ],
-    },
-
-    overallWarnings: {
+    warnings: {
       type: "array",
-      maxItems: 12,
-      items: {
-        type: "string",
-      },
+      maxItems: 10,
+      items: { type: "string" },
     },
   },
-
-  required: [
-    "comparableVehicles",
-    "rejectedCandidates",
-    "marketStatistics",
-    "dealerAssessment",
-    "recommendation",
-    "overallWarnings",
-  ],
+  required: ["candidates", "warnings"],
 };
 
-// -----------------------------------------------------------------------------
-// General helpers
-// -----------------------------------------------------------------------------
+const explanationSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    headline: { type: "string" },
+    summary: { type: "string" },
+    marketExplanation: { type: "string" },
+    dealerExplanation: { type: "string" },
+    reasons: { type: "array", maxItems: 6, items: { type: "string" } },
+    risks: { type: "array", maxItems: 6, items: { type: "string" } },
+    questionsForSeller: {
+      type: "array",
+      maxItems: 8,
+      items: { type: "string" },
+    },
+  },
+  required: [
+    "headline",
+    "summary",
+    "marketExplanation",
+    "dealerExplanation",
+    "reasons",
+    "risks",
+    "questionsForSeller",
+  ],
+};
 
 function json(data, status = 200) {
   return Response.json(data, {
     status,
+    headers: { "Cache-Control": "no-store" },
   });
 }
 
@@ -503,205 +183,278 @@ function cleanString(value) {
 }
 
 function numberOrNull(value) {
-  if (value === null || value === undefined || value === "") {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+
+  const normalized = String(value)
+    .replace(/[^\d,.-]/g, "")
+    .replace(/\.(?=\d{3}(?:\D|$))/g, "")
+    .replace(",", ".");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function clamp(value, minimum, maximum) {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
+function roundMoney(value, interval = 50) {
+  return Number.isFinite(value)
+    ? Math.round(value / interval) * interval
+    : null;
+}
+
+function average(values) {
+  const usable = values.filter(Number.isFinite);
+  return usable.length
+    ? usable.reduce((sum, value) => sum + value, 0) / usable.length
+    : null;
+}
+
+function median(values) {
+  const usable = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!usable.length) return null;
+  const middle = Math.floor(usable.length / 2);
+  return usable.length % 2
+    ? usable[middle]
+    : (usable[middle - 1] + usable[middle]) / 2;
+}
+
+function percentile(values, percentage) {
+  const usable = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!usable.length) return null;
+  const index = (usable.length - 1) * percentage;
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  if (lower === upper) return usable[lower];
+  return usable[lower] + (usable[upper] - usable[lower]) * (index - lower);
+}
+
+function weightedAverage(entries) {
+  const usable = entries.filter(
+    ({ value, weight }) =>
+      Number.isFinite(value) && Number.isFinite(weight) && weight > 0,
+  );
+  if (!usable.length) return null;
+  const weightSum = usable.reduce((sum, entry) => sum + entry.weight, 0);
+  return (
+    usable.reduce((sum, entry) => sum + entry.value * entry.weight, 0) /
+    weightSum
+  );
+}
+
+function standardDeviation(values) {
+  const usable = values.filter(Number.isFinite);
+  if (usable.length < 2) return null;
+  const mean = average(usable);
+  const variance = average(usable.map((value) => Math.pow(value - mean, 2)));
+  return Math.sqrt(variance);
+}
+
+function normalizeText(value) {
+  return cleanString(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function textTokens(value) {
+  return new Set(
+    normalizeText(value)
+      .split(" ")
+      .filter((token) => token.length > 1),
+  );
+}
+
+function tokenSimilarity(first, second) {
+  const a = textTokens(first);
+  const b = textTokens(second);
+  if (!a.size || !b.size) return 0;
+  const intersection = [...a].filter((token) => b.has(token)).length;
+  return (2 * intersection) / (a.size + b.size);
+}
+
+function sameNormalizedText(first, second) {
+  const a = normalizeText(first);
+  const b = normalizeText(second);
+  return Boolean(a && b && (a === b || a.includes(b) || b.includes(a)));
+}
+
+function registrationToMonths(value) {
+  const text = cleanString(value);
+  let match = text.match(/(0?[1-9]|1[0-2])[./-]((?:19|20)\d{2})/);
+  if (match) return Number(match[2]) * 12 + Number(match[1]) - 1;
+  match = text.match(/((?:19|20)\d{2})/);
+  return match ? Number(match[1]) * 12 + 5 : null;
+}
+
+function detectMarketplace(rawUrl) {
+  try {
+    const hostname = new URL(rawUrl).hostname
+      .toLowerCase()
+      .replace(/^www\./, "");
+    return (
+      MARKETPLACES.find(
+        ({ domain }) => hostname === domain || hostname.endsWith(`.${domain}`),
+      ) || null
+    );
+  } catch {
     return null;
   }
+}
 
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  let text = String(value).trim().replace(/\s/g, "").replace(/[€$£]/g, "");
-
-  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(text)) {
-    text = text.replace(/\./g, "").replace(",", ".");
-  } else if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(text)) {
-    text = text.replace(/,/g, "");
-  } else {
-    text = text.replace(",", ".");
-  }
-
-  text = text.replace(/[^0-9.-]/g, "");
-
-  const number = Number(text);
-
-  return Number.isFinite(number) ? number : null;
+function detectSource(rawUrl) {
+  return detectMarketplace(rawUrl)?.id || "UNKNOWN";
 }
 
 function cleanTrackingParameters(rawUrl) {
   try {
     const url = new URL(rawUrl);
-
-    const removable = [
-      "source",
-      "position",
-      "utm_source",
-      "utm_medium",
-      "utm_campaign",
-      "utm_term",
-      "utm_content",
-      "sort",
-      "desc",
-      "ref",
-      "referrer",
-      "source_otp",
-      "order_bucket",
-      "boost_level",
-      "applied_boost_level",
-      "relevance_adjustment",
-      "boosting_product",
-    ];
-
-    for (const parameter of removable) {
+    for (const parameter of TRACKING_PARAMETERS)
       url.searchParams.delete(parameter);
-    }
-
     url.hash = "";
-
     return url.toString();
   } catch {
     return cleanString(rawUrl);
   }
 }
 
+function isDirectListingUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    const hostname = url.hostname.toLowerCase();
+    const pathname = url.pathname.toLowerCase();
+
+    if (hostname.includes("autoscout24") && pathname.includes("/angebote/"))
+      return true;
+    if (
+      hostname.includes("mobile.de") &&
+      (pathname.includes("/auto-inserat/") ||
+        (pathname.includes("/fahrzeuge/details.html") &&
+          url.searchParams.has("id")))
+    ) {
+      return true;
+    }
+    if (hostname.includes("kleinanzeigen") && pathname.includes("/s-anzeige/"))
+      return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function safeListingUrl(rawUrl, requiredDomain = null) {
+  try {
+    const url = new URL(cleanString(rawUrl).replace(/&amp;/g, "&"));
+    if (!["http:", "https:"].includes(url.protocol)) return null;
+
+    const marketplace = detectMarketplace(url.toString());
+    if (
+      !marketplace ||
+      (requiredDomain && marketplace.domain !== requiredDomain)
+    )
+      return null;
+    const cleaned = cleanTrackingParameters(url.toString());
+    return isDirectListingUrl(cleaned) ? cleaned : null;
+  } catch {
+    return null;
+  }
+}
+
+function listingIdentity(rawUrl) {
+  try {
+    const url = new URL(cleanTrackingParameters(rawUrl));
+    const marketplace = detectMarketplace(url.toString());
+    const hostname = url.hostname.toLowerCase().replace(/^www\./, "");
+    const pathname = url.pathname.toLowerCase().replace(/\/+$/, "");
+
+    if (marketplace?.id === "MOBILE_DE") {
+      const id = url.searchParams.get("id");
+      if (id) return `mobile:${id}`;
+    }
+
+    const uuid = pathname.match(
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+    )?.[0];
+    if (uuid) return `${marketplace?.id || hostname}:${uuid.toLowerCase()}`;
+
+    return `${hostname}${pathname}`;
+  } catch {
+    return normalizeText(rawUrl);
+  }
+}
+
 function validateMarketplaceUrl(rawUrl) {
   const value = cleanString(rawUrl);
-
-  if (!value) {
-    throw new Error("Bitte einen Fahrzeug-Link eingeben.");
-  }
+  if (!value) throw new Error("Bitte einen Fahrzeug-Link eingeben.");
 
   let parsed;
-
   try {
     parsed = new URL(value);
   } catch {
     throw new Error("Der Fahrzeug-Link ist ungültig.");
   }
 
-  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+  if (!["http:", "https:"].includes(parsed.protocol)) {
     throw new Error("Nur HTTP- und HTTPS-Links werden unterstützt.");
   }
-
-  const hostname = parsed.hostname.toLowerCase().replace(/^www\./, "");
-
-  const supported = SUPPORTED_DOMAINS.some(
-    (domain) => hostname === domain || hostname.endsWith(`.${domain}`),
-  );
-
-  if (!supported) {
+  if (!detectMarketplace(value)) {
     throw new Error(
       "Bitte einen Link von AutoScout24, mobile.de oder Kleinanzeigen verwenden.",
     );
   }
+  if (!isDirectListingUrl(value)) {
+    throw new Error(
+      "Bitte den direkten Link zu einer einzelnen Fahrzeuganzeige verwenden.",
+    );
+  }
 
-  return cleanTrackingParameters(parsed.toString());
+  return cleanTrackingParameters(value);
 }
 
-function detectSource(rawUrl) {
-  const value = cleanString(rawUrl).toLowerCase();
-
-  if (value.includes("autoscout24")) {
-    return "AUTOSCOUT24";
-  }
-
-  if (value.includes("mobile.de")) {
-    return "MOBILE_DE";
-  }
-
-  if (value.includes("kleinanzeigen")) {
-    return "KLEINANZEIGEN";
-  }
-
-  return "UNKNOWN";
-}
-
-function normalizedUrl(rawUrl) {
-  try {
-    const url = new URL(cleanTrackingParameters(rawUrl));
-
-    return `${url.hostname}${url.pathname}`
-      .toLowerCase()
-      .replace(/^www\./, "")
-      .replace(/\/+$/, "");
-  } catch {
-    return cleanString(rawUrl)
-      .toLowerCase()
-      .replace(/[?#].*$/, "")
-      .replace(/\/+$/, "");
-  }
-}
-
-function isDirectListingUrl(rawUrl) {
+function listingIdentifier(rawUrl) {
   try {
     const url = new URL(rawUrl);
-
-    const hostname = url.hostname.toLowerCase();
-
-    const pathname = url.pathname.toLowerCase();
-
-    if (hostname.includes("autoscout24") && pathname.includes("/angebote/")) {
-      return true;
-    }
-
-    if (
-      hostname.includes("mobile.de") &&
-      (pathname.includes("/fahrzeuge/details.html") ||
-        pathname.includes("/auto-inserat/"))
-    ) {
-      return true;
-    }
-
-    if (
-      hostname.includes("kleinanzeigen") &&
-      pathname.includes("/s-anzeige/")
-    ) {
-      return true;
-    }
-
-    return false;
+    return (
+      url.searchParams.get("id") ||
+      url.pathname.match(/[0-9a-f]{8}-[0-9a-f-]{27,}/i)?.[0] ||
+      url.pathname.split("/").filter(Boolean).pop() ||
+      rawUrl
+    );
   } catch {
-    return false;
+    return rawUrl;
   }
 }
 
-function parseUrlSlug(listingUrl) {
-  try {
-    const url = new URL(listingUrl);
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-    const parts = url.pathname.split("/").filter(Boolean);
-
-    const offerIndex = parts.findIndex(
-      (part) => part.toLowerCase() === "angebote",
+async function withTimeout(promise, timeoutMs, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            `${label} hat nach ${Math.round(timeoutMs / 1000)} Sekunden nicht geantwortet.`,
+          ),
+        ),
+      timeoutMs,
     );
+  });
 
-    let slug = offerIndex >= 0 ? parts[offerIndex + 1] : parts.at(-1);
-
-    if (!slug) {
-      return null;
-    }
-
-    slug = decodeURIComponent(slug)
-      .replace(
-        /-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i,
-        "",
-      )
-      .replace(/-cat_[a-z0-9]+.*$/i, "")
-      .replace(/-/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    return slug || null;
-  } catch {
-    return null;
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer);
   }
 }
 
 function openAIOutputText(response) {
-  if (response?.output_text) {
-    return response.output_text;
-  }
-
+  if (response?.output_text) return response.output_text;
   return (response?.output || [])
     .flatMap((item) => item?.content || [])
     .filter((part) => part?.type === "output_text")
@@ -709,1254 +462,1104 @@ function openAIOutputText(response) {
     .join("");
 }
 
-async function withTimeout(promise, timeoutMs, name) {
-  let timer;
+function sanitizeSearchResults(data, requiredDomain = null) {
+  const raw = Array.isArray(data?.results) ? data.results : [];
+  const seen = new Set();
+  const results = [];
 
-  const timeoutPromise = new Promise((_, reject) => {
-    timer = setTimeout(() => {
-      reject(
-        new Error(
-          `${name} hat nach ${Math.round(
-            timeoutMs / 1000,
-          )} Sekunden nicht geantwortet.`,
-        ),
-      );
-    }, timeoutMs);
-  });
-
-  try {
-    return await Promise.race([promise, timeoutPromise]);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Browser extraction
-// -----------------------------------------------------------------------------
-
-async function acceptCookieBanner(page) {
-  const labels = [
-    "Alle akzeptieren",
-    "Akzeptieren",
-    "Zustimmen",
-    "Accept all",
-    "Accept",
-  ];
-
-  for (const label of labels) {
-    try {
-      const button = page
-        .getByRole("button", {
-          name: new RegExp(label, "i"),
-        })
-        .first();
-
-      if (
-        await button.isVisible({
-          timeout: 800,
-        })
-      ) {
-        await button.click({
-          timeout: 2_000,
-        });
-
-        await page.waitForTimeout(700);
-
-        return true;
-      }
-    } catch {
-      // Continue trying other cookie-button labels.
-    }
+  for (const item of raw) {
+    const url = safeListingUrl(item?.url, requiredDomain);
+    if (!url) continue;
+    const identity = listingIdentity(url);
+    if (!identity || seen.has(identity)) continue;
+    seen.add(identity);
+    results.push({
+      title: cleanString(item?.title).slice(0, 500),
+      url,
+      snippet: cleanString(item?.snippet).slice(0, 8_000),
+      date: cleanString(item?.date) || null,
+      lastUpdated: cleanString(item?.last_updated) || null,
+    });
   }
 
-  return false;
+  return results;
 }
 
-async function scrollRenderedPage(page) {
-  await page.evaluate(async () => {
-    await new Promise((resolve) => {
-      let previousHeight = 0;
-      let attempts = 0;
-
-      const timer = setInterval(() => {
-        window.scrollBy(0, 800);
-
-        const currentHeight = document.body?.scrollHeight || 0;
-
-        if (currentHeight === previousHeight) {
-          attempts += 1;
-        } else {
-          attempts = 0;
-        }
-
-        previousHeight = currentHeight;
-
-        const reachedBottom =
-          window.scrollY + window.innerHeight >= currentHeight - 100;
-
-        if (reachedBottom || attempts >= 5) {
-          clearInterval(timer);
-          resolve();
-        }
-      }, 180);
-    });
-  });
-}
-
-async function extractTargetWithBrowser(listingUrl) {
-  let browser;
-  let context;
-
-  try {
-    browser = await chromium.launch({
-      headless: true,
-
-      args: [
-        "--disable-blink-features=AutomationControlled",
-        "--disable-dev-shm-usage",
-        "--no-sandbox",
-      ],
-    });
-
-    context = await browser.newContext({
-      locale: "de-DE",
-
-      userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-        "AppleWebKit/537.36 (KHTML, like Gecko) " +
-        "Chrome/131.0.0.0 Safari/537.36",
-
-      viewport: {
-        width: 1440,
-        height: 1200,
-      },
-
-      extraHTTPHeaders: {
-        "Accept-Language": "de-DE,de;q=0.9,en;q=0.7",
-      },
-    });
-
-    const page = await context.newPage();
-
-    await page.goto(listingUrl, {
-      waitUntil: "domcontentloaded",
-      timeout: BROWSER_TIMEOUT_MS,
-    });
-
-    await page.waitForTimeout(2_500);
-
-    await acceptCookieBanner(page);
-
-    await scrollRenderedPage(page);
-
-    await page.waitForTimeout(1_500);
-
-    const extracted = await page.evaluate(() => {
-      function clean(value) {
-        return String(value || "")
-          .replace(/\s+/g, " ")
-          .trim();
-      }
-
-      function meta(selector) {
-        return clean(document.querySelector(selector)?.getAttribute("content"));
-      }
-
-      const jsonLd = [];
-
-      document
-        .querySelectorAll('script[type="application/ld+json"]')
-        .forEach((script) => {
-          try {
-            jsonLd.push(JSON.parse(script.textContent));
-          } catch {
-            // Ignore invalid JSON-LD.
-          }
-        });
-
-      const relevantScripts = [];
-
-      document.querySelectorAll("script").forEach((script) => {
-        const text = script.textContent || "";
-
-        if (
-          /mileage|kilometerstand|firstRegistration|erstzulassung|vehicle|price|transmission|leistung|power|hubraum/i.test(
-            text,
-          )
-        ) {
-          relevantScripts.push(text.slice(0, 80_000));
-        }
-      });
-
-      const labels = [];
-
-      document
-        .querySelectorAll("dt, dd, li, p, span, div")
-        .forEach((element) => {
-          const text = clean(element.textContent);
-
-          if (
-            text &&
-            text.length <= 220 &&
-            /erstzulassung|kilometerstand|leistung|getriebe|hubraum|kraftstoff|tüv|hu|scheckheft|unfall|fahrzeughalter|verkäufer|standort|farbe|karosserie/i.test(
-              text,
-            )
-          ) {
-            labels.push(text);
-          }
-        });
-
-      return {
-        finalUrl: window.location.href,
-
-        pageTitle:
-          clean(document.querySelector("h1")?.textContent) ||
-          meta('meta[property="og:title"]') ||
-          clean(document.title),
-
-        pageDescription:
-          meta('meta[property="og:description"]') ||
-          meta('meta[name="description"]'),
-
-        visibleText: clean(document.body?.innerText).slice(0, 70_000),
-
-        specificationText: [...new Set(labels)].slice(0, 250).join("\n"),
-
-        jsonLd,
-
-        relevantScripts: relevantScripts.slice(0, 8),
-      };
-    });
-
-    const blockText = [
-      extracted.pageTitle,
-      extracted.pageDescription,
-      extracted.visibleText,
-    ]
-      .filter(Boolean)
-      .join(" ");
-
-    const blocked =
-      /captcha|access denied|unusual traffic|robot check|verify you are human|bot detection/i.test(
-        blockText,
-      );
-
-    return {
-      ok: !blocked,
-      blocked,
-      error: blocked
-        ? "Der Marktplatz hat die automatische Browser-Abfrage blockiert."
-        : null,
-      ...extracted,
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      blocked: false,
-
-      error: error?.message || "Browser-Extraktion fehlgeschlagen.",
-
-      finalUrl: listingUrl,
-      pageTitle: null,
-      pageDescription: null,
-      visibleText: "",
-      specificationText: "",
-      jsonLd: [],
-      relevantScripts: [],
-    };
-  } finally {
-    if (context) {
-      await context.close();
-    }
-
-    if (browser) {
-      await browser.close();
-    }
-  }
-}
-
-function createTargetEvidence(listingUrl, browserResult) {
-  return {
-    listingUrl,
-
-    browserExtraction: {
-      ok: browserResult.ok,
-      blocked: browserResult.blocked,
-      error: browserResult.error,
-      finalUrl: browserResult.finalUrl,
-    },
-
-    pageTitle: browserResult.pageTitle || null,
-
-    pageDescription: browserResult.pageDescription || null,
-
-    specificationText: browserResult.specificationText || "",
-
-    visiblePageText: browserResult.visibleText || "",
-
-    jsonLd: browserResult.jsonLd || [],
-
-    relevantApplicationScripts: browserResult.relevantScripts || [],
-
-    urlSlug: parseUrlSlug(listingUrl),
-  };
-}
-
-// -----------------------------------------------------------------------------
-// OpenAI target extraction
-// -----------------------------------------------------------------------------
-
-async function normalizeTargetVehicle(targetEvidence) {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY fehlt.");
-  }
-
-  const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-
-  const response = await client.responses.create({
-    model: OPENAI_MODEL,
-
-    instructions:
-      "Extract the exact target vehicle from supplied rendered marketplace evidence. Do not search the internet and never invent unsupported facts.",
-
-    input: `
-Extract and normalize the exact vehicle from this rendered marketplace evidence:
-
-${JSON.stringify(targetEvidence, null, 2)}
-
-EXTRACTION PRIORITY
-
-1. Explicit target values from specificationText or visiblePageText.
-2. Values clearly associated with the target advertisement in JSON-LD.
-3. Values clearly associated with the target listing in application scripts.
-4. Page title, description and URL slug.
-
-EXTRACT
-
-- title;
-- make;
-- model;
-- generation;
-- variant or trim;
-- complete advertised cash price;
-- first registration;
-- mileage;
-- fuel type;
-- transmission;
-- power in PS and kW;
-- engine capacity;
-- TÜV/HU;
-- service history;
-- accident status;
-- damage description;
-- seller type;
-- body type;
-- color;
-- location.
-
-GERMAN LABELS
-
-- Erstzulassung or EZ means firstRegistration.
-- Kilometerstand means mileageKm.
-- Leistung means powerPs or powerKw.
-- Getriebe means transmission.
-- Hubraum means engineCapacityCcm.
-- Kraftstoff means fuelType.
-- HU or TÜV means tuvUntil.
-- Händler means sellerType DEALER.
-- Privatanbieter means sellerType PRIVATE.
-- Scheckheftgepflegt means serviceHistory YES.
-- Unfallfrei means accidentStatus ACCIDENT_FREE.
-
-MAKE AND MODEL
-
-Extract the obvious make and model from the page title or URL.
-
-Examples:
-
-- Ford Focus 1.0 Business means make Ford, model Focus.
-- Opel Astra TwinTop means make Opel, model Astra.
-- Volkswagen Golf 1.4 means make Volkswagen, model Golf.
-
-IMPORTANT
-
-- Use the full vehicle cash price, not a monthly financing rate.
-- A value followed by km is mileage, not price.
-- Ignore carousel vehicles, related vehicles and recommendations.
-- Ignore financing examples.
-- Ignore values that clearly belong to another advertisement.
-- Do not invent unsupported facts.
-- Use null or UNKNOWN when evidence is unavailable.
-- confidence must be an integer from 0 to 100.
-- listingUrl must equal the supplied target URL.
-- missingFields must contain only genuinely missing important fields.
-- All normalized text should be in German where appropriate.
-`,
-
-    text: {
-      format: {
-        type: "json_schema",
-        name: "normalized_target_vehicle",
-        strict: true,
-        schema: vehicleSchema,
-      },
-    },
-  });
-
-  const output = openAIOutputText(response);
-
-  if (!output) {
-    throw new Error("OpenAI konnte die Zielanzeige nicht auswerten.");
-  }
-
-  const vehicle = JSON.parse(output);
-
-  vehicle.listingUrl = targetEvidence.listingUrl;
-
-  return {
-    vehicle,
-
-    model: response?.model || OPENAI_MODEL,
-
-    usage: response?.usage || null,
-  };
-}
-
-// -----------------------------------------------------------------------------
-// Perplexity marketplace research
-// -----------------------------------------------------------------------------
-
-function buildMarketplacePrompt({ marketplace, targetVehicle, listingUrl }) {
-  return `
-Search ${marketplace.name} for active German used-car offers comparable to the target vehicle.
-
-TARGET LISTING:
-${listingUrl}
-
-TARGET VEHICLE:
-${JSON.stringify(targetVehicle, null, 2)}
-
-Your task is marketplace research only.
-
-Do not calculate market value.
-Do not calculate dealer profit.
-Do not make a purchase recommendation.
-
-Return up to 8 possible candidates from ${marketplace.domain}.
-
-SEARCH PRIORITY
-
-1. Same make and model.
-2. Same generation and body type.
-3. Same fuel type.
-4. Same transmission.
-5. Similar engine and power.
-6. Similar registration and mileage.
-
-When some target fields are unknown, continue with the reliable fields.
-
-A candidate may come from:
-
-- a direct individual advertisement page; or
-- a factual marketplace search-result snippet.
-
-Do not return the target advertisement itself.
-
-Do not return:
-
-- vehicle parts;
-- wanted advertisements;
-- monthly financing prices;
-- leasing-only monthly prices;
-- unrelated models.
-
-RULES
-
-- Price must be the complete cash price.
-- Never invent a URL.
-- Never invent a price.
-- Never invent mileage or specifications.
-- Use null or UNKNOWN for unsupported values.
-- Include short factual evidence.
-- Return JSON only according to the schema.
-`;
-}
-
-async function searchMarketplace({ marketplace, targetVehicle, listingUrl }) {
+async function perplexitySearch({ query, domains, maxResults = 10 }) {
   if (!process.env.PERPLEXITY_API_KEY) {
     throw new Error("PERPLEXITY_API_KEY fehlt.");
   }
 
-  const response = await fetch(PERPLEXITY_ENDPOINT, {
-    method: "POST",
-    cache: "no-store",
+  let lastError = null;
 
-    headers: {
-      Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+  for (let attempt = 0; attempt < POLICY.searchRetries; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), POLICY.searchTimeoutMs);
 
-      "Content-Type": "application/json",
-    },
-
-    body: JSON.stringify({
-      model: PERPLEXITY_MODEL,
-
-      messages: [
-        {
-          role: "system",
-
-          content:
-            "Search German used-car marketplaces accurately. Never invent advertisements, URLs, prices or specifications.",
+    try {
+      const response = await fetch(PERPLEXITY_SEARCH_ENDPOINT, {
+        method: "POST",
+        cache: "no-store",
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+          "Content-Type": "application/json",
         },
-
-        {
-          role: "user",
-
-          content: buildMarketplacePrompt({
-            marketplace,
-            targetVehicle,
-            listingUrl,
-          }),
-        },
-      ],
-
-      search_domain_filter: [marketplace.domain],
-
-      search_language_filter: ["de"],
-
-      web_search_options: {
-        search_context_size: "medium",
-
-        user_location: {
+        body: JSON.stringify({
+          query,
           country: "DE",
-          region: "Nordrhein-Westfalen",
-          city: "Jülich",
-        },
-      },
-
-      temperature: 0.05,
-      max_tokens: 2400,
-
-      response_format: {
-        type: "json_schema",
-
-        json_schema: {
-          name: `market_${marketplace.name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "_")}`,
-
-          schema: marketplaceSearchSchema,
-        },
-      },
-    }),
-  });
-
-  const raw = await response.text();
-
-  let payload;
-
-  try {
-    payload = JSON.parse(raw);
-  } catch {
-    throw new Error(`${marketplace.name} lieferte ungültiges JSON.`);
-  }
-
-  if (!response.ok) {
-    throw new Error(
-      payload?.error?.message ||
-        payload?.message ||
-        `${marketplace.name}: HTTP ${response.status}`,
-    );
-  }
-
-  const content = payload?.choices?.[0]?.message?.content;
-
-  if (!content) {
-    throw new Error(`${marketplace.name} lieferte keinen Inhalt.`);
-  }
-
-  const parsed = typeof content === "string" ? JSON.parse(content) : content;
-
-  return {
-    marketplace: marketplace.name,
-
-    candidates: parsed.candidates || [],
-
-    warnings: parsed.warnings || [],
-
-    model: payload?.model || PERPLEXITY_MODEL,
-
-    searchResultCount: Array.isArray(payload?.search_results)
-      ? payload.search_results.length
-      : 0,
-
-    usage: payload?.usage || null,
-  };
-}
-
-function candidateIdentity(candidate, index) {
-  if (candidate.listingUrl) {
-    return normalizedUrl(candidate.listingUrl);
-  }
-
-  return [
-    cleanString(candidate.title).toLowerCase(),
-
-    numberOrNull(candidate.price) ?? "no-price",
-
-    numberOrNull(candidate.mileageKm) ?? "no-mileage",
-
-    candidate.firstRegistration || "no-registration",
-
-    index,
-  ].join("|");
-}
-
-async function searchAllMarketplaces({ targetVehicle, listingUrl }) {
-  const settled = await Promise.allSettled(
-    MARKETPLACES.map((marketplace) =>
-      withTimeout(
-        searchMarketplace({
-          marketplace,
-          targetVehicle,
-          listingUrl,
+          max_results: clamp(maxResults, 1, 20),
+          search_context_size: "high",
+          search_language_filter: ["de"],
+          search_domain_filter: domains,
         }),
-
-        PERPLEXITY_TIMEOUT_MS,
-
-        marketplace.name,
-      ),
-    ),
-  );
-
-  const rawCandidates = [];
-  const warnings = [];
-  const diagnostics = [];
-
-  settled.forEach((result, index) => {
-    const marketplace = MARKETPLACES[index];
-
-    if (result.status === "fulfilled") {
-      rawCandidates.push(
-        ...result.value.candidates.map((candidate) => ({
-          ...candidate,
-
-          marketplace: marketplace.name,
-        })),
-      );
-
-      warnings.push(...result.value.warnings);
-
-      diagnostics.push({
-        marketplace: marketplace.name,
-
-        ok: true,
-
-        candidateCount: result.value.candidates.length,
-
-        searchResultCount: result.value.searchResultCount,
-
-        model: result.value.model,
-
-        error: null,
       });
 
-      return;
-    }
+      const raw = await response.text();
 
-    const error = result.reason?.message || "Unbekannter Suchfehler.";
+      if (response.ok) {
+        try {
+          return JSON.parse(raw);
+        } catch {
+          throw new Error("Perplexity Search lieferte ungültiges JSON.");
+        }
+      }
 
-    warnings.push(`${marketplace.name}: ${error}`);
-
-    diagnostics.push({
-      marketplace: marketplace.name,
-
-      ok: false,
-      candidateCount: 0,
-      searchResultCount: 0,
-      model: PERPLEXITY_MODEL,
-      error,
-    });
-  });
-
-  const targetIdentity = normalizedUrl(listingUrl);
-
-  const unique = [];
-  const seen = new Set();
-
-  for (let index = 0; index < rawCandidates.length; index += 1) {
-    const candidate = rawCandidates[index];
-
-    const rawUrl = cleanString(candidate.listingUrl);
-
-    const cleanedUrl = rawUrl ? cleanTrackingParameters(rawUrl) : null;
-
-    const directListing = cleanedUrl ? isDirectListingUrl(cleanedUrl) : false;
-
-    const price = numberOrNull(candidate.price);
-
-    const usefulSnippet =
-      price !== null &&
-      Boolean(
-        candidate.title ||
-        candidate.make ||
-        candidate.model ||
-        candidate.evidence,
+      const retryable = response.status === 429 || response.status >= 500;
+      lastError = new Error(
+        `Perplexity Search HTTP ${response.status}: ${raw.slice(0, 300)}`,
       );
 
-    if (!directListing && !usefulSnippet) {
-      continue;
+      if (!retryable || attempt === POLICY.searchRetries - 1) throw lastError;
+
+      const retryAfter = Number(response.headers.get("retry-after"));
+      const waitMs = Number.isFinite(retryAfter)
+        ? retryAfter * 1000
+        : 1_500 * Math.pow(2, attempt);
+      await delay(waitMs);
+    } catch (error) {
+      lastError =
+        error?.name === "AbortError"
+          ? new Error("Perplexity Search hat zu lange gebraucht.")
+          : error;
+
+      if (
+        attempt === POLICY.searchRetries - 1 ||
+        error?.name !== "AbortError"
+      ) {
+        if (!/HTTP (429|5\d\d)/.test(lastError?.message || "")) throw lastError;
+      }
+
+      if (attempt < POLICY.searchRetries - 1) {
+        await delay(1_500 * Math.pow(2, attempt));
+      }
+    } finally {
+      clearTimeout(timer);
     }
-
-    const identity = candidateIdentity(
-      {
-        ...candidate,
-        listingUrl: cleanedUrl,
-      },
-      index,
-    );
-
-    if (cleanedUrl && identity === targetIdentity) {
-      continue;
-    }
-
-    if (seen.has(identity)) {
-      continue;
-    }
-
-    seen.add(identity);
-
-    unique.push({
-      title: candidate.title || null,
-
-      make: candidate.make || null,
-
-      model: candidate.model || null,
-
-      generation: candidate.generation || null,
-
-      variant: candidate.variant || null,
-
-      price,
-
-      firstRegistration: candidate.firstRegistration || null,
-
-      mileageKm: numberOrNull(candidate.mileageKm),
-
-      fuelType: candidate.fuelType || null,
-
-      transmission: candidate.transmission || null,
-
-      powerPs: numberOrNull(candidate.powerPs),
-
-      sellerType: candidate.sellerType || "UNKNOWN",
-
-      bodyType: candidate.bodyType || null,
-
-      location: candidate.location || null,
-
-      listingUrl: cleanedUrl,
-
-      directListingUrl: directListing,
-
-      marketplace: candidate.marketplace,
-
-      evidence: candidate.evidence
-        ? cleanString(candidate.evidence).slice(0, 500)
-        : null,
-    });
   }
 
-  return {
-    candidates: unique.slice(0, 15),
-
-    warnings: [...new Set(warnings)].slice(0, 12),
-
-    diagnostics,
-
-    rawCandidateCount: rawCandidates.length,
-  };
+  throw lastError || new Error("Perplexity Search ist fehlgeschlagen.");
 }
 
-// -----------------------------------------------------------------------------
-// OpenAI final analysis
-// -----------------------------------------------------------------------------
+function openAIClient() {
+  if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY fehlt.");
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
-async function analyzeMarketWithOpenAI({
-  targetVehicle,
-  candidates,
-  researchWarnings,
-}) {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY fehlt.");
+async function extractTargetVehicle(listingUrl) {
+  const marketplace = detectMarketplace(listingUrl);
+  const identifier = listingIdentifier(listingUrl);
+  const identity = listingIdentity(listingUrl);
+
+  const queries = [
+    `Exakte Fahrzeuganzeige ${listingUrl} Kennung ${identifier}. Preis, Erstzulassung, Kilometerstand, Motor und Ausstattung.`,
+    `Fahrzeuganzeige Kennung "${identifier}" auf ${marketplace.domain}`,
+  ];
+
+  let results = [];
+
+  for (const query of queries) {
+    const data = await perplexitySearch({
+      query,
+      domains: [marketplace.domain],
+      maxResults: 8,
+    });
+    results = sanitizeSearchResults(data, marketplace.domain);
+    if (results.some((result) => listingIdentity(result.url) === identity))
+      break;
+    await delay(700);
   }
 
-  const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
+  const exactResults = results.filter(
+    (result) => listingIdentity(result.url) === identity,
+  );
 
+  if (!exactResults.length) {
+    throw new Error(
+      "Die genaue Zielanzeige wurde im Suchindex nicht gefunden. Die Anzeige ist möglicherweise neu, abgelaufen oder nicht indexiert.",
+    );
+  }
+
+  const evidence = exactResults.map((result, index) => ({
+    index,
+    title: result.title,
+    url: result.url,
+    snippet: result.snippet,
+    lastUpdated: result.lastUpdated,
+  }));
+
+  const client = openAIClient();
   const response = await client.responses.create({
     model: OPENAI_MODEL,
-
-    instructions:
-      "Analyze only the supplied German used-car research. Select comparisons, calculate market value and dealer economics. Never invent advertisements or facts.",
-
+    instructions: [
+      "Extrahiere ausschließlich Daten der angegebenen deutschen Fahrzeuganzeige.",
+      "Verwende nur die bereitgestellten Suchbelege.",
+      "Erfinde keine Werte und verwende null oder UNKNOWN, wenn etwas nicht belegt ist.",
+      "Finanzierungsraten sind kein Fahrzeugpreis.",
+    ].join(" "),
     input: `
-TARGET VEHICLE:
+Strukturiere die Zielanzeige.
 
-${JSON.stringify(targetVehicle, null, 2)}
+ORIGINAL-URL:
+${listingUrl}
 
-MARKETPLACE CANDIDATES:
+SUCHBELEGE:
+${JSON.stringify(evidence, null, 2)}
 
-${JSON.stringify(candidates, null, 2)}
-
-RESEARCH WARNINGS:
-
-${JSON.stringify(researchWarnings, null, 2)}
-
-Perform the complete vehicle market and dealer analysis.
-
-IMPORTANT
-
-JavaScript will not calculate similarity, market value, dealer margin or profit.
-You must perform those tasks.
-
-COMPARABLE SELECTION
-
-- Same make and model are normally mandatory.
-- Prefer the same generation and body type.
-- Prefer the same fuel and transmission.
-- Prefer similar engine, power, first registration and mileage.
-- Reject the target listing itself.
-- Reject duplicates.
-- Reject unrelated models or materially different vehicle generations.
-- Reject candidates without a plausible full cash price.
-- Keep up to six strongest candidates.
-
-CANDIDATE SOURCE TYPES
-
-Each input candidate contains directListingUrl.
-
-When directListingUrl is true:
-
-- sourceType must be DIRECT_LISTING.
-
-When directListingUrl is false:
-
-- sourceType must be SEARCH_SNIPPET.
-- The candidate may still be used when it has a plausible full price and enough identifying facts.
-- Reduce confidence compared with a direct advertisement.
-- listingUrl may contain a search page, but never describe it as a direct advertisement.
-
-Never invent a direct URL.
-
-PRICE ADJUSTMENT
-
-For every accepted candidate:
-
-- preserve its original price;
-- estimate an adjusted price for the target;
-- consider year;
-- mileage;
-- engine;
-- power;
-- transmission;
-- fuel;
-- body type;
-- equipment;
-- seller type;
-- TÜV;
-- service history;
-- accident status;
-- condition;
-- explain the adjustment briefly.
-
-MARKET STATISTICS
-
-Calculate:
-
-- comparison count;
-- minimum original price;
-- maximum original price;
-- average original price;
-- median original price;
-- similarity-weighted market price;
-- realistic target retail-price range;
-- difference between target asking price and weighted market price.
-
-Do not allow one extreme price to control the result.
-
-DEALER ANALYSIS
-
-Estimate:
-
-- preparation and cleaning costs;
-- immediate repair reserve;
-- warranty or Gewährleistung reserve;
-- recommended dealer purchase range;
-- negotiation target;
-- absolute maximum purchase price;
-- expected profit if bought at the target asking price.
-
-Expected profit must subtract:
-
-- purchase price;
-- preparation costs;
-- repair reserve;
-- warranty reserve.
-
-When target asking price is unknown, estimatedProfitAtAskingPrice must be null.
-
-DATA SUFFICIENCY
-
-- Direct listings are stronger than search snippets.
-- Three or more credible priced snippets may support a cautious market range.
-- When fewer than two credible priced candidates remain, normally use INSUFFICIENT_DATA.
-- When important target data is missing, lower confidence and widen the market range.
-- Do not output confidence 0 merely because some fields are unknown.
-
-CONFIDENCE
-
-Return a whole-number percentage.
-
-- 50 means fifty percent.
-- Never return 0.5 for fifty percent.
-
-LANGUAGE
-
-All explanations, warnings, reasons, risks and questions must be in German.
+Regeln:
+- Erstzulassung/EZ als MM/YYYY oder YYYY ausgeben.
+- Kilometerstand als Zahl in km.
+- Leistung als PS beziehungsweise kW.
+- "unfallfrei" nur bei ausdrücklichem Beleg als ACCIDENT_FREE markieren.
+- "Scheckheftgepflegt" als serviceHistory YES markieren.
+- confidence bewertet nur die Vollständigkeit der Suchbelege.
 `,
-
     text: {
       format: {
         type: "json_schema",
-
-        name: "vehicle_market_analysis",
-
+        name: "target_vehicle",
         strict: true,
-
-        schema: finalAnalysisSchema,
+        schema: targetVehicleSchema,
       },
     },
   });
 
   const output = openAIOutputText(response);
+  if (!output)
+    throw new Error("OpenAI konnte die Zielanzeige nicht strukturieren.");
 
-  if (!output) {
-    throw new Error("OpenAI hat keine Marktanalyse geliefert.");
+  const vehicle = JSON.parse(output);
+  vehicle.listingUrl = listingUrl;
+  vehicle.source = marketplace.id;
+  vehicle.price = numberOrNull(vehicle.price);
+  vehicle.mileageKm = numberOrNull(vehicle.mileageKm);
+  vehicle.powerPs = numberOrNull(vehicle.powerPs);
+  vehicle.powerKw = numberOrNull(vehicle.powerKw);
+  vehicle.engineCapacityCcm = numberOrNull(vehicle.engineCapacityCcm);
+
+  if (!vehicle.make || !vehicle.model || !vehicle.price) {
+    throw new Error(
+      "Marke, Modell oder Angebotspreis fehlen im Suchindex. Für eine sichere Analyse werden diese drei Angaben benötigt.",
+    );
   }
 
   return {
-    analysis: JSON.parse(output),
-
+    vehicle,
     model: response?.model || OPENAI_MODEL,
-
-    usage: response?.usage || null,
+    evidenceCount: exactResults.length,
   };
 }
 
-// -----------------------------------------------------------------------------
-// Fallback
-// -----------------------------------------------------------------------------
-
-function createFallbackAnalysis(warnings) {
-  return {
-    comparableVehicles: [],
-    rejectedCandidates: [],
-
-    marketStatistics: {
-      comparableCount: 0,
-      minimumPrice: null,
-      maximumPrice: null,
-      averagePrice: null,
-      medianPrice: null,
-      weightedMarketPrice: null,
-      estimatedRetailPriceFrom: null,
-      estimatedRetailPriceTo: null,
-      priceDifferenceToMarket: null,
-
-      explanation:
-        "Es wurden nicht genügend belastbare Vergleichsangebote gefunden.",
-    },
-
-    dealerAssessment: {
-      recommendedPurchasePriceFrom: null,
-
-      recommendedPurchasePriceTo: null,
-
-      negotiationTarget: null,
-
-      absoluteMaximumPurchasePrice: null,
-
-      estimatedPreparationCosts: null,
-
-      estimatedRepairReserve: null,
-
-      estimatedWarrantyReserve: null,
-
-      estimatedProfitAtAskingPrice: null,
-
-      explanation:
-        "Ohne belastbare Vergleichspreise ist keine seriöse Händlerkalkulation möglich.",
-    },
-
-    recommendation: {
-      rating: "INSUFFICIENT_DATA",
-
-      confidence: 0,
-
-      headline: "Nicht genügend Marktdaten",
-
-      summary:
-        "Die Analyse konnte keine ausreichend zuverlässige Marktgrundlage aufbauen.",
-
-      reasons: [],
-
-      risks: [
-        "Der Marktwert kann ohne ausreichende Vergleichsangebote nicht zuverlässig bestimmt werden.",
-      ],
-
-      questionsForSeller: [],
-    },
-
-    overallWarnings: warnings.slice(0, 12),
-  };
+function targetSearchDescription(target) {
+  return [
+    target.make,
+    target.model,
+    target.variant,
+    target.generation,
+    target.fuelType,
+    target.transmission,
+    target.powerPs ? `${target.powerPs} PS` : null,
+    target.firstRegistration ? `EZ ${target.firstRegistration}` : null,
+    target.mileageKm ? `${Math.round(target.mileageKm / 1000)}000 km` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
-// -----------------------------------------------------------------------------
-// Route
-// -----------------------------------------------------------------------------
+async function collectComparableSearchResults(target) {
+  const domains = MARKETPLACES.map((marketplace) => marketplace.domain);
+  const exactDescription = targetSearchDescription(target);
+  const queries = [
+    `${exactDescription} Gebrauchtwagen kaufen Deutschland aktuelle Angebote Preis`,
+    `${target.make} ${target.model} ${target.fuelType || ""} ${target.transmission || ""} Gebrauchtwagen Angebote Deutschland`,
+  ];
 
-export async function POST(req) {
-  const startedAt = Date.now();
+  const collected = [];
+  const seen = new Set([listingIdentity(target.listingUrl)]);
+  const warnings = [];
 
-  try {
-    const session = await getServerSession(authOptions);
+  for (let index = 0; index < queries.length; index += 1) {
+    if (index === 1 && collected.length >= 12) break;
 
-    if (!session) {
-      return json(
-        {
-          success: false,
-          error: "Unauthorized",
-        },
-        401,
+    try {
+      const data = await perplexitySearch({
+        query: queries[index],
+        domains,
+        maxResults: 20,
+      });
+      const results = sanitizeSearchResults(data);
+
+      for (const result of results) {
+        const identity = listingIdentity(result.url);
+        if (seen.has(identity)) continue;
+        seen.add(identity);
+        collected.push(result);
+        if (collected.length >= POLICY.maximumRawResults) break;
+      }
+    } catch (error) {
+      warnings.push(
+        error?.message || "Eine Vergleichssuche ist fehlgeschlagen.",
       );
     }
 
-    const body = await req.json();
+    if (collected.length < POLICY.maximumRawResults) await delay(900);
+  }
 
-    const listingUrl = validateMarketplaceUrl(body?.url);
+  if (!collected.length) {
+    throw new Error(
+      "Die Such-API hat keine direkten Vergleichsanzeigen gefunden. Bitte später erneut versuchen.",
+    );
+  }
 
-    console.log("Market analysis started:", listingUrl);
+  return { results: collected, warnings };
+}
 
-    // 1. Render the exact target advertisement in Chromium.
-    const browserResult = await extractTargetWithBrowser(listingUrl);
+async function extractComparableCandidates(searchResults, target) {
+  const evidence = searchResults.map((result, index) => ({
+    resultIndex: index,
+    title: result.title,
+    url: result.url,
+    snippet: result.snippet,
+    lastUpdated: result.lastUpdated,
+  }));
 
-    const targetEvidence = createTargetEvidence(listingUrl, browserResult);
+  const client = openAIClient();
+  const response = await client.responses.create({
+    model: OPENAI_MODEL,
+    instructions: [
+      "Du strukturierst deutsche Gebrauchtwagen-Suchergebnisse.",
+      "Nutze ausschließlich die gelieferten Belege.",
+      "Gib für jeden Kandidaten den resultIndex des Belegs zurück.",
+      "Erfinde niemals URLs oder Fahrzeugdaten.",
+      "Überspringe Suchseiten, Ratgeber, Neuwagen-Konfiguratoren und offensichtlich andere Modelle.",
+    ].join(" "),
+    input: `
+Extrahiere geeignete Vergleichsfahrzeuge für dieses Zielauto:
+${JSON.stringify(target, null, 2)}
 
-    // 2. OpenAI extracts structured target data from rendered page evidence.
-    const normalizedTarget = await normalizeTargetVehicle(targetEvidence);
+SUCHERGEBNISSE:
+${JSON.stringify(evidence, null, 2)}
 
-    const targetVehicle = {
-      ...normalizedTarget.vehicle,
+Regeln:
+- Nur vollständige beworbene Barpreise, keine Monatsraten.
+- Fehlende Werte als null oder UNKNOWN.
+- Kandidaten mit anderem Modell nicht aufnehmen.
+- Das Zielauto selbst nicht aufnehmen.
+- evidence kurz und konkret auf Deutsch formulieren.
+`,
+    text: {
+      format: {
+        type: "json_schema",
+        name: "comparable_vehicles",
+        strict: true,
+        schema: comparableExtractionSchema,
+      },
+    },
+  });
 
-      listingUrl,
-    };
+  const output = openAIOutputText(response);
+  if (!output)
+    throw new Error("OpenAI konnte die Vergleichsdaten nicht strukturieren.");
 
-    // 3. Perplexity searches each marketplace.
-    const marketResearch = await searchAllMarketplaces({
-      targetVehicle,
-      listingUrl,
+  const parsed = JSON.parse(output);
+  const usedIndexes = new Set();
+  const candidates = [];
+
+  for (const candidate of parsed.candidates || []) {
+    const resultIndex = Number(candidate.resultIndex);
+    const sourceResult = searchResults[resultIndex];
+    if (
+      !Number.isInteger(resultIndex) ||
+      !sourceResult ||
+      usedIndexes.has(resultIndex)
+    )
+      continue;
+    usedIndexes.add(resultIndex);
+
+    candidates.push({
+      ...candidate,
+      price: numberOrNull(candidate.price),
+      mileageKm: numberOrNull(candidate.mileageKm),
+      powerPs: numberOrNull(candidate.powerPs),
+      listingUrl: sourceResult.url,
+      directListingUrl: sourceResult.url,
+      source: detectSource(sourceResult.url),
+      marketplace: detectMarketplace(sourceResult.url)?.name || "Unbekannt",
     });
+  }
 
-    // 4. OpenAI performs all comparisons and dealer calculations.
-    let finalResult;
-    let finalAnalysisError = null;
+  return {
+    candidates,
+    warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
+    model: response?.model || OPENAI_MODEL,
+  };
+}
 
-    try {
-      finalResult = await analyzeMarketWithOpenAI({
-        targetVehicle,
+function vehicleIdentityText(vehicle) {
+  return [
+    vehicle.make,
+    vehicle.model,
+    vehicle.generation,
+    vehicle.variant,
+    vehicle.title,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
 
-        candidates: marketResearch.candidates,
+function validateCandidate(candidate, target) {
+  if (
+    !candidate.listingUrl ||
+    listingIdentity(candidate.listingUrl) === listingIdentity(target.listingUrl)
+  ) {
+    return "Die Anzeige ist das Zielauto selbst.";
+  }
 
-        researchWarnings: marketResearch.warnings,
+  const price = numberOrNull(candidate.price);
+  if (price === null || price < 500 || price > 500_000) {
+    return "Kein plausibler vollständiger Fahrzeugpreis.";
+  }
+
+  const title = vehicleIdentityText(candidate);
+  if (!sameNormalizedText(candidate.make || title, target.make))
+    return "Andere Fahrzeugmarke.";
+  if (!sameNormalizedText(candidate.model || title, target.model))
+    return "Anderes Fahrzeugmodell.";
+
+  if (
+    candidate.fuelType &&
+    target.fuelType &&
+    normalizeText(candidate.fuelType) !== "unknown" &&
+    !sameNormalizedText(candidate.fuelType, target.fuelType)
+  ) {
+    return "Abweichende Kraftstoffart.";
+  }
+
+  const targetRegistration = registrationToMonths(target.firstRegistration);
+  const candidateRegistration = registrationToMonths(
+    candidate.firstRegistration,
+  );
+  if (
+    targetRegistration !== null &&
+    candidateRegistration !== null &&
+    Math.abs(targetRegistration - candidateRegistration) >
+      POLICY.maximumAgeGapMonths
+  ) {
+    return "Erstzulassung liegt zu weit vom Zielauto entfernt.";
+  }
+
+  const targetMileage = numberOrNull(target.mileageKm);
+  const candidateMileage = numberOrNull(candidate.mileageKm);
+  if (targetMileage !== null && candidateMileage !== null) {
+    const gap = Math.abs(targetMileage - candidateMileage);
+    const ratio =
+      Math.max(targetMileage, candidateMileage) /
+      Math.max(10_000, Math.min(targetMileage, candidateMileage));
+    if (
+      gap > POLICY.maximumMileageGapKm ||
+      ratio > POLICY.maximumMileageRatio
+    ) {
+      return "Kilometerstand ist zu unterschiedlich.";
+    }
+  }
+
+  return null;
+}
+
+function scoreCandidate(candidate, target) {
+  let score = 0;
+  const differences = [];
+  const identitySimilarity = tokenSimilarity(
+    vehicleIdentityText(candidate),
+    vehicleIdentityText(target),
+  );
+  score += Math.round(identitySimilarity * 15);
+
+  if (sameNormalizedText(candidate.make, target.make)) score += 15;
+  if (sameNormalizedText(candidate.model, target.model)) score += 25;
+
+  if (candidate.variant && target.variant) {
+    const similarity = tokenSimilarity(candidate.variant, target.variant);
+    score += Math.round(similarity * 10);
+    if (similarity < 0.4)
+      differences.push(`Andere Variante: ${candidate.variant}`);
+  } else {
+    score += 3;
+  }
+
+  if (candidate.fuelType && target.fuelType) {
+    if (sameNormalizedText(candidate.fuelType, target.fuelType)) score += 10;
+    else differences.push(`Kraftstoff: ${candidate.fuelType}`);
+  } else {
+    score += 4;
+  }
+
+  if (candidate.transmission && target.transmission) {
+    if (sameNormalizedText(candidate.transmission, target.transmission))
+      score += 8;
+    else differences.push(`Getriebe: ${candidate.transmission}`);
+  } else {
+    score += 3;
+  }
+
+  const targetRegistration = registrationToMonths(target.firstRegistration);
+  const candidateRegistration = registrationToMonths(
+    candidate.firstRegistration,
+  );
+  if (targetRegistration !== null && candidateRegistration !== null) {
+    const gap = Math.abs(targetRegistration - candidateRegistration);
+    score += gap <= 6 ? 15 : gap <= 12 ? 12 : gap <= 24 ? 8 : gap <= 36 ? 5 : 2;
+    if (gap > 6)
+      differences.push(`${Math.round(gap / 12)} Jahr(e) EZ-Abweichung`);
+  } else {
+    score += 4;
+  }
+
+  const targetMileage = numberOrNull(target.mileageKm);
+  const candidateMileage = numberOrNull(candidate.mileageKm);
+  if (targetMileage !== null && candidateMileage !== null) {
+    const gap = Math.abs(targetMileage - candidateMileage);
+    score +=
+      gap <= 10_000
+        ? 12
+        : gap <= 25_000
+          ? 9
+          : gap <= 50_000
+            ? 6
+            : gap <= 75_000
+              ? 3
+              : 1;
+    if (gap > 10_000)
+      differences.push(`${Math.round(gap / 1000)}.000 km Abweichung`);
+  } else {
+    score += 3;
+  }
+
+  const targetPower = numberOrNull(target.powerPs);
+  const candidatePower = numberOrNull(candidate.powerPs);
+  if (targetPower !== null && candidatePower !== null) {
+    const gap = Math.abs(targetPower - candidatePower);
+    score += gap <= 5 ? 5 : gap <= 15 ? 3 : 0;
+    if (gap > 5) differences.push(`${Math.round(gap)} PS Abweichung`);
+  } else {
+    score += 2;
+  }
+
+  return {
+    score: clamp(Math.round(score), 0, 100),
+    differences: differences.slice(0, 6),
+  };
+}
+
+function calculateAdjustedPrice(candidate, target) {
+  const originalPrice = numberOrNull(candidate.price);
+  if (originalPrice === null) return { adjustedPrice: null, adjustments: [] };
+
+  let adjustment = 0;
+  const adjustments = [];
+  const targetRegistration = registrationToMonths(target.firstRegistration);
+  const candidateRegistration = registrationToMonths(
+    candidate.firstRegistration,
+  );
+
+  if (targetRegistration !== null && candidateRegistration !== null) {
+    const amount =
+      ((targetRegistration - candidateRegistration) / 12) *
+      POLICY.adjustmentPerYear;
+    if (Math.abs(amount) >= 100) {
+      adjustment += amount;
+      adjustments.push(
+        amount > 0 ? "Zielauto ist neuer" : "Vergleich ist neuer",
+      );
+    }
+  }
+
+  const targetMileage = numberOrNull(target.mileageKm);
+  const candidateMileage = numberOrNull(candidate.mileageKm);
+  if (targetMileage !== null && candidateMileage !== null) {
+    const amount =
+      ((candidateMileage - targetMileage) / 10_000) * POLICY.adjustmentPer10kKm;
+    if (Math.abs(amount) >= 75) {
+      adjustment += amount;
+      adjustments.push(
+        amount > 0
+          ? "Vergleich hat mehr Kilometer"
+          : "Vergleich hat weniger Kilometer",
+      );
+    }
+  }
+
+  const targetPower = numberOrNull(target.powerPs);
+  const candidatePower = numberOrNull(candidate.powerPs);
+  if (targetPower !== null && candidatePower !== null) {
+    const amount =
+      ((targetPower - candidatePower) / 10) * POLICY.adjustmentPer10Ps;
+    if (Math.abs(amount) >= 50) {
+      adjustment += amount;
+      adjustments.push(
+        amount > 0
+          ? "Zielauto hat mehr Leistung"
+          : "Vergleich hat mehr Leistung",
+      );
+    }
+  }
+
+  if (candidate.sellerType === "PRIVATE" && target.sellerType === "DEALER") {
+    adjustment += POLICY.privateToDealerAdjustment;
+    adjustments.push("Privatangebot auf Händlerniveau angepasst");
+  } else if (
+    candidate.sellerType === "DEALER" &&
+    target.sellerType === "PRIVATE"
+  ) {
+    adjustment -= POLICY.privateToDealerAdjustment;
+    adjustments.push("Händlerangebot auf Privatniveau angepasst");
+  }
+
+  const maximum = originalPrice * 0.25;
+  adjustment = clamp(adjustment, -maximum, maximum);
+  return {
+    adjustedPrice: roundMoney(originalPrice + adjustment),
+    adjustments,
+  };
+}
+
+function prepareComparables(candidates, target) {
+  const accepted = [];
+  const rejected = [];
+  const seen = new Set();
+
+  for (const candidate of candidates) {
+    const identity = listingIdentity(candidate.listingUrl);
+    if (seen.has(identity)) continue;
+    seen.add(identity);
+
+    const validationReason = validateCandidate(candidate, target);
+    if (validationReason) {
+      rejected.push({
+        title: candidate.title,
+        listingUrl: candidate.listingUrl,
+        reason: validationReason,
       });
-    } catch (error) {
-      finalAnalysisError =
-        error?.message || "OpenAI-Marktanalyse fehlgeschlagen.";
-
-      console.error("Final OpenAI analysis failed:", error);
-
-      finalResult = {
-        analysis: createFallbackAnalysis([
-          ...marketResearch.warnings,
-
-          `OpenAI: ${finalAnalysisError}`,
-        ]),
-
-        model: OPENAI_MODEL,
-
-        usage: null,
-      };
+      continue;
     }
 
-    const analysis = finalResult.analysis;
+    const scored = scoreCandidate(candidate, target);
+    if (scored.score < POLICY.minimumComparableScore) {
+      rejected.push({
+        title: candidate.title,
+        listingUrl: candidate.listingUrl,
+        reason: `Vergleichsscore ${scored.score}/100 ist zu niedrig.`,
+      });
+      continue;
+    }
 
-    const candidateMap = new Map(
-      marketResearch.candidates
-        .filter((candidate) => candidate.listingUrl)
-        .map((candidate) => [normalizedUrl(candidate.listingUrl), candidate]),
-    );
+    const price = calculateAdjustedPrice(candidate, target);
+    let valuationWeight = Math.pow(scored.score / 100, 2) * 100;
+    if (!candidate.firstRegistration) valuationWeight *= 0.7;
+    if (candidate.mileageKm === null) valuationWeight *= 0.7;
+    if (candidate.sellerType === "UNKNOWN") valuationWeight *= 0.9;
 
-    const comparableVehicles = (analysis.comparableVehicles || []).map(
-      (vehicle) => {
-        const cleanedUrl = vehicle.listingUrl
-          ? cleanTrackingParameters(vehicle.listingUrl)
-          : null;
+    accepted.push({
+      ...candidate,
+      sourceType: "DIRECT_LISTING",
+      similarityScore: scored.score,
+      valuationWeight: Number(Math.max(1, valuationWeight).toFixed(2)),
+      adjustedPrice: price.adjustedPrice,
+      mainDifferences: scored.differences,
+      comparisonReason: `Gleiches Modell; Ähnlichkeit ${scored.score}/100.`,
+      adjustmentExplanation: price.adjustments.length
+        ? price.adjustments.join(", ")
+        : "Keine wesentliche Preisbereinigung erforderlich.",
+    });
+  }
 
-        const originalCandidate = cleanedUrl
-          ? candidateMap.get(normalizedUrl(cleanedUrl))
-          : null;
+  return { accepted, rejected };
+}
 
-        const directListing =
-          originalCandidate?.directListingUrl ??
-          vehicle.sourceType === "DIRECT_LISTING";
+function removePriceOutliers(comparables) {
+  if (comparables.length < 4) return { accepted: comparables, rejected: [] };
+  const prices = comparables
+    .map((item) => item.adjustedPrice)
+    .filter(Number.isFinite);
+  const q1 = percentile(prices, 0.25);
+  const q3 = percentile(prices, 0.75);
+  const iqr = q3 - q1;
+  const lower = q1 - 1.5 * iqr;
+  const upper = q3 + 1.5 * iqr;
+  const accepted = [];
+  const rejected = [];
 
-        return {
-          ...vehicle,
+  for (const comparable of comparables) {
+    if (comparable.adjustedPrice < lower || comparable.adjustedPrice > upper) {
+      rejected.push({
+        title: comparable.title,
+        listingUrl: comparable.listingUrl,
+        reason: "Preis liegt außerhalb der robusten Vergleichsspanne.",
+      });
+    } else {
+      accepted.push(comparable);
+    }
+  }
+  return { accepted, rejected };
+}
 
-          source: detectSource(cleanedUrl || originalCandidate?.listingUrl),
+function chooseBestComparables(comparables) {
+  return [...comparables]
+    .sort(
+      (a, b) =>
+        b.similarityScore - a.similarityScore ||
+        b.valuationWeight - a.valuationWeight,
+    )
+    .slice(0, POLICY.maximumFinalComparables);
+}
 
-          listingUrl: directListing ? cleanedUrl : null,
+function calculateMarketStatistics(comparables, target) {
+  const originalPrices = comparables
+    .map((item) => item.price)
+    .filter(Number.isFinite);
+  const adjustedPrices = comparables
+    .map((item) => item.adjustedPrice)
+    .filter(Number.isFinite);
+  const weightedPrice = weightedAverage(
+    comparables.map((item) => ({
+      value: item.adjustedPrice,
+      weight: item.valuationWeight,
+    })),
+  );
+  const weightedMarketPrice = roundMoney(
+    weightedPrice === null
+      ? median(adjustedPrices)
+      : weightedPrice * 0.55 + median(adjustedPrices) * 0.45,
+  );
+  const deviation = standardDeviation(adjustedPrices);
+  const spread =
+    weightedMarketPrice === null ? null : clamp(deviation || 700, 500, 1_500);
 
-          evidenceUrl: cleanedUrl,
+  return {
+    comparableCount: comparables.length,
+    directListingCount: comparables.length,
+    snippetCount: 0,
+    minimumPrice: originalPrices.length ? Math.min(...originalPrices) : null,
+    maximumPrice: originalPrices.length ? Math.max(...originalPrices) : null,
+    averagePrice: roundMoney(average(originalPrices)),
+    medianPrice: roundMoney(median(originalPrices)),
+    weightedMarketPrice,
+    estimatedRetailPriceFrom:
+      weightedMarketPrice === null
+        ? null
+        : roundMoney(weightedMarketPrice - spread),
+    estimatedRetailPriceTo:
+      weightedMarketPrice === null
+        ? null
+        : roundMoney(weightedMarketPrice + spread),
+    priceDifferenceToMarket:
+      weightedMarketPrice !== null && numberOrNull(target.price) !== null
+        ? roundMoney(weightedMarketPrice - target.price)
+        : null,
+    averageSimilarity: comparables.length
+      ? Math.round(average(comparables.map((item) => item.similarityScore)))
+      : null,
+    priceStandardDeviation: roundMoney(deviation),
+    explanation: "",
+  };
+}
 
-          directListingUrl: directListing,
-        };
-      },
-    );
+function estimateCostReserve(target) {
+  let preparation = POLICY.defaultPreparationCosts;
+  let repair = POLICY.defaultRepairReserve;
+  let warranty = POLICY.defaultWarrantyReserve;
 
-    const warnings = [
-      ...new Set([
-        ...marketResearch.warnings,
+  if (target.accidentStatus === "DAMAGED") repair += 1_500;
+  else if (target.accidentStatus === "REPAIRED_DAMAGE") repair += 500;
+  else if (target.accidentStatus === "UNKNOWN") repair += 200;
+  if (!target.tuvUntil || normalizeText(target.tuvUntil) === "unknown")
+    repair += 250;
+  if (target.serviceHistory !== "YES") repair += 200;
 
-        ...(analysis.overallWarnings || []),
+  const mileage = numberOrNull(target.mileageKm);
+  if (mileage !== null && mileage > 120_000) {
+    repair += 300;
+    warranty += 200;
+  }
+  if (mileage !== null && mileage > 180_000) {
+    repair += 400;
+    warranty += 300;
+  }
 
-        ...(browserResult.error
-          ? [`Browser-Extraktion: ${browserResult.error}`]
-          : []),
+  return {
+    preparation: roundMoney(preparation),
+    repair: roundMoney(repair),
+    warranty: roundMoney(warranty),
+  };
+}
 
-        ...(finalAnalysisError ? [`OpenAI: ${finalAnalysisError}`] : []),
-      ]),
-    ].slice(0, 12);
+function calculateDealerAssessment(target, marketStatistics) {
+  const marketPrice = numberOrNull(marketStatistics.weightedMarketPrice);
+  const askingPrice = numberOrNull(target.price);
+  const empty = {
+    recommendedPurchasePriceFrom: null,
+    recommendedPurchasePriceTo: null,
+    negotiationTarget: null,
+    absoluteMaximumPurchasePrice: null,
+    estimatedPreparationCosts: null,
+    estimatedRepairReserve: null,
+    estimatedWarrantyReserve: null,
+    negotiationReserve: POLICY.defaultNegotiationReserve,
+    targetGrossMargin: POLICY.minimumDealerMargin,
+    assumedSellingPrice: null,
+    estimatedProfitAtAskingPrice: null,
+    returnOnInvestmentPercent: null,
+    explanation: "",
+  };
+  if (marketPrice === null || askingPrice === null) return empty;
 
-    return json({
-      success: true,
+  const costs = estimateCostReserve(target);
+  const assumedSellingPrice = roundMoney(
+    marketPrice * POLICY.expectedSalePriceFactor,
+  );
+  const operatingReserve =
+    costs.preparation +
+    costs.repair +
+    costs.warranty +
+    POLICY.defaultNegotiationReserve;
+  const absoluteMaximumPurchasePrice = roundMoney(
+    assumedSellingPrice - operatingReserve - POLICY.minimumDealerMargin,
+  );
+  const negotiationTarget = roundMoney(absoluteMaximumPurchasePrice - 500);
+  const estimatedProfitAtAskingPrice = roundMoney(
+    assumedSellingPrice - askingPrice - operatingReserve,
+  );
 
-      searchedAt: new Date().toISOString(),
+  return {
+    recommendedPurchasePriceFrom: roundMoney(
+      absoluteMaximumPurchasePrice - 1_000,
+    ),
+    recommendedPurchasePriceTo: absoluteMaximumPurchasePrice,
+    negotiationTarget,
+    absoluteMaximumPurchasePrice,
+    estimatedPreparationCosts: costs.preparation,
+    estimatedRepairReserve: costs.repair,
+    estimatedWarrantyReserve: costs.warranty,
+    negotiationReserve: POLICY.defaultNegotiationReserve,
+    targetGrossMargin: POLICY.minimumDealerMargin,
+    assumedSellingPrice,
+    estimatedProfitAtAskingPrice,
+    returnOnInvestmentPercent:
+      askingPrice > 0
+        ? Number(
+            ((estimatedProfitAtAskingPrice / askingPrice) * 100).toFixed(1),
+          )
+        : null,
+    explanation: "",
+  };
+}
 
-      durationMs: Date.now() - startedAt,
+function calculateConfidence(target, comparables, statistics, warnings) {
+  let confidence = 20;
+  confidence += Math.min(36, comparables.length * 6);
+  confidence += Math.round((statistics.averageSimilarity || 0) * 0.22);
+  confidence += Math.round((numberOrNull(target.confidence) || 0) * 0.12);
+  confidence -= (target.missingFields?.length || 0) * 2;
+  confidence -= warnings.length * 2;
+  if (comparables.length < 3) confidence = Math.min(confidence, 45);
+  if ((statistics.averageSimilarity || 0) < 60)
+    confidence = Math.min(confidence, 58);
+  // Search-index evidence is useful but not the same as opening every live page.
+  return clamp(Math.round(confidence), 20, 82);
+}
 
-      targetVehicle: {
-        ...targetVehicle,
+function determineRating(confidence, assessment, statistics) {
+  if (
+    statistics.comparableCount < 2 ||
+    !Number.isFinite(assessment.estimatedProfitAtAskingPrice)
+  ) {
+    return "INSUFFICIENT_DATA";
+  }
+  if (confidence < 40) return "INSUFFICIENT_DATA";
+  const profit = assessment.estimatedProfitAtAskingPrice;
+  if (profit >= POLICY.minimumDealerMargin + 750) return "VERY_GOOD";
+  if (profit >= POLICY.minimumDealerMargin) return "GOOD";
+  if (profit >= 0) return "CONDITIONAL";
+  return "TOO_EXPENSIVE";
+}
 
-        source: detectSource(listingUrl),
+function defaultHeadline(rating) {
+  if (rating === "VERY_GOOD")
+    return "Sehr guter Händler-Deal mit belastbarer Marge";
+  if (rating === "GOOD")
+    return "Guter Händler-Deal bei bestätigtem Fahrzeugzustand";
+  if (rating === "CONDITIONAL")
+    return "Nur mit Preisverhandlung und genauer Prüfung interessant";
+  if (rating === "TOO_EXPENSIVE")
+    return "Für den gewerblichen Weiterverkauf zu teuer";
+  return "Für eine sichere Händlerentscheidung fehlen belastbare Daten";
+}
 
-        listingUrl,
-      },
+function fallbackExplanation({
+  target,
+  statistics,
+  assessment,
+  rating,
+  warnings,
+}) {
+  return {
+    headline: defaultHeadline(rating),
+    summary:
+      statistics.comparableCount >= 2
+        ? `Die Bewertung basiert auf ${statistics.comparableCount} passenden Suchergebnissen und einer konservativen Händlerkalkulation.`
+        : "Für eine belastbare Preisbewertung wurden nicht genügend Vergleichsangebote gefunden.",
+    marketExplanation:
+      statistics.weightedMarketPrice !== null
+        ? `Der gewichtete Marktpreis beträgt ${statistics.weightedMarketPrice} €. Alters-, Kilometer- und Leistungsunterschiede wurden berücksichtigt.`
+        : "Ein belastbarer Marktpreis konnte nicht berechnet werden.",
+    dealerExplanation:
+      assessment.absoluteMaximumPurchasePrice !== null
+        ? `Das absolute Einkaufslimit beträgt ${assessment.absoluteMaximumPurchasePrice} € einschließlich Kostenreserven und Mindestmarge.`
+        : "Ohne Marktwert ist keine sichere Einkaufskalkulation möglich.",
+    reasons: [
+      `${statistics.comparableCount} passende Vergleichsangebote berücksichtigt.`,
+      statistics.averageSimilarity !== null
+        ? `Durchschnittliche Ähnlichkeit: ${statistics.averageSimilarity}%.`
+        : "Ähnlichkeit nicht berechenbar.",
+    ],
+    risks: [
+      "Suchindex-Daten können zeitverzögert sein; Preise und Verfügbarkeit in den Originalanzeigen prüfen.",
+      ...(target.missingFields || [])
+        .slice(0, 3)
+        .map((field) => `Fehlende Zielangabe: ${field}.`),
+      ...warnings.slice(0, 2),
+    ].slice(0, 6),
+    questionsForSeller: [
+      "Ist das Fahrzeug noch verfügbar und ist der angegebene Preis der Barpreis?",
+      "Sind Unfallschäden oder Nachlackierungen bekannt?",
+      "Gibt es ein vollständiges Serviceheft und Wartungsrechnungen?",
+      "Welche technischen oder optischen Mängel bestehen?",
+      "Sind beide Fahrzeugschlüssel vorhanden?",
+    ],
+  };
+}
 
-      comparableVehicles,
+async function generateExplanation(context) {
+  const fallback = fallbackExplanation(context);
 
-      rejectedComparables: analysis.rejectedCandidates || [],
+  try {
+    const client = openAIClient();
+    const response = await client.responses.create({
+      model: OPENAI_MODEL,
+      instructions: [
+        "Du bist ein professioneller deutscher Gebrauchtwagen-Händleranalyst.",
+        "Erkläre ausschließlich die bereits berechneten Daten.",
+        "Ändere keine Zahl und erfinde keine Fakten.",
+        "Schreibe knapp, praktisch und auf Deutsch.",
+      ].join(" "),
+      input: `
+ZIELFAHRZEUG:
+${JSON.stringify(context.target, null, 2)}
 
-      marketStatistics: analysis.marketStatistics,
+VERGLEICHE:
+${JSON.stringify(
+  context.comparables.map((item) => ({
+    title: item.title,
+    price: item.price,
+    adjustedPrice: item.adjustedPrice,
+    firstRegistration: item.firstRegistration,
+    mileageKm: item.mileageKm,
+    similarityScore: item.similarityScore,
+  })),
+  null,
+  2,
+)}
 
-      dealerAssessment: analysis.dealerAssessment,
+MARKTSTATISTIK:
+${JSON.stringify(context.statistics, null, 2)}
 
-      recommendation: analysis.recommendation,
+HÄNDLERKALKULATION:
+${JSON.stringify(context.assessment, null, 2)}
 
-      overallWarnings: warnings,
+RATING: ${context.rating}
+KONFIDENZ: ${context.confidence}
 
-      sources: comparableVehicles.map((vehicle) => ({
-        title: vehicle.title,
-
-        url: vehicle.listingUrl || vehicle.evidenceUrl,
-
-        direct: vehicle.directListingUrl,
-
-        source: vehicle.source,
-      })),
-
-      debug: {
-        architecture:
-          "Playwright browser extraction → OpenAI target extraction → Perplexity marketplace searches → OpenAI final analysis",
-
-        targetExtraction: {
-          browserExtractionOk: browserResult.ok,
-
-          blocked: browserResult.blocked,
-
-          visibleTextLength: browserResult.visibleText?.length || 0,
-
-          specificationTextLength: browserResult.specificationText?.length || 0,
-
-          relevantScriptCount: browserResult.relevantScripts?.length || 0,
-
-          jsonLdCount: browserResult.jsonLd?.length || 0,
-
-          targetConfidence: targetVehicle.confidence,
-
-          error: browserResult.error,
-        },
-
-        marketplaceSearches: marketResearch.diagnostics,
-
-        rawCandidateCount: marketResearch.rawCandidateCount,
-
-        discoveredCandidateCount: marketResearch.candidates.length,
-
-        acceptedCandidateCount: comparableVehicles.length,
-
-        rejectedCandidateCount: analysis.rejectedCandidates?.length || 0,
-
-        providers: {
-          perplexity: {
-            model: PERPLEXITY_MODEL,
-          },
-
-          targetOpenAI: {
-            model: normalizedTarget.model,
-
-            usage: normalizedTarget.usage,
-          },
-
-          finalOpenAI: {
-            model: finalResult.model,
-
-            ok: !finalAnalysisError,
-
-            error: finalAnalysisError,
-
-            usage: finalResult.usage,
-          },
+WICHTIG: Die Daten stammen aus Perplexity-Suchergebnissen. Weise darauf hin,
+dass Aktualität und Verfügbarkeit in den Originalanzeigen geprüft werden müssen.
+`,
+      text: {
+        format: {
+          type: "json_schema",
+          name: "dealer_analysis_explanation",
+          strict: true,
+          schema: explanationSchema,
         },
       },
     });
+
+    const output = openAIOutputText(response);
+    return output ? JSON.parse(output) : fallback;
   } catch (error) {
-    console.error("POST /api/market-analysis:", error);
+    console.error(
+      "Explanation generation failed: " + (error?.message || String(error)),
+    );
+    return fallback;
+  }
+}
 
-    return json(
-      {
-        success: false,
+async function runProfessionalAnalysis(listingUrl) {
+  const normalizedTarget = await extractTargetVehicle(listingUrl);
+  const target = normalizedTarget.vehicle;
 
-        error:
-          error?.message ||
-          "Die Fahrzeuganalyse konnte nicht durchgeführt werden.",
+  const search = await collectComparableSearchResults(target);
+  const extracted = await extractComparableCandidates(search.results, target);
+  const warnings = [
+    "Die Analyse verwendet Suchindex-Daten; Preis und Verfügbarkeit jeder Originalanzeige müssen geprüft werden.",
+    ...search.warnings,
+    ...extracted.warnings,
+  ];
 
-        durationMs: Date.now() - startedAt,
+  const prepared = prepareComparables(extracted.candidates, target);
+  const outliers = removePriceOutliers(prepared.accepted);
+  const rejectedCandidates = [...prepared.rejected, ...outliers.rejected];
+  const comparables = chooseBestComparables(outliers.accepted);
+  const marketStatistics = calculateMarketStatistics(comparables, target);
+  const dealerAssessment = calculateDealerAssessment(target, marketStatistics);
+  const confidence = calculateConfidence(
+    target,
+    comparables,
+    marketStatistics,
+    warnings,
+  );
+  marketStatistics.confidence = confidence;
+  const rating = determineRating(
+    confidence,
+    dealerAssessment,
+    marketStatistics,
+  );
+
+  const explanation = await generateExplanation({
+    target,
+    comparables,
+    statistics: marketStatistics,
+    assessment: dealerAssessment,
+    rating,
+    confidence,
+    warnings,
+  });
+
+  marketStatistics.explanation = explanation.marketExplanation;
+  dealerAssessment.explanation = explanation.dealerExplanation;
+
+  const overallWarnings = [...new Set(warnings)];
+  if (comparables.length < 3) {
+    overallWarnings.push(
+      "Weniger als drei geeignete Vergleichsfahrzeuge wurden gefunden.",
+    );
+  }
+  if (target.missingFields?.length) {
+    overallWarnings.push(
+      `Fehlende Zielangaben: ${target.missingFields.join(", ")}.`,
+    );
+  }
+
+  return {
+    targetVehicle: target,
+    comparableVehicles: comparables,
+    rejectedCandidates: rejectedCandidates.slice(0, 25),
+    marketStatistics,
+    dealerAssessment,
+    recommendation: {
+      rating,
+      confidence,
+      headline: explanation.headline || defaultHeadline(rating),
+      summary: explanation.summary,
+      reasons: explanation.reasons,
+      risks: explanation.risks,
+      questionsForSeller: explanation.questionsForSeller,
+    },
+    overallWarnings: [...new Set(overallWarnings)].slice(0, 15),
+    research: {
+      searchedMarketplaces: MARKETPLACES.map((marketplace) => marketplace.name),
+      rawCandidateCount: search.results.length,
+      acceptedComparableCount: comparables.length,
+      rejectedCandidateCount: rejectedCandidates.length,
+      targetExtraction: {
+        method: "PERPLEXITY_SEARCH_AND_OPENAI",
+        openAIModel: normalizedTarget.model,
+        evidenceCount: normalizedTarget.evidenceCount,
       },
+      comparableExtraction: {
+        method: "PERPLEXITY_SEARCH_AND_OPENAI",
+        openAIModel: extracted.model,
+      },
+    },
+    searchedAt: new Date().toISOString(),
+  };
+}
+
+export async function POST(request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) return json({ error: "Nicht autorisiert." }, 401);
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "Ungültige JSON-Anfrage." }, 400);
+    }
+
+    let listingUrl;
+    try {
+      listingUrl = validateMarketplaceUrl(body?.url);
+    } catch (error) {
+      return json(
+        { error: error?.message || "Ungültiger Fahrzeug-Link." },
+        400,
+      );
+    }
+
+    try {
+      const result = await withTimeout(
+        runProfessionalAnalysis(listingUrl),
+        PIPELINE_TIMEOUT_MS,
+        "Die vollständige Marktanalyse",
+      );
+      return json(result);
+    } catch (error) {
+      console.error(
+        "Market analysis failed: " + (error?.message || String(error)),
+      );
+      const timeout = /hat nach \d+ Sekunden nicht geantwortet/.test(
+        error?.message || "",
+      );
+      return json(
+        { error: error?.message || "Die Marktanalyse ist fehlgeschlagen." },
+        timeout ? 504 : 500,
+      );
+    }
+  } catch (error) {
+    console.error(
+      "Market analysis route error: " + (error?.message || String(error)),
+    );
+    return json(
+      { error: error?.message || "Die Marktanalyse ist fehlgeschlagen." },
       500,
     );
   }

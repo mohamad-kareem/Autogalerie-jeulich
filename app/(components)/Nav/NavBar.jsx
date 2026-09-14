@@ -57,6 +57,7 @@ const adminRoutes = [
   "/Preisschild",
   "/Fotostudio",
   "/ai-chats",
+  "/marktanalyse",
 ];
 
 const hasSubMenu = (menu) =>
