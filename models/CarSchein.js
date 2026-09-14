@@ -65,6 +65,22 @@ const CarScheinSchema = new mongoose.Schema(
       enum: ["", "DN-06919", "DN-06921", "BEIDE"],
       default: "",
     },
+
+    // ✅ NEW: permanent Rotbuch numbers (1-20), tracked separately per plate
+    // so a car assigned to "BEIDE" can hold a different number in each book.
+    rotbuchNumber19: {
+      type: Number,
+      default: null,
+      min: 1,
+      max: 20,
+    },
+    rotbuchNumber21: {
+      type: Number,
+      default: null,
+      min: 1,
+      max: 20,
+    },
+
     dashboardHidden: { type: Boolean, default: false },
 
     soldAt: { type: Date, default: null },

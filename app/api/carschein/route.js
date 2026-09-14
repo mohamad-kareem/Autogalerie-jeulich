@@ -97,6 +97,25 @@ function normalizeStageMeta(meta) {
 }
 
 /* -----------------------
+   Rotbuch number normalizer
+   Returns:
+     - null        -> explicitly cleared / no number
+     - a number 1-20 -> valid number
+     - undefined   -> INVALID input (out of range / not a number)
+------------------------ */
+function normalizeRotbuchNumber(v) {
+  if (v === null || v === undefined || v === "") return null;
+
+  const n = Number(v);
+  if (!Number.isFinite(n)) return undefined;
+
+  const rounded = Math.round(n);
+  if (rounded < 1 || rounded > 20) return undefined;
+
+  return rounded;
+}
+
+/* -----------------------
    FIN uniqueness helper
 ------------------------ */
 async function finExists(finNumber, excludeId = null) {
@@ -104,6 +123,21 @@ async function finExists(finNumber, excludeId = null) {
   if (!fin) return false;
 
   const query = { finNumber: fin };
+  if (excludeId) query._id = { $ne: excludeId };
+
+  const existing = await CarSchein.findOne(query).select("_id").lean();
+  return !!existing;
+}
+
+/* -----------------------
+   Rotbuch number uniqueness helper
+   Ensures no two cars share the same number within the same
+   Rotbuch (field is either "rotbuchNumber19" or "rotbuchNumber21").
+------------------------ */
+async function rotbuchNumberExists(field, number, excludeId = null) {
+  if (number === null || number === undefined) return false;
+
+  const query = { [field]: number };
   if (excludeId) query._id = { $ne: excludeId };
 
   const existing = await CarSchein.findOne(query).select("_id").lean();
@@ -184,6 +218,57 @@ export async function POST(req) {
     const soldContactId =
       stage === "SOLD" ? await findSoldContactIdByFin(finNumber) : null;
 
+    // ✅ Rotbuch numbers (1-20, unique per plate)
+    let rotbuchNumber19 = null;
+    if (body.rotbuchNumber19 !== undefined) {
+      rotbuchNumber19 = normalizeRotbuchNumber(body.rotbuchNumber19);
+      if (rotbuchNumber19 === undefined) {
+        return json(
+          { error: "Rotbuch-Nr. (DN-06919) muss zwischen 1 und 20 liegen" },
+          400,
+        );
+      }
+      if (rotbuchNumber19 !== null) {
+        const dup = await rotbuchNumberExists(
+          "rotbuchNumber19",
+          rotbuchNumber19,
+        );
+        if (dup) {
+          return json(
+            {
+              error: `Rotbuch-Nr. ${rotbuchNumber19} (DN-06919) ist bereits vergeben`,
+            },
+            409,
+          );
+        }
+      }
+    }
+
+    let rotbuchNumber21 = null;
+    if (body.rotbuchNumber21 !== undefined) {
+      rotbuchNumber21 = normalizeRotbuchNumber(body.rotbuchNumber21);
+      if (rotbuchNumber21 === undefined) {
+        return json(
+          { error: "Rotbuch-Nr. (DN-06921) muss zwischen 1 und 20 liegen" },
+          400,
+        );
+      }
+      if (rotbuchNumber21 !== null) {
+        const dup = await rotbuchNumberExists(
+          "rotbuchNumber21",
+          rotbuchNumber21,
+        );
+        if (dup) {
+          return json(
+            {
+              error: `Rotbuch-Nr. ${rotbuchNumber21} (DN-06921) ist bereits vergeben`,
+            },
+            409,
+          );
+        }
+      }
+    }
+
     const doc = await CarSchein.create({
       carName,
       finNumber: finNumber || "",
@@ -208,6 +293,8 @@ export async function POST(req) {
       rotPlateNumber: toBool(body.rotKennzeichen)
         ? toStr(body.rotPlateNumber)
         : "",
+      rotbuchNumber19,
+      rotbuchNumber21,
       dashboardHidden: toBool(body.dashboardHidden),
 
       soldAt,
@@ -410,6 +497,59 @@ export async function PUT(req) {
       update.rotPlateNumber = toBool(body.rotKennzeichen)
         ? toStr(body.rotPlateNumber)
         : "";
+    }
+
+    // ✅ Rotbuch numbers (1-20, unique per plate, independent per Rotbuch)
+    if (body.rotbuchNumber19 !== undefined) {
+      const normalized19 = normalizeRotbuchNumber(body.rotbuchNumber19);
+      if (normalized19 === undefined) {
+        return json(
+          { error: "Rotbuch-Nr. (DN-06919) muss zwischen 1 und 20 liegen" },
+          400,
+        );
+      }
+      if (normalized19 !== null) {
+        const dup = await rotbuchNumberExists(
+          "rotbuchNumber19",
+          normalized19,
+          id,
+        );
+        if (dup) {
+          return json(
+            {
+              error: `Rotbuch-Nr. ${normalized19} (DN-06919) ist bereits vergeben`,
+            },
+            409,
+          );
+        }
+      }
+      update.rotbuchNumber19 = normalized19;
+    }
+
+    if (body.rotbuchNumber21 !== undefined) {
+      const normalized21 = normalizeRotbuchNumber(body.rotbuchNumber21);
+      if (normalized21 === undefined) {
+        return json(
+          { error: "Rotbuch-Nr. (DN-06921) muss zwischen 1 und 20 liegen" },
+          400,
+        );
+      }
+      if (normalized21 !== null) {
+        const dup = await rotbuchNumberExists(
+          "rotbuchNumber21",
+          normalized21,
+          id,
+        );
+        if (dup) {
+          return json(
+            {
+              error: `Rotbuch-Nr. ${normalized21} (DN-06921) ist bereits vergeben`,
+            },
+            409,
+          );
+        }
+      }
+      update.rotbuchNumber21 = normalized21;
     }
 
     // Stage + meta

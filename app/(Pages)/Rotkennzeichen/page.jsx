@@ -14,6 +14,7 @@ import {
   FiCheckCircle,
   FiAlertTriangle,
   FiMessageSquare,
+  FiHash,
 } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
@@ -130,6 +131,83 @@ function normalizeDriver(value) {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, " ");
+}
+
+/* -----------------------
+   Rotbuch number helpers
+   (a car keeps a separate permanent number per plate, since
+   a "BEIDE" car can be entered under a different number in
+   each of the two Rotbuch books)
+------------------------ */
+function getRotbuchNumberForPlate(car, plate) {
+  if (!car) return null;
+
+  if (plate === "DN-06919") {
+    return car.rotbuchNumber19 ?? null;
+  }
+  if (plate === "DN-06921") {
+    return car.rotbuchNumber21 ?? null;
+  }
+  return null;
+}
+
+function isValidRotbuchNumber(n) {
+  return Number.isInteger(n) && n >= 1 && n <= 20;
+}
+
+// Client-side validation mirroring the server rules:
+// 1-20 only, no duplicate number within the same Rotbuch.
+function validateRotbuchNumbers(draft) {
+  const errors = [];
+  const seen19 = new Map();
+  const seen21 = new Map();
+
+  draft.forEach((car) => {
+    if (!car.rotKennzeichen) return;
+
+    const appliesTo19 =
+      car.rotPlateNumber === "DN-06919" || car.rotPlateNumber === "BEIDE";
+    const appliesTo21 =
+      car.rotPlateNumber === "DN-06921" || car.rotPlateNumber === "BEIDE";
+
+    if (
+      appliesTo19 &&
+      car.rotbuchNumber19 !== null &&
+      car.rotbuchNumber19 !== undefined
+    ) {
+      const n = Number(car.rotbuchNumber19);
+
+      if (!isValidRotbuchNumber(n)) {
+        errors.push(
+          `${car.carName || "Fahrzeug"}: Rotbuch-Nr. (DN-06919) muss zwischen 1 und 20 liegen.`,
+        );
+      } else if (seen19.has(n)) {
+        errors.push(`Rotbuch-Nr. ${n} (DN-06919) ist doppelt vergeben.`);
+      } else {
+        seen19.set(n, car.id);
+      }
+    }
+
+    if (
+      appliesTo21 &&
+      car.rotbuchNumber21 !== null &&
+      car.rotbuchNumber21 !== undefined
+    ) {
+      const n = Number(car.rotbuchNumber21);
+
+      if (!isValidRotbuchNumber(n)) {
+        errors.push(
+          `${car.carName || "Fahrzeug"}: Rotbuch-Nr. (DN-06921) muss zwischen 1 und 20 liegen.`,
+        );
+      } else if (seen21.has(n)) {
+        errors.push(`Rotbuch-Nr. ${n} (DN-06921) ist doppelt vergeben.`);
+      } else {
+        seen21.set(n, car.id);
+      }
+    }
+  });
+
+  return errors;
 }
 
 function findOverlappingCids(rows) {
@@ -296,6 +374,9 @@ export default function CarLocationsPage() {
   const PLATES = ["DN-06919", "DN-06921"];
   const [activePlate, setActivePlate] = useState("DN-06919");
 
+  // ✅ NEW: table sort mode — "date" (default, unchanged) or "rotbuch"
+  const [sortMode, setSortMode] = useState("date");
+
   const [openCarSelectCid, setOpenCarSelectCid] = useState(null);
   const [carDropdownStyle, setCarDropdownStyle] = useState(null);
   const [overlapCids, setOverlapCids] = useState(new Set());
@@ -420,6 +501,9 @@ export default function CarLocationsPage() {
               finNumber: d.finNumber || "",
               rotKennzeichen: !!d.rotKennzeichen,
               rotPlateNumber: d.rotPlateNumber || "",
+              // ✅ NEW: permanent per-plate Rotbuch numbers
+              rotbuchNumber19: d.rotbuchNumber19 ?? null,
+              rotbuchNumber21: d.rotbuchNumber21 ?? null,
               boughtAt: d.boughtAt || null,
 
               keySold: !!d.keySold,
@@ -515,6 +599,16 @@ export default function CarLocationsPage() {
     return [...carOptions].sort((a, b) => a.carName.localeCompare(b.carName));
   }, [carOptions]);
 
+  // ✅ NEW: quick lookup map from normalized FIN -> car (for Nr. column + sorting)
+  const carByFin = useMemo(() => {
+    const map = new Map();
+    carOptions.forEach((c) => {
+      const key = normalizeFin(c.finNumber);
+      if (key) map.set(key, c);
+    });
+    return map;
+  }, [carOptions]);
+
   const redCarsWithImages = useMemo(() => {
     return carOptions
       .map((car) => {
@@ -569,6 +663,40 @@ export default function CarLocationsPage() {
   const filteredCids = useMemo(() => {
     return filteredRows.map((r) => r._cid).filter(Boolean);
   }, [filteredRows]);
+
+  // ✅ NEW: rows shown in the table, ordered per the active sort mode.
+  // "date" keeps the original (unchanged) chronological order.
+  // "rotbuch" orders by each car's permanent number in the active Rotbuch,
+  // with unassigned cars pushed to the end.
+  const sortedFilteredRows = useMemo(() => {
+    const withDateTime = (row) => {
+      const t = row.startDateTime ? new Date(row.startDateTime).getTime() : 0;
+      return Number.isNaN(t) ? 0 : t;
+    };
+
+    const arr = [...filteredRows];
+
+    if (sortMode === "rotbuch") {
+      arr.sort((a, b) => {
+        const carA = carByFin.get(normalizeFin(a.vehicleId));
+        const carB = carByFin.get(normalizeFin(b.vehicleId));
+
+        const numA = getRotbuchNumberForPlate(carA, activePlate);
+        const numB = getRotbuchNumberForPlate(carB, activePlate);
+
+        const valA = numA === null || numA === undefined ? Infinity : numA;
+        const valB = numB === null || numB === undefined ? Infinity : numB;
+
+        if (valA !== valB) return valA - valB;
+
+        return withDateTime(a) - withDateTime(b);
+      });
+    } else {
+      arr.sort((a, b) => withDateTime(a) - withDateTime(b));
+    }
+
+    return arr;
+  }, [filteredRows, sortMode, activePlate, carByFin]);
 
   const allSelected = useMemo(() => {
     if (!filteredCids.length) return false;
@@ -1025,18 +1153,21 @@ export default function CarLocationsPage() {
 
   const exportToWord = async () => {
     try {
-      if (!filteredRows.length) {
+      if (!sortedFilteredRows.length) {
         toast.error("Keine Einträge zum Exportieren.");
         return;
       }
 
+      // ✅ Export always shows the same "Nr." column as the on-screen table
+      // (each car's permanent Rotbuch number for the active plate).
+      // Only the row ORDER follows the current sort mode (date vs Rotbuch-Nr.).
       const tableRows = [];
 
       tableRows.push(
         new TableRow({
           children: [
             new TableCell({
-              children: [new Paragraph("Lfd.")],
+              children: [new Paragraph("Nr.")],
             }),
             new TableCell({
               children: [new Paragraph("Datum Beginn / Ende")],
@@ -1060,12 +1191,19 @@ export default function CarLocationsPage() {
         }),
       );
 
-      filteredRows.forEach((row, index) => {
+      sortedFilteredRows.forEach((row) => {
+        const rowCar = carByFin.get(normalizeFin(row.vehicleId));
+        const rowRotbuchNumber = getRotbuchNumberForPlate(rowCar, activePlate);
+        const firstColumnValue =
+          rowRotbuchNumber === null || rowRotbuchNumber === undefined
+            ? "-"
+            : String(rowRotbuchNumber);
+
         tableRows.push(
           new TableRow({
             children: [
               new TableCell({
-                children: [new Paragraph(String(index + 1))],
+                children: [new Paragraph(firstColumnValue)],
               }),
               new TableCell({
                 children: [
@@ -1357,6 +1495,32 @@ export default function CarLocationsPage() {
                             ? new Date(car.boughtAt).toLocaleDateString("de-DE")
                             : "–"}
                         </span>
+                        {(car.rotPlateNumber === "DN-06919" ||
+                          car.rotPlateNumber === "BEIDE") &&
+                          car.rotbuchNumber19 && (
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                                darkMode
+                                  ? "bg-blue-900/40 text-blue-300"
+                                  : "bg-blue-50 text-blue-700"
+                              }`}
+                            >
+                              Nr. {car.rotbuchNumber19} (DN-06919)
+                            </span>
+                          )}
+                        {(car.rotPlateNumber === "DN-06921" ||
+                          car.rotPlateNumber === "BEIDE") &&
+                          car.rotbuchNumber21 && (
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                                darkMode
+                                  ? "bg-blue-900/40 text-blue-300"
+                                  : "bg-blue-50 text-blue-700"
+                              }`}
+                            >
+                              Nr. {car.rotbuchNumber21} (DN-06921)
+                            </span>
+                          )}
                         {car.rotPlateNumber === "BEIDE" ? (
                           <div className="flex gap-1">
                             {["DN-06919", "DN-06921"].map((plate) => (
@@ -1456,6 +1620,8 @@ export default function CarLocationsPage() {
         ...car,
         rotKennzeichen: !!car.rotKennzeichen,
         rotPlateNumber: car.rotPlateNumber || "",
+        rotbuchNumber19: car.rotbuchNumber19 ?? null,
+        rotbuchNumber21: car.rotbuchNumber21 ?? null,
       })),
     );
 
@@ -1474,6 +1640,9 @@ export default function CarLocationsPage() {
           ...car,
           rotKennzeichen: nextValue,
           rotPlateNumber: nextValue ? car.rotPlateNumber || activePlate : "",
+          // clearing the flag frees up both Rotbuch numbers for reuse
+          rotbuchNumber19: nextValue ? car.rotbuchNumber19 : null,
+          rotbuchNumber21: nextValue ? car.rotbuchNumber21 : null,
         };
       }),
     );
@@ -1481,11 +1650,43 @@ export default function CarLocationsPage() {
 
   const changeRotPlate = (id, plate) => {
     setRotCarsDraft((prev) =>
-      prev.map((car) =>
-        car.id === id ? { ...car, rotPlateNumber: plate } : car,
-      ),
+      prev.map((car) => {
+        if (car.id !== id) return car;
+
+        const nextCar = { ...car, rotPlateNumber: plate };
+
+        // a number only makes sense for a plate the car is actually
+        // assigned to (or both, if "BEIDE") — clear the rest
+        if (plate !== "DN-06919" && plate !== "BEIDE") {
+          nextCar.rotbuchNumber19 = null;
+        }
+        if (plate !== "DN-06921" && plate !== "BEIDE") {
+          nextCar.rotbuchNumber21 = null;
+        }
+
+        return nextCar;
+      }),
     );
   };
+
+  // ✅ NEW: update a car's permanent Rotbuch number for a given plate field
+  const changeRotbuchNumber = (id, field, value) => {
+    setRotCarsDraft((prev) =>
+      prev.map((car) => {
+        if (car.id !== id) return car;
+
+        if (value === "") {
+          return { ...car, [field]: null };
+        }
+
+        const n = Number(value);
+        if (!Number.isFinite(n)) return car;
+
+        return { ...car, [field]: n };
+      }),
+    );
+  };
+
   const changeBoughtAt = (id, value) => {
     setRotCarsDraft((prev) =>
       prev.map((car) =>
@@ -1494,6 +1695,12 @@ export default function CarLocationsPage() {
     );
   };
   const saveRotCarsSelection = async () => {
+    const validationErrors = validateRotbuchNumbers(rotCarsDraft);
+    if (validationErrors.length) {
+      toast.error(validationErrors[0]);
+      return;
+    }
+
     try {
       setSavingRotCars(true);
 
@@ -1504,7 +1711,11 @@ export default function CarLocationsPage() {
           original &&
           (original.rotKennzeichen !== draft.rotKennzeichen ||
             original.rotPlateNumber !== draft.rotPlateNumber ||
-            (original.boughtAt || "") !== (draft.boughtAt || ""))
+            (original.boughtAt || "") !== (draft.boughtAt || "") ||
+            (original.rotbuchNumber19 ?? null) !==
+              (draft.rotbuchNumber19 ?? null) ||
+            (original.rotbuchNumber21 ?? null) !==
+              (draft.rotbuchNumber21 ?? null))
         );
       });
 
@@ -1518,6 +1729,12 @@ export default function CarLocationsPage() {
             id: car.id,
             rotKennzeichen: car.rotKennzeichen,
             rotPlateNumber: car.rotKennzeichen ? car.rotPlateNumber : "",
+            rotbuchNumber19: car.rotKennzeichen
+              ? (car.rotbuchNumber19 ?? null)
+              : null,
+            rotbuchNumber21: car.rotKennzeichen
+              ? (car.rotbuchNumber21 ?? null)
+              : null,
             boughtAt: car.boughtAt || null,
           }),
         });
@@ -1704,6 +1921,26 @@ export default function CarLocationsPage() {
               </div>
             </div>
 
+            {/* ✅ NEW: sort toggle — "Nach Datum" (default) vs "Nach Rotbuch-Nr." */}
+            <button
+              onClick={() =>
+                setSortMode((m) => (m === "date" ? "rotbuch" : "date"))
+              }
+              className={`inline-flex h-[34px] items-center gap-1.5 rounded-lg border px-3 text-[12px] font-medium shadow-sm transition ${
+                sortMode === "rotbuch"
+                  ? darkMode
+                    ? "bg-blue-900/40 border-blue-700 text-blue-300"
+                    : "bg-blue-50 border-blue-300 text-blue-700"
+                  : darkMode
+                    ? "bg-slate-900 border-slate-700 text-slate-300 hover:border-blue-500 hover:text-blue-300"
+                    : "bg-white border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600"
+              }`}
+              title="Sortierung umschalten"
+            >
+              <FiHash className="text-[14px]" />
+              {sortMode === "rotbuch" ? "Nach Rotbuch-Nr." : "Nach Datum"}
+            </button>
+
             <button
               onClick={() => setShowRotbuch((v) => !v)}
               className={`inline-flex h-[34px] items-center gap-1.5 rounded-lg border px-3 text-[12px] font-medium shadow-sm transition ${
@@ -1824,7 +2061,7 @@ export default function CarLocationsPage() {
                   darkMode ? "divide-slate-800" : "divide-slate-200"
                 }`}
               >
-                {filteredRows.length === 0 ? (
+                {sortedFilteredRows.length === 0 ? (
                   <tr>
                     <td
                       colSpan={columnCount}
@@ -1836,7 +2073,7 @@ export default function CarLocationsPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredRows.map((row, index) => {
+                  sortedFilteredRows.map((row) => {
                     const cid = row._cid;
                     const isSelected = selectedCids.includes(cid);
                     const isEditing = editCid === cid;
@@ -1845,6 +2082,15 @@ export default function CarLocationsPage() {
                     const isMarked = !!row.marked;
                     const wrongPlateInfo = getWrongPlateInfo(row, carOptions);
                     const isWrongPlate = wrongPlateInfo.isWrongPlate;
+
+                    // ✅ NEW: the car's permanent Rotbuch number for the
+                    // active plate — shown in "Nr." instead of a row index.
+                    const rowCar = carByFin.get(normalizeFin(row.vehicleId));
+                    const rowRotbuchNumber = getRotbuchNumberForPlate(
+                      rowCar,
+                      activePlate,
+                    );
+
                     return (
                       <tr
                         key={cid}
@@ -1877,9 +2123,9 @@ export default function CarLocationsPage() {
 
                         <td className="px-2 py-[7px] text-center align-middle border-r border-slate-600/10">
                           <span
-                            className={`text-[11px] sm:text-xs ${textSecondary}`}
+                            className={`text-[11px] sm:text-xs font-semibold ${textSecondary}`}
                           >
-                            {index + 1}
+                            {rowRotbuchNumber ?? "-"}
                           </span>
                         </td>
 
@@ -2577,6 +2823,79 @@ export default function CarLocationsPage() {
                                 {plate === "BEIDE" ? "Beide" : plate}
                               </button>
                             ))}
+                          </div>
+
+                          {/* ✅ NEW: permanent Rotbuch number(s), 1-20, per plate */}
+                          <div className="mt-3 flex flex-wrap gap-3">
+                            {(car.rotPlateNumber === "DN-06919" ||
+                              car.rotPlateNumber === "BEIDE") && (
+                              <div>
+                                <label
+                                  className={`mb-1 block text-[11px] font-medium ${textSecondary}`}
+                                >
+                                  Rotbuch-Nr. (DN-06919)
+                                </label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={20}
+                                  value={
+                                    car.rotbuchNumber19 === null ||
+                                    car.rotbuchNumber19 === undefined
+                                      ? ""
+                                      : car.rotbuchNumber19
+                                  }
+                                  onChange={(e) =>
+                                    changeRotbuchNumber(
+                                      car.id,
+                                      "rotbuchNumber19",
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder="1-20"
+                                  className={`h-9 w-24 rounded-lg border px-3 text-xs outline-none transition ${
+                                    darkMode
+                                      ? "border-slate-700 bg-slate-900 text-white focus:border-emerald-500"
+                                      : "border-slate-300 bg-white text-slate-900 focus:border-emerald-500"
+                                  }`}
+                                />
+                              </div>
+                            )}
+
+                            {(car.rotPlateNumber === "DN-06921" ||
+                              car.rotPlateNumber === "BEIDE") && (
+                              <div>
+                                <label
+                                  className={`mb-1 block text-[11px] font-medium ${textSecondary}`}
+                                >
+                                  Rotbuch-Nr. (DN-06921)
+                                </label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={20}
+                                  value={
+                                    car.rotbuchNumber21 === null ||
+                                    car.rotbuchNumber21 === undefined
+                                      ? ""
+                                      : car.rotbuchNumber21
+                                  }
+                                  onChange={(e) =>
+                                    changeRotbuchNumber(
+                                      car.id,
+                                      "rotbuchNumber21",
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder="1-20"
+                                  className={`h-9 w-24 rounded-lg border px-3 text-xs outline-none transition ${
+                                    darkMode
+                                      ? "border-slate-700 bg-slate-900 text-white focus:border-emerald-500"
+                                      : "border-slate-300 bg-white text-slate-900 focus:border-emerald-500"
+                                  }`}
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
 
