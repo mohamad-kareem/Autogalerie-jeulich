@@ -15,6 +15,7 @@ import {
   FiClipboard,
   FiClock,
   FiCopy,
+  FiDatabase,
   FiEdit3,
   FiExternalLink,
   FiHelpCircle,
@@ -24,12 +25,20 @@ import {
   FiMenu,
   FiPercent,
   FiRefreshCw,
+  FiSave,
   FiSearch,
+  FiTrash2,
   FiTrendingDown,
   FiTrendingUp,
+  FiX,
   FiXCircle,
 } from "react-icons/fi";
 
+import {
+  initialAdjust,
+  recalculate,
+  toNumber,
+} from "@/lib/market/live";
 import { useSidebar } from "@/app/(components)/SidebarContext";
 
 /* ------------------------------------------------------------------ setup */
@@ -331,8 +340,10 @@ function Line({ label, value, dark, tone = "neutral", warn = false }) {
  * scrolls the evidence below.
  */
 
-function DecisionStrip({ result, dark }) {
-  const meta = verdictMeta(result.verdict);
+function DecisionStrip({ result, live, dark, onSave, saving, savedAt }) {
+  // The badge follows the figures currently on screen, not the ones the first
+  // run produced — otherwise a negotiated price leaves a stale verdict up top.
+  const meta = verdictMeta(live?.verdict ?? result.verdict);
   const Icon = meta.icon;
   const target = result.target;
   const dealer = result.dealer;
@@ -390,26 +401,51 @@ function DecisionStrip({ result, dark }) {
         </div>
 
         <div className="flex shrink-0 items-center gap-6">
-          <StripFigure label="Angebot" value={euro(target.price)} dark={dark} />
-          {dealer?.available ? (
+          <StripFigure
+            label={live?.negotiated !== null && live?.negotiated !== undefined ? "Verhandelt" : "Angebot"}
+            value={euro(live?.askingPrice ?? target.price)}
+            hint={
+              live?.negotiated
+                ? `Anzeige ${euro(live.listPrice)} · ${euro(live.savings)} weniger`
+                : null
+            }
+            dark={dark}
+          />
+
+          {dealer?.available && live ? (
             <>
               <StripFigure
                 label="Einkaufslimit"
-                value={euro(dealer.maximumPurchasePrice)}
+                value={euro(live.limit)}
                 dark={dark}
                 accent
               />
               <StripFigure
-                label={dealer.requiredDiscount > 0 ? "Nachlass nötig" : "Gewinn"}
-                value={
-                  dealer.requiredDiscount > 0
-                    ? euro(dealer.requiredDiscount)
-                    : euro(dealer.expectedProfit)
-                }
+                label={live.discount > 0 ? "Nachlass nötig" : "Gewinn"}
+                value={live.discount > 0 ? euro(live.discount) : euro(live.expected)}
                 dark={dark}
-                tone={dealer.requiredDiscount > 0 ? "negative" : "positive"}
+                tone={live.discount > 0 ? "negative" : "positive"}
               />
             </>
+          ) : null}
+
+          {onSave ? (
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={saving}
+              className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded px-3 text-xs font-semibold transition disabled:opacity-60 ${
+                savedAt
+                  ? dark
+                    ? "bg-emerald-900/50 text-emerald-300"
+                    : "bg-emerald-50 text-emerald-700"
+                  : "bg-slate-900 text-white hover:bg-slate-700"
+              }`}
+              title="Diese Bewertung in der Datenbank ablegen"
+            >
+              {saving ? <FiLoader className="animate-spin" /> : <FiSave />}
+              {saving ? "Speichert…" : savedAt ? "Gespeichert" : "Speichern"}
+            </button>
           ) : null}
         </div>
       </div>
@@ -417,7 +453,7 @@ function DecisionStrip({ result, dark }) {
   );
 }
 
-function StripFigure({ label, value, dark, accent = false, tone = "neutral" }) {
+function StripFigure({ label, value, hint = null, dark, accent = false, tone = "neutral" }) {
   const tones = {
     neutral: dark ? "text-slate-100" : "text-slate-900",
     positive: "text-emerald-600",
@@ -439,82 +475,25 @@ function StripFigure({ label, value, dark, accent = false, tone = "neutral" }) {
       >
         {value}
       </p>
+      {hint ? (
+        <p className={`text-[10px] tabular-nums ${dark ? "text-slate-500" : "text-slate-400"}`}>
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }
 
 /* ============================================================= calculation */
 
-function Calculation({ result, dark, busy, onPostcode }) {
+function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode }) {
   const dealer = result.dealer;
   const pickup = dealer?.pickup;
 
-  const [refurbishment, setRefurbishment] = useState(dealer?.refurbishmentCost ?? 0);
-  const [profit, setProfit] = useState(dealer?.targetProfit ?? 0);
   const [postcode, setPostcode] = useState("");
   const [showPickup, setShowPickup] = useState(false);
 
-  // The trip: out by train, an hour with the seller, the car driven home.
-  // Every leg is editable, because the real train connection is known to the
-  // buyer and only estimated here.
-  const [inbound, setInbound] = useState(pickup?.inboundMinutes ?? 0);
-  const [onSite, setOnSite] = useState(pickup?.onSiteMinutes ?? 60);
-  const [ticket, setTicket] = useState(pickup?.ticketCost ?? 0);
-  const [fuel, setFuel] = useState(pickup?.fuelCost ?? 0);
-
-  useEffect(() => {
-    setRefurbishment(dealer?.refurbishmentCost ?? 0);
-    setProfit(dealer?.targetProfit ?? 0);
-  }, [dealer?.refurbishmentCost, dealer?.targetProfit]);
-
-  useEffect(() => {
-    setInbound(pickup?.inboundMinutes ?? 0);
-    setOnSite(pickup?.onSiteMinutes ?? 60);
-    setTicket(pickup?.ticketCost ?? 0);
-    setFuel(pickup?.fuelCost ?? 0);
-  }, [
-    pickup?.inboundMinutes,
-    pickup?.onSiteMinutes,
-    pickup?.ticketCost,
-    pickup?.fuelCost,
-  ]);
-
-  // Same formula the server used, so the figures move while you type.
-  const live = useMemo(() => {
-    if (!dealer?.available) return null;
-
-    const round50 = (value) => Math.round(value / 50) * 50;
-
-    // Rebuild the pickup from its legs so edits show up immediately.
-    const totalMinutes = pickup?.available
-      ? (Number(inbound) || 0) + (Number(onSite) || 0) + (pickup.returnMinutes || 0)
-      : 0;
-    const labourCost = pickup?.available
-      ? Math.round((totalMinutes / 60) * (pickup.hourlyRate || 0))
-      : 0;
-    const pickupCost = pickup?.available
-      ? labourCost + (Number(fuel) || 0) + (Number(ticket) || 0)
-      : 0;
-
-    const refurb = Number(refurbishment) || 0;
-    const target = Number(profit) || 0;
-
-    const limit = round50(dealer.sellingPrice - pickupCost - refurb - target);
-    const expected =
-      dealer.askingPrice === null
-        ? null
-        : Math.round(dealer.sellingPrice - dealer.askingPrice - pickupCost - refurb);
-
-    return {
-      totalMinutes,
-      labourCost,
-      pickupCost,
-      refurb,
-      limit,
-      expected,
-      discount: dealer.askingPrice > limit ? dealer.askingPrice - limit : 0,
-    };
-  }, [dealer, pickup, refurbishment, profit, inbound, onSite, ticket, fuel]);
+  const set = (field) => (event) => onAdjust(field, event.target.value);
 
   if (!dealer?.available || !live) {
     return (
@@ -605,8 +584,8 @@ function Calculation({ result, dark, busy, onPostcode }) {
                         type="number"
                         min="0"
                         step="15"
-                        value={inbound}
-                        onChange={(event) => setInbound(event.target.value)}
+                        value={adjust.inbound}
+                        onChange={set("inbound")}
                         className={`h-6 w-16 rounded border px-1.5 text-right text-[11px] tabular-nums ${
                           dark ? "border-slate-700 bg-slate-800" : "border-slate-300 bg-white"
                         }`}
@@ -622,8 +601,8 @@ function Calculation({ result, dark, busy, onPostcode }) {
                         type="number"
                         min="0"
                         step="15"
-                        value={onSite}
-                        onChange={(event) => setOnSite(event.target.value)}
+                        value={adjust.onSite}
+                        onChange={set("onSite")}
                         className={`h-6 w-16 rounded border px-1.5 text-right text-[11px] tabular-nums ${
                           dark ? "border-slate-700 bg-slate-800" : "border-slate-300 bg-white"
                         }`}
@@ -652,8 +631,8 @@ function Calculation({ result, dark, busy, onPostcode }) {
                         type="number"
                         min="0"
                         step="5"
-                        value={ticket}
-                        onChange={(event) => setTicket(event.target.value)}
+                        value={adjust.ticket}
+                        onChange={set("ticket")}
                         className={`h-6 w-16 rounded border px-1.5 text-right text-[11px] tabular-nums ${
                           dark ? "border-slate-700 bg-slate-800" : "border-slate-300 bg-white"
                         }`}
@@ -676,8 +655,8 @@ function Calculation({ result, dark, busy, onPostcode }) {
                         type="number"
                         min="0"
                         step="5"
-                        value={fuel}
-                        onChange={(event) => setFuel(event.target.value)}
+                        value={adjust.fuel}
+                        onChange={set("fuel")}
                         className={`h-6 w-16 rounded border px-1.5 text-right text-[11px] tabular-nums ${
                           dark ? "border-slate-700 bg-slate-800" : "border-slate-300 bg-white"
                         }`}
@@ -744,8 +723,8 @@ function Calculation({ result, dark, busy, onPostcode }) {
                 type="number"
                 min="0"
                 step="50"
-                value={refurbishment}
-                onChange={(event) => setRefurbishment(event.target.value)}
+                value={adjust.refurbishment}
+                onChange={set("refurbishment")}
                 className={input}
                 placeholder="0"
               />
@@ -764,8 +743,8 @@ function Calculation({ result, dark, busy, onPostcode }) {
                 type="number"
                 min="0"
                 step="50"
-                value={profit}
-                onChange={(event) => setProfit(event.target.value)}
+                value={adjust.profit}
+                onChange={set("profit")}
                 className={input}
               />
             </td>
@@ -780,8 +759,75 @@ function Calculation({ result, dark, busy, onPostcode }) {
         </tbody>
       </table>
 
+      {/* What the seller actually wants, once you have spoken to him. Until a
+          figure is entered, the advertised price is what everything runs on. */}
+      <div
+        className={`mt-3 flex flex-wrap items-center justify-between gap-3 rounded border px-3 py-2.5 ${
+          live.negotiated !== null
+            ? dark
+              ? "border-emerald-800 bg-emerald-950/30"
+              : "border-emerald-200 bg-emerald-50"
+            : dark
+              ? "border-slate-800 bg-slate-800/40"
+              : "border-slate-200 bg-slate-50"
+        }`}
+      >
+        <div>
+          <p className="text-xs font-semibold">Verhandelter Preis</p>
+          <p className={`text-[11px] ${dark ? "text-slate-400" : "text-slate-500"}`}>
+            {live.negotiated !== null ? (
+              <>
+                Anzeigenpreis{" "}
+                <span className="line-through tabular-nums">{euro(live.listPrice)}</span> ·{" "}
+                <span className="font-semibold text-emerald-600 tabular-nums">
+                  {euro(live.savings)} gespart
+                </span>
+              </>
+            ) : (
+              <>
+                optional – was der Verkäufer jetzt aufruft. Leer lassen für{" "}
+                {euro(live.listPrice)} aus der Anzeige.
+              </>
+            )}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min="0"
+            step="50"
+            value={adjust.negotiated}
+            onChange={set("negotiated")}
+            placeholder={Number.isFinite(live.listPrice) ? String(live.listPrice) : "Preis"}
+            className={`h-8 w-28 rounded border px-2 text-right text-sm font-semibold tabular-nums outline-none focus:ring-2 ${
+              dark
+                ? "border-slate-700 bg-slate-800 focus:ring-emerald-500/30"
+                : "border-slate-300 bg-white focus:ring-emerald-200"
+            }`}
+          />
+          <span className={`text-sm ${dark ? "text-slate-500" : "text-slate-400"}`}>€</span>
+          {live.negotiated !== null ? (
+            <button
+              type="button"
+              onClick={() => onAdjust("negotiated", "")}
+              title="Auf den Anzeigenpreis zurücksetzen"
+              className={`inline-flex h-8 w-8 items-center justify-center rounded border ${
+                dark ? "border-slate-700 hover:bg-slate-800" : "border-slate-300 hover:bg-white"
+              }`}
+            >
+              <FiX />
+            </button>
+          ) : null}
+        </div>
+      </div>
+
       <div className="mt-3 grid grid-cols-3 gap-3">
-        <Metric label="Angebotspreis" value={euro(dealer.askingPrice)} dark={dark} />
+        <Metric
+          label={live.negotiated !== null ? "Verhandelter Preis" : "Angebotspreis"}
+          value={euro(live.askingPrice)}
+          dark={dark}
+        />
         <Metric
           label="Erwarteter Gewinn"
           value={euro(live.expected)}
@@ -814,8 +860,7 @@ function PickupLine({ label, value, bold = false }) {
  * up, which is the only way to actually compare them.
  */
 
-function ComparablesTable({ result, dark }) {
-  const asking = result.target.price;
+function ComparablesTable({ result, asking, dark }) {
   const rows = result.comparables;
 
   return (
@@ -1161,35 +1206,21 @@ function MarketPanel({ result, dark }) {
   );
 }
 
-function WarningsPanel({ warnings, dark }) {
-  if (!warnings?.length) return null;
-
-  return (
-    <Panel dark={dark} className={dark ? "border-amber-900" : "border-amber-200"}>
-      <Caption dark={dark}>Hinweise</Caption>
-      <ul className="space-y-1.5">
-        {warnings.map((warning, index) => (
-          <li key={index} className="flex gap-2 text-[11px] leading-5 text-amber-700">
-            <FiAlertTriangle className="mt-0.5 shrink-0" />
-            <span>{warning}</span>
-          </li>
-        ))}
-      </ul>
-    </Panel>
-  );
-}
-
 /**
  * Reasons, risks and questions as tabs rather than three tall columns —
  * the same content in a third of the height.
+ *
+ * This sits where the "Hinweise" box used to. Risks worth checking and the
+ * questions to put to the seller are what a buyer acts on; remarks about the
+ * data behind the number belong in the technical section, and are there.
  */
 function NotesPanel({ result, dark }) {
-  const [tab, setTab] = useState("reasons");
+  const [tab, setTab] = useState("risks");
 
   const tabs = [
-    { id: "reasons", label: "Bewertung", values: result.recommendation?.reasons },
     { id: "risks", label: "Risiken", values: result.recommendation?.risks },
     { id: "questions", label: "Fragen", values: result.recommendation?.questionsForSeller },
+    { id: "reasons", label: "Bewertung", values: result.recommendation?.reasons },
   ];
 
   const active = tabs.find((entry) => entry.id === tab) || tabs[0];
@@ -1289,12 +1320,40 @@ function TechnicalDetails({ result, dark }) {
         <span className="flex items-center gap-2 font-bold">
           <FiInfo />
           Datengrundlage & Methodik
+          {result.warnings?.length ? (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                dark ? "bg-amber-950 text-amber-300" : "bg-amber-100 text-amber-800"
+              }`}
+            >
+              {result.warnings.length}{" "}
+              {result.warnings.length === 1 ? "Anmerkung" : "Anmerkungen"}
+            </span>
+          ) : null}
         </span>
         {open ? <FiChevronUp /> : <FiChevronDown />}
       </button>
 
       {open ? (
         <div className="mt-4 space-y-5">
+          {/* Remarks about the data itself — a thin sample, a portal that did
+              not answer. They qualify the number, so they live beside it. */}
+          {result.warnings?.length ? (
+            <ul className="space-y-1.5">
+              {result.warnings.map((warning, index) => (
+                <li
+                  key={index}
+                  className={`flex gap-2 rounded px-3 py-2 text-[11px] leading-5 ${
+                    dark ? "bg-amber-950/40 text-amber-300" : "bg-amber-50 text-amber-800"
+                  }`}
+                >
+                  <FiAlertTriangle className="mt-0.5 shrink-0" />
+                  <span>{warning}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Metric
               label="Kandidaten gefunden"
@@ -1406,13 +1465,180 @@ function TechnicalDetails({ result, dark }) {
             Kraftstoff und Getriebe bewertet, der Preis auf die Spezifikation des
             Zielfahrzeugs bereinigt und Ausreisser über die Interquartilsspanne entfernt.
             Vom realistischen Verkaufspreis werden ausschließlich die Abholkosten
-            (gefahrene Strecke ab {result.dealer?.pickup?.origin || "Jülich"}, Stundenlohn
-            des Abholers plus Benzinpauschale) sowie eine selbst eingetragene Renovierung
-            und der gewünschte Zielgewinn abgezogen. Weitere Kosten werden nicht
-            unterstellt.
+            (Anreise mit der Bahn ab {result.dealer?.pickup?.origin || "Jülich"}, eine
+            Stunde beim Verkäufer, Rückfahrt im Fahrzeug – bezahlt nach Stundenlohn, dazu
+            Benzin für die tatsächlich gefahrenen Kilometer) sowie eine selbst eingetragene
+            Renovierung und der gewünschte Zielgewinn abgezogen. Weitere Kosten werden
+            nicht unterstellt. Wird ein verhandelter Preis eingetragen, rechnet die gesamte
+            Kalkulation mit diesem statt mit dem Anzeigenpreis.
           </p>
         </div>
       ) : null}
+    </Panel>
+  );
+}
+
+/* ==================================================== saved evaluations
+ *
+ * A recheck weeks later cannot reproduce a decision: prices move and ads get
+ * deleted. So a saved entry keeps the analysis exactly as it was computed, and
+ * opening one shows that, not a fresh run.
+ */
+
+function SavedAnalyses({ entries, dark, busy, onOpen, onDelete, onRefresh }) {
+  const [query, setQuery] = useState("");
+
+  const shown = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return entries;
+    return entries.filter((entry) =>
+      [entry.title, entry.make, entry.model, entry.listingUrl]
+        .filter(Boolean)
+        .some((field) => field.toLowerCase().includes(needle)),
+    );
+  }, [entries, query]);
+
+  return (
+    <Panel dark={dark} className="mb-4" padded={false}>
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4">
+        <span className="flex items-center gap-2 text-sm font-semibold">
+          <FiDatabase />
+          Gespeicherte Bewertungen
+          <span className={`text-[11px] font-normal ${dark ? "text-slate-500" : "text-slate-400"}`}>
+            {entries.length}
+          </span>
+        </span>
+
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="suchen"
+            className={`h-7 w-36 rounded border px-2 text-xs outline-none focus:ring-2 ${
+              dark
+                ? "border-slate-700 bg-slate-800 focus:ring-sky-500/30"
+                : "border-slate-300 bg-white focus:ring-sky-200"
+            }`}
+          />
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={busy}
+            aria-label="Liste aktualisieren"
+            className={`inline-flex h-7 w-7 items-center justify-center rounded border ${
+              dark ? "border-slate-700 hover:bg-slate-800" : "border-slate-300 hover:bg-slate-50"
+            }`}
+          >
+            {busy ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
+          </button>
+        </div>
+      </div>
+
+      {shown.length ? (
+        <div className="mt-3 max-h-80 overflow-y-auto custom-scroll">
+          <table className="w-full min-w-[640px] text-xs">
+            <thead>
+              <tr
+                className={`text-left text-[10px] uppercase tracking-wider ${
+                  dark ? "text-slate-500" : "text-slate-400"
+                }`}
+              >
+                <th className="px-4 py-2 font-semibold">Fahrzeug</th>
+                <th className="py-2 text-right font-semibold">Preis</th>
+                <th className="py-2 text-right font-semibold">Limit</th>
+                <th className="py-2 text-right font-semibold">Gewinn</th>
+                <th className="py-2 font-semibold">Bewertung</th>
+                <th className="py-2 text-right font-semibold">Gespeichert</th>
+                <th className="px-4 py-2" />
+              </tr>
+            </thead>
+            <tbody className={dark ? "divide-y divide-slate-800" : "divide-y divide-slate-100"}>
+              {shown.map((entry) => {
+                const meta = verdictMeta(entry.verdict);
+                return (
+                  <tr
+                    key={entry._id}
+                    className={dark ? "hover:bg-slate-800/50" : "hover:bg-slate-50"}
+                  >
+                    <td className="max-w-[260px] px-4 py-2">
+                      <button
+                        type="button"
+                        onClick={() => onOpen(entry)}
+                        className="block max-w-full truncate text-left font-semibold hover:underline"
+                        title={entry.title || entry.listingUrl}
+                      >
+                        {entry.title ||
+                          [entry.make, entry.model].filter(Boolean).join(" ") ||
+                          "Fahrzeug"}
+                      </button>
+                      <span className={`text-[10px] ${dark ? "text-slate-500" : "text-slate-400"}`}>
+                        {[
+                          entry.marketplace,
+                          entry.firstRegistration,
+                          Number.isFinite(entry.mileageKm) ? km(entry.mileageKm) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    </td>
+
+                    <td className="py-2 text-right tabular-nums">
+                      {euro(entry.askingPrice)}
+                      {entry.negotiatedPrice ? (
+                        <span className="block text-[10px] text-emerald-600">verhandelt</span>
+                      ) : null}
+                    </td>
+                    <td className="py-2 text-right font-semibold tabular-nums text-sky-600">
+                      {euro(entry.maximumPurchasePrice)}
+                    </td>
+                    <td
+                      className={`py-2 text-right tabular-nums ${
+                        entry.expectedProfit >= 0 ? "text-emerald-600" : "text-red-600"
+                      }`}
+                    >
+                      {signedEuro(entry.expectedProfit)}
+                    </td>
+                    <td className="py-2">
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${meta.chip}`}
+                      >
+                        {meta.label}
+                      </span>
+                    </td>
+                    <td
+                      className={`py-2 text-right whitespace-nowrap text-[10px] ${
+                        dark ? "text-slate-500" : "text-slate-400"
+                      }`}
+                    >
+                      {new Date(entry.updatedAt).toLocaleDateString("de-DE", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "2-digit",
+                      })}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      <button
+                        type="button"
+                        onClick={() => onDelete(entry)}
+                        aria-label="Bewertung löschen"
+                        className="text-slate-400 transition hover:text-red-600"
+                      >
+                        <FiTrash2 />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className={`px-4 pb-4 pt-3 text-xs ${dark ? "text-slate-400" : "text-slate-500"}`}>
+          {entries.length
+            ? "Keine Bewertung passt zur Suche."
+            : "Noch nichts gespeichert. Nach einer Analyse oben auf „Speichern“."}
+        </p>
+      )}
     </Panel>
   );
 }
@@ -1760,7 +1986,23 @@ export default function MarktanalysePage() {
   const [recent, setRecent] = useState([]);
   const [lastManual, setLastManual] = useState(null);
 
+  // Everything the user may change after the analysis has run. Held here, not
+  // inside the ledger, so the sticky strip and the price scale see the same
+  // figures the ledger does.
+  const [adjust, setAdjust] = useState(() => initialAdjust(null));
+
+  const [saved, setSaved] = useState([]);
+  const [loadingSaved, setLoadingSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState(null);
+  const [openedFrom, setOpenedFrom] = useState(null);
+
   const abortRef = useRef(null);
+
+  const live = useMemo(
+    () => (result ? recalculate(result, adjust) : null),
+    [result, adjust],
+  );
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -1778,6 +2020,25 @@ export default function MarktanalysePage() {
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
+
+  const loadSaved = useCallback(async () => {
+    setLoadingSaved(true);
+    try {
+      const response = await fetch("/api/market-analysis/saved");
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error);
+      setSaved(Array.isArray(data.entries) ? data.entries : []);
+    } catch {
+      // A failing list must never block the analysis itself.
+      setSaved([]);
+    } finally {
+      setLoadingSaved(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (status === "authenticated") loadSaved();
+  }, [status, loadSaved]);
 
   useEffect(() => {
     if (!loading) {
@@ -1875,6 +2136,9 @@ export default function MarktanalysePage() {
         }
 
         setResult(data);
+        setAdjust(initialAdjust(data));
+        setSavedAt(null);
+        setOpenedFrom(null);
         setLastManual(null);
         rememberSearch(data);
         toast.success(
@@ -1903,25 +2167,132 @@ export default function MarktanalysePage() {
     [rememberSearch],
   );
 
+  /**
+   * The analysis as it currently stands on screen, with every edited figure
+   * folded back in. This — not the untouched server response — is what gets
+   * stored, because it is what the buyer actually decided on.
+   */
+  const currentResult = useCallback(() => {
+    if (!result) return null;
+    if (!live) return result;
+
+    return {
+      ...result,
+      verdict: live.verdict,
+      dealer: {
+        ...result.dealer,
+        listPrice: live.listPrice,
+        negotiatedPrice: live.negotiated,
+        askingPrice: live.askingPrice,
+        savings: live.savings,
+        pickupCost: live.pickupCost,
+        refurbishmentCost: live.refurbishment,
+        targetProfit: live.targetProfit,
+        maximumPurchasePrice: live.limit,
+        expectedProfit: live.expected,
+        requiredDiscount: live.discount,
+        pickup: result.dealer?.pickup
+          ? {
+              ...result.dealer.pickup,
+              inboundMinutes: toNumber(adjust.inbound),
+              onSiteMinutes: toNumber(adjust.onSite),
+              ticketCost: toNumber(adjust.ticket),
+              fuelCost: toNumber(adjust.fuel),
+              totalMinutes: live.totalMinutes,
+              labourCost: live.labourCost,
+              totalCost: live.pickupCost,
+            }
+          : null,
+      },
+    };
+  }, [result, live, adjust]);
+
+  const saveResult = useCallback(async () => {
+    const payload = currentResult();
+    if (!payload) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch("/api/market-analysis/saved", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ result: payload, inputs: adjust }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Speichern fehlgeschlagen.");
+
+      setSavedAt(new Date().toISOString());
+      toast.success("Bewertung gespeichert.");
+      loadSaved();
+    } catch (saveError) {
+      toast.error(saveError?.message || "Speichern fehlgeschlagen.");
+    } finally {
+      setSaving(false);
+    }
+  }, [currentResult, adjust, loadSaved]);
+
+  const openSaved = useCallback(async (entry) => {
+    try {
+      const response = await fetch(`/api/market-analysis/saved/${entry._id}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Laden fehlgeschlagen.");
+
+      const stored = data.entry?.result;
+      if (!stored) throw new Error("Zu diesem Eintrag liegt keine Analyse vor.");
+
+      setResult(stored);
+      setAdjust(data.entry.inputs || initialAdjust(stored));
+      setUrl(stored.target?.listingUrl || entry.listingUrl || "");
+      setError(null);
+      setSavedAt(data.entry.updatedAt);
+      setOpenedFrom(data.entry.updatedAt);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (openError) {
+      toast.error(openError?.message || "Laden fehlgeschlagen.");
+    }
+  }, []);
+
+  const deleteSaved = useCallback(
+    async (entry) => {
+      // Optimistic: the row disappears at once and comes back if the call fails.
+      setSaved((current) => current.filter((item) => item._id !== entry._id));
+
+      try {
+        const response = await fetch(`/api/market-analysis/saved/${entry._id}`, {
+          method: "DELETE",
+        });
+        if (!response.ok) throw new Error();
+        toast.success("Gelöscht.");
+      } catch {
+        toast.error("Löschen fehlgeschlagen.");
+        loadSaved();
+      }
+    },
+    [loadSaved],
+  );
+
   const copySummary = async () => {
     if (!result) return;
     const dealer = result.dealer;
 
     const lines = [
       result.target.title || [result.target.make, result.target.model].filter(Boolean).join(" "),
-      `Angebot: ${euro(result.target.price)}`,
+      live?.negotiated
+        ? `Verhandelt: ${euro(live.negotiated)} (Anzeige ${euro(live.listPrice)})`
+        : `Angebot: ${euro(live?.askingPrice ?? result.target.price)}`,
       `EZ ${orDash(result.target.firstRegistration)} · ${km(result.target.mileageKm)}`,
       `Marktwert: ${euro(result.market.marketValue)} (${euro(result.market.rangeFrom)} – ${euro(result.market.rangeTo)})`,
       `Realistischer Verkaufspreis: ${euro(dealer?.sellingPrice)}`,
       dealer?.pickup?.available
-        ? `Abholkosten: ${euro(dealer.pickupCost)} (${dealer.pickup.roundTripKm} km)`
+        ? `Abholkosten: ${euro(live?.pickupCost ?? dealer.pickupCost)} (${dealer.pickup.oneWayKm} km einfach)`
         : null,
-      `Einkaufslimit: ${euro(dealer?.maximumPurchasePrice)}`,
-      `Erwarteter Gewinn: ${signedEuro(dealer?.expectedProfit)}`,
-      dealer?.requiredDiscount > 0
-        ? `Nötiger Nachlass: ${euro(dealer.requiredDiscount)}`
+      `Einkaufslimit: ${euro(live?.limit ?? dealer?.maximumPurchasePrice)}`,
+      `Erwarteter Gewinn: ${signedEuro(live?.expected ?? dealer?.expectedProfit)}`,
+      (live?.discount ?? dealer?.requiredDiscount) > 0
+        ? `Nötiger Nachlass: ${euro(live?.discount ?? dealer.requiredDiscount)}`
         : null,
-      `Bewertung: ${verdictMeta(result.verdict).label} · Konfidenz ${result.confidence} %`,
+      `Bewertung: ${verdictMeta(live?.verdict ?? result.verdict).label} · Konfidenz ${result.confidence} %`,
       result.target.listingUrl,
     ].filter(Boolean);
 
@@ -1938,6 +2309,8 @@ export default function MarktanalysePage() {
     setResult(null);
     setError(null);
     setLastManual(null);
+    setSavedAt(null);
+    setOpenedFrom(null);
   };
 
   if (status === "loading") {
@@ -2048,6 +2421,17 @@ export default function MarktanalysePage() {
           </p>
         ) : null}
 
+        {!loading && !result ? (
+          <SavedAnalyses
+            entries={saved}
+            dark={dark}
+            busy={loadingSaved}
+            onOpen={openSaved}
+            onDelete={deleteSaved}
+            onRefresh={loadSaved}
+          />
+        ) : null}
+
         {!loading && !result && !error ? (
           <RecentSearches
             items={recent}
@@ -2147,27 +2531,73 @@ export default function MarktanalysePage() {
 
         {!loading && result ? (
           <>
-            <DecisionStrip result={result} dark={dark} />
+            <DecisionStrip
+              result={result}
+              live={live}
+              dark={dark}
+              onSave={saveResult}
+              saving={saving}
+              savedAt={savedAt}
+            />
+
+            {openedFrom ? (
+              <p
+                className={`mb-3 flex items-center gap-2 text-[11px] ${
+                  dark ? "text-slate-500" : "text-slate-500"
+                }`}
+              >
+                <FiDatabase />
+                Gespeicherte Bewertung vom{" "}
+                {new Date(openedFrom).toLocaleString("de-DE")} – die Zahlen stammen aus
+                diesem Stand, nicht aus einer neuen Abfrage.
+                <button
+                  type="button"
+                  onClick={() => analyze(url)}
+                  className="font-semibold text-sky-600 hover:underline"
+                >
+                  neu prüfen
+                </button>
+              </p>
+            ) : null}
 
             {/* Decision on the left, evidence on the right. */}
             <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
               <div className="space-y-4">
                 <Calculation
                   result={result}
+                  live={live}
+                  adjust={adjust}
+                  onAdjust={(field, value) =>
+                    setAdjust((current) => ({ ...current, [field]: value }))
+                  }
                   dark={dark}
                   busy={loading}
                   onPostcode={(code) => analyze(url, null, null, { pickupPostcode: code })}
                 />
                 <SummaryNote result={result} dark={dark} />
-                <ComparablesTable result={result} dark={dark} />
+                <ComparablesTable
+                  result={result}
+                  asking={live?.askingPrice ?? result.target.price}
+                  dark={dark}
+                />
               </div>
 
               <aside className="space-y-4">
-                <WarningsPanel warnings={result.warnings} dark={dark} />
+                <NotesPanel result={result} dark={dark} />
                 <VehiclePanel result={result} dark={dark} />
                 <MarketPanel result={result} dark={dark} />
-                <NotesPanel result={result} dark={dark} />
               </aside>
+            </div>
+
+            <div className="mt-4">
+              <SavedAnalyses
+                entries={saved}
+                dark={dark}
+                busy={loadingSaved}
+                onOpen={openSaved}
+                onDelete={deleteSaved}
+                onRefresh={loadSaved}
+              />
             </div>
 
             <div className="mt-4">

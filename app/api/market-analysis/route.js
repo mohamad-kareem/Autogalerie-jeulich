@@ -127,8 +127,8 @@ export async function GET(request) {
 
 /**
  * POST /api/market-analysis
- * body: { url, targetProfit?, refurbishmentCost?, pickupPostcode?,
- *          skipModel?, pastedText?, manualVehicle? }
+ * body: { url, targetProfit?, negotiatedPrice?, refurbishmentCost?,
+ *          pickupPostcode?, skipModel?, pastedText?, manualVehicle? }
  */
 export async function POST(request) {
   let session;
@@ -163,6 +163,13 @@ export async function POST(request) {
   const profit = Number(body?.targetProfit);
   if (Number.isFinite(profit) && profit >= 0 && profit <= 100_000) {
     options.targetProfit = profit;
+  }
+
+  // The price actually on the table after speaking to the seller. When it is
+  // there, the whole calculation runs on it instead of the advertised price.
+  const negotiated = Number(body?.negotiatedPrice);
+  if (Number.isFinite(negotiated) && negotiated > 0 && negotiated <= 1_000_000) {
+    options.negotiatedPrice = negotiated;
   }
 
   // Refurbishment the buyer enters himself; nothing is assumed.
