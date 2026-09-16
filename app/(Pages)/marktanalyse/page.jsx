@@ -731,27 +731,22 @@ function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode })
             </td>
           </tr>
 
-          <tr>
-            <td className="py-1.5">
-              Zielgewinn
-              <span className={`ml-2 text-[11px] ${dark ? "text-slate-500" : "text-slate-400"}`}>
-                was übrig bleiben soll
-              </span>
-            </td>
-            <td className="py-1.5 text-right">
-              <input
-                type="number"
-                min="0"
-                step="50"
-                value={adjust.profit}
-                onChange={set("profit")}
-                className={input}
-              />
-            </td>
-          </tr>
-
+          {/* The target profit has no row of its own — it is not something to
+              fill in before every purchase. It is stated here, because a limit
+              that quietly holds a margin back would be unreadable otherwise. */}
           <tr className={dark ? "bg-slate-800/40" : "bg-slate-50"}>
-            <td className="py-2 text-[15px] font-bold">Einkaufslimit</td>
+            <td className="py-2 text-[15px] font-bold">
+              Einkaufslimit
+              {live.targetProfit > 0 ? (
+                <span
+                  className={`ml-2 text-[11px] font-normal ${
+                    dark ? "text-slate-500" : "text-slate-400"
+                  }`}
+                >
+                  inkl. {euro(live.targetProfit)} Marge
+                </span>
+              ) : null}
+            </td>
             <td className="py-2 text-right text-lg font-extrabold tabular-nums text-sky-600">
               {euro(live.limit)}
             </td>
