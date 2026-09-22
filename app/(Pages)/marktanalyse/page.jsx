@@ -11,6 +11,8 @@ import {
   FiAlertTriangle,
   FiCheckCircle,
   FiChevronDown,
+  FiChevronLeft,
+  FiChevronRight,
   FiChevronUp,
   FiClipboard,
   FiClock,
@@ -99,6 +101,11 @@ function km(value) {
 
 function percent(value, digits = 1) {
   return Number.isFinite(value) ? `${value.toFixed(digits).replace(".", ",")} %` : "–";
+}
+
+function signedPercent(value, digits = 1) {
+  if (!Number.isFinite(value)) return "–";
+  return `${value > 0 ? "+" : ""}${percent(value, digits)}`;
 }
 
 function orDash(value) {
@@ -291,14 +298,22 @@ function Metric({ label, value, hint, dark, accent = "none" }) {
   );
 }
 
-function Chip({ children, tone = "slate" }) {
-  const tones = {
-    slate: "border-slate-200 bg-slate-100 text-slate-600",
-    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    amber: "border-amber-200 bg-amber-50 text-amber-800",
-    red: "border-red-200 bg-red-50 text-red-700",
-    sky: "border-sky-200 bg-sky-50 text-sky-700",
-  };
+function Chip({ children, tone = "slate", dark = false }) {
+  const tones = dark
+    ? {
+        slate: "border-slate-700 bg-slate-800 text-slate-300",
+        emerald: "border-emerald-900 bg-emerald-950/60 text-emerald-300",
+        amber: "border-amber-900 bg-amber-950/60 text-amber-300",
+        red: "border-red-900 bg-red-950/60 text-red-300",
+        sky: "border-sky-900 bg-sky-950/60 text-sky-300",
+      }
+    : {
+        slate: "border-slate-200 bg-slate-100 text-slate-600",
+        emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+        amber: "border-amber-200 bg-amber-50 text-amber-800",
+        red: "border-red-200 bg-red-50 text-red-700",
+        sky: "border-sky-200 bg-sky-50 text-sky-700",
+      };
   return (
     <span
       className={`inline-flex items-center gap-1 whitespace-nowrap rounded border px-1.5 py-0.5 text-[11px] font-semibold ${tones[tone]}`}
@@ -361,6 +376,11 @@ function DecisionStrip({ result, live, dark, onSave, saving, savedAt }) {
     >
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <div className="flex min-w-0 flex-1 items-center gap-3">
+          <Thumb
+            src={target.images?.[0]}
+            alt=""
+            className="hidden h-11 w-14 sm:block"
+          />
           <span className={`shrink-0 text-xl ${meta.text}`}>
             <Icon />
           </span>
@@ -400,7 +420,7 @@ function DecisionStrip({ result, live, dark, onSave, saving, savedAt }) {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-6">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <StripFigure
             label={live?.negotiated !== null && live?.negotiated !== undefined ? "Verhandelt" : "Angebot"}
             value={euro(live?.askingPrice ?? target.price)}
@@ -909,20 +929,29 @@ function ComparablesTable({ result, asking, dark }) {
                     >
                       {SOURCE_SHORT[vehicle.source] || vehicle.source}
                     </td>
-                    <td className="max-w-[240px] py-2">
-                      <span className="block truncate font-medium">
-                        {vehicle.title ||
-                          [vehicle.make, vehicle.model].filter(Boolean).join(" ")}
-                      </span>
-                      <span
-                        className={`block truncate text-[10px] ${
-                          dark ? "text-slate-500" : "text-slate-400"
-                        }`}
-                      >
-                        {[SELLER_LABELS[vehicle.sellerType], vehicle.location]
-                          .filter((entry) => entry && entry !== "–")
-                          .join(" · ")}
-                      </span>
+                    <td className="max-w-[280px] py-2">
+                      <div className="flex items-center gap-2">
+                        <Thumb
+                          src={vehicle.images?.[0]}
+                          alt=""
+                          className="h-9 w-12"
+                        />
+                        <div className="min-w-0">
+                          <span className="block truncate font-medium">
+                            {vehicle.title ||
+                              [vehicle.make, vehicle.model].filter(Boolean).join(" ")}
+                          </span>
+                          <span
+                            className={`block truncate text-[10px] ${
+                              dark ? "text-slate-500" : "text-slate-400"
+                            }`}
+                          >
+                            {[SELLER_LABELS[vehicle.sellerType], vehicle.location]
+                              .filter((entry) => entry && entry !== "–")
+                              .join(" · ")}
+                          </span>
+                        </div>
+                      </div>
                     </td>
                     <td className="py-2 text-right tabular-nums whitespace-nowrap">
                       {orDash(vehicle.firstRegistration)}
@@ -1073,10 +1102,897 @@ function PriceScale({ market, dealer, asking, dark }) {
   );
 }
 
+/* ================================================================ photos
+ *
+ * Portal photos are loaded straight from the portal's image servers. The
+ * referrer is withheld, because some image hosts refuse requests that come
+ * from another site, and a broken image hides itself instead of leaving a
+ * grey box behind.
+ */
+
+function Gallery({ images, title, dark }) {
+  const [index, setIndex] = useState(0);
+  const [failed, setFailed] = useState(() => new Set());
+
+  const usable = (images || []).filter((src) => !failed.has(src));
+  if (!usable.length) return null;
+
+  const position = Math.min(index, usable.length - 1);
+  const current = usable[position];
+  const step = (delta) =>
+    setIndex((value) => (value + delta + usable.length) % usable.length);
+
+  const button = `absolute top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-white transition ${
+    dark ? "bg-slate-950/60 hover:bg-slate-950/80" : "bg-slate-900/50 hover:bg-slate-900/70"
+  }`;
+
+  return (
+    <div
+      className={`relative -mx-4 -mt-4 mb-3 overflow-hidden rounded-t-lg ${
+        dark ? "bg-slate-800" : "bg-slate-100"
+      }`}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        key={current}
+        src={current}
+        alt={title}
+        referrerPolicy="no-referrer"
+        className="aspect-[4/3] w-full object-cover"
+        onError={() => setFailed((previous) => new Set(previous).add(current))}
+      />
+
+      {usable.length > 1 ? (
+        <>
+          <button type="button" onClick={() => step(-1)} className={`${button} left-2`} aria-label="Vorheriges Foto">
+            <FiChevronLeft />
+          </button>
+          <button type="button" onClick={() => step(1)} className={`${button} right-2`} aria-label="Nächstes Foto">
+            <FiChevronRight />
+          </button>
+          <span className="absolute bottom-2 right-2 rounded bg-slate-900/60 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white">
+            {position + 1} / {usable.length}
+          </span>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function Thumb({ src, alt, className = "" }) {
+  const [broken, setBroken] = useState(false);
+  if (!src || broken) return null;
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => setBroken(true)}
+      className={`shrink-0 rounded object-cover ${className}`}
+    />
+  );
+}
+
+/* ============================================================ equipment */
+
+const EQUIPMENT_TONES = {
+  PREMIUM: "sky",
+  HIGH: "emerald",
+  GOOD: "slate",
+  BASIC: "amber",
+  UNKNOWN: "slate",
+};
+
+function EquipmentPanel({ result, dark }) {
+  const [showAll, setShowAll] = useState(false);
+  const equipment = result.insights?.equipment;
+  if (!equipment) return null;
+
+  const muted = dark ? "text-slate-500" : "text-slate-400";
+  const fromText = new Set(
+    equipment.items.filter((item) => item.from !== "Anzeige").map((item) => item.label),
+  );
+  const mark = (label) => (fromText.has(label) ? `${label}*` : label);
+
+  // Safety kit is on every car; it goes last and only on request.
+  const groups = showAll
+    ? equipment.groups
+    : equipment.groups.filter((group) => group.id !== "SAFETY");
+  const hiddenCount = equipment.groups.length - groups.length;
+
+  return (
+    <Panel dark={dark}>
+      <Caption
+        dark={dark}
+        action={
+          <Chip dark={dark} tone={EQUIPMENT_TONES[equipment.level]}>
+            {equipment.level === "UNKNOWN" ? "keine Angaben" : equipment.levelLabel}
+          </Chip>
+        }
+      >
+        Ausstattung
+      </Caption>
+
+      {equipment.level === "UNKNOWN" ? (
+        <p className={`text-xs ${dark ? "text-slate-400" : "text-slate-500"}`}>
+          Die Anzeige enthält keine Ausstattungsliste. Beim Verkäufer nach Navi, Sitzheizung,
+          Einparkhilfe und Anhängerkupplung fragen.
+        </p>
+      ) : (
+        <>
+          <div className="mb-3">
+            <div className="flex items-baseline justify-between text-[11px]">
+              <span className={muted}>
+                {equipment.count} Merkmale erkannt
+                {equipment.listedCount ? ` · ${equipment.listedCount} in der Anzeige` : ""}
+              </span>
+              <span className="font-semibold tabular-nums">{equipment.score}/100</span>
+            </div>
+            <div
+              className={`mt-1 h-1.5 overflow-hidden rounded-full ${
+                dark ? "bg-slate-800" : "bg-slate-100"
+              }`}
+              role="meter"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={equipment.score}
+              aria-label="Ausstattungsniveau"
+            >
+              <div
+                className="h-full rounded-full bg-sky-600"
+                style={{ width: `${Math.max(3, equipment.score)}%` }}
+              />
+            </div>
+          </div>
+
+          {equipment.highlights.length ? (
+            <div className="mb-3">
+              <p className={`mb-1 text-[10px] font-bold uppercase tracking-wider ${muted}`}>
+                Wertrelevant
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {equipment.highlights.map((label) => (
+                  <Chip dark={dark} key={label} tone="sky">
+                    {mark(label)}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <dl className="space-y-1.5">
+            {groups.map((group) => (
+              <div key={group.id}>
+                <dt className={`text-[10px] font-bold uppercase tracking-wider ${muted}`}>
+                  {group.label}
+                </dt>
+                <dd className={`text-xs leading-5 ${dark ? "text-slate-300" : "text-slate-600"}`}>
+                  {group.items.map(mark).join(" · ")}
+                </dd>
+              </div>
+            ))}
+          </dl>
+
+          {hiddenCount > 0 || showAll ? (
+            <button
+              type="button"
+              onClick={() => setShowAll((value) => !value)}
+              className="mt-1.5 text-[11px] font-semibold text-sky-600 hover:underline"
+            >
+              {showAll ? "Weniger anzeigen" : "Sicherheit & Standard anzeigen"}
+            </button>
+          ) : null}
+
+          {equipment.notListed.length ? (
+            <div
+              className={`mt-3 rounded px-2.5 py-2 text-[11px] leading-5 ${
+                dark ? "bg-amber-950/40 text-amber-300" : "bg-amber-50 text-amber-800"
+              }`}
+            >
+              <span className="font-semibold">Nicht angegeben:</span>{" "}
+              {equipment.notListed.join(", ")}
+            </div>
+          ) : null}
+
+          {equipment.other.length ? (
+            <p className={`mt-2 text-[11px] leading-5 ${muted}`}>
+              <span className="font-semibold">Weitere laut Anzeige:</span>{" "}
+              {equipment.other.join(", ")}
+            </p>
+          ) : null}
+
+          {fromText.size ? (
+            <p className={`mt-2 text-[10px] ${muted}`}>
+              * aus Titel oder Beschreibung gelesen – vor Ort bestätigen.
+            </p>
+          ) : null}
+        </>
+      )}
+    </Panel>
+  );
+}
+
+/* =========================================================== negotiation */
+
+const STANCE_TONES = { FIRM: "emerald", NORMAL: "slate", SOFT: "amber" };
+
+function WeightDots({ weight, tone }) {
+  return (
+    <span className="mt-1.5 inline-flex shrink-0 gap-0.5" aria-label={`Gewicht ${weight} von 3`}>
+      {[1, 2, 3].map((step) => (
+        <span
+          key={step}
+          className={`h-1.5 w-1.5 rounded-full ${
+            step <= weight ? tone : "bg-slate-300/40"
+          }`}
+        />
+      ))}
+    </span>
+  );
+}
+
+function NegotiationPanel({ result, live, dark }) {
+  const negotiation = result.insights?.negotiation;
+  const plan = live?.negotiation;
+  if (!negotiation || !plan) return null;
+
+  const muted = dark ? "text-slate-500" : "text-slate-400";
+  const body = dark ? "text-slate-300" : "text-slate-600";
+  const agreed = live.negotiated !== null;
+
+  const copyNotes = async () => {
+    const title =
+      result.target.title ||
+      [result.target.make, result.target.model].filter(Boolean).join(" ");
+    const questions = result.recommendation?.questionsForSeller || [];
+
+    const lines = [
+      `Gesprächsnotiz – ${title}`,
+      result.target.listingUrl,
+      "",
+      `Angebot: ${euro(live.askingPrice)}`,
+      plan.mode === "LIMIT_OFFER"
+        ? `Limit-Angebot: ${euro(plan.opening)}, höchstens ${euro(plan.walkAway)} (Abstand ${percent(plan.gapPercent)})`
+        : `Einstieg: ${euro(plan.opening)} · Ziel: ${euro(plan.target)} · Grenze: ${euro(plan.walkAway)}`,
+      "",
+      "Argumente:",
+      ...negotiation.arguments.map((entry) => `+ ${entry.text}`),
+      ...(negotiation.counterArguments.length
+        ? ["", "Spricht dagegen:", ...negotiation.counterArguments.map((entry) => `− ${entry.text}`)]
+        : []),
+      ...(questions.length ? ["", "Fragen an den Verkäufer:", ...questions.map((entry) => `? ${entry}`)] : []),
+    ].filter((line) => line !== undefined && line !== null);
+
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      toast.success("Gesprächsnotiz kopiert.");
+    } catch {
+      toast.error("Kopieren nicht möglich.");
+    }
+  };
+
+  return (
+    <Panel dark={dark}>
+      <Caption
+        dark={dark}
+        action={
+          <div className="flex items-center gap-2">
+            <Chip dark={dark} tone={plan.mode === "LIMIT_OFFER" ? "amber" : STANCE_TONES[plan.stance]}>
+              {plan.stanceLabel}
+            </Chip>
+            <button
+              type="button"
+              onClick={copyNotes}
+              className={`inline-flex items-center gap-1 text-[11px] font-semibold ${
+                dark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800"
+              }`}
+              title="Preise, Argumente und Fragen als Notiz für das Telefonat kopieren"
+            >
+              <FiClipboard /> Notiz
+            </button>
+          </div>
+        }
+      >
+        Verhandlung
+      </Caption>
+
+      {plan.mode === "LIMIT_OFFER" ? (
+        <div className="grid grid-cols-3 gap-3">
+          <Metric label="Angebot" value={euro(plan.opening)} hint="einmal anbieten" dark={dark} />
+          <Metric
+            label="Höchstens"
+            value={euro(plan.walkAway)}
+            hint="= Einkaufslimit"
+            dark={dark}
+            accent="primary"
+          />
+          <Metric
+            label="Abstand"
+            value={percent(plan.gapPercent)}
+            hint={`${euro(live.askingPrice - plan.walkAway)} über dem Limit`}
+            dark={dark}
+            accent="negative"
+          />
+        </div>
+      ) : (
+      <div className="grid grid-cols-3 gap-3">
+        <Metric
+          label="Einstieg"
+          value={euro(plan.opening)}
+          hint="erstes Angebot"
+          dark={dark}
+        />
+        <Metric
+          label="Ziel"
+          value={euro(plan.target)}
+          hint={
+            plan.discountToTarget > 0
+              ? `−${euro(plan.discountToTarget)} (${percent(plan.discountToTargetPercent)})`
+              : "entspricht dem Angebot"
+          }
+          dark={dark}
+          accent="primary"
+        />
+        <Metric
+          label="Schmerzgrenze"
+          value={euro(plan.walkAway)}
+          hint={plan.askingWithinLimit ? "= Angebotspreis" : "= Einkaufslimit"}
+          dark={dark}
+        />
+      </div>
+      )}
+
+      {agreed ? (
+        <p
+          className={`mt-3 rounded px-2.5 py-2 text-[11px] leading-5 ${
+            live.askingPrice <= live.limit
+              ? dark
+                ? "bg-emerald-950/40 text-emerald-300"
+                : "bg-emerald-50 text-emerald-800"
+              : dark
+                ? "bg-red-950/40 text-red-300"
+                : "bg-red-50 text-red-700"
+          }`}
+        >
+          Verhandelter Preis {euro(live.askingPrice)} liegt{" "}
+          {live.askingPrice <= live.limit
+            ? `${euro(live.limit - live.askingPrice)} unter dem Einkaufslimit.`
+            : `${euro(live.askingPrice - live.limit)} über dem Einkaufslimit.`}
+        </p>
+      ) : plan.mode === "LIMIT_OFFER" ? (
+        <p
+          className={`mt-3 rounded px-2.5 py-2 text-[11px] leading-5 ${
+            dark ? "bg-amber-950/40 text-amber-300" : "bg-amber-50 text-amber-800"
+          }`}
+        >
+          Der Verkäufer müsste {percent(plan.gapPercent)} nachlassen – in Stufen zu verhandeln
+          lohnt nicht. Einmal {euro(plan.opening)} bis höchstens {euro(plan.walkAway)} anbieten
+          und die Anzeige speichern: sinkt der Preis, zeigt die nächste Prüfung den Preisverlauf.
+        </p>
+      ) : plan.askingWithinLimit && plan.stance === "SOFT" ? (
+        <p
+          className={`mt-3 rounded px-2.5 py-2 text-[11px] leading-5 ${
+            dark ? "bg-amber-950/40 text-amber-300" : "bg-amber-50 text-amber-800"
+          }`}
+        >
+          Schon der Angebotspreis liegt im Limit und die Nachfrage ist hoch – nicht zu hart
+          pokern, sonst kauft ein anderer.
+        </p>
+      ) : null}
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div>
+          <p className={`mb-1.5 text-[10px] font-bold uppercase tracking-wider ${muted}`}>
+            Argumente für Nachlass
+          </p>
+          {negotiation.arguments.length ? (
+            <ul className="space-y-1.5">
+              {negotiation.arguments.map((entry) => (
+                <li key={entry.text} className={`flex gap-2 text-xs leading-5 ${body}`}>
+                  <WeightDots weight={entry.weight} tone="bg-emerald-600" />
+                  <span>{entry.text}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={`text-xs ${muted}`}>Die Daten liefern keine starken Argumente.</p>
+          )}
+        </div>
+
+        <div>
+          <p className={`mb-1.5 text-[10px] font-bold uppercase tracking-wider ${muted}`}>
+            Spricht für den Verkäufer
+          </p>
+          {negotiation.counterArguments.length ? (
+            <ul className="space-y-1.5">
+              {negotiation.counterArguments.map((entry) => (
+                <li key={entry.text} className={`flex gap-2 text-xs leading-5 ${body}`}>
+                  <WeightDots weight={entry.weight} tone="bg-amber-500" />
+                  <span>{entry.text}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={`text-xs ${muted}`}>Nichts Auffälliges.</p>
+          )}
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+/* ======================================================= market position
+ *
+ * Price over mileage: every comparable as a dot, this car highlighted, the
+ * market's trend through them and the purchase limit as a reference line.
+ * One look shows whether this car is dear for its kilometres or not.
+ *
+ * Colours are the first three slots of the validated categorical palette —
+ * the only three that stay apart for every viewer when all pairs can sit
+ * next to each other, as they do in a scatter.
+ */
+
+const CHART_COLORS = {
+  light: {
+    comparable: "#2a78d6",
+    target: "#eb6834",
+    trend: "#1baf7a",
+    reference: "#64748b",
+    grid: "#f1f5f9",
+    axis: "#94a3b8",
+    surface: "#ffffff",
+  },
+  dark: {
+    comparable: "#3987e5",
+    target: "#d95926",
+    trend: "#199e70",
+    reference: "#94a3b8",
+    grid: "#1e293b",
+    axis: "#64748b",
+    surface: "#0f172a",
+  },
+};
+
+function niceStep(span, targetTicks) {
+  const raw = span / Math.max(1, targetTicks);
+  const magnitude = 10 ** Math.floor(Math.log10(raw));
+  const normalised = raw / magnitude;
+  const nice = normalised < 1.5 ? 1 : normalised < 3 ? 2 : normalised < 7 ? 5 : 10;
+  return nice * magnitude;
+}
+
+function ticksFor(min, max, count) {
+  const step = niceStep(max - min, count);
+  const ticks = [];
+  for (let value = Math.ceil(min / step) * step; value <= max; value += step) {
+    ticks.push(value);
+  }
+  return ticks;
+}
+
+const compactKm = (value) =>
+  value >= 1_000 ? `${numberFormatter.format(Math.round(value / 1_000))} Tsd.` : String(value);
+
+function PriceMileageChart({ points, trend, targetKm, targetPrice, limit, dark }) {
+  const [hover, setHover] = useState(null);
+  const colors = dark ? CHART_COLORS.dark : CHART_COLORS.light;
+
+  const width = 640;
+  const height = 240;
+  const margin = { top: 14, right: 18, bottom: 28, left: 58 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+
+  const kms = [...points.map((point) => point.km), targetKm].filter(Number.isFinite);
+  const prices = [
+    ...points.map((point) => point.price),
+    targetPrice,
+    limit,
+    trend?.from?.price,
+    trend?.to?.price,
+  ].filter(Number.isFinite);
+
+  if (kms.length < 2 || prices.length < 2) return null;
+
+  const kmPad = (Math.max(...kms) - Math.min(...kms)) * 0.06 || 5_000;
+  const pricePad = (Math.max(...prices) - Math.min(...prices)) * 0.08 || 500;
+  const xMin = Math.max(0, Math.min(...kms) - kmPad);
+  const xMax = Math.max(...kms) + kmPad;
+  const yMin = Math.max(0, Math.min(...prices) - pricePad);
+  const yMax = Math.max(...prices) + pricePad;
+
+  const x = (value) => margin.left + ((value - xMin) / (xMax - xMin)) * innerWidth;
+  const y = (value) => margin.top + (1 - (value - yMin) / (yMax - yMin)) * innerHeight;
+
+  const xTicks = ticksFor(xMin, xMax, 5);
+  const yTicks = ticksFor(yMin, yMax, 4);
+
+  const hovered = hover === null ? null : points[hover];
+  const targetX = Number.isFinite(targetKm) ? x(targetKm) : null;
+  const targetY = Number.isFinite(targetPrice) ? y(targetPrice) : null;
+  // Keep the label inside the plot: flip it to the left near the right edge.
+  const labelLeft = targetX !== null && targetX > width - 170;
+
+  const legend = [
+    { key: "dot", color: colors.comparable, label: "Vergleichsangebote" },
+    { key: "target", color: colors.target, label: "Dieses Fahrzeug" },
+    trend ? { key: "trend", color: colors.trend, label: "Markttrend", line: true } : null,
+    Number.isFinite(limit)
+      ? { key: "limit", color: colors.reference, label: "Einkaufslimit", line: true }
+      : null,
+  ].filter(Boolean);
+
+  return (
+    <div>
+      <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1">
+        {legend.map((entry) => (
+          <span
+            key={entry.key}
+            className={`inline-flex items-center gap-1.5 text-[11px] ${
+              dark ? "text-slate-400" : "text-slate-500"
+            }`}
+          >
+            {entry.line ? (
+              <span className="h-0.5 w-3.5 rounded" style={{ background: entry.color }} />
+            ) : (
+              <span className="h-2 w-2 rounded-full" style={{ background: entry.color }} />
+            )}
+            {entry.label}
+          </span>
+        ))}
+      </div>
+
+      <div className="relative">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="h-auto w-full"
+          role="img"
+          aria-label="Angebotspreise der Vergleichsfahrzeuge über dem Kilometerstand, mit diesem Fahrzeug, Markttrend und Einkaufslimit"
+        >
+          {/* recessive horizontal grid, solid hairlines */}
+          {yTicks.map((tick) => (
+            <g key={`y-${tick}`}>
+              <line
+                x1={margin.left}
+                x2={width - margin.right}
+                y1={y(tick)}
+                y2={y(tick)}
+                stroke={colors.grid}
+                strokeWidth="1"
+              />
+              <text
+                x={margin.left - 8}
+                y={y(tick)}
+                textAnchor="end"
+                dominantBaseline="middle"
+                fontSize="10"
+                fill={colors.axis}
+              >
+                {numberFormatter.format(tick)} €
+              </text>
+            </g>
+          ))}
+
+          {xTicks.map((tick) => (
+            <text
+              key={`x-${tick}`}
+              x={x(tick)}
+              y={height - 8}
+              textAnchor="middle"
+              fontSize="10"
+              fill={colors.axis}
+            >
+              {compactKm(tick)} km
+            </text>
+          ))}
+
+          {/* the purchase limit: a reference, not data */}
+          {Number.isFinite(limit) ? (
+            <g>
+              <line
+                x1={margin.left}
+                x2={width - margin.right}
+                y1={y(limit)}
+                y2={y(limit)}
+                stroke={colors.reference}
+                strokeWidth="1"
+              />
+              <text
+                x={margin.left + 4}
+                y={y(limit) - 4}
+                fontSize="10"
+                fontWeight="600"
+                fill={colors.reference}
+              >
+                Limit {euro(limit)}
+              </text>
+            </g>
+          ) : null}
+
+          {trend ? (
+            <g>
+              <line
+                x1={x(trend.from.km)}
+                y1={y(trend.from.price)}
+                x2={x(trend.to.km)}
+                y2={y(trend.to.price)}
+                stroke={colors.trend}
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              {/* Labelled at the start, above the line: the right end is where
+                  the high-mileage dots and the limit line crowd together. */}
+              <text
+                x={x(trend.from.km) + 14}
+                y={y(trend.from.price) - 10}
+                textAnchor="start"
+                fontSize="10"
+                fontWeight="600"
+                fill={colors.trend}
+              >
+                Markttrend
+              </text>
+            </g>
+          ) : null}
+
+          {points.map((point, index) => (
+            <circle
+              key={`dot-${point.url || index}`}
+              cx={x(point.km)}
+              cy={y(point.price)}
+              r={hover === index ? 5.5 : 4}
+              fill={colors.comparable}
+              stroke={colors.surface}
+              strokeWidth="2"
+            />
+          ))}
+
+          {targetX !== null && targetY !== null ? (
+            <g>
+              <circle
+                cx={targetX}
+                cy={targetY}
+                r="6.5"
+                fill={colors.target}
+                stroke={colors.surface}
+                strokeWidth="2"
+              />
+              <text
+                x={labelLeft ? targetX - 11 : targetX + 11}
+                y={targetY + 3.5}
+                textAnchor={labelLeft ? "end" : "start"}
+                fontSize="11"
+                fontWeight="700"
+                fill={dark ? "#f1f5f9" : "#0f172a"}
+              >
+                Dieses Fahrzeug · {euro(targetPrice)}
+              </text>
+            </g>
+          ) : null}
+
+          {/* hit targets: 24px, larger than the 8px dots, keyboard reachable */}
+          {points.map((point, index) => (
+            <circle
+              key={`hit-${point.url || index}`}
+              cx={x(point.km)}
+              cy={y(point.price)}
+              r="12"
+              fill="transparent"
+              tabIndex={0}
+              role="button"
+              aria-label={`${point.title || "Angebot"}: ${euro(point.price)}, ${km(point.km)}`}
+              className="cursor-pointer outline-none"
+              onMouseEnter={() => setHover(index)}
+              onMouseLeave={() => setHover(null)}
+              onFocus={() => setHover(index)}
+              onBlur={() => setHover(null)}
+              onClick={() => point.url && window.open(point.url, "_blank", "noopener,noreferrer")}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && point.url) {
+                  window.open(point.url, "_blank", "noopener,noreferrer");
+                }
+              }}
+            />
+          ))}
+        </svg>
+
+        {hovered ? (
+          <div
+            className={`pointer-events-none absolute z-10 w-56 rounded-md border px-2.5 py-2 text-[11px] shadow-lg ${
+              dark ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-white"
+            }`}
+            style={{
+              left: `${Math.min(72, Math.max(0, (x(hovered.km) / width) * 100 - 18))}%`,
+              top: `${Math.max(0, (y(hovered.price) / height) * 100 - 42)}%`,
+            }}
+          >
+            <p className="text-sm font-bold tabular-nums">{euro(hovered.price)}</p>
+            {Number.isFinite(hovered.adjusted) && hovered.adjusted !== hovered.price ? (
+              <p className={dark ? "text-slate-400" : "text-slate-500"}>
+                bereinigt {euro(hovered.adjusted)}
+              </p>
+            ) : null}
+            <p className="mt-1 truncate font-semibold">{hovered.title || "Angebot"}</p>
+            <p className={dark ? "text-slate-400" : "text-slate-500"}>
+              {[
+                km(hovered.km),
+                hovered.year ? `EZ ${hovered.year}` : null,
+                SOURCE_SHORT[hovered.source] || hovered.source,
+                Number.isFinite(hovered.similarity) ? `${hovered.similarity} % Match` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function MarketPositionPanel({ result, live, dark }) {
+  const insights = result.insights;
+  const position = insights?.position;
+  if (!position || position.points.length < 2) return null;
+
+  const portal = insights.portal;
+  const history = insights.history;
+  const askingPrice = live?.askingPrice ?? result.target.price;
+
+  // Counted against the price on screen, so a negotiated price moves it too.
+  const cheaper = result.comparables.filter((entry) => {
+    const reference = entry.adjustedPrice ?? entry.price;
+    return Number.isFinite(reference) && reference < askingPrice;
+  }).length;
+
+  const expected = position.trend?.expectedAtTarget ?? null;
+  const gap = Number.isFinite(expected) && Number.isFinite(askingPrice) ? askingPrice - expected : null;
+
+  return (
+    <Panel dark={dark}>
+      <Caption
+        dark={dark}
+        action={
+          position.total ? (
+            <Chip dark={dark} tone={cheaper / position.total >= 0.5 ? "red" : "emerald"}>
+              {cheaper} von {position.total} günstiger
+            </Chip>
+          ) : null
+        }
+      >
+        Marktposition
+      </Caption>
+
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Metric
+          label="Je 10.000 km"
+          value={position.trend ? `≈ ${euro(position.trend.per10000Km)}` : "–"}
+          hint={position.trend ? "Wertverlust im Markt" : "zu wenig Streuung"}
+          dark={dark}
+        />
+        <Metric
+          label={`Erwartet bei ${km(result.target.mileageKm)}`}
+          value={euro(expected)}
+          hint={gap === null ? null : `Angebot ${signedEuro(gap)}`}
+          dark={dark}
+          accent={gap === null ? "none" : gap > 300 ? "negative" : gap < -300 ? "positive" : "none"}
+        />
+        {portal?.available ? (
+          <Metric
+            label={`${portal.source}-Median`}
+            value={euro(portal.median)}
+            hint={
+              portal.label
+                ? `„${portal.label}“${portal.agrees === true ? " · deckt sich mit uns" : ""}`
+                : portal.agrees === true
+                  ? "deckt sich mit unserem Wert"
+                  : Number.isFinite(portal.agreementPercent)
+                    ? `unser Wert ${signedPercent(portal.agreementPercent)}`
+                    : null
+            }
+            dark={dark}
+          />
+        ) : null}
+        {history?.changed ? (
+          <Metric
+            label="Preisverlauf"
+            value={
+              history.priceDrop > 0 ? `−${euro(history.priceDrop)}` : euro(result.target.price)
+            }
+            hint={`seit ${history.firstSeenLabel}: ${euro(history.firstPrice)}`}
+            dark={dark}
+            accent={history.priceDrop > 0 ? "positive" : "none"}
+          />
+        ) : null}
+      </div>
+
+      <PriceMileageChart
+        points={position.points}
+        trend={position.trend}
+        targetKm={result.target.mileageKm}
+        targetPrice={askingPrice}
+        limit={live?.limit ?? result.dealer?.maximumPurchasePrice}
+        dark={dark}
+      />
+
+      <p className={`mt-2 text-[10px] ${dark ? "text-slate-600" : "text-slate-400"}`}>
+        Angebotspreise wie im Portal. Punkte antippen für Details, klicken öffnet die Anzeige.
+      </p>
+    </Panel>
+  );
+}
+
+/* ============================================================ checklist */
+
+function Checklist({ items, dark }) {
+  const [done, setDone] = useState(() => new Set());
+  if (!items?.length) return <p className="text-xs text-slate-500">Keine Angaben.</p>;
+
+  const areas = [...new Set(items.map((item) => item.area))];
+
+  return (
+    <div className="space-y-3">
+      {areas.map((area) => (
+        <div key={area}>
+          <p
+            className={`mb-1 text-[10px] font-bold uppercase tracking-wider ${
+              dark ? "text-slate-500" : "text-slate-400"
+            }`}
+          >
+            {area}
+          </p>
+          <ul className="space-y-1">
+            {items
+              .filter((item) => item.area === area)
+              .map((item) => {
+                const key = `${item.area}:${item.text}`;
+                const checked = done.has(key);
+                return (
+                  <li key={key}>
+                    <label className="flex cursor-pointer gap-2 text-xs leading-5">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() =>
+                          setDone((previous) => {
+                            const next = new Set(previous);
+                            if (next.has(key)) next.delete(key);
+                            else next.add(key);
+                            return next;
+                          })
+                        }
+                        className="mt-1 h-3.5 w-3.5 shrink-0 accent-sky-600"
+                      />
+                      <span className={checked ? "line-through opacity-50" : ""}>
+                        <span className={dark ? "text-slate-200" : "text-slate-700"}>
+                          {item.text}
+                        </span>
+                        <span className={`block text-[10px] ${dark ? "text-slate-500" : "text-slate-400"}`}>
+                          {item.why}
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                );
+              })}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ================================================================ sidebar */
 
 function VehiclePanel({ result, dark }) {
   const target = result.target;
+  const insights = result.insights || {};
+  const usage = insights.usage;
+  const inspection = insights.inspection;
+  const listing = insights.listing;
 
   const flags = [];
   if (target.condition === "DAMAGED") flags.push({ text: "Unfall / Defekt", tone: "red" });
@@ -1085,10 +2001,18 @@ function VehiclePanel({ result, dark }) {
   else if (target.condition === "ACCIDENT_FREE")
     flags.push({ text: "Unfallfrei", tone: "emerald" });
   if (target.serviceHistory === "YES") flags.push({ text: "Scheckheft", tone: "emerald" });
-  if (!target.tuvUntil) flags.push({ text: "TÜV unbekannt", tone: "amber" });
+  if (!target.tuvUntil && !target.newInspection) flags.push({ text: "TÜV unbekannt", tone: "amber" });
+  if (target.nonSmoking === true) flags.push({ text: "Nichtraucher", tone: "emerald" });
+  if (target.warranty) flags.push({ text: "Garantie", tone: "emerald" });
+  if (listing?.demand === "HIGH") flags.push({ text: "Hohe Nachfrage", tone: "amber" });
+
+  const title =
+    target.title || [target.make, target.model].filter(Boolean).join(" ") || "Fahrzeug";
 
   return (
     <Panel dark={dark}>
+      <Gallery key={target.listingUrl || title} images={target.images} title={title} dark={dark} />
+
       <Caption
         dark={dark}
         action={
@@ -1110,6 +2034,14 @@ function VehiclePanel({ result, dark }) {
       <div className={dark ? "divide-y divide-slate-800" : "divide-y divide-slate-100"}>
         <Line label="Erstzulassung" value={orDash(target.firstRegistration)} dark={dark} />
         <Line label="Kilometerstand" value={km(target.mileageKm)} dark={dark} />
+        {usage?.available ? (
+          <Line
+            label="Pro Jahr"
+            value={`${km(usage.perYear)} · ${usage.label.toLowerCase()}`}
+            dark={dark}
+            warn={usage.level === "VERY_HIGH" || usage.shortTripRisk}
+          />
+        ) : null}
         <Line
           label="Leistung"
           value={Number.isFinite(target.powerPs) ? `${target.powerPs} PS` : "–"}
@@ -1119,10 +2051,28 @@ function VehiclePanel({ result, dark }) {
         <Line label="Getriebe" value={GEARBOX_LABELS[target.gearbox]} dark={dark} />
         <Line
           label="TÜV / HU"
-          value={orDash(target.tuvUntil)}
+          value={
+            inspection?.available
+              ? inspection.status === "NEW"
+                ? "neu"
+                : `${orDash(target.tuvUntil)} · ${inspection.status === "EXPIRED" ? "abgelaufen" : `${inspection.monthsLeft} Mon.`}`
+              : orDash(target.tuvUntil)
+          }
           dark={dark}
-          warn={!target.tuvUntil}
+          warn={!inspection?.available || ["EXPIRED", "DUE"].includes(inspection.status)}
         />
+        {Number.isFinite(target.ownerCount) ? (
+          <Line
+            label="Vorbesitzer"
+            value={target.ownerCount}
+            dark={dark}
+            warn={target.ownerCount >= 3}
+          />
+        ) : null}
+        {target.upholstery ? (
+          <Line label="Innenausstattung" value={target.upholstery} dark={dark} />
+        ) : null}
+        {target.driveTrain ? <Line label="Antrieb" value={target.driveTrain} dark={dark} /> : null}
         <Line
           label="Scheckheft"
           value={SERVICE_LABELS[target.serviceHistory]}
@@ -1132,12 +2082,21 @@ function VehiclePanel({ result, dark }) {
         <Line label="Zustand" value={CONDITION_LABELS[target.condition]} dark={dark} />
         <Line label="Verkäufer" value={SELLER_LABELS[target.sellerType]} dark={dark} />
         <Line label="Standort" value={orDash(target.location)} dark={dark} />
+        {Number.isFinite(listing?.daysOnline) ? (
+          <Line
+            label="Online seit"
+            value={`${listing.daysOnline === 0 ? "heute" : `${listing.daysOnline} ${listing.daysOnline === 1 ? "Tag" : "Tagen"}`}${
+              Number.isFinite(listing.favorites) ? ` · ${listing.favorites}× gemerkt` : ""
+            }`}
+            dark={dark}
+          />
+        ) : null}
       </div>
 
       {flags.length ? (
         <div className="mt-3 flex flex-wrap gap-1">
           {flags.map((flag) => (
-            <Chip key={flag.text} tone={flag.tone}>
+            <Chip dark={dark} key={flag.text} tone={flag.tone}>
               {flag.text}
             </Chip>
           ))}
@@ -1162,7 +2121,7 @@ function MarketPanel({ result, dark }) {
         dark={dark}
         action={
           Number.isFinite(market.differenceToAskingPercent) ? (
-            <Chip tone={market.differenceToAsking > 0 ? "emerald" : "red"}>
+            <Chip dark={dark} tone={market.differenceToAsking > 0 ? "emerald" : "red"}>
               {market.differenceToAsking > 0 ? <FiTrendingDown /> : <FiTrendingUp />}
               {percent(Math.abs(market.differenceToAskingPercent))}
             </Chip>
@@ -1215,6 +2174,7 @@ function NotesPanel({ result, dark }) {
   const tabs = [
     { id: "risks", label: "Risiken", values: result.recommendation?.risks },
     { id: "questions", label: "Fragen", values: result.recommendation?.questionsForSeller },
+    { id: "checklist", label: "Prüfliste", values: result.insights?.checklist },
     { id: "reasons", label: "Bewertung", values: result.recommendation?.reasons },
   ];
 
@@ -1243,7 +2203,9 @@ function NotesPanel({ result, dark }) {
         ))}
       </div>
 
-      {active.values?.length ? (
+      {active.id === "checklist" ? (
+        <Checklist items={active.values} dark={dark} />
+      ) : active.values?.length ? (
         <ul className="space-y-1.5">
           {active.values.map((value, index) => (
             <li
@@ -2287,6 +3249,14 @@ export default function MarktanalysePage() {
       (live?.discount ?? dealer?.requiredDiscount) > 0
         ? `Nötiger Nachlass: ${euro(live?.discount ?? dealer.requiredDiscount)}`
         : null,
+      result.insights?.equipment && result.insights.equipment.level !== "UNKNOWN"
+        ? `Ausstattung: ${result.insights.equipment.levelLabel}${result.insights.equipment.highlights.length ? ` (${result.insights.equipment.highlights.join(", ")})` : ""}`
+        : null,
+      live?.negotiation
+        ? live.negotiation.mode === "LIMIT_OFFER"
+          ? `Verhandlung: nur Limit-Angebot ${euro(live.negotiation.opening)}, höchstens ${euro(live.negotiation.walkAway)}`
+          : `Verhandlung: Einstieg ${euro(live.negotiation.opening)} · Ziel ${euro(live.negotiation.target)} · Grenze ${euro(live.negotiation.walkAway)}`
+        : null,
       `Bewertung: ${verdictMeta(live?.verdict ?? result.verdict).label} · Konfidenz ${result.confidence} %`,
       result.target.listingUrl,
     ].filter(Boolean);
@@ -2556,8 +3526,8 @@ export default function MarktanalysePage() {
             ) : null}
 
             {/* Decision on the left, evidence on the right. */}
-            <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
-              <div className="space-y-4">
+            <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+              <div className="min-w-0 space-y-4">
                 <Calculation
                   result={result}
                   live={live}
@@ -2569,6 +3539,8 @@ export default function MarktanalysePage() {
                   busy={loading}
                   onPostcode={(code) => analyze(url, null, null, { pickupPostcode: code })}
                 />
+                <NegotiationPanel result={result} live={live} dark={dark} />
+                <MarketPositionPanel result={result} live={live} dark={dark} />
                 <SummaryNote result={result} dark={dark} />
                 <ComparablesTable
                   result={result}
@@ -2577,9 +3549,10 @@ export default function MarktanalysePage() {
                 />
               </div>
 
-              <aside className="space-y-4">
+              <aside className="min-w-0 space-y-4">
                 <NotesPanel result={result} dark={dark} />
                 <VehiclePanel result={result} dark={dark} />
+                <EquipmentPanel result={result} dark={dark} />
                 <MarketPanel result={result} dark={dark} />
               </aside>
             </div>

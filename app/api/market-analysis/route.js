@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { analyzeListing, AnalysisError } from "@/lib/market/analyze";
 import { POLICY } from "@/lib/market/config";
 import { browserStatus } from "@/lib/market/browser";
+import { loadObservations, recordObservation } from "@/lib/market/history";
 import { isProxyConfigured } from "@/lib/market/http";
 import {
   diagnose as diagnoseMobile,
@@ -238,11 +239,24 @@ export async function POST(request) {
     };
   }
 
+  // Earlier sightings of this ad, so the analysis can say whether the price
+  // has moved. Never allowed to block or fail the analysis.
+  options.observations = await loadObservations(listingUrl);
+
   try {
     const result = await withDeadline(
       analyzeListing(listingUrl, options),
       POLICY.pipelineTimeoutMs,
     );
+
+    // One more point in this ad's price history. Time-limited and unable to
+    // fail the request — a database hiccup must never cost the buyer a result.
+    await recordObservation({
+      listingUrl: result.target?.listingUrl || listingUrl,
+      price: result.target?.price,
+      source: result.marketplace?.id,
+    });
+
     return json(result);
   } catch (error) {
     if (error instanceof AnalysisError) {
