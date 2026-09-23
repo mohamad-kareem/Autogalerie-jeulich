@@ -34,7 +34,6 @@ import {
   FiTrendingUp,
   FiX,
   FiXCircle,
-  FiZap,
 } from "react-icons/fi";
 
 import {
@@ -42,7 +41,9 @@ import {
   recalculate,
   toNumber,
 } from "@/lib/market/live";
-import { bookmarkletHref, decodeImport, IMPORT_PREFIX } from "@/lib/market/bookmarklet";
+// The bookmark button is no longer offered on the page, but a bookmark set up
+// earlier still delivers its ad here, so the receiving end stays.
+import { decodeImport, IMPORT_PREFIX } from "@/lib/market/bookmarklet";
 import { useSidebar } from "@/app/(components)/SidebarContext";
 
 /* ------------------------------------------------------------------ setup */
@@ -2632,82 +2633,6 @@ function SavedAnalyses({ entries, dark, busy, onOpen, onDelete, onRefresh }) {
   );
 }
 
-/* ====================================================== one-click import
- *
- * mobile.de refuses its ad pages to servers, not to people. A bookmark in the
- * buyer's bookmarks bar takes the ad he is looking at and hands it over — see
- * lib/market/bookmarklet.js. Works on AutoScout24 and Kleinanzeigen as well.
- */
-
-function BookmarkletSetup({ dark, emphasis = false, className = "" }) {
-  const linkRef = useRef(null);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    // React refuses javascript: addresses in href, so the bookmark's address
-    // is set on the element itself, once the app's own address is known.
-    if (!linkRef.current) return;
-    linkRef.current.setAttribute("href", bookmarkletHref(window.location.origin));
-    setReady(true);
-  }, []);
-
-  const muted = dark ? "text-slate-400" : "text-slate-500";
-
-  return (
-    <Panel
-      dark={dark}
-      className={`${className} ${emphasis ? "ring-2 ring-sky-500/50" : ""}`}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 text-sm font-semibold">
-            <FiZap className="text-sky-600" />
-            Ein-Klick-Import {emphasis ? "– so klappt mobile.de" : "für mobile.de & Co."}
-          </p>
-          <p className={`mt-0.5 text-xs leading-5 ${muted}`}>
-            mobile.de lässt unseren Server nicht auf die Anzeige zugreifen, Ihren Browser aber
-            schon. Einmal einrichten, danach auf jeder Anzeige bei mobile.de, AutoScout24 oder
-            Kleinanzeigen auf das Lesezeichen klicken – die Analyse startet sofort, mit allen
-            Daten, Fotos und der Ausstattung.
-          </p>
-        </div>
-
-        <a
-          ref={linkRef}
-          draggable
-          onClick={(event) => {
-            event.preventDefault();
-            toast("Nicht klicken – mit der Maus in die Lesezeichenleiste ziehen.", {
-              icon: "👆",
-            });
-          }}
-          title="Mit der Maus in die Lesezeichenleiste ziehen"
-          aria-disabled={!ready}
-          className="inline-flex shrink-0 cursor-grab items-center gap-1.5 rounded-md bg-sky-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-sky-700 active:cursor-grabbing"
-        >
-          <FiZap /> Ankaufs-Check
-        </a>
-      </div>
-
-      <ol className={`mt-3 grid gap-2 text-[11px] leading-4 sm:grid-cols-3 ${muted}`}>
-        {[
-          <>Lesezeichenleiste einblenden: <strong>Strg+Umschalt+B</strong></>,
-          <>Den blauen Button <strong>mit der Maus</strong> in die Leiste ziehen</>,
-          <>Auf einer Anzeige das Lesezeichen <strong>„Ankaufs-Check“</strong> anklicken</>,
-        ].map((step, index) => (
-          <li
-            key={index}
-            className={`flex gap-2 rounded px-2 py-1.5 ${dark ? "bg-slate-800/60" : "bg-slate-50"}`}
-          >
-            <span className="font-bold text-sky-600">{index + 1}</span>
-            <span>{step}</span>
-          </li>
-        ))}
-      </ol>
-    </Panel>
-  );
-}
-
 /* ================================================= mobile.de, the fast way
  *
  * Shown the moment a mobile.de link is entered, instead of asking mobile.de
@@ -2716,66 +2641,38 @@ function BookmarkletSetup({ dark, emphasis = false, className = "" }) {
  * from the clipboard where the browser allows it, or with Ctrl+V anywhere.
  */
 
+/** A keyboard key, the way a shortcut is printed on it. */
+function Key({ children, dark }) {
+  return (
+    <kbd
+      className={`inline-flex items-center rounded border px-1.5 py-0.5 font-sans text-[11px] font-semibold leading-none ${
+        dark
+          ? "border-slate-600 bg-slate-800 text-slate-200"
+          : "border-slate-300 bg-white text-slate-700 shadow-[0_1px_0_rgb(203_213_225)]"
+      }`}
+    >
+      {children}
+    </kbd>
+  );
+}
+
 function MobileAssist({ url, dark, clipboardState, onAllowClipboard, onText, onCancel }) {
   const [draft, setDraft] = useState("");
   const muted = dark ? "text-slate-400" : "text-slate-500";
-  const automatic = clipboardState === "granted";
-
-  const steps = [
-    {
-      title: "Zur Anzeige wechseln",
-      body: (
-        <>
-          Den Tab mit der Anzeige öffnen – oder{" "}
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 font-semibold text-sky-600 hover:underline"
-          >
-            hier öffnen <FiExternalLink />
-          </a>
-        </>
-      ),
-    },
-    {
-      title: "Alles kopieren",
-      body: (
-        <>
-          <strong>Strg+A</strong>, dann <strong>Strg+C</strong>
-        </>
-      ),
-    },
-    {
-      title: "Zurückkommen",
-      body: automatic ? (
-        <>Die Analyse startet von selbst.</>
-      ) : (
-        <>
-          <strong>Strg+V</strong> – irgendwo auf dieser Seite
-        </>
-      ),
-    },
-  ];
+  const arrow = <FiChevronRight className={dark ? "text-slate-600" : "text-slate-300"} />;
 
   return (
     <Panel dark={dark} className="mb-4 ring-2 ring-sky-500/50">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 text-sm font-semibold">
-            <FiClipboard className="text-sky-600" />
-            mobile.de-Anzeige übernehmen
-            <span className="inline-flex items-center gap-1 rounded bg-sky-600/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-600">
-              <FiLoader className="animate-spin" /> wartet
-            </span>
-          </p>
-          <p className={`mt-0.5 truncate text-[11px] ${muted}`}>{url}</p>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <p className="flex items-center gap-2 text-sm font-semibold">
+          <FiLoader className="animate-spin text-sky-600" />
+          mobile.de-Anzeige kopieren
+        </p>
         <button
           type="button"
           onClick={onCancel}
-          className={`inline-flex h-7 w-7 items-center justify-center rounded border ${
-            dark ? "border-slate-700 hover:bg-slate-800" : "border-slate-300 hover:bg-slate-50"
+          className={`inline-flex h-7 w-7 items-center justify-center rounded ${
+            dark ? "hover:bg-slate-800" : "hover:bg-slate-100"
           }`}
           aria-label="Abbrechen"
         >
@@ -2783,65 +2680,65 @@ function MobileAssist({ url, dark, clipboardState, onAllowClipboard, onText, onC
         </button>
       </div>
 
-      <ol className="mt-3 grid gap-2 sm:grid-cols-3">
-        {steps.map((step, index) => (
-          <li
-            key={step.title}
-            className={`rounded-md px-3 py-2.5 ${dark ? "bg-slate-800/60" : "bg-slate-50"}`}
-          >
-            <p className="flex items-center gap-2 text-xs font-semibold">
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-sky-600 text-[10px] font-bold text-white">
-                {index + 1}
-              </span>
-              {step.title}
-            </p>
-            <p className={`mt-1 text-[11px] leading-5 ${muted}`}>{step.body}</p>
-          </li>
-        ))}
-      </ol>
-
-      {clipboardState === "prompt" ? (
-        <div
-          className={`mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md px-3 py-2 text-[11px] ${
-            dark ? "bg-sky-950/40 text-sky-200" : "bg-sky-50 text-sky-900"
-          }`}
+      {/* The whole job in one line. */}
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 font-semibold text-sky-600 hover:underline"
         >
-          <span>
-            Einmal erlauben – danach startet die Analyse beim Zurückkommen von selbst, ganz ohne
-            Strg+V.
+          Anzeige öffnen <FiExternalLink />
+        </a>
+        {arrow}
+        <span className="inline-flex items-center gap-1">
+          <Key dark={dark}>Strg+A</Key>
+          <Key dark={dark}>Strg+C</Key>
+        </span>
+        {arrow}
+        {clipboardState === "granted" ? (
+          <span className="font-medium">zurückkommen – startet von selbst</span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5">
+            hier <Key dark={dark}>Strg+V</Key>
           </span>
+        )}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {/* For touch screens, where there is no Ctrl+V: a long press here. */}
+        <textarea
+          data-ad-paste="true"
+          value={draft}
+          onChange={(event) => {
+            setDraft(event.target.value);
+            if (looksLikeAdText(event.target.value)) onText(event.target.value);
+          }}
+          rows={1}
+          placeholder="oder hier einfügen"
+          className={`min-w-0 flex-1 resize-none rounded border px-3 py-1.5 text-xs outline-none focus:ring-2 ${
+            dark
+              ? "border-slate-700 bg-slate-900 focus:ring-sky-500/30"
+              : "border-slate-300 bg-white focus:ring-sky-200"
+          }`}
+        />
+        {clipboardState === "prompt" ? (
           <button
             type="button"
             onClick={onAllowClipboard}
-            className="rounded bg-sky-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-sky-700"
+            title="Einmal erlauben – danach startet die Analyse beim Zurückkommen ohne Strg+V"
+            className={`shrink-0 rounded border px-2.5 py-1.5 text-xs font-semibold ${
+              dark
+                ? "border-slate-700 text-slate-300 hover:bg-slate-800"
+                : "border-slate-300 text-slate-600 hover:bg-slate-50"
+            }`}
           >
-            Automatisch einfügen erlauben
+            Ohne Strg+V: erlauben
           </button>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
 
-      {/* For touch screens, where there is no Ctrl+V: a long press here. */}
-      <textarea
-        data-ad-paste="true"
-        value={draft}
-        onChange={(event) => {
-          setDraft(event.target.value);
-          if (looksLikeAdText(event.target.value)) onText(event.target.value);
-        }}
-        rows={2}
-        placeholder="… oder den kopierten Anzeigentext hier einfügen"
-        className={`mt-3 w-full resize-none rounded border px-3 py-2 text-xs outline-none focus:ring-2 ${
-          dark
-            ? "border-slate-700 bg-slate-900 focus:ring-sky-500/30"
-            : "border-slate-300 bg-white focus:ring-sky-200"
-        }`}
-      />
-
-      <p className={`mt-2 text-[11px] ${muted}`}>
-        <FiZap className="mr-1 inline text-sky-600" />
-        Ganz ohne Kopieren: der Ein-Klick-Button „Ankaufs-Check“ in der Lesezeichenleiste – einmal
-        einrichten, dann direkt auf der Anzeige klicken.
-      </p>
+      <p className={`mt-2 truncate text-[10px] ${muted}`}>{url}</p>
     </Panel>
   );
 }
@@ -3827,6 +3724,20 @@ export default function MarktanalysePage() {
           </form>
         </header>
 
+        {!url.trim() && !loading && !result && !awaiting ? (
+          <p className={`-mt-2 mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] ${dark ? "text-slate-500" : "text-slate-500"}`}>
+            <span>Link einfügen</span>
+            <span className={dark ? "text-slate-700" : "text-slate-300"}>·</span>
+            <span className="inline-flex flex-wrap items-center gap-1">
+              bei mobile.de die ganze Seite:
+              <Key dark={dark}>Strg+A</Key>
+              <Key dark={dark}>Strg+C</Key>
+              auf der Anzeige, dann hier
+              <Key dark={dark}>Strg+V</Key>
+            </span>
+          </p>
+        ) : null}
+
         {url.trim() && !loading && portal.status !== "supported" ? (
           <p className="mb-3 text-[11px] text-amber-600">
             {portal.status === "unsupported"
@@ -3844,11 +3755,6 @@ export default function MarktanalysePage() {
             onText={startFromText}
             onCancel={() => setAwaiting(null)}
           />
-        ) : null}
-
-        {!loading && !result && !error && !awaiting ? (
-          // Desktop only: a phone has no bookmarks bar to drag into.
-          <BookmarkletSetup dark={dark} className="mb-4 hidden md:block" />
         ) : null}
 
         {!loading && !result && !awaiting ? (
@@ -3931,9 +3837,6 @@ export default function MarktanalysePage() {
 
             {error.details?.canRetryManually ? (
               <div className="mb-4">
-                {detectPortal(url).label === "mobile.de" ? (
-                  <BookmarkletSetup dark={dark} emphasis />
-                ) : null}
                 <PasteListing
                   dark={dark}
                   busy={loading}
