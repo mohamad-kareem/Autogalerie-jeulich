@@ -175,21 +175,6 @@ function chime() {
 
 /* ------------------------------------------------------------------- UI bits */
 
-function Chip({ children, tone = "slate", dark }) {
-  const tones = {
-    slate: dark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600",
-    green: dark ? "bg-emerald-900/50 text-emerald-300" : "bg-emerald-100 text-emerald-700",
-    amber: dark ? "bg-amber-900/40 text-amber-300" : "bg-amber-100 text-amber-800",
-    red: dark ? "bg-red-900/40 text-red-300" : "bg-red-100 text-red-700",
-    sky: dark ? "bg-sky-900/40 text-sky-300" : "bg-sky-100 text-sky-700",
-  };
-  return (
-    <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${tones[tone]}`}>
-      {children}
-    </span>
-  );
-}
-
 /**
  * A labelled field. `group` for several controls (chips, two inputs): a
  * <label> may only name one control, so those become a named group instead.
@@ -238,7 +223,9 @@ function Toggle({ active, onClick, children, dark }) {
       aria-pressed={active}
       className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
         active
-          ? "border-sky-600 bg-sky-600 text-white"
+          ? dark
+            ? "border-sky-500 bg-sky-500/15 text-sky-300"
+            : "border-sky-500 bg-sky-50 text-sky-700"
           : dark
             ? "border-slate-700 text-slate-300 hover:border-slate-500"
             : "border-slate-300 text-slate-600 hover:border-slate-400"
@@ -394,11 +381,38 @@ function FilterPanel({ draft, setDraft, dark, onApply, running }) {
   );
 }
 
-const FACT_TONES = { good: "green", warn: "amber", bad: "red", neutral: "slate", unknown: "slate" };
+/* --------------------------------------------------------------- listing row */
+
+const CONDITION_SHORT = {
+  Unfallfrei: "Unfallfrei",
+  "Vorschaden (repariert)": "Vorschaden",
+  "Unfall / Schaden": "Unfallschaden",
+  "Unfall unbekannt": "Unfall ?",
+};
+
+/** Small, quiet fact boxes. Colour only where it means something. */
+function factClass(tone, dark) {
+  if (tone === "bad") return dark ? "bg-red-500/10 text-red-300 ring-red-500/20" : "bg-red-50 text-red-700 ring-red-200";
+  if (tone === "warn") return dark ? "bg-amber-500/10 text-amber-300 ring-amber-500/20" : "bg-amber-50 text-amber-800 ring-amber-200";
+  if (tone === "unknown") return dark ? "bg-slate-800/60 text-slate-500 ring-slate-700" : "bg-slate-50 text-slate-400 ring-slate-200";
+  return dark ? "bg-slate-800 text-slate-200 ring-slate-700" : "bg-white text-slate-700 ring-slate-200";
+}
+
+const TONE_DOT = { good: "bg-emerald-500", warn: "bg-amber-500", bad: "bg-red-500", neutral: "bg-slate-400", unknown: "bg-slate-300" };
+
+function FactBox({ tone = "neutral", dark, children, dot = true }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded px-2 py-[3px] text-[11.5px] font-medium ring-1 ring-inset ${factClass(tone, dark)}`}>
+      {dot ? <span className={`size-1.5 rounded-full ${TONE_DOT[tone] || TONE_DOT.neutral}`} /> : null}
+      {children}
+    </span>
+  );
+}
 
 /**
- * HU, accident status, owners, red flags … — read from the ad page once the
- * car has arrived (or on request for cars that were already online).
+ * HU, accident status, owners and yearly mileage as four small boxes, then
+ * whatever in the ad text should stop a buyer, and what speaks for the car.
+ * Read from the ad page once the car has arrived, or on request.
  */
 function CardFacts({ item, dark, onLoad }) {
   const d = item.details;
@@ -407,8 +421,10 @@ function CardFacts({ item, dark, onLoad }) {
   if (!d) {
     if (item.detailsState === "loading") {
       return (
-        <div className={`flex items-center gap-2 text-[11px] ${muted}`}>
-          <FiLoader className="animate-spin" /> HU, Unfall & Halter werden geladen …
+        <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Details werden geladen">
+          {[64, 72, 56, 80].map((width) => (
+            <span key={width} style={{ width }} className={`h-[22px] animate-pulse rounded ${dark ? "bg-slate-800" : "bg-slate-100"}`} />
+          ))}
         </div>
       );
     }
@@ -416,39 +432,36 @@ function CardFacts({ item, dark, onLoad }) {
       <button
         type="button"
         onClick={() => onLoad(item)}
-        className={`self-start text-[11px] font-semibold text-sky-600 hover:underline`}
+        className="mt-3 self-start text-[12px] font-medium text-sky-700 hover:underline"
       >
-        {item.detailsState === "error" ? "Details nicht lesbar – erneut versuchen" : "HU, Unfall & mehr laden"}
+        {item.detailsState === "error" ? "Details nicht lesbar – erneut versuchen" : "HU, Unfall und Halter laden"}
       </button>
     );
   }
 
-  const chip = (fact, key, prefix = "") =>
-    fact ? (
-      <Chip key={key} dark={dark} tone={FACT_TONES[fact.tone] || "slate"}>
-        {prefix}
-        {fact.label}
-        {fact.note ? ` · ${fact.note}` : ""}
-      </Chip>
-    ) : null;
+  const huText = d.hu.label === "HU unbekannt" ? "HU ?" : d.hu.label + (d.hu.note ? ` · ${d.hu.note}` : "");
+  const plus = d.goodSigns.filter((sign) => sign !== "Zahnriemen neu");
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex flex-wrap gap-1">
-        {chip(d.hu, "hu")}
-        {chip(d.condition, "condition")}
-        {chip(d.owners, "owners")}
-        {chip(d.belt, "belt")}
+    <div className="mt-3 flex flex-col gap-1.5">
+      <div className="flex flex-wrap gap-1.5">
+        <FactBox dark={dark} tone={d.hu.tone}>{huText}</FactBox>
+        <FactBox dark={dark} tone={d.condition.tone}>{CONDITION_SHORT[d.condition.label] || d.condition.label}</FactBox>
+        <FactBox dark={dark} tone={d.owners?.tone || "unknown"}>{d.owners ? d.owners.label : "Halter ?"}</FactBox>
+        {d.usage ? (
+          <FactBox dark={dark} tone={d.usage.level === "VERY_HIGH" ? "warn" : "neutral"} dot={false}>
+            {d.usage.label.replace("/Jahr", " / Jahr")}
+          </FactBox>
+        ) : null}
         {d.redFlags.map((flag) => (
-          <Chip key={flag} dark={dark} tone="red">⚠ {flag}</Chip>
-        ))}
-        {d.goodSigns.map((sign) => (
-          <Chip key={sign} dark={dark} tone="green">✓ {sign}</Chip>
+          <FactBox key={flag} dark={dark} tone="bad">{flag}</FactBox>
         ))}
       </div>
-      {d.equipment.length || d.usage ? (
-        <p className={`text-[11px] leading-4 ${muted}`}>
-          {[d.usage?.label, d.equipment.length ? d.equipment.join(" · ") : null].filter(Boolean).join(" · ")}
+      {plus.length || d.equipment.length ? (
+        <p className={`text-[12px] leading-5 ${muted}`}>
+          {plus.length ? <span className={dark ? "text-slate-300" : "text-slate-600"}>{plus.join(" · ")}</span> : null}
+          {plus.length && d.equipment.length ? <span className="mx-2 opacity-50">|</span> : null}
+          {d.equipment.length ? d.equipment.join(", ") : null}
         </p>
       ) : null}
     </div>
@@ -459,120 +472,186 @@ function ListingCard({ item, dark, now, onHide, onLoadDetails, latest = false })
   const source = SOURCES.find((entry) => entry.id === item.source);
   const sellerType =
     item.details?.sellerType && item.details.sellerType !== "UNKNOWN" ? item.details.sellerType : item.sellerType;
-  const facts = [
-    km(item.mileageKm),
-    item.firstRegistration ? `EZ ${item.firstRegistration}` : null,
-    item.powerPs ? `${item.powerPs} PS` : null,
-    item.fuel,
-    item.gearbox,
+  const muted = dark ? "text-slate-400" : "text-slate-500";
+  const strong = dark ? "text-slate-100" : "text-slate-900";
+
+  // First registration and kilometres lead; the rest follows quieter.
+  const lead = [
+    item.firstRegistration ? { label: "EZ", value: item.firstRegistration } : null,
+    Number.isFinite(item.mileageKm) ? { label: null, value: km(item.mileageKm) } : null,
+    item.powerPs ? { label: null, value: `${item.powerPs} PS` } : null,
   ].filter(Boolean);
+  const rest = [item.fuel, item.gearbox].filter(Boolean);
+
+  const seller =
+    sellerType === "PRIVATE"
+      ? "Privat"
+      : sellerType === "DEALER"
+        ? `Händler${item.details?.sellerName ? ` · ${item.details.sellerName.slice(0, 28)}` : ""}`
+        : null;
+
+  const when = item.postedAt
+    ? `online seit ${clock(item.postedAt)}`
+    : item.isNew
+      ? `entdeckt ${ago(item.firstSeenAt, now)}`
+      : "beim Start online";
+
+  const ratingColor = item.rating
+    ? item.rating.tone === "good"
+      ? "text-emerald-700"
+      : item.rating.tone === "bad"
+        ? "text-red-600"
+        : muted
+    : "";
 
   return (
     <article
-      className={`group relative flex min-w-0 flex-col overflow-hidden rounded-lg border transition ${
+      className={`group relative grid grid-cols-[104px_minmax(0,1fr)] gap-x-4 gap-y-3 rounded-lg border p-3.5 transition sm:grid-cols-[168px_minmax(0,1fr)_150px] sm:gap-x-5 sm:gap-y-0 sm:p-4 ${
+        dark ? "bg-slate-900" : "bg-white"
+      } ${
         latest
-          ? dark
-            ? "border-emerald-500 bg-slate-900 shadow-[0_0_0_2px_rgba(16,185,129,0.35)]"
-            : "border-emerald-500 bg-white shadow-md ring-2 ring-emerald-400/40"
-          : item.isNew
-          ? dark
-            ? "border-emerald-700/70 bg-slate-900 shadow-[0_0_0_1px_rgba(16,185,129,0.25)]"
-            : "border-emerald-300 bg-white shadow-sm"
-          : dark
-            ? "border-slate-800 bg-slate-900/60 opacity-80"
-            : "border-slate-200 bg-white/70 opacity-90"
-      }`}
+          ? dark ? "border-slate-600 shadow-[0_1px_0_rgba(0,0,0,0.3)]" : "border-slate-300 shadow-[0_1px_3px_rgba(15,23,42,0.08)]"
+          : dark ? "border-slate-800" : "border-slate-200"
+      } ${dark ? "hover:border-slate-600" : "hover:border-slate-300"}`}
     >
-      <a href={item.url} target="_blank" rel="noopener noreferrer" className="relative block aspect-[4/3] overflow-hidden bg-slate-200">
+      {/* photo */}
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`relative block aspect-[4/3] self-start overflow-hidden rounded-md sm:row-span-2 ${dark ? "bg-slate-800" : "bg-slate-100"}`}
+      >
         {item.image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.image} alt="" loading="lazy" referrerPolicy="no-referrer" className="size-full object-cover transition group-hover:scale-[1.02]" />
+          <img src={item.image} alt="" loading="lazy" referrerPolicy="no-referrer" className="size-full object-cover" />
         ) : (
-          <div className="flex size-full items-center justify-center text-xs text-slate-400">kein Bild</div>
+          <div className={`flex size-full items-center justify-center text-[11px] ${muted}`}>kein Bild</div>
         )}
-        <div className="absolute left-2 top-2 flex flex-wrap gap-1">
-          {item.isNew ? (
-            <span className="inline-flex items-center gap-1 rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-              <span className="size-1.5 animate-pulse rounded-full bg-white" /> {latest ? "NEUESTE" : "NEU"}
-            </span>
-          ) : null}
-          <span className="rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-            {source?.label || item.source}
-          </span>
-        </div>
       </a>
 
-      <button
-        type="button"
-        onClick={() => onHide(item.key)}
-        title="Ausblenden"
-        className="absolute right-2 top-2 rounded bg-black/55 p-1 text-white opacity-0 transition group-hover:opacity-100 focus:opacity-100"
-      >
-        <FiEyeOff className="size-3.5" />
-      </button>
-
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-3">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="line-clamp-2 min-w-0 text-sm font-semibold leading-5">{item.title}</h3>
-        </div>
-
-        <div className="flex flex-wrap items-baseline gap-x-2">
-          <span className="text-lg font-bold tabular-nums">{euro(item.price)}</span>
-          {item.priceNote ? <span className="text-xs text-slate-500">{item.priceNote}</span> : null}
-          {item.rating ? (
-            <Chip dark={dark} tone={item.rating.tone === "good" ? "green" : item.rating.tone === "bad" ? "red" : "slate"}>
-              {item.rating.label}
-            </Chip>
-          ) : null}
-        </div>
-
-        <p className={`text-xs leading-5 ${dark ? "text-slate-300" : "text-slate-600"}`}>{facts.join(" · ") || "–"}</p>
-
-        <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] ${dark ? "text-slate-400" : "text-slate-500"}`}>
-          {item.location ? (
-            <span className="inline-flex min-w-0 items-center gap-1">
-              <FiMapPin className="shrink-0" />
-              <span className="truncate">{item.location}</span>
-              {Number.isFinite(item.distanceKm) ? <span>({item.distanceKm} km)</span> : null}
+      {/* the car */}
+      <div className="min-w-0">
+        <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 pr-6 text-[11px] ${muted}`}>
+          {item.isNew ? (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset ${
+                dark ? "text-emerald-300 ring-emerald-500/30" : "text-emerald-700 ring-emerald-600/25"
+              }`}
+            >
+              <span className={`size-1 rounded-full bg-emerald-500 ${latest ? "animate-pulse" : ""}`} />
+              {latest ? "Neueste" : "Neu"}
             </span>
           ) : null}
-          {sellerType === "PRIVATE" ? <Chip dark={dark} tone="sky">Privat</Chip> : null}
-          {sellerType === "DEALER" ? <Chip dark={dark}>Händler{item.details?.sellerName ? ` · ${item.details.sellerName.slice(0, 24)}` : ""}</Chip> : null}
+          <span>{source?.label || item.source}</span>
+          <span aria-hidden>·</span>
+          <span>{when}</span>
         </div>
 
-        <CardFacts item={item} dark={dark} onLoad={onLoadDetails} />
-
-        <p className={`text-[11px] ${item.isNew ? "font-semibold text-emerald-600" : dark ? "text-slate-500" : "text-slate-400"}`}>
-          {item.postedAt
-            ? `online seit ${clock(item.postedAt)} · ${ago(item.postedAt, now)}`
-            : item.isNew
-              ? `entdeckt ${ago(item.firstSeenAt, now)}`
-              : "war beim Start schon online"}
-        </p>
-
-        <div className="mt-auto flex gap-2 pt-1.5">
-          <a
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded bg-sky-600 text-xs font-bold text-white hover:bg-sky-700"
-          >
-            Anzeige öffnen <FiExternalLink />
+        <h3 className={`mt-1 line-clamp-2 text-[15px] font-semibold leading-snug sm:line-clamp-1 ${strong}`}>
+          <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+            {item.title}
           </a>
+        </h3>
+
+        <div className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+          {lead.map((entry, index) => (
+            <span key={index} className={`text-[14px] font-semibold tabular-nums ${strong}`}>
+              {entry.label ? <span className={`mr-1 text-[11px] font-medium ${muted}`}>{entry.label}</span> : null}
+              {entry.value}
+            </span>
+          ))}
+          {rest.length ? <span className={`text-[13px] ${muted}`}>{rest.join(" · ")}</span> : null}
+        </div>
+
+        <p className={`mt-1 flex min-w-0 items-center gap-1 text-[12px] ${muted}`}>
+          {item.location ? (
+            <>
+              <FiMapPin className="shrink-0" />
+              <span className="truncate">
+                {item.location}
+                {Number.isFinite(item.distanceKm) ? ` (${item.distanceKm} km)` : ""}
+              </span>
+            </>
+          ) : null}
+          {item.location && seller ? <span aria-hidden className="mx-1">·</span> : null}
+          {seller ? <span className="shrink-0">{seller}</span> : null}
+        </p>
+      </div>
+
+      {/* facts: full width on a phone, under the car on a wider screen */}
+      <div className="col-span-2 -mt-1 flex min-w-0 flex-col sm:col-span-1 sm:col-start-2 sm:mt-0">
+        <CardFacts item={item} dark={dark} onLoad={onLoadDetails} />
+      </div>
+
+      {/* price and actions */}
+      <div className="col-span-2 flex items-end justify-between gap-3 sm:col-span-1 sm:col-start-3 sm:row-span-2 sm:row-start-1 sm:flex-col sm:items-end sm:justify-between">
+        <div className="shrink-0 sm:text-right">
+          <div className={`whitespace-nowrap text-[19px] font-bold tabular-nums leading-tight ${strong}`}>{euro(item.price)}</div>
+          <div className="mt-0.5 text-[11px]">
+            {item.priceNote ? <span className={muted}>{item.priceNote}</span> : null}
+            {item.priceNote && item.rating ? <span className={`mx-1 ${muted}`}>·</span> : null}
+            {item.rating ? <span className={`font-medium ${ratingColor}`}>{item.rating.label}</span> : null}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5">
           <a
             href={`/marktanalyse?url=${encodeURIComponent(item.url)}`}
             target="_blank"
             rel="noopener noreferrer"
             title="Ankaufs-Check in neuem Tab"
-            className={`inline-flex h-8 items-center justify-center gap-1 rounded border px-2.5 text-xs font-semibold ${
-              dark ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-300 text-slate-700 hover:bg-slate-50"
+            className={`inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md px-2 text-[12px] font-medium ${
+              dark ? "text-slate-300 hover:bg-slate-800" : "text-slate-600 hover:bg-slate-100"
             }`}
           >
-            <FiZap /> Prüfen
+            <FiZap className="size-3" /> Check
+          </a>
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md px-2.5 text-[12px] font-semibold ${
+              dark ? "bg-slate-100 text-slate-900 hover:bg-white" : "bg-slate-900 text-white hover:bg-slate-700"
+            }`}
+          >
+            Öffnen <FiExternalLink className="size-3" />
           </a>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => onHide(item.key)}
+        title="Ausblenden"
+        aria-label="Ausblenden"
+        className={`absolute right-2 top-2 rounded p-1 transition sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 ${
+          dark ? "text-slate-500 hover:bg-slate-800 hover:text-slate-200" : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+        }`}
+      >
+        <FiEyeOff className="size-3.5" />
+      </button>
     </article>
+  );
+}
+
+/** A section heading with its cars below, spaced as separate cards. */
+function FeedSection({ title, count, meta, dark, live = false, children }) {
+  return (
+    <section className="mb-7">
+      <header className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2 px-0.5">
+        <h2 className={`flex items-center gap-2 text-[13px] font-semibold ${dark ? "text-slate-100" : "text-slate-800"}`}>
+          {live ? <span className="size-1.5 translate-y-[-1px] animate-pulse rounded-full bg-emerald-500" /> : null}
+          {title}
+          {Number.isFinite(count) ? (
+            <span className={`rounded-full px-1.5 text-[11px] font-medium ${dark ? "bg-slate-800 text-slate-300" : "bg-slate-200/70 text-slate-600"}`}>
+              {count}
+            </span>
+          ) : null}
+        </h2>
+        {meta ? <span className={`text-[11px] ${dark ? "text-slate-500" : "text-slate-500"}`}>{meta}</span> : null}
+      </header>
+      <div className={live ? "space-y-3" : "space-y-2.5"}>{children}</div>
+    </section>
   );
 }
 
@@ -932,68 +1011,89 @@ export default function NeueAngebotePage() {
 
   const muted = dark ? "text-slate-400" : "text-slate-500";
   const panel = dark ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white";
+  const toolButton = `inline-flex h-9 items-center justify-center px-2.5 text-[13px] transition disabled:opacity-50 ${
+    dark ? "hover:bg-slate-800" : "hover:bg-slate-50"
+  }`;
+  const sourceDot = (source) =>
+    source.ok ? "bg-emerald-500" : source.skipped ? "bg-slate-400" : "bg-amber-500";
+  const renderRows = (list, { isLatest = false, first = true } = {}) =>
+    list.map((item) => (
+      <ListingCard
+        key={item.key}
+        item={item}
+        dark={dark}
+        now={now}
+        latest={isLatest}
+        onHide={hide}
+        onLoadDetails={(entry) => loadDetails([entry], { first })}
+      />
+    ));
 
   return (
     <main className={`min-h-screen ${dark ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"}`}>
-      <div className="mx-auto max-w-[1400px] px-3 py-4 sm:px-5">
+      <div className="mx-auto max-w-[1200px] px-3 py-5 sm:px-6">
         {/* header */}
-        <header className="mb-4 flex flex-wrap items-center gap-3">
+        <header className="mb-5 flex flex-wrap items-start gap-3">
           <button
             type="button"
             onClick={openSidebar}
-            className={`rounded p-2 md:hidden ${dark ? "bg-slate-900" : "bg-white shadow-sm"}`}
+            className={`rounded-md p-2 md:hidden ${dark ? "bg-slate-900" : "bg-white shadow-sm"}`}
             aria-label="Menü öffnen"
           >
             <FiMenu />
           </button>
           <div className="mr-auto min-w-0">
-            <h1 className="flex items-center gap-2 text-base font-bold leading-tight">
-              Neue Angebote
-              {running ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600">
-                  <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" /> Live
-                </span>
-              ) : null}
-            </h1>
-            <p className={`truncate text-[11px] ${muted}`}>
-              {applied ? describeFilters(applied) : "Frisch hochgeladene Autos von AutoScout24, Kleinanzeigen und mobile.de"}
+            <h1 className="text-lg font-semibold tracking-tight">Neue Angebote</h1>
+            <p className={`mt-0.5 text-[12px] ${muted}`}>
+              Frisch hochgeladene Fahrzeuge von AutoScout24, Kleinanzeigen und mobile.de
             </p>
           </div>
 
           {applied ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`text-[11px] tabular-nums ${muted}`}>
-                {checking
-                  ? "prüfe …"
-                  : running && secondsLeft !== null
-                    ? `nächste Prüfung in ${secondsLeft} s`
-                    : "pausiert"}
-              </span>
-              <select
-                value={intervalSec}
-                onChange={(e) => setIntervalSec(Number(e.target.value))}
-                title="Wie oft geprüft wird"
-                className={`h-8 rounded border px-1.5 text-xs ${dark ? "border-slate-700 bg-slate-900" : "border-slate-300 bg-white"}`}
-              >
-                {INTERVALS.map((seconds) => (
-                  <option key={seconds} value={seconds}>alle {seconds} s</option>
-                ))}
-              </select>
-              <button type="button" onClick={() => check()} disabled={checking} title="Jetzt prüfen" className={`inline-flex h-8 items-center rounded border px-2 ${dark ? "border-slate-700" : "border-slate-300 bg-white"}`}>
-                <FiRefreshCw className={checking ? "animate-spin" : ""} />
-              </button>
-              <button type="button" onClick={() => setSound((value) => !value)} title={sound ? "Ton aus" : "Ton an"} className={`inline-flex h-8 items-center rounded border px-2 ${dark ? "border-slate-700" : "border-slate-300 bg-white"}`}>
-                {sound ? <FiVolume2 /> : <FiVolumeX />}
-              </button>
-              <button type="button" onClick={askNotifications} title="Desktop-Benachrichtigung" className={`inline-flex h-8 items-center rounded border px-2 ${notify ? "border-emerald-600 text-emerald-600" : dark ? "border-slate-700" : "border-slate-300 bg-white"}`}>
-                {notify ? <FiBell /> : <FiBellOff />}
-              </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="text-right text-[12px] leading-tight">
+                <div className="flex items-center justify-end gap-1.5 font-semibold">
+                  <span className={`size-2 rounded-full ${running ? "animate-pulse bg-emerald-500" : "bg-slate-400"}`} />
+                  {running ? "Live" : "Pausiert"}
+                </div>
+                <div className={`mt-0.5 tabular-nums ${muted}`}>
+                  {checking ? "prüft gerade …" : running && secondsLeft !== null ? `nächste Prüfung in ${secondsLeft} s` : "keine Prüfung geplant"}
+                </div>
+              </div>
+
+              <div className={`flex items-center divide-x overflow-hidden rounded-md border ${dark ? "divide-slate-700 border-slate-700 bg-slate-900" : "divide-slate-200 border-slate-300 bg-white"}`}>
+                <select
+                  value={intervalSec}
+                  onChange={(e) => setIntervalSec(Number(e.target.value))}
+                  title="Wie oft geprüft wird"
+                  aria-label="Prüfintervall"
+                  className={`h-9 bg-transparent px-2 text-[13px] outline-none ${dark ? "text-slate-100" : ""}`}
+                >
+                  {INTERVALS.map((seconds) => (
+                    <option key={seconds} value={seconds}>alle {seconds} s</option>
+                  ))}
+                </select>
+                <button type="button" onClick={() => check()} disabled={checking} title="Jetzt prüfen" aria-label="Jetzt prüfen" className={toolButton}>
+                  <FiRefreshCw className={checking ? "animate-spin" : ""} />
+                </button>
+                <button type="button" onClick={() => setSound((value) => !value)} title={sound ? "Ton aus" : "Ton an"} aria-label={sound ? "Ton aus" : "Ton an"} className={toolButton}>
+                  {sound ? <FiVolume2 /> : <FiVolumeX className={muted} />}
+                </button>
+                <button type="button" onClick={askNotifications} title="Desktop-Benachrichtigung" aria-label="Desktop-Benachrichtigung" className={`${toolButton} ${notify ? "text-emerald-600" : ""}`}>
+                  {notify ? <FiBell /> : <FiBellOff className={muted} />}
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={() => setRunning((value) => !value)}
-                className={`inline-flex h-8 items-center gap-1.5 rounded px-3 text-xs font-bold text-white ${running ? "bg-slate-600 hover:bg-slate-700" : "bg-sky-600 hover:bg-sky-700"}`}
+                className={`inline-flex h-9 items-center gap-1.5 rounded-md px-3.5 text-[13px] font-semibold ${
+                  running
+                    ? dark ? "border border-slate-700 bg-slate-900 hover:bg-slate-800" : "border border-slate-300 bg-white hover:bg-slate-50"
+                    : "bg-sky-600 text-white hover:bg-sky-700"
+                }`}
               >
-                {running ? <><FiPause /> Pause</> : <><FiPlay /> Weiter</>}
+                {running ? <><FiPause /> Pausieren</> : <><FiPlay /> Fortsetzen</>}
               </button>
             </div>
           ) : null}
@@ -1004,134 +1104,129 @@ export default function NeueAngebotePage() {
           <button
             type="button"
             onClick={() => setShowFilters((value) => !value)}
-            className="flex w-full items-center justify-between px-4 py-3 text-left"
+            className="flex w-full items-center gap-3 px-4 py-3 text-left"
+            aria-expanded={showFilters}
           >
-            <span className="flex items-center gap-2 text-sm font-semibold">
-              <FiFilter /> Filter
+            <FiFilter className={muted} />
+            <span className="text-[13px] font-semibold">Suchfilter</span>
+            {!showFilters && applied ? (
+              <span className={`min-w-0 flex-1 truncate text-[12px] ${muted}`}>{describeFilters(applied)}</span>
+            ) : (
+              <span className="flex-1" />
+            )}
+            <span className={`text-[12px] font-medium ${showFilters ? muted : "text-sky-600"}`}>
+              {showFilters ? "Schließen" : "Bearbeiten"}
             </span>
-            {showFilters ? <FiChevronUp /> : <FiChevronDown />}
+            {showFilters ? <FiChevronUp className={muted} /> : <FiChevronDown className="text-sky-600" />}
           </button>
           {showFilters ? (
-            <div className={`border-t px-4 pb-4 pt-3 ${dark ? "border-slate-800" : "border-slate-200"}`}>
+            <div className={`border-t px-4 pb-4 pt-4 ${dark ? "border-slate-800" : "border-slate-100"}`}>
               <FilterPanel draft={draft} setDraft={setDraft} dark={dark} onApply={apply} running={running} />
             </div>
           ) : null}
         </section>
 
-        {/* portal status */}
-        {sources.length ? (
-          <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px]">
+        {/* status line: portals, last check */}
+        {applied && sources.length ? (
+          <div className={`mb-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] ${muted}`}>
             {sources.map((source) => (
-              <span
-                key={source.id}
-                title={source.error || ""}
-                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${
-                  source.ok
-                    ? dark ? "border-emerald-800 text-emerald-300" : "border-emerald-200 text-emerald-700"
-                    : source.skipped
-                      ? dark ? "border-slate-700 text-slate-500" : "border-slate-200 text-slate-400"
-                      : dark ? "border-amber-800 text-amber-300" : "border-amber-300 text-amber-700"
-                }`}
-              >
-                <span className={`size-1.5 rounded-full ${source.ok ? "bg-emerald-500" : source.skipped ? "bg-slate-400" : "bg-amber-500"}`} />
-                {source.label}
-                {source.ok ? ` · ${source.count}` : source.error ? ` – ${source.error}` : ""}
+              <span key={source.id} title={source.error || ""} className="inline-flex items-center gap-1.5">
+                <span className={`size-1.5 rounded-full ${sourceDot(source)}`} />
+                <span className={dark ? "text-slate-300" : "text-slate-700"}>{source.label}</span>
+                {source.ok ? (
+                  <span>{source.count} Treffer</span>
+                ) : (
+                  <span className={source.skipped ? "" : "text-amber-600"}>
+                    {source.paused ? "pausiert" : /freigeschaltet|nicht eingerichtet/.test(source.error || "") ? "kein Zugang" : "nicht erreichbar"}
+                  </span>
+                )}
               </span>
             ))}
-            {lastCheck ? <span className={muted}>zuletzt geprüft {clock(lastCheck)}</span> : null}
+            {lastCheck ? <span className="ml-auto">zuletzt geprüft {clock(lastCheck)}</span> : null}
             {failures >= 3 ? (
-              <span className="text-amber-600">Mehrere Prüfungen fehlgeschlagen – es wird jetzt nur alle 5 Minuten geprüft.</span>
+              <span className="w-full text-amber-600">Mehrere Prüfungen fehlgeschlagen – es wird jetzt nur alle 5 Minuten geprüft.</span>
             ) : null}
           </div>
         ) : null}
 
         {/* the feed */}
         {!applied ? (
-          <div className={`rounded-lg border p-8 text-center ${panel}`}>
-            <FiZap className="mx-auto mb-2 text-2xl text-sky-600" />
-            <p className="text-sm font-semibold">Filter setzen und Live-Suche starten</p>
-            <p className={`mx-auto mt-1 max-w-md text-xs leading-5 ${muted}`}>
-              Solange diese Seite offen ist, werden die Portale regelmäßig geprüft. Jedes neu hochgeladene
-              Auto erscheint sofort oben – mit Ton und auf Wunsch als Desktop-Benachrichtigung.
+          <div className={`rounded-lg border px-6 py-12 text-center ${panel}`}>
+            <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-full bg-sky-600/10">
+              <FiZap className="text-lg text-sky-600" />
+            </div>
+            <p className="text-[15px] font-semibold">Filter setzen und Live-Suche starten</p>
+            <p className={`mx-auto mt-1.5 max-w-md text-[13px] leading-6 ${muted}`}>
+              Solange diese Seite offen ist, werden die Portale laufend geprüft. Jedes neu hochgeladene
+              Fahrzeug erscheint sofort oben – mit Ton und auf Wunsch als Desktop-Benachrichtigung.
             </p>
           </div>
         ) : (
           <>
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-bold">
-                Neu seit dem Start{" "}
-                <span className={`font-normal ${muted}`}>({fresh.length})</span>
-              </h2>
-              {feed.length ? (
-                <button type="button" onClick={resetFeed} className={`inline-flex items-center gap-1 text-[11px] ${muted} hover:underline`}>
-                  <FiTrash2 /> Liste leeren
-                </button>
-              ) : null}
-            </div>
-
             {fresh.length ? (
               <>
-                <section
-                  className={`mb-5 rounded-lg border p-3 ${
-                    dark ? "border-emerald-800/70 bg-emerald-950/20" : "border-emerald-200 bg-emerald-50/60"
-                  }`}
+                <FeedSection
+                  dark={dark}
+                  live
+                  title="Gerade reingekommen"
+                  count={latest.length}
+                  meta={`Prüfung um ${clock(latestAt)} · ${ago(latestAt, now)}`}
                 >
-                  <h3 className="mb-2 flex flex-wrap items-baseline gap-x-2 text-sm font-bold text-emerald-700">
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="size-2 animate-pulse rounded-full bg-emerald-500" /> Gerade reingekommen
-                    </span>
-                    <span className={`text-[11px] font-normal ${muted}`}>
-                      {latest.length} {latest.length === 1 ? "Auto" : "Autos"} aus der Prüfung um {clock(latestAt)} · {ago(latestAt, now)}
-                    </span>
-                  </h3>
-                  <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {latest.map((item) => (
-                      <ListingCard key={item.key} item={item} dark={dark} now={now} latest onHide={hide} onLoadDetails={(entry) => loadDetails([entry], { first: true })} />
-                    ))}
-                  </div>
-                </section>
+                  {renderRows(latest, { isLatest: true })}
+                </FeedSection>
 
                 {earlier.length ? (
-                  <section className="mb-6">
-                    <h3 className={`mb-2 text-xs font-semibold ${muted}`}>
-                      Davor reingekommen ({earlier.length})
-                    </h3>
-                    <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {earlier.map((item) => (
-                        <ListingCard key={item.key} item={item} dark={dark} now={now} onHide={hide} onLoadDetails={(entry) => loadDetails([entry], { first: true })} />
-                      ))}
-                    </div>
-                  </section>
+                  <FeedSection
+                    dark={dark}
+                    title="Davor reingekommen"
+                    count={earlier.length}
+                    meta="seit dem Start"
+                  >
+                    {renderRows(earlier)}
+                  </FeedSection>
                 ) : null}
               </>
             ) : (
-              <div className={`mb-6 rounded-lg border border-dashed p-6 text-center text-xs ${dark ? "border-slate-700" : "border-slate-300"} ${muted}`}>
+              <div className={`mb-5 flex items-center justify-center gap-2.5 rounded-lg border border-dashed px-6 py-8 text-[13px] ${dark ? "border-slate-700" : "border-slate-300"} ${muted}`}>
                 {checking && !lastCheck ? (
-                  <span className="inline-flex items-center gap-2"><FiLoader className="animate-spin" /> Erste Prüfung läuft …</span>
+                  <><FiLoader className="animate-spin" /> Erste Prüfung läuft …</>
                 ) : (
-                  <>Warte auf neue Anzeigen. Sobald ein passendes Auto hochgeladen wird, erscheint es hier.</>
+                  <><span className="size-2 animate-pulse rounded-full bg-emerald-500" /> Warte auf neue Anzeigen – passende Fahrzeuge erscheinen hier, sobald sie hochgeladen werden.</>
                 )}
               </div>
             )}
 
             {old.length ? (
-              <section>
-                <button type="button" onClick={() => setShowOld((value) => !value)} className={`mb-2 inline-flex items-center gap-1 text-xs font-semibold ${muted}`}>
-                  {showOld ? <FiChevronUp /> : <FiChevronDown />} Beim Start schon online ({old.length})
+              <section className={`mb-5 overflow-hidden rounded-lg border ${panel}`}>
+                <button
+                  type="button"
+                  onClick={() => setShowOld((value) => !value)}
+                  aria-expanded={showOld}
+                  className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-[13px] font-semibold ${
+                    showOld ? (dark ? "border-b border-slate-800" : "border-b border-slate-100") : ""
+                  }`}
+                >
+                  <span>Beim Start schon online · {old.length}</span>
+                  <span className={`flex items-center gap-1 text-[12px] font-normal ${muted}`}>
+                    {showOld ? "ausblenden" : "anzeigen"} {showOld ? <FiChevronUp /> : <FiChevronDown />}
+                  </span>
                 </button>
                 {showOld ? (
-                  <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {old.map((item) => (
-                      <ListingCard key={item.key} item={item} dark={dark} now={now} onHide={hide} onLoadDetails={(entry) => loadDetails([entry])} />
-                    ))}
+                  <div className={`space-y-2.5 p-2.5 ${dark ? "bg-slate-950/40" : "bg-slate-50"}`}>
+                    {renderRows(old, { first: false })}
                   </div>
                 ) : null}
               </section>
             ) : null}
 
-            <p className={`mt-6 text-center text-[11px] ${muted}`}>
-              Die Suche läuft, solange diese Seite geöffnet ist – auch wenn der Tab im Hintergrund liegt.
-            </p>
+            <div className={`mt-2 flex flex-wrap items-center justify-between gap-2 text-[12px] ${muted}`}>
+              <span>Die Suche läuft, solange diese Seite geöffnet ist – auch im Hintergrund.</span>
+              {feed.length ? (
+                <button type="button" onClick={resetFeed} className="inline-flex items-center gap-1 hover:text-red-600">
+                  <FiTrash2 /> Liste leeren
+                </button>
+              ) : null}
+            </div>
           </>
         )}
       </div>
