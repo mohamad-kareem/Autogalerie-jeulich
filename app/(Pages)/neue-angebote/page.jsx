@@ -179,38 +179,50 @@ function chime() {
  * A labelled field. `group` for several controls (chips, two inputs): a
  * <label> may only name one control, so those become a named group instead.
  */
-function Field({ label, children, dark, group = false }) {
+/**
+ * A labelled field. `group` for several controls (chips, two inputs): a
+ * <label> may only name one control, so those become a named group instead.
+ */
+function Field({ label, children, dark, group = false, className = "" }) {
   const caption = (
-    <span className={`mb-1 block text-[11px] font-semibold ${dark ? "text-slate-400" : "text-slate-500"}`}>
+    <span className={`mb-1.5 block text-[10.5px] font-semibold uppercase tracking-wider ${dark ? "text-slate-500" : "text-slate-400"}`}>
       {label}
     </span>
   );
   if (group) {
     return (
-      <div role="group" aria-label={label} className="block min-w-0">
+      <div role="group" aria-label={label} className={`block min-w-0 ${className}`}>
         {caption}
         {children}
       </div>
     );
   }
   return (
-    <label className="block min-w-0">
+    <label className={`block min-w-0 ${className}`}>
       {caption}
       {children}
     </label>
   );
 }
 
-function RangeInputs({ from, to, onFrom, onTo, placeholders, dark, suffix, label = "" }) {
-  const input = `h-9 w-full min-w-0 rounded border px-2 text-sm outline-none focus:ring-2 ${
-    dark ? "border-slate-700 bg-slate-900 focus:ring-sky-500/30" : "border-slate-300 bg-white focus:ring-sky-200"
+const boxClass = (dark) =>
+  `rounded-md border transition focus-within:ring-2 ${
+    dark
+      ? "border-slate-700 bg-slate-900 focus-within:border-slate-500 focus-within:ring-slate-500/20"
+      : "border-slate-300 bg-white focus-within:border-slate-400 focus-within:ring-slate-900/5"
+  }`;
+
+/** From–to in one box: "von | bis  €". */
+function RangeInputs({ from, to, onFrom, onTo, dark, suffix, label = "" }) {
+  const input = `h-8 w-full min-w-0 bg-transparent px-2.5 text-[13px] tabular-nums outline-none ${
+    dark ? "placeholder:text-slate-600" : "placeholder:text-slate-400"
   }`;
   return (
-    <div className="flex items-center gap-1.5">
-      <input inputMode="numeric" aria-label={`${label} von`} value={from} onChange={(e) => onFrom(e.target.value)} placeholder={placeholders[0]} className={input} />
-      <span className="text-xs text-slate-400">–</span>
-      <input inputMode="numeric" aria-label={`${label} bis`} value={to} onChange={(e) => onTo(e.target.value)} placeholder={placeholders[1]} className={input} />
-      {suffix ? <span className="w-6 shrink-0 text-[11px] text-slate-400">{suffix}</span> : null}
+    <div className={`flex items-center ${boxClass(dark)}`}>
+      <input inputMode="numeric" aria-label={`${label} von`} value={from} onChange={(e) => onFrom(e.target.value)} placeholder="von" className={input} />
+      <span className={`h-4 w-px shrink-0 ${dark ? "bg-slate-700" : "bg-slate-200"}`} />
+      <input inputMode="numeric" aria-label={`${label} bis`} value={to} onChange={(e) => onTo(e.target.value)} placeholder="bis" className={input} />
+      {suffix ? <span className={`hidden shrink-0 pr-2.5 text-[11px] sm:inline ${dark ? "text-slate-500" : "text-slate-400"}`}>{suffix}</span> : null}
     </div>
   );
 }
@@ -221,14 +233,14 @@ function Toggle({ active, onClick, children, dark }) {
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
+      className={`h-7 rounded-md border px-2.5 text-[12px] font-medium transition ${
         active
           ? dark
-            ? "border-sky-500 bg-sky-500/15 text-sky-300"
-            : "border-sky-500 bg-sky-50 text-sky-700"
+            ? "border-slate-200 bg-slate-100 text-slate-900"
+            : "border-slate-900 bg-slate-900 text-white"
           : dark
             ? "border-slate-700 text-slate-300 hover:border-slate-500"
-            : "border-slate-300 text-slate-600 hover:border-slate-400"
+            : "border-slate-200 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-900"
       }`}
     >
       {children}
@@ -243,12 +255,8 @@ function FilterPanel({ draft, setDraft, dark, onApply, running }) {
       const list = current[field] || [];
       return { ...current, [field]: list.includes(id) ? list.filter((entry) => entry !== id) : [...list, id] };
     });
-  const select = `h-9 w-full rounded border px-2 text-sm outline-none ${
-    dark ? "border-slate-700 bg-slate-900" : "border-slate-300 bg-white"
-  }`;
-  const text = `h-9 w-full rounded border px-2 text-sm outline-none focus:ring-2 ${
-    dark ? "border-slate-700 bg-slate-900 focus:ring-sky-500/30" : "border-slate-300 bg-white focus:ring-sky-200"
-  }`;
+  const control = `h-8 w-full bg-transparent px-2.5 text-[13px] outline-none ${dark ? "text-slate-100" : "text-slate-800"}`;
+  const muted = dark ? "text-slate-400" : "text-slate-500";
 
   return (
     <form
@@ -256,50 +264,55 @@ function FilterPanel({ draft, setDraft, dark, onApply, running }) {
         event.preventDefault();
         onApply();
       }}
-      className="grid gap-4"
     >
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-3.5 px-4 pt-4 sm:gap-x-4 lg:grid-cols-4">
         <Field label="Preis" dark={dark} group>
-          <RangeInputs dark={dark} label="Preis" from={draft.priceMin} to={draft.priceMax} onFrom={set("priceMin")} onTo={set("priceMax")} placeholders={["von", "bis"]} suffix="€" />
+          <RangeInputs dark={dark} label="Preis" from={draft.priceMin} to={draft.priceMax} onFrom={set("priceMin")} onTo={set("priceMax")} suffix="€" />
         </Field>
         <Field label="Kilometerstand" dark={dark} group>
-          <RangeInputs dark={dark} label="Kilometerstand" from={draft.kmMin} to={draft.kmMax} onFrom={set("kmMin")} onTo={set("kmMax")} placeholders={["von", "bis"]} suffix="km" />
+          <RangeInputs dark={dark} label="Kilometerstand" from={draft.kmMin} to={draft.kmMax} onFrom={set("kmMin")} onTo={set("kmMax")} suffix="km" />
         </Field>
-        <Field label="Erstzulassung (Jahr)" dark={dark} group>
-          <RangeInputs dark={dark} label="Erstzulassung" from={draft.yearMin} to={draft.yearMax} onFrom={set("yearMin")} onTo={set("yearMax")} placeholders={["von", "bis"]} />
+        <Field label="Erstzulassung" dark={dark} group>
+          <RangeInputs dark={dark} label="Erstzulassung" from={draft.yearMin} to={draft.yearMax} onFrom={set("yearMin")} onTo={set("yearMax")} suffix="Jahr" />
         </Field>
         <Field label="Leistung" dark={dark} group>
-          <RangeInputs dark={dark} label="Leistung" from={draft.powerMin} to={draft.powerMax} onFrom={set("powerMin")} onTo={set("powerMax")} placeholders={["von", "bis"]} suffix="PS" />
+          <RangeInputs dark={dark} label="Leistung" from={draft.powerMin} to={draft.powerMax} onFrom={set("powerMin")} onTo={set("powerMax")} suffix="PS" />
         </Field>
-      </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Field label="Marke (optional)" dark={dark}>
-          <input value={draft.make} onChange={(e) => set("make")(e.target.value)} placeholder="alle Marken" className={text} />
+        <Field label="Marke" dark={dark}>
+          <div className={boxClass(dark)}>
+            <input value={draft.make} onChange={(e) => set("make")(e.target.value)} placeholder="Alle Marken" className={control} />
+          </div>
         </Field>
         <Field label="Getriebe" dark={dark}>
-          <select value={draft.gearbox} onChange={(e) => set("gearbox")(e.target.value)} className={select}>
-            {GEARBOXES.map((entry) => (
-              <option key={entry.id} value={entry.id}>{entry.label}</option>
-            ))}
-          </select>
+          <div className={boxClass(dark)}>
+            <select value={draft.gearbox} onChange={(e) => set("gearbox")(e.target.value)} className={control}>
+              {GEARBOXES.map((entry) => (
+                <option key={entry.id} value={entry.id}>{entry.id === "ANY" ? "Alle" : entry.label}</option>
+              ))}
+            </select>
+          </div>
         </Field>
         <Field label="Anbieter" dark={dark}>
-          <select value={draft.seller} onChange={(e) => set("seller")(e.target.value)} className={select}>
-            {SELLERS.map((entry) => (
-              <option key={entry.id} value={entry.id}>{entry.label}</option>
-            ))}
-          </select>
+          <div className={boxClass(dark)}>
+            <select value={draft.seller} onChange={(e) => set("seller")(e.target.value)} className={control}>
+              {SELLERS.map((entry) => (
+                <option key={entry.id} value={entry.id}>{entry.id === "ALL" ? "Privat und Händler" : entry.label}</option>
+              ))}
+            </select>
+          </div>
         </Field>
-        <Field label="Standort" dark={dark} group>
-          <div className="flex gap-1.5">
+        <Field label="Standort" dark={dark} group className="col-span-2 sm:col-span-1">
+          <div className={`flex items-center ${boxClass(dark)}`}>
             <select
               aria-label="Suchgebiet"
               value={Number(draft.radius) || 0}
               onChange={(e) => set("radius")(Number(e.target.value))}
-              className={`h-9 shrink-0 rounded border px-2 text-sm outline-none ${
-                Number(draft.radius) ? "w-32" : "w-full"
-              } ${dark ? "border-slate-700 bg-slate-900" : "border-slate-300 bg-white"}`}
+              className={
+                Number(draft.radius)
+                  ? `h-8 w-[7.5rem] shrink-0 bg-transparent px-2.5 text-[13px] outline-none ${dark ? "text-slate-100" : "text-slate-800"}`
+                  : control
+              }
             >
               <option value={0}>Ganz Deutschland</option>
               {RADII.map((radius) => (
@@ -307,27 +320,26 @@ function FilterPanel({ draft, setDraft, dark, onApply, running }) {
               ))}
             </select>
             {Number(draft.radius) ? (
-              <input
-                inputMode="numeric"
-                maxLength={5}
-                value={draft.zip}
-                onChange={(e) => set("zip")(e.target.value.replace(/\D/g, ""))}
-                placeholder="PLZ, z. B. 52428"
-                aria-label="Postleitzahl"
-                className={`${text} min-w-0 flex-1 ${
-                  draft.zip.length > 0 && draft.zip.length < 5 ? "border-amber-400" : ""
-                }`}
-              />
+              <>
+                <span className={`h-4 w-px shrink-0 ${dark ? "bg-slate-700" : "bg-slate-200"}`} />
+                <input
+                  inputMode="numeric"
+                  maxLength={5}
+                  value={draft.zip}
+                  onChange={(e) => set("zip")(e.target.value.replace(/\D/g, ""))}
+                  placeholder="PLZ"
+                  aria-label="Postleitzahl"
+                  className={`${control} min-w-0 flex-1 tabular-nums`}
+                />
+              </>
             ) : null}
           </div>
           {Number(draft.radius) && draft.zip.length < 5 ? (
-            <p className="mt-1 text-[10px] text-amber-600">Ohne vollständige PLZ wird ganz Deutschland durchsucht.</p>
+            <p className="mt-1 text-[11px] text-amber-600">PLZ eingeben – sonst ganz Deutschland.</p>
           ) : null}
         </Field>
-      </div>
 
-      <div className="grid gap-3 lg:grid-cols-2">
-        <Field label="Kraftstoff (leer = alle)" dark={dark} group>
+        <Field label="Kraftstoff" dark={dark} group className="col-span-2">
           <div className="flex flex-wrap gap-1.5">
             {FUELS.map((fuel) => (
               <Toggle key={fuel.id} dark={dark} active={draft.fuels.includes(fuel.id)} onClick={() => toggleIn("fuels", fuel.id)}>
@@ -336,7 +348,7 @@ function FilterPanel({ draft, setDraft, dark, onApply, running }) {
             ))}
           </div>
         </Field>
-        <Field label="Fahrzeugtyp (leer = alle)" dark={dark} group>
+        <Field label="Fahrzeugtyp" dark={dark} group className="col-span-2">
           <div className="flex flex-wrap gap-1.5">
             {BODIES.map((body) => (
               <Toggle key={body.id} dark={dark} active={draft.bodies.includes(body.id)} onClick={() => toggleIn("bodies", body.id)}>
@@ -347,33 +359,41 @@ function FilterPanel({ draft, setDraft, dark, onApply, running }) {
         </Field>
       </div>
 
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-4">
-          <Field label="Portale" dark={dark} group>
-            <div className="flex flex-wrap gap-1.5">
-              {SOURCES.map((source) => (
-                <Toggle key={source.id} dark={dark} active={draft.sources.includes(source.id)} onClick={() => toggleIn("sources", source.id)}>
-                  {source.label}
-                </Toggle>
-              ))}
-            </div>
-          </Field>
-          <label className={`mt-5 flex items-center gap-2 text-xs ${dark ? "text-slate-300" : "text-slate-600"}`}>
-            <input type="checkbox" checked={draft.hideDamaged} onChange={(e) => set("hideDamaged")(e.target.checked)} />
-            Unfall- und defekte Autos ausblenden
+      <div
+        className={`mt-4 flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 ${
+          dark ? "border-slate-800" : "border-slate-100"
+        }`}
+      >
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div role="group" aria-label="Portale" className="flex flex-wrap items-center gap-1.5">
+            <span className={`mr-1 text-[10.5px] font-semibold uppercase tracking-wider ${dark ? "text-slate-500" : "text-slate-400"}`}>Portale</span>
+            {SOURCES.map((source) => (
+              <Toggle key={source.id} dark={dark} active={draft.sources.includes(source.id)} onClick={() => toggleIn("sources", source.id)}>
+                {source.label}
+              </Toggle>
+            ))}
+          </div>
+          <label className={`flex items-center gap-2 text-[12px] ${muted}`}>
+            <input type="checkbox" className="size-3.5 accent-slate-900" checked={draft.hideDamaged} onChange={(e) => set("hideDamaged")(e.target.checked)} />
+            Unfall- und Defektfahrzeuge ausblenden
           </label>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setDraft({ ...DEFAULT_FILTERS })}
-            className={`h-9 rounded px-3 text-xs font-semibold ${dark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800"}`}
+            className={`h-8 rounded-md px-3 text-[12px] font-medium ${dark ? "text-slate-400 hover:bg-slate-800 hover:text-slate-200" : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"}`}
           >
             Zurücksetzen
           </button>
-          <button type="submit" className="inline-flex h-9 items-center gap-2 rounded bg-sky-600 px-4 text-sm font-bold text-white hover:bg-sky-700">
-            <FiPlay /> {running ? "Filter übernehmen" : "Live-Suche starten"}
+          <button
+            type="submit"
+            className={`inline-flex h-8 items-center gap-1.5 rounded-md px-3.5 text-[12px] font-semibold ${
+              dark ? "bg-slate-100 text-slate-900 hover:bg-white" : "bg-slate-900 text-white hover:bg-slate-700"
+            }`}
+          >
+            {running ? "Übernehmen" : <><FiPlay className="size-3" /> Live-Suche starten</>}
           </button>
         </div>
       </div>
@@ -999,7 +1019,7 @@ export default function NeueAngebotePage() {
   const latest = fresh.filter((item) => item.firstSeenAt === latestAt);
   const earlier = fresh.filter((item) => item.firstSeenAt !== latestAt);
   const hide = (itemKey) => setHidden((list) => [...list, itemKey]);
-  const secondsLeft = nextCheckAt ? Math.max(0, Math.ceil((nextCheckAt - now) / 1_000)) : null;
+
 
   if (status === "loading") {
     return (
@@ -1011,7 +1031,7 @@ export default function NeueAngebotePage() {
 
   const muted = dark ? "text-slate-400" : "text-slate-500";
   const panel = dark ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white";
-  const toolButton = `inline-flex h-9 items-center justify-center px-2.5 text-[13px] transition disabled:opacity-50 ${
+  const toolButton = `inline-flex h-7 items-center justify-center px-2 text-[12px] transition disabled:opacity-50 ${
     dark ? "hover:bg-slate-800" : "hover:bg-slate-50"
   }`;
   const sourceDot = (source) =>
@@ -1049,62 +1069,14 @@ export default function NeueAngebotePage() {
             </p>
           </div>
 
-          {applied ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="text-right text-[12px] leading-tight">
-                <div className="flex items-center justify-end gap-1.5 font-semibold">
-                  <span className={`size-2 rounded-full ${running ? "animate-pulse bg-emerald-500" : "bg-slate-400"}`} />
-                  {running ? "Live" : "Pausiert"}
-                </div>
-                <div className={`mt-0.5 tabular-nums ${muted}`}>
-                  {checking ? "prüft gerade …" : running && secondsLeft !== null ? `nächste Prüfung in ${secondsLeft} s` : "keine Prüfung geplant"}
-                </div>
-              </div>
-
-              <div className={`flex items-center divide-x overflow-hidden rounded-md border ${dark ? "divide-slate-700 border-slate-700 bg-slate-900" : "divide-slate-200 border-slate-300 bg-white"}`}>
-                <select
-                  value={intervalSec}
-                  onChange={(e) => setIntervalSec(Number(e.target.value))}
-                  title="Wie oft geprüft wird"
-                  aria-label="Prüfintervall"
-                  className={`h-9 bg-transparent px-2 text-[13px] outline-none ${dark ? "text-slate-100" : ""}`}
-                >
-                  {INTERVALS.map((seconds) => (
-                    <option key={seconds} value={seconds}>alle {seconds} s</option>
-                  ))}
-                </select>
-                <button type="button" onClick={() => check()} disabled={checking} title="Jetzt prüfen" aria-label="Jetzt prüfen" className={toolButton}>
-                  <FiRefreshCw className={checking ? "animate-spin" : ""} />
-                </button>
-                <button type="button" onClick={() => setSound((value) => !value)} title={sound ? "Ton aus" : "Ton an"} aria-label={sound ? "Ton aus" : "Ton an"} className={toolButton}>
-                  {sound ? <FiVolume2 /> : <FiVolumeX className={muted} />}
-                </button>
-                <button type="button" onClick={askNotifications} title="Desktop-Benachrichtigung" aria-label="Desktop-Benachrichtigung" className={`${toolButton} ${notify ? "text-emerald-600" : ""}`}>
-                  {notify ? <FiBell /> : <FiBellOff className={muted} />}
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setRunning((value) => !value)}
-                className={`inline-flex h-9 items-center gap-1.5 rounded-md px-3.5 text-[13px] font-semibold ${
-                  running
-                    ? dark ? "border border-slate-700 bg-slate-900 hover:bg-slate-800" : "border border-slate-300 bg-white hover:bg-slate-50"
-                    : "bg-sky-600 text-white hover:bg-sky-700"
-                }`}
-              >
-                {running ? <><FiPause /> Pausieren</> : <><FiPlay /> Fortsetzen</>}
-              </button>
-            </div>
-          ) : null}
         </header>
 
-        {/* filters */}
+        {/* filters, with the live controls inside */}
         <section className={`mb-4 rounded-lg border ${panel}`}>
           <button
             type="button"
             onClick={() => setShowFilters((value) => !value)}
-            className="flex w-full items-center gap-3 px-4 py-3 text-left"
+            className="flex w-full items-center gap-3 px-4 py-2.5 text-left"
             aria-expanded={showFilters}
           >
             <FiFilter className={muted} />
@@ -1114,13 +1086,58 @@ export default function NeueAngebotePage() {
             ) : (
               <span className="flex-1" />
             )}
-            <span className={`text-[12px] font-medium ${showFilters ? muted : "text-sky-600"}`}>
+            <span className={`shrink-0 text-[12px] font-medium ${showFilters ? muted : "text-sky-700"}`}>
               {showFilters ? "Schließen" : "Bearbeiten"}
             </span>
-            {showFilters ? <FiChevronUp className={muted} /> : <FiChevronDown className="text-sky-600" />}
+            {showFilters ? <FiChevronUp className={muted} /> : <FiChevronDown className="text-sky-700" />}
           </button>
           {showFilters ? (
-            <div className={`border-t px-4 pb-4 pt-4 ${dark ? "border-slate-800" : "border-slate-100"}`}>
+            <div className={`border-t ${dark ? "border-slate-800" : "border-slate-100"}`}>
+              {applied ? (
+                <div
+                  className={`flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2 ${
+                    dark ? "border-slate-800 bg-slate-950/30" : "border-slate-100 bg-slate-50/70"
+                  }`}
+                >
+                  <span className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${dark ? "text-slate-300" : "text-slate-600"}`}>
+                    <span className={`size-1.5 rounded-full ${running ? "bg-emerald-500" : "bg-slate-400"}`} />
+                    {running ? "Live-Suche läuft" : "Live-Suche pausiert"}
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <div className={`flex items-center divide-x overflow-hidden rounded-md border ${dark ? "divide-slate-700 border-slate-700 bg-slate-900" : "divide-slate-200 border-slate-300 bg-white"}`}>
+                      <select
+                        value={intervalSec}
+                        onChange={(e) => setIntervalSec(Number(e.target.value))}
+                        title="Wie oft geprüft wird"
+                        aria-label="Prüfintervall"
+                        className={`h-7 bg-transparent px-2 text-[12px] outline-none ${dark ? "text-slate-100" : ""}`}
+                      >
+                        {INTERVALS.map((seconds) => (
+                          <option key={seconds} value={seconds}>alle {seconds} s</option>
+                        ))}
+                      </select>
+                      <button type="button" onClick={() => check()} disabled={checking} title="Jetzt prüfen" aria-label="Jetzt prüfen" className={toolButton}>
+                        <FiRefreshCw className={checking ? "animate-spin" : ""} />
+                      </button>
+                      <button type="button" onClick={() => setSound((value) => !value)} title={sound ? "Ton aus" : "Ton an"} aria-label={sound ? "Ton aus" : "Ton an"} className={toolButton}>
+                        {sound ? <FiVolume2 /> : <FiVolumeX className={muted} />}
+                      </button>
+                      <button type="button" onClick={askNotifications} title="Desktop-Benachrichtigung" aria-label="Desktop-Benachrichtigung" className={`${toolButton} ${notify ? "text-emerald-600" : ""}`}>
+                        {notify ? <FiBell /> : <FiBellOff className={muted} />}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setRunning((value) => !value)}
+                      className={`inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium ${
+                        dark ? "border-slate-700 bg-slate-900 hover:bg-slate-800" : "border-slate-300 bg-white hover:bg-slate-50"
+                      }`}
+                    >
+                      {running ? <><FiPause className="size-3" /> Pausieren</> : <><FiPlay className="size-3" /> Fortsetzen</>}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
               <FilterPanel draft={draft} setDraft={setDraft} dark={dark} onApply={apply} running={running} />
             </div>
           ) : null}
@@ -1142,7 +1159,6 @@ export default function NeueAngebotePage() {
                 )}
               </span>
             ))}
-            {lastCheck ? <span className="ml-auto">zuletzt geprüft {clock(lastCheck)}</span> : null}
             {failures >= 3 ? (
               <span className="w-full text-amber-600">Mehrere Prüfungen fehlgeschlagen – es wird jetzt nur alle 5 Minuten geprüft.</span>
             ) : null}
