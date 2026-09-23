@@ -394,8 +394,71 @@ function FilterPanel({ draft, setDraft, dark, onApply, running }) {
   );
 }
 
-function ListingCard({ item, dark, now, onHide }) {
+const FACT_TONES = { good: "green", warn: "amber", bad: "red", neutral: "slate", unknown: "slate" };
+
+/**
+ * HU, accident status, owners, red flags … — read from the ad page once the
+ * car has arrived (or on request for cars that were already online).
+ */
+function CardFacts({ item, dark, onLoad }) {
+  const d = item.details;
+  const muted = dark ? "text-slate-400" : "text-slate-500";
+
+  if (!d) {
+    if (item.detailsState === "loading") {
+      return (
+        <div className={`flex items-center gap-2 text-[11px] ${muted}`}>
+          <FiLoader className="animate-spin" /> HU, Unfall & Halter werden geladen …
+        </div>
+      );
+    }
+    return (
+      <button
+        type="button"
+        onClick={() => onLoad(item)}
+        className={`self-start text-[11px] font-semibold text-sky-600 hover:underline`}
+      >
+        {item.detailsState === "error" ? "Details nicht lesbar – erneut versuchen" : "HU, Unfall & mehr laden"}
+      </button>
+    );
+  }
+
+  const chip = (fact, key, prefix = "") =>
+    fact ? (
+      <Chip key={key} dark={dark} tone={FACT_TONES[fact.tone] || "slate"}>
+        {prefix}
+        {fact.label}
+        {fact.note ? ` · ${fact.note}` : ""}
+      </Chip>
+    ) : null;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap gap-1">
+        {chip(d.hu, "hu")}
+        {chip(d.condition, "condition")}
+        {chip(d.owners, "owners")}
+        {chip(d.belt, "belt")}
+        {d.redFlags.map((flag) => (
+          <Chip key={flag} dark={dark} tone="red">⚠ {flag}</Chip>
+        ))}
+        {d.goodSigns.map((sign) => (
+          <Chip key={sign} dark={dark} tone="green">✓ {sign}</Chip>
+        ))}
+      </div>
+      {d.equipment.length || d.usage ? (
+        <p className={`text-[11px] leading-4 ${muted}`}>
+          {[d.usage?.label, d.equipment.length ? d.equipment.join(" · ") : null].filter(Boolean).join(" · ")}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function ListingCard({ item, dark, now, onHide, onLoadDetails, latest = false }) {
   const source = SOURCES.find((entry) => entry.id === item.source);
+  const sellerType =
+    item.details?.sellerType && item.details.sellerType !== "UNKNOWN" ? item.details.sellerType : item.sellerType;
   const facts = [
     km(item.mileageKm),
     item.firstRegistration ? `EZ ${item.firstRegistration}` : null,
@@ -407,7 +470,11 @@ function ListingCard({ item, dark, now, onHide }) {
   return (
     <article
       className={`group relative flex min-w-0 flex-col overflow-hidden rounded-lg border transition ${
-        item.isNew
+        latest
+          ? dark
+            ? "border-emerald-500 bg-slate-900 shadow-[0_0_0_2px_rgba(16,185,129,0.35)]"
+            : "border-emerald-500 bg-white shadow-md ring-2 ring-emerald-400/40"
+          : item.isNew
           ? dark
             ? "border-emerald-700/70 bg-slate-900 shadow-[0_0_0_1px_rgba(16,185,129,0.25)]"
             : "border-emerald-300 bg-white shadow-sm"
@@ -426,7 +493,7 @@ function ListingCard({ item, dark, now, onHide }) {
         <div className="absolute left-2 top-2 flex flex-wrap gap-1">
           {item.isNew ? (
             <span className="inline-flex items-center gap-1 rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-              <span className="size-1.5 animate-pulse rounded-full bg-white" /> NEU
+              <span className="size-1.5 animate-pulse rounded-full bg-white" /> {latest ? "NEUESTE" : "NEU"}
             </span>
           ) : null}
           <span className="rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold text-white">
@@ -469,9 +536,11 @@ function ListingCard({ item, dark, now, onHide }) {
               {Number.isFinite(item.distanceKm) ? <span>({item.distanceKm} km)</span> : null}
             </span>
           ) : null}
-          {item.sellerType === "PRIVATE" ? <Chip dark={dark} tone="sky">Privat</Chip> : null}
-          {item.sellerType === "DEALER" ? <Chip dark={dark}>Händler</Chip> : null}
+          {sellerType === "PRIVATE" ? <Chip dark={dark} tone="sky">Privat</Chip> : null}
+          {sellerType === "DEALER" ? <Chip dark={dark}>Händler{item.details?.sellerName ? ` · ${item.details.sellerName.slice(0, 24)}` : ""}</Chip> : null}
         </div>
+
+        <CardFacts item={item} dark={dark} onLoad={onLoadDetails} />
 
         <p className={`text-[11px] ${item.isNew ? "font-semibold text-emerald-600" : dark ? "text-slate-500" : "text-slate-400"}`}>
           {item.postedAt
@@ -605,6 +674,61 @@ export default function NeueAngebotePage() {
     [key],
   );
 
+  /* details: read each new car's ad page, two at a time, newest first */
+  const detailQueueRef = useRef([]);
+  const detailActiveRef = useRef(0);
+  const persistRef = useRef(persist);
+  persistRef.current = persist;
+
+  const updateItem = (itemKey, patch) => {
+    const store = storeRef.current;
+    const nextFeed = store.feed.map((entry) => (entry.key === itemKey ? { ...entry, ...patch } : entry));
+    const nextStore = { ...store, feed: nextFeed };
+    storeRef.current = nextStore;
+    persistRef.current(nextStore);
+    setFeed(nextFeed);
+  };
+
+  const pumpRef = useRef(null);
+  pumpRef.current = () => {
+    while (detailActiveRef.current < 2 && detailQueueRef.current.length) {
+      const next = detailQueueRef.current.shift();
+      detailActiveRef.current += 1;
+      updateItem(next.key, { detailsState: "loading" });
+      fetch("/api/neue-angebote/details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: next.url }),
+      })
+        .then((response) => response.json())
+        .then((data) =>
+          updateItem(
+            next.key,
+            data?.ok
+              ? { details: data.details, detailsState: "done" }
+              : { detailsState: "error", detailsError: data?.error || null },
+          ),
+        )
+        .catch(() => updateItem(next.key, { detailsState: "error" }))
+        .finally(() => {
+          detailActiveRef.current -= 1;
+          pumpRef.current();
+        });
+    }
+  };
+
+  /** Queue cars for details. New arrivals go to the front of the line. */
+  const loadDetails = useCallback((items, { first = false } = {}) => {
+    const queued = new Set(detailQueueRef.current.map((entry) => entry.key));
+    const wanted = items.filter(
+      (entry) => !entry.details && entry.source !== "MOBILE_DE" && !queued.has(entry.key),
+    );
+    detailQueueRef.current = first
+      ? [...wanted, ...detailQueueRef.current]
+      : [...detailQueueRef.current, ...wanted];
+    pumpRef.current();
+  }, []);
+
   /* one check */
   const check = useCallback(async () => {
     if (!applied || inFlightRef.current) return;
@@ -677,6 +801,11 @@ export default function NeueAngebotePage() {
       storeRef.current = nextStore;
       persist(nextStore);
       setFeed(nextFeed);
+
+      // Read the ad pages of the new arrivals right away — at most ten per
+      // check, so a flood of new ads cannot hammer the portals.
+      const arrivedNow = nextFeed.filter((entry) => entry.isNew && entry.firstSeenAt === new Date(at).toISOString());
+      if (arrivedNow.length) loadDetails(arrivedNow.slice(0, 10), { first: true });
       setSources(data.sources || []);
       setLastCheck(data.checkedAt || new Date(at).toISOString());
       setFailures((data.sources || []).every((source) => !source.ok && !source.skipped) ? (count) => count + 1 : 0);
@@ -687,7 +816,7 @@ export default function NeueAngebotePage() {
       inFlightRef.current = false;
       setChecking(false);
     }
-  }, [applied, persist]);
+  }, [applied, persist, loadDetails]);
 
   /* the loop: check, wait, check — slower after repeated failures */
   useEffect(() => {
@@ -727,7 +856,15 @@ export default function NeueAngebotePage() {
   const apply = () => {
     const normalized = normalizeFilters(draft);
     writeJson(FILTER_STORE, draft);
-    const store = readJson(FEED_STORE(filterKey(normalized)), null) || emptyStore();
+    const saved = readJson(FEED_STORE(filterKey(normalized)), null) || emptyStore();
+    // A lookup still "loading" when the page was closed never finished.
+    const store = {
+      ...saved,
+      feed: (saved.feed || []).map((entry) =>
+        entry.detailsState === "loading" ? { ...entry, detailsState: undefined } : entry,
+      ),
+    };
+    detailQueueRef.current = [];
     storeRef.current = store;
     setFeed(store.feed || []);
     setHidden([]);
@@ -778,6 +915,11 @@ export default function NeueAngebotePage() {
   const visible = useMemo(() => feed.filter((item) => !hidden.includes(item.key)), [feed, hidden]);
   const fresh = visible.filter((item) => item.isNew);
   const old = visible.filter((item) => !item.isNew);
+  // The newest of the new: everything the most recent productive check found.
+  const latestAt = fresh.reduce((max, item) => (item.firstSeenAt > max ? item.firstSeenAt : max), "");
+  const latest = fresh.filter((item) => item.firstSeenAt === latestAt);
+  const earlier = fresh.filter((item) => item.firstSeenAt !== latestAt);
+  const hide = (itemKey) => setHidden((list) => [...list, itemKey]);
   const secondsLeft = nextCheckAt ? Math.max(0, Math.ceil((nextCheckAt - now) / 1_000)) : null;
 
   if (status === "loading") {
@@ -928,11 +1070,40 @@ export default function NeueAngebotePage() {
             </div>
 
             {fresh.length ? (
-              <div className="mb-6 grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {fresh.map((item) => (
-                  <ListingCard key={item.key} item={item} dark={dark} now={now} onHide={(hide) => setHidden((list) => [...list, hide])} />
-                ))}
-              </div>
+              <>
+                <section
+                  className={`mb-5 rounded-lg border p-3 ${
+                    dark ? "border-emerald-800/70 bg-emerald-950/20" : "border-emerald-200 bg-emerald-50/60"
+                  }`}
+                >
+                  <h3 className="mb-2 flex flex-wrap items-baseline gap-x-2 text-sm font-bold text-emerald-700">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="size-2 animate-pulse rounded-full bg-emerald-500" /> Gerade reingekommen
+                    </span>
+                    <span className={`text-[11px] font-normal ${muted}`}>
+                      {latest.length} {latest.length === 1 ? "Auto" : "Autos"} aus der Prüfung um {clock(latestAt)} · {ago(latestAt, now)}
+                    </span>
+                  </h3>
+                  <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {latest.map((item) => (
+                      <ListingCard key={item.key} item={item} dark={dark} now={now} latest onHide={hide} onLoadDetails={(entry) => loadDetails([entry], { first: true })} />
+                    ))}
+                  </div>
+                </section>
+
+                {earlier.length ? (
+                  <section className="mb-6">
+                    <h3 className={`mb-2 text-xs font-semibold ${muted}`}>
+                      Davor reingekommen ({earlier.length})
+                    </h3>
+                    <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {earlier.map((item) => (
+                        <ListingCard key={item.key} item={item} dark={dark} now={now} onHide={hide} onLoadDetails={(entry) => loadDetails([entry], { first: true })} />
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+              </>
             ) : (
               <div className={`mb-6 rounded-lg border border-dashed p-6 text-center text-xs ${dark ? "border-slate-700" : "border-slate-300"} ${muted}`}>
                 {checking && !lastCheck ? (
@@ -951,7 +1122,7 @@ export default function NeueAngebotePage() {
                 {showOld ? (
                   <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {old.map((item) => (
-                      <ListingCard key={item.key} item={item} dark={dark} now={now} onHide={(hide) => setHidden((list) => [...list, hide])} />
+                      <ListingCard key={item.key} item={item} dark={dark} now={now} onHide={hide} onLoadDetails={(entry) => loadDetails([entry])} />
                     ))}
                   </div>
                 ) : null}

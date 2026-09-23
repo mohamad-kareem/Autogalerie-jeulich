@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { filterKey, normalizeFilters } from "@/lib/feed/filters";
+import { looksRefused, pauseRemainingMs, pauseSource } from "@/lib/feed/pause";
 import { SEARCHERS } from "@/lib/feed/sources";
 
 export const runtime = "nodejs";
@@ -16,12 +17,6 @@ const LABELS = { AUTOSCOUT24: "AutoScout24", KLEINANZEIGEN: "Kleinanzeigen", MOB
 // however many pages are open.
 const RECENT_MS = 12_000;
 const recent = new Map();
-
-// A portal that refuses us (403/429, captcha) is left alone for a while: every
-// further request would only extend the block — and the Marktanalyse uses the
-// same server address.
-const COOLDOWN_MS = 5 * 60_000;
-const pausedUntil = new Map();
 
 function json(data, status = 200) {
   return Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
@@ -68,9 +63,9 @@ export async function POST(request) {
   const results = await Promise.all(
     filters.sources.map(async (id) => {
       const search = SEARCHERS[id];
-      const paused = pausedUntil.get(id) || 0;
-      if (paused > Date.now()) {
-        const minutes = Math.ceil((paused - Date.now()) / 60_000);
+      const paused = pauseRemainingMs(id);
+      if (paused > 0) {
+        const minutes = Math.ceil(paused / 60_000);
         return {
           id, ok: false, items: [], url: null, paused: true,
           error: `hat abgelehnt – Pause, wieder in ${minutes} Min.`,
@@ -79,8 +74,7 @@ export async function POST(request) {
       const fallback = { ok: false, items: [], error: "Zeitüberschreitung.", url: null };
       try {
         const result = await withTimeout(search(filters), 12_000, fallback);
-        const refused = result.blocked || /\b(403|429)\b|blockiert|captcha/i.test(result.error || "");
-        if (refused) pausedUntil.set(id, Date.now() + COOLDOWN_MS);
+        if (looksRefused(result)) pauseSource(id);
         return { id, ...result };
       } catch (error) {
         return { id, ok: false, items: [], error: error?.message || "Fehler.", url: null };
