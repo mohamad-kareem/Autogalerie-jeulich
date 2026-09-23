@@ -27,6 +27,7 @@ import {
   FiCamera,
   FiMessageCircle,
   FiBarChart2,
+  FiZap,
 } from "react-icons/fi";
 
 import { FaCarSide, FaPaintRoller } from "react-icons/fa";
@@ -167,6 +168,13 @@ export default function Sidebar({
         label: "Marktanalyse",
         badge: null,
         color: "text-cyan-500",
+      },
+      {
+        href: "/neue-angebote",
+        icon: <FiZap />,
+        label: "Neue Angebote",
+        badge: null,
+        color: "text-emerald-500",
       },
       {
         href: "/aufgabenboard",

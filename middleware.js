@@ -77,5 +77,6 @@ export const config = {
     "/translator/:path*",
     "/Rotkennzeichen/:path*",
     "/Kundenkontakte/:path*",
+    "/neue-angebote/:path*",
   ],
 };

@@ -3684,6 +3684,22 @@ export default function MarktanalysePage() {
     })();
   }, [status, analyze]);
 
+  // "Analysieren" in the new-listings feed opens this page with ?url=… — the
+  // check starts on its own, once, and the address is cleaned up.
+  const linkStartedRef = useRef(false);
+  useEffect(() => {
+    if (status !== "authenticated" || linkStartedRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const link = params.get("url");
+    if (!link) return;
+    linkStartedRef.current = true;
+    params.delete("url");
+    const rest = params.toString();
+    window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
+    setUrl(link);
+    submit(link);
+  }, [status, submit]);
+
   const copySummary = async () => {
     if (!result) return;
     const dealer = result.dealer;
