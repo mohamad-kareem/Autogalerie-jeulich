@@ -102,8 +102,9 @@ export async function POST(request) {
   }
 
   const result = body?.result;
+  // Ads analysed from pasted text have no link; their stable key stands in.
   const listingUrl = String(
-    result?.target?.listingUrl || body?.listingUrl || "",
+    result?.target?.listingUrl || body?.listingUrl || result?.target?.listingKey || "",
   ).trim();
 
   if (!result || !listingUrl) {

@@ -57,6 +57,28 @@ const SUPPORTED = [
   { label: "Kleinanzeigen", hosts: ["kleinanzeigen.de"] },
 ];
 
+/**
+ * mobile.de refuses our server every time, so a mobile.de link does not wait
+ * for that refusal: it goes straight to the fast path (copy the ad, or the
+ * one-click button). Set NEXT_PUBLIC_MOBILEDE_DIRECT=1 to try the server again,
+ * for example once mobile.de grants API access.
+ */
+const MOBILE_DIRECT = process.env.NEXT_PUBLIC_MOBILEDE_DIRECT === "1";
+
+/**
+ * Enough of an ad to analyse: the data labels every portal prints, and a euro
+ * amount. Anything shorter is a link, a phone number or a stray word.
+ */
+function looksLikeAdText(text) {
+  const value = String(text || "");
+  return (
+    value.length >= 250 &&
+    /(kilometerstand|laufleistung)/i.test(value) &&
+    /(erstzulassung|\bEZ\b)/i.test(value) &&
+    /€/.test(value)
+  );
+}
+
 function detectPortal(rawUrl) {
   const value = String(rawUrl || "").trim();
   if (!value) return { status: "empty" };
@@ -2686,6 +2708,144 @@ function BookmarkletSetup({ dark, emphasis = false, className = "" }) {
   );
 }
 
+/* ================================================= mobile.de, the fast way
+ *
+ * Shown the moment a mobile.de link is entered, instead of asking mobile.de
+ * and waiting for its refusal. The ad is already open in the buyer's browser;
+ * he copies it there, comes back, and the analysis starts by itself — read
+ * from the clipboard where the browser allows it, or with Ctrl+V anywhere.
+ */
+
+function MobileAssist({ url, dark, clipboardState, onAllowClipboard, onText, onCancel }) {
+  const [draft, setDraft] = useState("");
+  const muted = dark ? "text-slate-400" : "text-slate-500";
+  const automatic = clipboardState === "granted";
+
+  const steps = [
+    {
+      title: "Zur Anzeige wechseln",
+      body: (
+        <>
+          Den Tab mit der Anzeige öffnen – oder{" "}
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 font-semibold text-sky-600 hover:underline"
+          >
+            hier öffnen <FiExternalLink />
+          </a>
+        </>
+      ),
+    },
+    {
+      title: "Alles kopieren",
+      body: (
+        <>
+          <strong>Strg+A</strong>, dann <strong>Strg+C</strong>
+        </>
+      ),
+    },
+    {
+      title: "Zurückkommen",
+      body: automatic ? (
+        <>Die Analyse startet von selbst.</>
+      ) : (
+        <>
+          <strong>Strg+V</strong> – irgendwo auf dieser Seite
+        </>
+      ),
+    },
+  ];
+
+  return (
+    <Panel dark={dark} className="mb-4 ring-2 ring-sky-500/50">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-2 text-sm font-semibold">
+            <FiClipboard className="text-sky-600" />
+            mobile.de-Anzeige übernehmen
+            <span className="inline-flex items-center gap-1 rounded bg-sky-600/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-600">
+              <FiLoader className="animate-spin" /> wartet
+            </span>
+          </p>
+          <p className={`mt-0.5 truncate text-[11px] ${muted}`}>{url}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onCancel}
+          className={`inline-flex h-7 w-7 items-center justify-center rounded border ${
+            dark ? "border-slate-700 hover:bg-slate-800" : "border-slate-300 hover:bg-slate-50"
+          }`}
+          aria-label="Abbrechen"
+        >
+          <FiX />
+        </button>
+      </div>
+
+      <ol className="mt-3 grid gap-2 sm:grid-cols-3">
+        {steps.map((step, index) => (
+          <li
+            key={step.title}
+            className={`rounded-md px-3 py-2.5 ${dark ? "bg-slate-800/60" : "bg-slate-50"}`}
+          >
+            <p className="flex items-center gap-2 text-xs font-semibold">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-sky-600 text-[10px] font-bold text-white">
+                {index + 1}
+              </span>
+              {step.title}
+            </p>
+            <p className={`mt-1 text-[11px] leading-5 ${muted}`}>{step.body}</p>
+          </li>
+        ))}
+      </ol>
+
+      {clipboardState === "prompt" ? (
+        <div
+          className={`mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md px-3 py-2 text-[11px] ${
+            dark ? "bg-sky-950/40 text-sky-200" : "bg-sky-50 text-sky-900"
+          }`}
+        >
+          <span>
+            Einmal erlauben – danach startet die Analyse beim Zurückkommen von selbst, ganz ohne
+            Strg+V.
+          </span>
+          <button
+            type="button"
+            onClick={onAllowClipboard}
+            className="rounded bg-sky-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-sky-700"
+          >
+            Automatisch einfügen erlauben
+          </button>
+        </div>
+      ) : null}
+
+      {/* For touch screens, where there is no Ctrl+V: a long press here. */}
+      <textarea
+        data-ad-paste="true"
+        value={draft}
+        onChange={(event) => {
+          setDraft(event.target.value);
+          if (looksLikeAdText(event.target.value)) onText(event.target.value);
+        }}
+        rows={2}
+        placeholder="… oder den kopierten Anzeigentext hier einfügen"
+        className={`mt-3 w-full resize-none rounded border px-3 py-2 text-xs outline-none focus:ring-2 ${
+          dark
+            ? "border-slate-700 bg-slate-900 focus:ring-sky-500/30"
+            : "border-slate-300 bg-white focus:ring-sky-200"
+        }`}
+      />
+
+      <p className={`mt-2 text-[11px] ${muted}`}>
+        <FiZap className="mr-1 inline text-sky-600" />
+        Ganz ohne Kopieren: der Ein-Klick-Button „Ankaufs-Check“ in der Lesezeichenleiste – einmal
+        einrichten, dann direkt auf der Anzeige klicken.
+      </p>
+    </Panel>
+  );
+}
+
 function RecentSearches({ items, dark, onSelect, onClear }) {
   if (!items.length) return null;
 
@@ -3049,6 +3209,12 @@ export default function MarktanalysePage() {
   const pendingImportRef = useRef(null);
   const importStartedRef = useRef(false);
 
+  // A mobile.de link waiting for its ad text, and whether the browser lets the
+  // page read the clipboard (then the text is picked up without Ctrl+V).
+  const [awaiting, setAwaiting] = useState(null);
+  const [clipboardState, setClipboardState] = useState("unknown");
+  const seenClipboardRef = useRef("");
+
   const live = useMemo(
     () => (result ? recalculate(result, adjust) : null),
     [result, adjust],
@@ -3117,6 +3283,8 @@ export default function MarktanalysePage() {
   const portal = useMemo(() => detectPortal(url), [url]);
 
   const rememberSearch = useCallback((data) => {
+    // Text pasted without its link cannot be reopened from a link.
+    if (!data.target?.listingUrl) return;
     const entry = {
       url: data.target.listingUrl,
       title:
@@ -3145,7 +3313,8 @@ export default function MarktanalysePage() {
   const analyze = useCallback(
     async (targetUrl, manualVehicle = null, pastedText = null, extras = null) => {
       const check = detectPortal(targetUrl);
-      if (check.status !== "supported") {
+      // Pasted ad text carries everything; the link is then optional.
+      if (check.status !== "supported" && !pastedText) {
         const message =
           check.status === "unsupported"
             ? `${check.host} wird nicht unterstützt. Bitte AutoScout24, mobile.de oder Kleinanzeigen verwenden.`
@@ -3156,8 +3325,9 @@ export default function MarktanalysePage() {
       }
 
       if (manualVehicle) setLastManual(manualVehicle);
+      setAwaiting(null);
 
-      const cleanUrl = targetUrl.trim();
+      const cleanUrl = check.status === "supported" ? String(targetUrl).trim() : "";
       let pageHtml = extras?.pageHtml || null;
       let pasted = pastedText;
 
@@ -3320,7 +3490,12 @@ export default function MarktanalysePage() {
 
       setResult(stored);
       setAdjust(data.entry.inputs || initialAdjust(stored));
-      setUrl(stored.target?.listingUrl || entry.listingUrl || "");
+      setAwaiting(null);
+      setUrl(
+        stored.target?.listingUrl ||
+          (String(entry.listingUrl || "").startsWith("anzeigentext:") ? "" : entry.listingUrl) ||
+          "",
+      );
       setError(null);
       setSavedAt(data.entry.updatedAt);
       setOpenedFrom(data.entry.updatedAt);
@@ -3348,6 +3523,136 @@ export default function MarktanalysePage() {
     },
     [loadSaved],
   );
+
+  /**
+   * Entering a link. mobile.de is not asked at all — it refuses every time —
+   * and the fast path opens instead. Everything else is analysed directly.
+   */
+  const submit = useCallback(
+    (raw) => {
+      const link = String(raw || "").trim();
+      if (!link) {
+        toast.error("Bitte einen Fahrzeug-Link eingeben oder den Anzeigentext einfügen.");
+        return;
+      }
+
+      const portal = detectPortal(link);
+      const known = sourceRef.current?.url === link;
+      if (portal.status === "supported" && portal.label === "mobile.de" && !MOBILE_DIRECT && !known) {
+        abortRef.current?.abort();
+        setResult(null);
+        setError(null);
+        setAwaiting({ url: link });
+        return;
+      }
+
+      analyze(link);
+    },
+    [analyze],
+  );
+
+  /** A copied ad arrived — by Ctrl+V, the clipboard, or the text box. */
+  const startFromText = useCallback(
+    (text) => {
+      seenClipboardRef.current = text;
+      const link = awaiting?.url || (detectPortal(url).status === "supported" ? url.trim() : "");
+      toast.success("Anzeigentext übernommen – Analyse läuft.");
+      analyze(link, null, text);
+    },
+    [awaiting, url, analyze],
+  );
+
+  const readClipboard = useCallback(async () => {
+    try {
+      return await navigator.clipboard.readText();
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const clipboardPermission = useCallback(async () => {
+    try {
+      const status = await navigator.permissions.query({ name: "clipboard-read" });
+      setClipboardState(status.state);
+      return status.state;
+    } catch {
+      // Firefox and Safari do not expose this permission: Ctrl+V it is.
+      setClipboardState("unsupported");
+      return "unsupported";
+    }
+  }, []);
+
+  // While a mobile.de link waits: coming back to this tab reads the clipboard,
+  // if the browser has allowed it once. What was already there when waiting
+  // began is ignored — that is never the new ad.
+  useEffect(() => {
+    if (!awaiting) return undefined;
+    let active = true;
+
+    const look = async (initial) => {
+      if (document.visibilityState !== "visible" || !document.hasFocus()) {
+        if (initial) await clipboardPermission();
+        return;
+      }
+      if ((await clipboardPermission()) !== "granted") return;
+      const text = await readClipboard();
+      if (!active || text === null) return;
+      if (initial) {
+        seenClipboardRef.current = text;
+        return;
+      }
+      if (text !== seenClipboardRef.current && looksLikeAdText(text)) startFromText(text);
+    };
+
+    look(true);
+    const onReturn = () => look(false);
+    window.addEventListener("focus", onReturn);
+    document.addEventListener("visibilitychange", onReturn);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", onReturn);
+      document.removeEventListener("visibilitychange", onReturn);
+    };
+  }, [awaiting, clipboardPermission, readClipboard, startFromText]);
+
+  /** One click, one browser prompt; after that the clipboard is read by itself. */
+  const allowClipboard = useCallback(async () => {
+    const text = await readClipboard();
+    await clipboardPermission();
+    if (text && text !== seenClipboardRef.current && looksLikeAdText(text)) {
+      startFromText(text);
+    } else if (text !== null) {
+      seenClipboardRef.current = text;
+      toast.success("Erlaubt – jetzt die Anzeige kopieren und zurückkommen.");
+    }
+  }, [readClipboard, clipboardPermission, startFromText]);
+
+  // Ctrl+V anywhere on the page: a link starts the check, a copied ad starts
+  // the analysis. Pasting into a price or note field stays a normal paste.
+  useEffect(() => {
+    const onPaste = (event) => {
+      if (loading) return;
+      const field = event.target?.closest?.("input, textarea, select, [contenteditable='true']");
+      if (field && !field.dataset?.adPaste) return;
+
+      const text = event.clipboardData?.getData("text/plain") || "";
+      if (looksLikeAdText(text)) {
+        event.preventDefault();
+        startFromText(text);
+        return;
+      }
+
+      const link = text.trim();
+      if (link && !/\s/.test(link) && detectPortal(link).status === "supported") {
+        event.preventDefault();
+        setUrl(link);
+        submit(link);
+      }
+    };
+
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  }, [loading, startFromText, submit]);
 
   useEffect(() => {
     if (status !== "authenticated" || importStartedRef.current) return;
@@ -3416,6 +3721,7 @@ export default function MarktanalysePage() {
   };
 
   const reset = () => {
+    setAwaiting(null);
     setUrl("");
     setResult(null);
     setError(null);
@@ -3463,21 +3769,18 @@ export default function MarktanalysePage() {
             className="flex min-w-[280px] flex-1 items-center gap-2"
             onSubmit={(event) => {
               event.preventDefault();
-              if (!url.trim()) {
-                toast.error("Bitte einen Fahrzeug-Link eingeben.");
-                return;
-              }
-              analyze(url);
+              submit(url);
             }}
           >
             <div className="relative flex-1">
               <FiLink className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="url"
+                data-ad-paste="true"
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
                 disabled={loading}
-                placeholder="Link von AutoScout24, mobile.de oder Kleinanzeigen"
+                placeholder="Link einfügen – oder den kopierten Anzeigentext (Strg+V)"
                 className={`h-9 w-full rounded border pl-8 pr-3 text-sm outline-none focus:ring-2 ${
                   dark
                     ? "border-slate-700 bg-slate-900 focus:ring-sky-500/30"
@@ -3532,12 +3835,23 @@ export default function MarktanalysePage() {
           </p>
         ) : null}
 
-        {!loading && !result && !error ? (
+        {awaiting && !loading ? (
+          <MobileAssist
+            url={awaiting.url}
+            dark={dark}
+            clipboardState={clipboardState}
+            onAllowClipboard={allowClipboard}
+            onText={startFromText}
+            onCancel={() => setAwaiting(null)}
+          />
+        ) : null}
+
+        {!loading && !result && !error && !awaiting ? (
           // Desktop only: a phone has no bookmarks bar to drag into.
           <BookmarkletSetup dark={dark} className="mb-4 hidden md:block" />
         ) : null}
 
-        {!loading && !result ? (
+        {!loading && !result && !awaiting ? (
           <SavedAnalyses
             entries={saved}
             dark={dark}
@@ -3554,7 +3868,7 @@ export default function MarktanalysePage() {
             dark={dark}
             onSelect={(selected) => {
               setUrl(selected);
-              analyze(selected);
+              submit(selected);
             }}
             onClear={() => {
               setRecent([]);
@@ -3606,7 +3920,7 @@ export default function MarktanalysePage() {
                 {url.trim() ? (
                   <button
                     type="button"
-                    onClick={() => analyze(url)}
+                    onClick={() => submit(url)}
                     className="inline-flex shrink-0 items-center gap-1.5 rounded border border-current bg-white px-2.5 py-1.5 text-xs font-semibold hover:opacity-80"
                   >
                     <FiRefreshCw /> Erneut
@@ -3671,7 +3985,7 @@ export default function MarktanalysePage() {
                 diesem Stand, nicht aus einer neuen Abfrage.
                 <button
                   type="button"
-                  onClick={() => analyze(url)}
+                  onClick={() => submit(url)}
                   className="font-semibold text-sky-600 hover:underline"
                 >
                   neu prüfen

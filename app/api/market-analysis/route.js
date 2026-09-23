@@ -152,11 +152,19 @@ export async function POST(request) {
   // Only obviously wrong links are refused here. A recognised portal link
   // without a readable ad id (share/short links) is passed through, because
   // the resolver follows its redirects before giving up.
+  // Pasted ad text carries everything the analysis needs, so it may come
+  // without a link — copying the ad is then the only step for the buyer.
+  const hasText =
+    typeof body?.pastedText === "string" && body.pastedText.trim().length > 40;
   const validation = validateListingUrl(body?.url);
-  if (!validation.ok && !mayRedirectToListing(body?.url)) {
+  if (!validation.ok && !mayRedirectToListing(body?.url) && !hasText) {
     return json({ error: validation.error, code: "INVALID_URL" }, 400);
   }
-  const listingUrl = validation.ok ? validation.url : String(body.url).trim();
+  const listingUrl = validation.ok
+    ? validation.url
+    : hasText
+      ? null
+      : String(body.url).trim();
 
   const options = {};
 
