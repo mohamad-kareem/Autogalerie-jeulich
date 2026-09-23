@@ -34,6 +34,7 @@ import {
   FiTrendingUp,
   FiX,
   FiXCircle,
+  FiZap,
 } from "react-icons/fi";
 
 import {
@@ -41,6 +42,7 @@ import {
   recalculate,
   toNumber,
 } from "@/lib/market/live";
+import { bookmarkletHref, decodeImport, IMPORT_PREFIX } from "@/lib/market/bookmarklet";
 import { useSidebar } from "@/app/(components)/SidebarContext";
 
 /* ------------------------------------------------------------------ setup */
@@ -1880,7 +1882,15 @@ function MarketPositionPanel({ result, live, dark }) {
           dark={dark}
           accent={gap === null ? "none" : gap > 300 ? "negative" : gap < -300 ? "positive" : "none"}
         />
-        {portal?.available ? (
+        {portal?.available && !Number.isFinite(portal.median) ? (
+          <Metric
+            label={`${portal.source}-Bewertung`}
+            value={portal.label}
+            hint="Einstufung des Portals"
+            dark={dark}
+            accent={portal.tone === "HIGH" ? "negative" : portal.tone === "LOW" ? "positive" : "none"}
+          />
+        ) : portal?.available ? (
           <Metric
             label={`${portal.source}-Median`}
             value={euro(portal.median)}
@@ -2600,6 +2610,82 @@ function SavedAnalyses({ entries, dark, busy, onOpen, onDelete, onRefresh }) {
   );
 }
 
+/* ====================================================== one-click import
+ *
+ * mobile.de refuses its ad pages to servers, not to people. A bookmark in the
+ * buyer's bookmarks bar takes the ad he is looking at and hands it over — see
+ * lib/market/bookmarklet.js. Works on AutoScout24 and Kleinanzeigen as well.
+ */
+
+function BookmarkletSetup({ dark, emphasis = false, className = "" }) {
+  const linkRef = useRef(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    // React refuses javascript: addresses in href, so the bookmark's address
+    // is set on the element itself, once the app's own address is known.
+    if (!linkRef.current) return;
+    linkRef.current.setAttribute("href", bookmarkletHref(window.location.origin));
+    setReady(true);
+  }, []);
+
+  const muted = dark ? "text-slate-400" : "text-slate-500";
+
+  return (
+    <Panel
+      dark={dark}
+      className={`${className} ${emphasis ? "ring-2 ring-sky-500/50" : ""}`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-2 text-sm font-semibold">
+            <FiZap className="text-sky-600" />
+            Ein-Klick-Import {emphasis ? "– so klappt mobile.de" : "für mobile.de & Co."}
+          </p>
+          <p className={`mt-0.5 text-xs leading-5 ${muted}`}>
+            mobile.de lässt unseren Server nicht auf die Anzeige zugreifen, Ihren Browser aber
+            schon. Einmal einrichten, danach auf jeder Anzeige bei mobile.de, AutoScout24 oder
+            Kleinanzeigen auf das Lesezeichen klicken – die Analyse startet sofort, mit allen
+            Daten, Fotos und der Ausstattung.
+          </p>
+        </div>
+
+        <a
+          ref={linkRef}
+          draggable
+          onClick={(event) => {
+            event.preventDefault();
+            toast("Nicht klicken – mit der Maus in die Lesezeichenleiste ziehen.", {
+              icon: "👆",
+            });
+          }}
+          title="Mit der Maus in die Lesezeichenleiste ziehen"
+          aria-disabled={!ready}
+          className="inline-flex shrink-0 cursor-grab items-center gap-1.5 rounded-md bg-sky-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-sky-700 active:cursor-grabbing"
+        >
+          <FiZap /> Ankaufs-Check
+        </a>
+      </div>
+
+      <ol className={`mt-3 grid gap-2 text-[11px] leading-4 sm:grid-cols-3 ${muted}`}>
+        {[
+          <>Lesezeichenleiste einblenden: <strong>Strg+Umschalt+B</strong></>,
+          <>Den blauen Button <strong>mit der Maus</strong> in die Leiste ziehen</>,
+          <>Auf einer Anzeige das Lesezeichen <strong>„Ankaufs-Check“</strong> anklicken</>,
+        ].map((step, index) => (
+          <li
+            key={index}
+            className={`flex gap-2 rounded px-2 py-1.5 ${dark ? "bg-slate-800/60" : "bg-slate-50"}`}
+          >
+            <span className="font-bold text-sky-600">{index + 1}</span>
+            <span>{step}</span>
+          </li>
+        ))}
+      </ol>
+    </Panel>
+  );
+}
+
 function RecentSearches({ items, dark, onSelect, onClear }) {
   if (!items.length) return null;
 
@@ -2956,6 +3042,13 @@ export default function MarktanalysePage() {
 
   const abortRef = useRef(null);
 
+  // What the current car was read from when the portal could not be asked
+  // directly (an imported page or pasted text), so a re-run — a postcode for
+  // the pickup, "Erneut" — reuses it instead of asking mobile.de again.
+  const sourceRef = useRef(null);
+  const pendingImportRef = useRef(null);
+  const importStartedRef = useRef(false);
+
   const live = useMemo(
     () => (result ? recalculate(result, adjust) : null),
     [result, adjust],
@@ -2972,6 +3065,19 @@ export default function MarktanalysePage() {
     } catch {
       /* ignore unreadable history */
     }
+  }, []);
+
+  useEffect(() => {
+    // An ad sent by the bookmark arrives in the address fragment. It is taken
+    // out of the address at once — and parked, in case a sign-in comes first.
+    if (!window.location.hash.startsWith(IMPORT_PREFIX)) return;
+    pendingImportRef.current = window.location.hash;
+    try {
+      sessionStorage.setItem("marktanalyse.import", window.location.hash);
+    } catch {
+      /* the ref still holds it for this visit */
+    }
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
   }, []);
 
   useEffect(() => {
@@ -3051,6 +3157,19 @@ export default function MarktanalysePage() {
 
       if (manualVehicle) setLastManual(manualVehicle);
 
+      const cleanUrl = targetUrl.trim();
+      let pageHtml = extras?.pageHtml || null;
+      let pasted = pastedText;
+
+      if (pageHtml || pasted) {
+        sourceRef.current = { url: cleanUrl, pageHtml, pastedText: pasted };
+      } else if (!manualVehicle && sourceRef.current?.url === cleanUrl) {
+        pageHtml = sourceRef.current.pageHtml;
+        pasted = sourceRef.current.pastedText;
+      } else if (sourceRef.current?.url !== cleanUrl) {
+        sourceRef.current = null;
+      }
+
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -3065,10 +3184,11 @@ export default function MarktanalysePage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            url: targetUrl.trim(),
+            url: cleanUrl,
             ...(manualVehicle ? { manualVehicle } : {}),
-            ...(pastedText ? { pastedText } : {}),
+            ...(pasted ? { pastedText: pasted } : {}),
             ...(extras || {}),
+            ...(pageHtml ? { pageHtml } : {}),
           }),
           signal: controller.signal,
         });
@@ -3229,6 +3349,32 @@ export default function MarktanalysePage() {
     [loadSaved],
   );
 
+  useEffect(() => {
+    if (status !== "authenticated" || importStartedRef.current) return;
+
+    let fragment = pendingImportRef.current;
+    try {
+      fragment = fragment || sessionStorage.getItem("marktanalyse.import");
+      sessionStorage.removeItem("marktanalyse.import");
+    } catch {
+      /* nothing parked */
+    }
+    if (!fragment) return;
+
+    importStartedRef.current = true;
+    (async () => {
+      try {
+        const { url: importedUrl, html } = await decodeImport(fragment);
+        setUrl(importedUrl);
+        toast.success("Anzeige aus dem Browser übernommen.");
+        analyze(importedUrl, null, null, { pageHtml: html });
+      } catch (importError) {
+        setError({ message: importError.message });
+        toast.error(importError.message);
+      }
+    })();
+  }, [status, analyze]);
+
   const copySummary = async () => {
     if (!result) return;
     const dealer = result.dealer;
@@ -3386,6 +3532,11 @@ export default function MarktanalysePage() {
           </p>
         ) : null}
 
+        {!loading && !result && !error ? (
+          // Desktop only: a phone has no bookmarks bar to drag into.
+          <BookmarkletSetup dark={dark} className="mb-4 hidden md:block" />
+        ) : null}
+
         {!loading && !result ? (
           <SavedAnalyses
             entries={saved}
@@ -3466,6 +3617,9 @@ export default function MarktanalysePage() {
 
             {error.details?.canRetryManually ? (
               <div className="mb-4">
+                {detectPortal(url).label === "mobile.de" ? (
+                  <BookmarkletSetup dark={dark} emphasis />
+                ) : null}
                 <PasteListing
                   dark={dark}
                   busy={loading}

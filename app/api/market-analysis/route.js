@@ -211,6 +211,12 @@ export async function POST(request) {
   }
   if (body?.skipModel === true) options.skipModel = true;
 
+  // The ad page itself, sent by the buyer's browser through the one-click
+  // import button. Capped well above a real ad page (about 0,5–1,5 MB).
+  if (typeof body?.pageHtml === "string" && body.pageHtml.length > 500) {
+    options.pageHtml = body.pageHtml.slice(0, 4_000_000);
+  }
+
   // Ad text copied from the portal page — the reliable route when a portal
   // refuses server-side reads.
   if (typeof body?.pastedText === "string" && body.pastedText.trim().length > 40) {
