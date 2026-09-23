@@ -1379,7 +1379,9 @@ function NegotiationPanel({ result, live, dark }) {
       result.target.listingUrl,
       "",
       `Angebot: ${euro(live.askingPrice)}`,
-      plan.mode === "LIMIT_OFFER"
+      plan.mode === "NO_OFFER"
+        ? `Kein Angebot: Limit ${euro(plan.walkAway)}, Abstand ${percent(plan.gapPercent)} – Preis beobachten`
+        : plan.mode === "LIMIT_OFFER"
         ? `Limit-Angebot: ${euro(plan.opening)}, höchstens ${euro(plan.walkAway)} (Abstand ${percent(plan.gapPercent)})`
         : `Einstieg: ${euro(plan.opening)} · Ziel: ${euro(plan.target)} · Grenze: ${euro(plan.walkAway)}`,
       "",
@@ -1405,7 +1407,16 @@ function NegotiationPanel({ result, live, dark }) {
         dark={dark}
         action={
           <div className="flex items-center gap-2">
-            <Chip dark={dark} tone={plan.mode === "LIMIT_OFFER" ? "amber" : STANCE_TONES[plan.stance]}>
+            <Chip
+              dark={dark}
+              tone={
+                plan.mode === "NO_OFFER"
+                  ? "red"
+                  : plan.mode === "LIMIT_OFFER"
+                    ? "amber"
+                    : STANCE_TONES[plan.stance]
+              }
+            >
               {plan.stanceLabel}
             </Chip>
             <button
@@ -1424,7 +1435,25 @@ function NegotiationPanel({ result, live, dark }) {
         Verhandlung
       </Caption>
 
-      {plan.mode === "LIMIT_OFFER" ? (
+      {plan.mode === "NO_OFFER" ? (
+        <div className="grid grid-cols-3 gap-3">
+          <Metric label="Angebot" value="–" hint="lohnt nicht" dark={dark} />
+          <Metric
+            label="Einkaufslimit"
+            value={euro(plan.walkAway)}
+            hint="nach Kosten und Marge"
+            dark={dark}
+            accent="primary"
+          />
+          <Metric
+            label="Abstand"
+            value={percent(plan.gapPercent)}
+            hint={`${euro(live.askingPrice - plan.walkAway)} über dem Limit`}
+            dark={dark}
+            accent="negative"
+          />
+        </div>
+      ) : plan.mode === "LIMIT_OFFER" ? (
         <div className="grid grid-cols-3 gap-3">
           <Metric label="Angebot" value={euro(plan.opening)} hint="einmal anbieten" dark={dark} />
           <Metric
@@ -1486,6 +1515,15 @@ function NegotiationPanel({ result, live, dark }) {
           {live.askingPrice <= live.limit
             ? `${euro(live.limit - live.askingPrice)} unter dem Einkaufslimit.`
             : `${euro(live.askingPrice - live.limit)} über dem Einkaufslimit.`}
+        </p>
+      ) : plan.mode === "NO_OFFER" ? (
+        <p
+          className={`mt-3 rounded px-2.5 py-2 text-[11px] leading-5 ${
+            dark ? "bg-red-950/40 text-red-300" : "bg-red-50 text-red-700"
+          }`}
+        >
+          Der Verkäufer müsste {percent(plan.gapPercent)} nachlassen – dafür gibt es keinen
+          Verhandlungsspielraum. Kein Angebot abgeben, Anzeige speichern und den Preis beobachten.
         </p>
       ) : plan.mode === "LIMIT_OFFER" ? (
         <p
@@ -3670,7 +3708,9 @@ export default function MarktanalysePage() {
         ? `Ausstattung: ${result.insights.equipment.levelLabel}${result.insights.equipment.highlights.length ? ` (${result.insights.equipment.highlights.join(", ")})` : ""}`
         : null,
       live?.negotiation
-        ? live.negotiation.mode === "LIMIT_OFFER"
+        ? live.negotiation.mode === "NO_OFFER"
+          ? `Verhandlung: kein Angebot – Abstand ${percent(live.negotiation.gapPercent)} zum Limit`
+          : live.negotiation.mode === "LIMIT_OFFER"
           ? `Verhandlung: nur Limit-Angebot ${euro(live.negotiation.opening)}, höchstens ${euro(live.negotiation.walkAway)}`
           : `Verhandlung: Einstieg ${euro(live.negotiation.opening)} · Ziel ${euro(live.negotiation.target)} · Grenze ${euro(live.negotiation.walkAway)}`
         : null,
