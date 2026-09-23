@@ -2020,11 +2020,65 @@ function Checklist({ items, dark }) {
 
 /* ================================================================ sidebar */
 
-function VehiclePanel({ result, dark }) {
+/* ================================================================ Zahnriemen
+ *
+ * Only speaks up when a change is likely due or unclear; a chain or a belt
+ * with years left is one quiet line in the vehicle panel.
+ */
+
+const BELT_ATTENTION = ["OVERDUE", "DUE_SOON", "CHECK_URGENT", "DONE_UNVERIFIED"];
+
+function BeltNote({ belt, dark, onAddCost }) {
+  const [added, setAdded] = useState(false);
+  if (!belt?.available || !BELT_ATTENTION.includes(belt.status)) return null;
+
+  const urgent = belt.status === "OVERDUE";
+  const estimate = belt.costRange
+    ? Math.round((belt.costRange[0] + belt.costRange[1]) / 2 / 50) * 50
+    : null;
+  const tone = urgent
+    ? dark
+      ? "border-red-900/60 bg-red-950/30 text-red-200"
+      : "border-red-200 bg-red-50 text-red-800"
+    : dark
+      ? "border-amber-900/60 bg-amber-950/30 text-amber-200"
+      : "border-amber-200 bg-amber-50 text-amber-800";
+
+  return (
+    <div className={`mt-3 rounded border p-2 text-[11px] leading-4 ${tone}`}>
+      <p className="font-semibold">{belt.label}</p>
+      <p className="mt-0.5 opacity-90">{belt.detail}</p>
+      <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
+        <span className="opacity-70">Richtwert – Intervall laut Serviceheft prüfen</span>
+        {estimate && onAddCost && belt.status !== "DONE_UNVERIFIED" ? (
+          added ? (
+            <span className="font-semibold">✓ in Renovierung übernommen</span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                onAddCost(estimate);
+                setAdded(true);
+              }}
+              className={`rounded px-2 py-1 font-semibold transition ${
+                dark ? "bg-slate-900/70 hover:bg-slate-900" : "bg-white/80 hover:bg-white"
+              }`}
+            >
+              + {estimate.toLocaleString("de-DE")} € in Kalkulation
+            </button>
+          )
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function VehiclePanel({ result, dark, onAddCost }) {
   const target = result.target;
   const insights = result.insights || {};
   const usage = insights.usage;
   const inspection = insights.inspection;
+  const belt = insights.belt;
   const listing = insights.listing;
 
   const flags = [];
@@ -2094,6 +2148,14 @@ function VehiclePanel({ result, dark }) {
           dark={dark}
           warn={!inspection?.available || ["EXPIRED", "DUE"].includes(inspection.status)}
         />
+        {belt?.available ? (
+          <Line
+            label={belt.drive === "CHAIN" ? "Steuertrieb" : "Zahnriemen"}
+            value={belt.short}
+            dark={dark}
+            warn={BELT_ATTENTION.includes(belt.status)}
+          />
+        ) : null}
         {Number.isFinite(target.ownerCount) ? (
           <Line
             label="Vorbesitzer"
@@ -2135,6 +2197,13 @@ function VehiclePanel({ result, dark }) {
           ))}
         </div>
       ) : null}
+
+      <BeltNote
+        key={target.listingUrl || target.listingKey || title}
+        belt={belt}
+        dark={dark}
+        onAddCost={onAddCost}
+      />
 
       {target.damageNote ? (
         <p className="mt-2 rounded border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-800">
@@ -3922,7 +3991,18 @@ export default function MarktanalysePage() {
 
               <aside className="min-w-0 space-y-4">
                 <NotesPanel result={result} dark={dark} />
-                <VehiclePanel result={result} dark={dark} />
+                <VehiclePanel
+                  result={result}
+                  dark={dark}
+                  onAddCost={(amount) =>
+                    setAdjust((current) => ({
+                      ...current,
+                      refurbishment: String(
+                        Math.max(0, Number(current.refurbishment) || 0) + amount,
+                      ),
+                    }))
+                  }
+                />
                 <EquipmentPanel result={result} dark={dark} />
                 <MarketPanel result={result} dark={dark} />
               </aside>
