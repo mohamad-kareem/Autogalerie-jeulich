@@ -6,6 +6,8 @@ import { looksRefused, pauseRemainingMs, pauseSource } from "@/lib/feed/pause";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Next to the portals, like the feed itself.
+export const preferredRegion = "fra1";
 export const maxDuration = 20;
 
 function json(data, status = 200) {

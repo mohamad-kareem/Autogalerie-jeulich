@@ -7,7 +7,10 @@ import { SEARCHERS } from "@/lib/feed/sources";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Each portal gets 9 s; they run side by side, so a check stays well inside this.
+// Run next to the portals (Frankfurt) instead of Vercel's default in the USA:
+// every request to them is several round trips shorter.
+export const preferredRegion = "fra1";
+// Each portal gets 8 s; they run side by side, so a check stays well inside this.
 export const maxDuration = 20;
 
 const LABELS = { AUTOSCOUT24: "AutoScout24", KLEINANZEIGEN: "Kleinanzeigen", MOBILE_DE: "mobile.de" };
@@ -34,8 +37,11 @@ function withTimeout(promise, ms, fallback) {
 
 /**
  * POST /api/neue-angebote
- * body: { filters }
- * → { items, sources: [{ id, label, ok, count, error, url }], checkedAt }
+ * body: { filters, source? }
+ * → { items, sources: [{ id, label, ok, count, error, url, durationMs }], checkedAt }
+ *
+ * With `source` only that portal is asked. The page asks each portal on its
+ * own, so a slow answer from one never holds back the cars from the others.
  *
  * Returns the newest ads per portal as they are right now. Which of them are
  * new to this buyer is decided by the page, which remembers what it has shown.
@@ -52,7 +58,9 @@ export async function POST(request) {
   }
 
   const filters = normalizeFilters(body?.filters || {});
-  const cacheKey = `${filterKey(filters)}|${filters.sources.slice().sort().join(",")}`;
+  const only = typeof body?.source === "string" && filters.sources.includes(body.source) ? body.source : null;
+  const asked = only ? [only] : filters.sources;
+  const cacheKey = `${filterKey(filters)}|${asked.slice().sort().join(",")}`;
 
   const cached = recent.get(cacheKey);
   if (cached && Date.now() - cached.at < RECENT_MS) {
@@ -61,7 +69,7 @@ export async function POST(request) {
 
   const startedAt = Date.now();
   const results = await Promise.all(
-    filters.sources.map(async (id) => {
+    asked.map(async (id) => {
       const search = SEARCHERS[id];
       const paused = pauseRemainingMs(id);
       if (paused > 0) {
@@ -72,12 +80,13 @@ export async function POST(request) {
         };
       }
       const fallback = { ok: false, items: [], error: "Zeitüberschreitung.", url: null };
+      const began = Date.now();
       try {
-        const result = await withTimeout(search(filters), 12_000, fallback);
+        const result = await withTimeout(search(filters), 10_000, fallback);
         if (looksRefused(result)) pauseSource(id);
-        return { id, ...result };
+        return { id, ...result, durationMs: Date.now() - began };
       } catch (error) {
-        return { id, ok: false, items: [], error: error?.message || "Fehler.", url: null };
+        return { id, ok: false, items: [], error: error?.message || "Fehler.", url: null, durationMs: Date.now() - began };
       }
     }),
   );
@@ -94,6 +103,7 @@ export async function POST(request) {
       skipped: Boolean(result.skipped),
       paused: Boolean(result.paused),
       url: result.url || null,
+      durationMs: result.durationMs ?? null,
     })),
     checkedAt: new Date().toISOString(),
     durationMs: Date.now() - startedAt,

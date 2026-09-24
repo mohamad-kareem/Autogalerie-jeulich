@@ -4,11 +4,12 @@
  * Neue Angebote — the newest cars on AutoScout24, Kleinanzeigen and mobile.de,
  * as they are uploaded.
  *
- * While this page is open it asks the server every 30–120 seconds for the
- * newest ads matching the filter (sorted newest first on each portal). The
- * first answer is the baseline: what was already online. Everything that
- * turns up after that is new and lands at the top, with a sound and a desktop
- * notification if wanted.
+ * While this page is open it asks the server every 15–120 seconds for the
+ * newest ads matching the filter (sorted newest first on each portal). Each
+ * portal is asked on its own, at a fixed pace, so a slow answer from one never
+ * delays the cars from another. A portal's first answer is its baseline: what
+ * was already online. Everything that turns up after that is new and lands at
+ * the top, with a sound and a desktop notification if wanted.
  *
  * What counts as new is decided here, per portal:
  *   Kleinanzeigen  ad numbers only ever grow, so "higher than any number seen
@@ -54,6 +55,7 @@ import {
   SOURCES,
   describeFilters,
   filterKey,
+  kleinanzeigenSearchCount,
   normalizeFilters,
 } from "@/lib/feed/filters";
 import { detectNew } from "@/lib/feed/detect";
@@ -358,6 +360,13 @@ function FilterPanel({ draft, setDraft, dark, onApply, running }) {
           </div>
         </Field>
       </div>
+
+      {draft.sources.includes("KLEINANZEIGEN") && kleinanzeigenSearchCount(draft) > 1 ? (
+        <p className={`mx-4 mt-3 text-[11.5px] ${dark ? "text-amber-300" : "text-amber-700"}`}>
+          Kleinanzeigen braucht für diese Auswahl {kleinanzeigenSearchCount(draft)} Suchen pro Prüfung. Am schnellsten und
+          sichersten: eine Kraftstoffart und einen Fahrzeugtyp wählen – oder keinen.
+        </p>
+      ) : null}
 
       <div
         className={`mt-4 flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 ${
@@ -688,8 +697,10 @@ export default function NeueAngebotePage() {
   const [showFilters, setShowFilters] = useState(true);
 
   const [running, setRunning] = useState(false);
-  const [checking, setChecking] = useState(false);
-  const [intervalSec, setIntervalSec] = useState(60);
+  // How many portal checks are under way right now.
+  const [pending, setPending] = useState(0);
+  const checking = pending > 0;
+  const [intervalSec, setIntervalSec] = useState(15);
   const [sound, setSound] = useState(true);
   const [notify, setNotify] = useState(false);
 
@@ -697,8 +708,8 @@ export default function NeueAngebotePage() {
   const [hidden, setHidden] = useState([]);
   const [sources, setSources] = useState([]);
   const [lastCheck, setLastCheck] = useState(null);
-  const [nextCheckAt, setNextCheckAt] = useState(null);
-  const [failures, setFailures] = useState(0);
+  // Failed checks in a row, per portal.
+  const [failures, setFailures] = useState({});
   const [unread, setUnread] = useState(0);
   const [showOld, setShowOld] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -707,16 +718,14 @@ export default function NeueAngebotePage() {
   // Read inside the polling loop without restarting it when they change.
   const soundRef = useRef(sound);
   const notifyRef = useRef(notify);
-  const failuresRef = useRef(0);
-  const nextCheckRef = useRef(null);
+  const failuresRef = useRef({});
   const routerRef = useRef(router);
   routerRef.current = router;
   soundRef.current = sound;
   notifyRef.current = notify;
-  failuresRef.current = failures;
-  nextCheckRef.current = nextCheckAt;
-  const timerRef = useRef(null);
-  const inFlightRef = useRef(false);
+  // Per portal: a check under way, and when the last one started.
+  const inFlightRef = useRef({});
+  const lastStartRef = useRef({});
 
   /* restore settings */
   useEffect(() => {
@@ -727,7 +736,10 @@ export default function NeueAngebotePage() {
       setDraft({ ...DEFAULT_FILTERS, ...savedFilters });
     }
     const settings = readJson(SETTINGS_STORE, {});
-    if (INTERVALS.includes(settings.intervalSec)) setIntervalSec(settings.intervalSec);
+    // Settings from before v2 carry the old default of 60 s; the new pace is 15 s.
+    if (INTERVALS.includes(settings.intervalSec) && (settings.v >= 2 || settings.intervalSec !== 60)) {
+      setIntervalSec(settings.intervalSec);
+    }
     if (typeof settings.sound === "boolean") setSound(settings.sound);
     if (settings.notify && typeof Notification !== "undefined" && Notification.permission === "granted") {
       setNotify(true);
@@ -735,7 +747,7 @@ export default function NeueAngebotePage() {
   }, []);
 
   useEffect(() => {
-    writeJson(SETTINGS_STORE, { intervalSec, sound, notify });
+    writeJson(SETTINGS_STORE, { v: 2, intervalSec, sound, notify });
   }, [intervalSec, sound, notify]);
 
   useEffect(() => {
@@ -828,134 +840,165 @@ export default function NeueAngebotePage() {
     pumpRef.current();
   }, []);
 
-  /* one check */
-  const check = useCallback(async () => {
-    if (!applied || inFlightRef.current) return;
-    inFlightRef.current = true;
-    setChecking(true);
+  /* sound, toast and desktop notification for new cars */
+  const announceRef = useRef(null);
+  announceRef.current = (arrivals) => {
+    setUnread((count) => count + arrivals.length);
+    if (soundRef.current) chime();
+    const first = arrivals[0];
+    toast.success(
+      arrivals.length === 1 ? `Neu: ${first.title} · ${euro(first.price)}` : `${arrivals.length} neue Angebote`,
+      { duration: 6_000 },
+    );
+    if (notifyRef.current && typeof Notification !== "undefined" && Notification.permission === "granted" && document.visibilityState !== "visible") {
+      try {
+        const note = new Notification(arrivals.length === 1 ? "Neues Angebot" : `${arrivals.length} neue Angebote`, {
+          body: arrivals.slice(0, 3).map((item) => `${item.title} · ${euro(item.price)}`).join("\n"),
+          icon: first.image || undefined,
+          tag: "neue-angebote",
+        });
+        note.onclick = () => {
+          window.focus();
+          if (arrivals.length === 1) window.open(first.url, "_blank", "noopener");
+          note.close();
+        };
+      } catch {
+        // Some browsers only allow notifications from a service worker.
+      }
+    }
+  };
+
+  const noteFailure = (source, failed) => {
+    failuresRef.current = { ...failuresRef.current, [source]: failed ? (failuresRef.current[source] || 0) + 1 : 0 };
+    setFailures(failuresRef.current);
+  };
+
+  /* one check of one portal */
+  const checkSource = useCallback(async (source) => {
+    if (!applied || inFlightRef.current[source]) return null;
+    inFlightRef.current[source] = true;
+    setPending((count) => count + 1);
     try {
       const response = await fetch("/api/neue-angebote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filters: applied }),
+        body: JSON.stringify({ filters: applied, source }),
       });
       if (response.status === 401) {
         routerRef.current.push("/login");
-        return;
+        return null;
       }
       const data = await response.json().catch(() => null);
       if (!response.ok || !data) throw new Error(data?.error || `Fehler ${response.status}`);
 
+      const status = (data.sources || []).find((entry) => entry.id === source) || { id: source, ok: false };
       const at = Date.now();
+      const atIso = new Date(at).toISOString();
+      // Read the memory only now: another portal may have answered meanwhile.
       const store = storeRef.current;
-      const items = Array.isArray(data.items) ? data.items : [];
-      const { fresh, seen, kaMaxId } = detectNew(store, items, at);
+      const items = (Array.isArray(data.items) ? data.items : []).filter((item) => item.source === source);
+      const { fresh, baselineItems, seen, kaMaxId, baselines } = detectNew(store, items, at, {
+        answered: status.ok ? [source] : [],
+      });
 
-      let nextFeed = store.feed;
-      if (!store.baselineDone) {
-        // First answer: what is online now, shown below as "schon online".
-        nextFeed = items
-          .filter((item) => !item.promoted)
-          .map((item) => ({ ...item, isNew: false, firstSeenAt: new Date(at).toISOString() }));
-      } else if (fresh.length) {
-        const known = new Set(store.feed.map((item) => item.key));
-        const arrivals = fresh
-          .filter((item) => !known.has(item.key))
-          .map((item) => ({ ...item, isNew: true, firstSeenAt: new Date(at).toISOString() }));
-        nextFeed = [...arrivals, ...store.feed].slice(0, MAX_FEED);
+      const known = new Set(store.feed.map((item) => item.key));
+      const arrivals = fresh
+        .filter((item) => !known.has(item.key))
+        .map((item) => ({ ...item, isNew: true, firstSeenAt: atIso }));
+      // A portal's first answer: what is online there now, shown below as "schon online".
+      const already = baselineItems
+        .filter((item) => !known.has(item.key))
+        .map((item) => ({ ...item, isNew: false, firstSeenAt: atIso }));
+      const nextFeed = [...arrivals, ...store.feed, ...already].slice(0, MAX_FEED);
 
-        if (arrivals.length) {
-          setUnread((count) => count + arrivals.length);
-          if (soundRef.current) chime();
-          const first = arrivals[0];
-          toast.success(
-            arrivals.length === 1
-              ? `Neu: ${first.title} · ${euro(first.price)}`
-              : `${arrivals.length} neue Angebote`,
-            { duration: 6_000 },
-          );
-          if (notifyRef.current && typeof Notification !== "undefined" && Notification.permission === "granted" && document.visibilityState !== "visible") {
-            try {
-              const note = new Notification(
-                arrivals.length === 1 ? "Neues Angebot" : `${arrivals.length} neue Angebote`,
-                {
-                  body: arrivals.slice(0, 3).map((item) => `${item.title} · ${euro(item.price)}`).join("\n"),
-                  icon: first.image || undefined,
-                  tag: "neue-angebote",
-                },
-              );
-              note.onclick = () => {
-                window.focus();
-                if (arrivals.length === 1) window.open(first.url, "_blank", "noopener");
-                note.close();
-              };
-            } catch {
-              // Some browsers only allow notifications from a service worker.
-            }
-          }
-        }
-      }
-
-      const nextStore = { baselineDone: true, seen, kaMaxId, feed: nextFeed };
+      const nextStore = { ...store, baselineDone: true, baselines, seen, kaMaxId, feed: nextFeed };
       storeRef.current = nextStore;
       persist(nextStore);
       setFeed(nextFeed);
 
-      // Read the ad pages of the new arrivals right away — at most ten per
-      // check, so a flood of new ads cannot hammer the portals.
-      const arrivedNow = nextFeed.filter((entry) => entry.isNew && entry.firstSeenAt === new Date(at).toISOString());
-      if (arrivedNow.length) loadDetails(arrivedNow.slice(0, 10), { first: true });
-      setSources(data.sources || []);
-      setLastCheck(data.checkedAt || new Date(at).toISOString());
-      setFailures((data.sources || []).every((source) => !source.ok && !source.skipped) ? (count) => count + 1 : 0);
+      if (arrivals.length) {
+        announceRef.current(arrivals);
+        // Read the ad pages of the new arrivals right away — at most ten per
+        // check, so a flood of new ads cannot hammer the portals.
+        loadDetails(arrivals.slice(0, 10), { first: true });
+      }
+
+      const order = applied.sources;
+      setSources((list) =>
+        [...list.filter((entry) => entry.id !== source), status].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)),
+      );
+      setLastCheck(data.checkedAt || atIso);
+      noteFailure(source, !status.ok && !status.skipped);
+      return status;
     } catch (error) {
-      setFailures((count) => count + 1);
+      noteFailure(source, true);
       toast.error(`Prüfung fehlgeschlagen: ${error.message}`, { id: "feed-error" });
+      return { id: source, ok: false };
     } finally {
-      inFlightRef.current = false;
-      setChecking(false);
+      inFlightRef.current[source] = false;
+      setPending((count) => count - 1);
     }
   }, [applied, persist, loadDetails]);
 
-  /* the loop: check, wait, check — slower after repeated failures */
+  const checkAll = () => applied?.sources.forEach((source) => checkSource(source));
+
+  /* the loops: one per portal, each at a fixed pace — slower after repeated failures */
   useEffect(() => {
     if (!running || !applied) return undefined;
     let cancelled = false;
-    const ticker = createTicker();
-    timerRef.current = ticker;
 
-    const schedule = (delayMs) => {
-      setNextCheckAt(Date.now() + delayMs);
-      ticker.set(delayMs, async () => {
+    const loops = applied.sources.map((source, index) => {
+      const loop = { source, ticker: createTicker(), stopped: false };
+      loop.run = async () => {
         if (cancelled) return;
-        await check();
-        if (!cancelled) schedule(failuresRef.current >= 3 ? 5 * 60_000 : intervalSec * 1_000);
-      });
-    };
+        const started = Date.now();
+        lastStartRef.current[source] = started;
+        const status = await checkSource(source);
+        if (cancelled) return;
+        // No access (mobile.de without the API): nothing to ask until that changes.
+        if (status?.skipped) {
+          loop.stopped = true;
+          return;
+        }
+        const period = (failuresRef.current[source] || 0) >= 3 ? 5 * 60_000 : intervalSec * 1_000;
+        // The next check is due one interval after this one started, not after it ended.
+        loop.ticker.set(Math.max(1_000, period - (Date.now() - started)), loop.run);
+      };
+      // A few hundred milliseconds apart, so the portals are not hit in the same instant.
+      loop.ticker.set(index * 300, loop.run);
+      return loop;
+    });
 
-    schedule(0);
-
-    // Coming back to a tab the browser slowed down: check right away if due.
+    // Coming back to a tab the browser slowed down: check right away where due.
     const onVisible = () => {
-      const due = nextCheckRef.current;
-      if (document.visibilityState === "visible" && due && Date.now() > due + 5_000) {
-        schedule(0);
+      if (document.visibilityState !== "visible") return;
+      for (const loop of loops) {
+        const last = lastStartRef.current[loop.source] || 0;
+        if (!loop.stopped && !inFlightRef.current[loop.source] && Date.now() - last > intervalSec * 1_000 + 5_000) {
+          loop.ticker.set(0, loop.run);
+        }
       }
     };
     document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       cancelled = true;
-      ticker.stop();
+      for (const loop of loops) loop.ticker.stop();
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [running, applied, intervalSec, check]);
+  }, [running, applied, intervalSec, checkSource]);
 
   /* start with a filter: load that filter's memory, or begin a new baseline */
   const apply = () => {
     const normalized = normalizeFilters(draft);
     writeJson(FILTER_STORE, draft);
     const saved = readJson(FEED_STORE(filterKey(normalized)), null) || emptyStore();
+    // Memory from before portals were checked one by one: a portal counts as
+    // started where ads of it were already seen.
+    if (!saved.baselines) {
+      const started = new Set(Object.keys(saved.seen || {}).map((itemKey) => itemKey.split(":")[0]));
+      saved.baselines = saved.baselineDone ? Object.fromEntries([...started].map((source) => [source, true])) : {};
+    }
     // A lookup still "loading" when the page was closed never finished.
     const store = {
       ...saved,
@@ -964,6 +1007,8 @@ export default function NeueAngebotePage() {
       ),
     };
     detailQueueRef.current = [];
+    failuresRef.current = {};
+    setFailures({});
     storeRef.current = store;
     setFeed(store.feed || []);
     setHidden([]);
@@ -1014,10 +1059,13 @@ export default function NeueAngebotePage() {
   const visible = useMemo(() => feed.filter((item) => !hidden.includes(item.key)), [feed, hidden]);
   const fresh = visible.filter((item) => item.isNew);
   const old = visible.filter((item) => !item.isNew);
-  // The newest of the new: everything the most recent productive check found.
+  // The newest of the new: what the most recent round of checks found. The
+  // portals answer separately, so a round spans a few seconds.
   const latestAt = fresh.reduce((max, item) => (item.firstSeenAt > max ? item.firstSeenAt : max), "");
-  const latest = fresh.filter((item) => item.firstSeenAt === latestAt);
-  const earlier = fresh.filter((item) => item.firstSeenAt !== latestAt);
+  const roundStart = latestAt ? new Date(latestAt).getTime() - 10_000 : 0;
+  const inLatest = (item) => new Date(item.firstSeenAt).getTime() >= roundStart;
+  const latest = fresh.filter(inLatest);
+  const earlier = fresh.filter((item) => !inLatest(item));
   const hide = (itemKey) => setHidden((list) => [...list, itemKey]);
 
 
@@ -1116,7 +1164,7 @@ export default function NeueAngebotePage() {
                           <option key={seconds} value={seconds}>alle {seconds} s</option>
                         ))}
                       </select>
-                      <button type="button" onClick={() => check()} disabled={checking} title="Jetzt prüfen" aria-label="Jetzt prüfen" className={toolButton}>
+                      <button type="button" onClick={checkAll} disabled={checking} title="Jetzt prüfen" aria-label="Jetzt prüfen" className={toolButton}>
                         <FiRefreshCw className={checking ? "animate-spin" : ""} />
                       </button>
                       <button type="button" onClick={() => setSound((value) => !value)} title={sound ? "Ton aus" : "Ton an"} aria-label={sound ? "Ton aus" : "Ton an"} className={toolButton}>
@@ -1147,7 +1195,11 @@ export default function NeueAngebotePage() {
         {applied && sources.length ? (
           <div className={`mb-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] ${muted}`}>
             {sources.map((source) => (
-              <span key={source.id} title={source.error || ""} className="inline-flex items-center gap-1.5">
+              <span
+                key={source.id}
+                title={source.error || (Number.isFinite(source.durationMs) ? `Antwort in ${(source.durationMs / 1000).toFixed(1).replace(".", ",")} s` : "")}
+                className="inline-flex items-center gap-1.5"
+              >
                 <span className={`size-1.5 rounded-full ${sourceDot(source)}`} />
                 <span className={dark ? "text-slate-300" : "text-slate-700"}>{source.label}</span>
                 {source.ok ? (
@@ -1159,8 +1211,14 @@ export default function NeueAngebotePage() {
                 )}
               </span>
             ))}
-            {failures >= 3 ? (
-              <span className="w-full text-amber-600">Mehrere Prüfungen fehlgeschlagen – es wird jetzt nur alle 5 Minuten geprüft.</span>
+            {Object.entries(failures).some(([, count]) => count >= 3) ? (
+              <span className="w-full text-amber-600">
+                {Object.entries(failures)
+                  .filter(([, count]) => count >= 3)
+                  .map(([id]) => SOURCES.find((entry) => entry.id === id)?.label || id)
+                  .join(", ")}
+                : mehrere Prüfungen fehlgeschlagen – dort wird jetzt nur alle 5 Minuten geprüft.
+              </span>
             ) : null}
           </div>
         ) : null}
