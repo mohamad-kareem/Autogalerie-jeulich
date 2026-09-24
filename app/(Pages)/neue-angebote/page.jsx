@@ -4,7 +4,7 @@
  * Neue Angebote — the newest cars on AutoScout24, Kleinanzeigen and mobile.de,
  * as they are uploaded.
  *
- * While this page is open it asks the server every 15–120 seconds for the
+ * While this page is open it asks the server every 5–120 seconds for the
  * newest ads matching the filter (sorted newest first on each portal). Each
  * portal is asked on its own, at a fixed pace, so a slow answer from one never
  * delays the cars from another. A portal's first answer is its baseline: what
@@ -59,14 +59,15 @@ import {
   normalizeFilters,
 } from "@/lib/feed/filters";
 import { detectNew } from "@/lib/feed/detect";
+import { readCheckStream } from "@/lib/feed/live";
 
 const FILTER_STORE = "neueAngebote.filters.v1";
 const SETTINGS_STORE = "neueAngebote.settings.v1";
 const FEED_STORE = (key) => `neueAngebote.feed.v1.${key}`;
 const MAX_FEED = 150;
-// 15 s is the floor: faster gets the server blocked by the portals, and a
-// blocked server would also break the Marktanalyse.
-const INTERVALS = [15, 30, 60, 120];
+// Fast polling still depends on portal publication and response time.
+// Refusals retain the server cooldown and client failure backoff.
+const INTERVALS = [5, 15, 30, 60, 120];
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -700,7 +701,7 @@ export default function NeueAngebotePage() {
   // How many portal checks are under way right now.
   const [pending, setPending] = useState(0);
   const checking = pending > 0;
-  const [intervalSec, setIntervalSec] = useState(15);
+  const [intervalSec, setIntervalSec] = useState(5);
   const [sound, setSound] = useState(true);
   const [notify, setNotify] = useState(false);
 
@@ -726,6 +727,19 @@ export default function NeueAngebotePage() {
   // Per portal: a check under way, and when the last one started.
   const inFlightRef = useRef({});
   const lastStartRef = useRef({});
+  const generationRef = useRef(0);
+  const detailControllersRef = useRef(new Set());
+
+  const cancelSearch = useCallback(() => {
+    generationRef.current += 1;
+    for (const controller of Object.values(inFlightRef.current)) controller.abort();
+    inFlightRef.current = {};
+    for (const controller of detailControllersRef.current) controller.abort();
+    detailControllersRef.current.clear();
+    detailQueueRef.current = [];
+  }, []);
+
+  useEffect(() => () => cancelSearch(), [cancelSearch]);
 
   /* restore settings */
   useEffect(() => {
@@ -736,8 +750,9 @@ export default function NeueAngebotePage() {
       setDraft({ ...DEFAULT_FILTERS, ...savedFilters });
     }
     const settings = readJson(SETTINGS_STORE, {});
-    // Settings from before v2 carry the old default of 60 s; the new pace is 15 s.
-    if (INTERVALS.includes(settings.intervalSec) && (settings.v >= 2 || settings.intervalSec !== 60)) {
+    // Upgrade the previous default to fast mode; retain other chosen intervals.
+    if (INTERVALS.includes(settings.intervalSec) &&
+        (settings.v >= 3 || (settings.intervalSec !== 15 && (settings.v >= 2 || settings.intervalSec !== 60)))) {
       setIntervalSec(settings.intervalSec);
     }
     if (typeof settings.sound === "boolean") setSound(settings.sound);
@@ -747,7 +762,7 @@ export default function NeueAngebotePage() {
   }, []);
 
   useEffect(() => {
-    writeJson(SETTINGS_STORE, { v: 2, intervalSec, sound, notify });
+    writeJson(SETTINGS_STORE, { v: 3, intervalSec, sound, notify });
   }, [intervalSec, sound, notify]);
 
   useEffect(() => {
@@ -804,24 +819,32 @@ export default function NeueAngebotePage() {
   pumpRef.current = () => {
     while (detailActiveRef.current < 2 && detailQueueRef.current.length) {
       const next = detailQueueRef.current.shift();
+      const generation = generationRef.current;
+      const controller = new AbortController();
+      detailControllersRef.current.add(controller);
       detailActiveRef.current += 1;
       updateItem(next.key, { detailsState: "loading" });
       fetch("/api/neue-angebote/details", {
+        signal: controller.signal,
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: next.url }),
       })
         .then((response) => response.json())
-        .then((data) =>
+        .then((data) => {
+          if (generation !== generationRef.current) return;
           updateItem(
             next.key,
             data?.ok
               ? { details: data.details, detailsState: "done" }
               : { detailsState: "error", detailsError: data?.error || null },
-          ),
-        )
-        .catch(() => updateItem(next.key, { detailsState: "error" }))
+          );
+        })
+        .catch(() => {
+          if (generation === generationRef.current) updateItem(next.key, { detailsState: "error" });
+        })
         .finally(() => {
+          detailControllersRef.current.delete(controller);
           detailActiveRef.current -= 1;
           pumpRef.current();
         });
@@ -876,67 +899,87 @@ export default function NeueAngebotePage() {
   /* one check of one portal */
   const checkSource = useCallback(async (source) => {
     if (!applied || inFlightRef.current[source]) return null;
-    inFlightRef.current[source] = true;
+    const generation = generationRef.current;
+    const controller = new AbortController();
+    inFlightRef.current[source] = controller;
+    const current = () => generation === generationRef.current && !controller.signal.aborted;
     setPending((count) => count + 1);
     try {
       const response = await fetch("/api/neue-angebote", {
+        signal: controller.signal,
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filters: applied, source }),
+        body: JSON.stringify({ filters: applied, source, stream: true }),
       });
+      if (!current()) return null;
       if (response.status === 401) {
         routerRef.current.push("/login");
         return null;
       }
-      const data = await response.json().catch(() => null);
-      if (!response.ok || !data) throw new Error(data?.error || `Fehler ${response.status}`);
-
-      const status = (data.sources || []).find((entry) => entry.id === source) || { id: source, ok: false };
-      const at = Date.now();
-      const atIso = new Date(at).toISOString();
-      // Read the memory only now: another portal may have answered meanwhile.
-      const store = storeRef.current;
-      const items = (Array.isArray(data.items) ? data.items : []).filter((item) => item.source === source);
-      const { fresh, baselineItems, seen, kaMaxId, baselines } = detectNew(store, items, at, {
-        answered: status.ok ? [source] : [],
-      });
-
-      const known = new Set(store.feed.map((item) => item.key));
-      const arrivals = fresh
-        .filter((item) => !known.has(item.key))
-        .map((item) => ({ ...item, isNew: true, firstSeenAt: atIso }));
-      // A portal's first answer: what is online there now, shown below as "schon online".
-      const already = baselineItems
-        .filter((item) => !known.has(item.key))
-        .map((item) => ({ ...item, isNew: false, firstSeenAt: atIso }));
-      const nextFeed = [...arrivals, ...store.feed, ...already].slice(0, MAX_FEED);
-
-      const nextStore = { ...store, baselineDone: true, baselines, seen, kaMaxId, feed: nextFeed };
-      storeRef.current = nextStore;
-      persist(nextStore);
-      setFeed(nextFeed);
-
-      if (arrivals.length) {
-        announceRef.current(arrivals);
-        // Read the ad pages of the new arrivals right away — at most ten per
-        // check, so a flood of new ads cannot hammer the portals.
-        loadDetails(arrivals.slice(0, 10), { first: true });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || `Fehler ${response.status}`);
       }
+      let finalStatus = null;
+      let detailBudget = 10;
+      await readCheckStream(response, (data) => {
+        if (!current()) return;
+        if (data.type === "complete") {
+          const status = (data.sources || []).find((entry) => entry.id === source) || { id: source, ok: false };
+          finalStatus = status;
+          const order = applied.sources;
+          setSources((list) =>
+            [...list.filter((entry) => entry.id !== source), status].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)),
+          );
+          setLastCheck(data.checkedAt);
+          noteFailure(source, !status.ok && !status.skipped);
+          return;
+        }
+        if (data.type !== "batch" || data.source !== source || !data.ok) return;
+        const at = Date.now();
+        const atIso = new Date(at).toISOString();
+        // Read the memory only now: another portal may have answered meanwhile.
+        const store = storeRef.current;
+        const items = (Array.isArray(data.items) ? data.items : []).filter((item) => item.source === source);
+        const { fresh, baselineItems, seen, kaMaxId, baselines, watermarks } = detectNew(store, items, at, {
+          answered: [source],
+          scope: data.scope || null,
+        });
 
-      const order = applied.sources;
-      setSources((list) =>
-        [...list.filter((entry) => entry.id !== source), status].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)),
-      );
-      setLastCheck(data.checkedAt || atIso);
-      noteFailure(source, !status.ok && !status.skipped);
-      return status;
+        const known = new Set(store.feed.map((item) => item.key));
+        const arrivals = fresh
+          .filter((item) => !known.has(item.key))
+          .map((item) => ({ ...item, isNew: true, firstSeenAt: atIso }));
+        // A portal's first answer: what is online there now, shown below as "schon online".
+        const already = baselineItems
+          .filter((item) => !known.has(item.key))
+          .map((item) => ({ ...item, isNew: false, firstSeenAt: atIso }));
+        const nextFeed = [...arrivals, ...store.feed, ...already].slice(0, MAX_FEED);
+
+        const nextStore = { ...store, baselineDone: true, baselines, watermarks, seen, kaMaxId, feed: nextFeed };
+        storeRef.current = nextStore;
+        persist(nextStore);
+        setFeed(nextFeed);
+
+        if (arrivals.length) {
+          announceRef.current(arrivals);
+          // Read the ad pages of the new arrivals right away — at most ten per
+          // check, so a flood of new ads cannot hammer the portals.
+          loadDetails(arrivals.slice(0, detailBudget), { first: true });
+          detailBudget = Math.max(0, detailBudget - arrivals.length);
+        }
+
+        setLastCheck(data.checkedAt || atIso);
+      });
+      return finalStatus;
     } catch (error) {
+      if (!current() || error.name === "AbortError") return null;
       noteFailure(source, true);
       toast.error(`Prüfung fehlgeschlagen: ${error.message}`, { id: "feed-error" });
       return { id: source, ok: false };
     } finally {
-      inFlightRef.current[source] = false;
-      setPending((count) => count - 1);
+      if (inFlightRef.current[source] === controller) delete inFlightRef.current[source];
+      if (current()) setPending((count) => Math.max(0, count - 1));
     }
   }, [applied, persist, loadDetails]);
 
@@ -974,7 +1017,8 @@ export default function NeueAngebotePage() {
       if (document.visibilityState !== "visible") return;
       for (const loop of loops) {
         const last = lastStartRef.current[loop.source] || 0;
-        if (!loop.stopped && !inFlightRef.current[loop.source] && Date.now() - last > intervalSec * 1_000 + 5_000) {
+        const period = (failuresRef.current[loop.source] || 0) >= 3 ? 5 * 60_000 : intervalSec * 1_000;
+        if (!loop.stopped && !inFlightRef.current[loop.source] && Date.now() - last > period + 1_000) {
           loop.ticker.set(0, loop.run);
         }
       }
@@ -990,6 +1034,9 @@ export default function NeueAngebotePage() {
 
   /* start with a filter: load that filter's memory, or begin a new baseline */
   const apply = () => {
+    cancelSearch();
+    setPending(0);
+    setLastCheck(null);
     const normalized = normalizeFilters(draft);
     writeJson(FILTER_STORE, draft);
     const saved = readJson(FEED_STORE(filterKey(normalized)), null) || emptyStore();
@@ -1031,6 +1078,8 @@ export default function NeueAngebotePage() {
 
   const resetFeed = () => {
     if (!key) return;
+    cancelSearch();
+    setPending(0);
     const store = emptyStore();
     storeRef.current = store;
     persist(store);
@@ -1139,7 +1188,7 @@ export default function NeueAngebotePage() {
             </span>
             {showFilters ? <FiChevronUp className={muted} /> : <FiChevronDown className="text-sky-700" />}
           </button>
-          {showFilters ? (
+          {showFilters || applied ? (
             <div className={`border-t ${dark ? "border-slate-800" : "border-slate-100"}`}>
               {applied ? (
                 <div
@@ -1161,7 +1210,7 @@ export default function NeueAngebotePage() {
                         className={`h-7 bg-transparent px-2 text-[12px] outline-none ${dark ? "text-slate-100" : ""}`}
                       >
                         {INTERVALS.map((seconds) => (
-                          <option key={seconds} value={seconds}>alle {seconds} s</option>
+                          <option key={seconds} value={seconds}>{seconds === 5 ? "Schnell · alle 5 s" : `alle ${seconds} s`}</option>
                         ))}
                       </select>
                       <button type="button" onClick={checkAll} disabled={checking} title="Jetzt prüfen" aria-label="Jetzt prüfen" className={toolButton}>
@@ -1186,7 +1235,7 @@ export default function NeueAngebotePage() {
                   </div>
                 </div>
               ) : null}
-              <FilterPanel draft={draft} setDraft={setDraft} dark={dark} onApply={apply} running={running} />
+              {showFilters ? <FilterPanel draft={draft} setDraft={setDraft} dark={dark} onApply={apply} running={running} /> : null}
             </div>
           ) : null}
         </section>
@@ -1231,8 +1280,8 @@ export default function NeueAngebotePage() {
             </div>
             <p className="text-[15px] font-semibold">Filter setzen und Live-Suche starten</p>
             <p className={`mx-auto mt-1.5 max-w-md text-[13px] leading-6 ${muted}`}>
-              Solange diese Seite offen ist, werden die Portale laufend geprüft. Jedes neu hochgeladene
-              Fahrzeug erscheint sofort oben – mit Ton und auf Wunsch als Desktop-Benachrichtigung.
+              Solange diese Seite offen ist, werden die Portale im Schnellmodus alle 5 Sekunden geprüft.
+              Entdeckte Fahrzeuge erscheinen direkt nach der Portalantwort – mit Ton und auf Wunsch als Desktop-Benachrichtigung.
             </p>
           </div>
         ) : (
@@ -1265,7 +1314,7 @@ export default function NeueAngebotePage() {
                 {checking && !lastCheck ? (
                   <><FiLoader className="animate-spin" /> Erste Prüfung läuft …</>
                 ) : (
-                  <><span className="size-2 animate-pulse rounded-full bg-emerald-500" /> Warte auf neue Anzeigen – passende Fahrzeuge erscheinen hier, sobald sie hochgeladen werden.</>
+                  <><span className={`size-2 rounded-full ${running ? "animate-pulse bg-emerald-500" : "bg-slate-400"}`} /> {running ? "Warte auf neue Anzeigen – Treffer erscheinen direkt nach der Portalantwort." : "Live-Suche pausiert."}</>
                 )}
               </div>
             )}
@@ -1294,7 +1343,7 @@ export default function NeueAngebotePage() {
             ) : null}
 
             <div className={`mt-2 flex flex-wrap items-center justify-between gap-2 text-[12px] ${muted}`}>
-              <span>Die Suche läuft, solange diese Seite geöffnet ist – auch im Hintergrund.</span>
+              <span>Prüfung alle {intervalSec} s · Veröffentlichung und Antwortzeit des Portals bestimmen die Verzögerung.</span>
               {feed.length ? (
                 <button type="button" onClick={resetFeed} className="inline-flex items-center gap-1 hover:text-red-600">
                   <FiTrash2 /> Liste leeren

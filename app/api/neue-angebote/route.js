@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { filterKey, normalizeFilters } from "@/lib/feed/filters";
 import { looksRefused, pauseRemainingMs, pauseSource } from "@/lib/feed/pause";
 import { SEARCHERS } from "@/lib/feed/sources";
+import { createCheckPool, streamCheck } from "@/lib/feed/live";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,11 +16,9 @@ export const maxDuration = 20;
 
 const LABELS = { AUTOSCOUT24: "AutoScout24", KLEINANZEIGEN: "Kleinanzeigen", MOBILE_DE: "mobile.de" };
 
-// Two tabs (or a PC and a phone) watching the same filter share one check.
-// Portals see at most one request per filter every 12 seconds from here,
-// however many pages are open.
-const RECENT_MS = 12_000;
-const recent = new Map();
+// Share both in-flight work and results within this server instance. Other
+// serverless instances have separate memory; this is not a global rate limit.
+const getCheck = createCheckPool();
 
 function json(data, status = 200) {
   return Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
@@ -37,7 +36,7 @@ function withTimeout(promise, ms, fallback) {
 
 /**
  * POST /api/neue-angebote
- * body: { filters, source? }
+ * body: { filters, source?, stream? }
  * → { items, sources: [{ id, label, ok, count, error, url, durationMs }], checkedAt }
  *
  * With `source` only that portal is asked. The page asks each portal on its
@@ -62,55 +61,72 @@ export async function POST(request) {
   const asked = only ? [only] : filters.sources;
   const cacheKey = `${filterKey(filters)}|${asked.slice().sort().join(",")}`;
 
-  const cached = recent.get(cacheKey);
-  if (cached && Date.now() - cached.at < RECENT_MS) {
-    return json({ ...cached.payload, shared: true });
-  }
-
-  const startedAt = Date.now();
-  const results = await Promise.all(
-    asked.map(async (id) => {
-      const search = SEARCHERS[id];
-      const paused = pauseRemainingMs(id);
-      if (paused > 0) {
-        const minutes = Math.ceil(paused / 60_000);
-        return {
-          id, ok: false, items: [], url: null, paused: true,
-          error: `hat abgelehnt – Pause, wieder in ${minutes} Min.`,
+  const job = getCheck(cacheKey, async (emit) => {
+    const startedAt = Date.now();
+    const results = await Promise.all(
+      asked.map(async (id) => {
+        const search = SEARCHERS[id];
+        const paused = pauseRemainingMs(id);
+        if (paused > 0) {
+          const minutes = Math.ceil(paused / 60_000);
+          return {
+            id, ok: false, items: [], url: null, paused: true,
+            error: `hat abgelehnt – Pause, wieder in ${minutes} Min.`,
+          };
+        }
+        const fallback = { ok: false, items: [], error: "Zeitüberschreitung.", url: null };
+        const began = Date.now();
+        let accepting = true;
+        let streamed = false;
+        const publish = (batch) => {
+          if (!accepting) return;
+          streamed = true;
+          emit({ type: "batch", source: id, ...batch, checkedAt: new Date().toISOString() });
         };
-      }
-      const fallback = { ok: false, items: [], error: "Zeitüberschreitung.", url: null };
-      const began = Date.now();
-      try {
-        const result = await withTimeout(search(filters), 10_000, fallback);
-        if (looksRefused(result)) pauseSource(id);
-        return { id, ...result, durationMs: Date.now() - began };
-      } catch (error) {
-        return { id, ok: false, items: [], error: error?.message || "Fehler.", url: null, durationMs: Date.now() - began };
-      }
-    }),
-  );
+        try {
+          const result = await withTimeout(search(filters, publish), 10_000, fallback);
+          if (!streamed) publish({ ok: Boolean(result.ok), items: result.items || [] });
+          if (looksRefused(result)) pauseSource(id);
+          return { id, ...result, durationMs: Date.now() - began };
+        } catch (error) {
+          return { id, ok: false, items: [], error: error?.message || "Fehler.", url: null, durationMs: Date.now() - began };
+        } finally {
+          accepting = false;
+        }
+      }),
+    );
 
-  const items = results.flatMap((result) => result.items || []);
-  const payload = {
-    items,
-    sources: results.map((result) => ({
-      id: result.id,
-      label: LABELS[result.id],
-      ok: Boolean(result.ok),
-      count: result.items?.length || 0,
-      error: result.error || null,
-      skipped: Boolean(result.skipped),
-      paused: Boolean(result.paused),
-      url: result.url || null,
-      durationMs: result.durationMs ?? null,
-    })),
-    checkedAt: new Date().toISOString(),
-    durationMs: Date.now() - startedAt,
-  };
+    const items = results.flatMap((result) => result.items || []);
+    const payload = {
+      items,
+      sources: results.map((result) => ({
+        id: result.id,
+        label: LABELS[result.id],
+        ok: Boolean(result.ok),
+        count: result.items?.length || 0,
+        error: result.error || null,
+        skipped: Boolean(result.skipped),
+        paused: Boolean(result.paused),
+        url: result.url || null,
+        durationMs: result.durationMs ?? null,
+      })),
+      checkedAt: new Date().toISOString(),
+      durationMs: Date.now() - startedAt,
+    };
 
-  recent.set(cacheKey, { at: Date.now(), payload });
-  if (recent.size > 50) recent.delete(recent.keys().next().value);
+    emit({ type: "complete", ...payload });
+    return payload;
+  });
 
-  return json(payload);
+  if (body?.stream === true) {
+    return new Response(streamCheck(job, request.signal), {
+      headers: {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-store, no-transform",
+        "X-Accel-Buffering": "no",
+      },
+    });
+  }
+  const payload = await job.promise;
+  return payload ? json(payload) : json({ error: "Prüfung fehlgeschlagen." }, 500);
 }
