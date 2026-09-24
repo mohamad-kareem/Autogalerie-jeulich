@@ -14,6 +14,10 @@ it never schedules another search on its own.
   on repeated refusals to five minutes. Longer portal Retry-After values win.
   A successful check after expiry resets the backoff. Detail-page refusals only
   pause detail lookups; detail lookups respect a search pause too.
+  After a refusal, successful checks retain a 10-second recovery interval for
+  ten minutes. Further refusals raise that interval to 20 then 30 seconds.
+  Catch-up scans retain their place and use four times the recovery interval.
+  This avoids immediately returning to the request rate that triggered a block.
 - Portal HTML is consumed incrementally. Kleinanzeigen publishes each complete
   article; AutoScout24 publishes as soon as its listing JSON is complete. The
   existing NDJSON response forwards these batches without waiting for the footer.
@@ -32,6 +36,22 @@ it never schedules another search on its own.
   automatically launch up to ten competing detail requests.
 
 ## What this cannot guarantee
+
+Live comparison on 24 September 2026, using the signed-in deployed page:
+
+- Germany, private petrol, EUR 1,500–12,000, 10,000–100,000 km, 2008–2024,
+  including damaged cars. Healthy portal responses were about 0.3–0.5 seconds
+  with a three-second selected polling interval.
+- AutoScout24 returned HTTP 429 repeatedly during this observation. The recovery
+  pacing above was added afterwards; its production effectiveness is unmeasured.
+- CarDeluxe displayed BMW 116 `efaea3d0-c742-410d-aa61-0128024b1398` with time
+  22:34:00. The deployed feed's discovery time was 22:34:03: a three-second gap.
+- CarDeluxe displayed Opel Vectra `3522339353` with time 22:31:58; the deployed
+  feed discovered it at 22:33:38: a 100-second gap. A fetched broad public search
+  before that discovery omitted it, while a later focused Opel Vectra search
+  included it. These sequential samples do not prove a cache lifetime or that
+  keyword searches consistently provide a faster source. The Kleinanzeigen gap
+  remains unresolved; no claim of a real-time fix follows from these changes.
 
 Freshness correction (Twingo `3515465635`, detail date 17 September 2026):
 unseen does not mean newly uploaded. Each search combination now keeps a fixed

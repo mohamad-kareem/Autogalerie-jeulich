@@ -68,6 +68,29 @@ test("HTTP Retry-After seconds and dates survive transport without an early retr
   assert.ok(result.retryAfterMs > 119_000);
 });
 
+test("successful recovery retains a slower pace so the portal is not immediately flooded again", async () => {
+  const clock = { now: 1000 };
+  const pause = await loadPause(clock);
+  pause.pauseSource("AUTOSCOUT24");
+  assert.equal(pause.recoveryIntervalMs("AUTOSCOUT24"), 10_000);
+  clock.now += 30_000;
+  pause.resumeSource("AUTOSCOUT24");
+  assert.equal(pause.pauseRemainingMs("AUTOSCOUT24"), 0);
+  assert.equal(pause.recoveryIntervalMs("AUTOSCOUT24"), 10_000);
+  assert.equal(nextCheckDelay({ intervalMs: 3000, elapsedMs: 400,
+    recoveryIntervalMs: 10_000, preferredDelayMs: 1000 }), 9600);
+  pause.pauseSource("AUTOSCOUT24");
+  assert.equal(pause.recoveryIntervalMs("AUTOSCOUT24"), 20_000);
+  assert.equal(pause.recoveryIntervalMs("KLEINANZEIGEN"), 0);
+  clock.now += 600_000;
+  assert.equal(pause.recoveryIntervalMs("AUTOSCOUT24"), 0);
+  const coverage = advanceCoverage({ ...createCoverage(false), recoveryIntervalMs: 10_000 },
+    { ok: true, hasMore: true, overlap: false }, 1000);
+  assert.equal(coverage.page, 3);
+  assert.equal(coverage.dueAt, 41_000);
+  assert.equal(coverage.recoveryIntervalMs, 10_000);
+});
+
 test("predicted portal refresh never creates a long blind window", () => {
   assert.equal(nextCheckDelay({ intervalMs: 3000, elapsedMs: 800, preferredDelayMs: 47000 }), 2200);
   assert.equal(nextCheckDelay({ intervalMs: 3000, elapsedMs: 800, preferredDelayMs: 1700 }), 1700);
@@ -375,7 +398,7 @@ async function loadRoute({ session, search, pause }) {
     const exports = name === "next-auth" ? { getServerSession: async () => session }
       : name.includes("nextauth") ? { authOptions: {} }
         : name.endsWith("/filters") ? filters
-          : name.endsWith("/pause") ? (pause || { looksRefused: () => false, pauseRemainingMs: () => 0, pauseSource: () => {}, resumeSource: () => {} })
+          : name.endsWith("/pause") ? (pause || { looksRefused: () => false, pauseRemainingMs: () => 0, pauseSource: () => {}, resumeSource: () => {}, recoveryIntervalMs: () => 0 })
             : name.endsWith("/live") ? { createCheckPool, streamCheck }
               : { SEARCHERS: { KLEINANZEIGEN: search } };
     return new SyntheticModule(Object.keys(exports), function () {

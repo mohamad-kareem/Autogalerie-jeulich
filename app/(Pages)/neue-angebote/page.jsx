@@ -1092,6 +1092,11 @@ export default function NeueAngebotePage() {
         const coverage = coverageRef.current[source] ||= createCoverage(!storeRef.current.coverageReady?.[source]);
         // A completely replaced first page can hide a burst on further pages.
         if (status?.ok && status.hasMore && !status.overlap) coverage.dueAt = 0;
+        // Catch-up requests must not defeat the portal's recovery pace.
+        if (status?.recoveryIntervalMs && coverage.recoveryIntervalMs !== status.recoveryIntervalMs) {
+          coverage.dueAt = Math.max(coverage.dueAt, Date.now() + status.recoveryIntervalMs * 4);
+        }
+        coverage.recoveryIntervalMs = status?.recoveryIntervalMs || 0;
         // No access (mobile.de without the API): nothing to ask until that changes.
         if (status?.skipped) {
           loop.stopped = true;
@@ -1104,6 +1109,7 @@ export default function NeueAngebotePage() {
           elapsedMs: Date.now() - started,
           failures: failuresRef.current[source] || 0,
           retryAfterMs: status?.retryAfterMs || 0,
+          recoveryIntervalMs: status?.recoveryIntervalMs || 0,
           preferredDelayMs: source === "KLEINANZEIGEN" && serverNow >= kaRef.current.relearnUntil
             ? nextKaCheck(serverNow, kaRef.current.landing) - serverNow : undefined,
         });

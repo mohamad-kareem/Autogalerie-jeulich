@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { filterKey, normalizeFilters } from "@/lib/feed/filters";
-import { looksRefused, pauseRemainingMs, pauseSource, resumeSource } from "@/lib/feed/pause";
+import { looksRefused, pauseRemainingMs, pauseSource, resumeSource, recoveryIntervalMs } from "@/lib/feed/pause";
 import { SEARCHERS } from "@/lib/feed/sources";
 import { createCheckPool, streamCheck } from "@/lib/feed/live";
 
@@ -112,6 +112,7 @@ export async function POST(request) {
         skipped: Boolean(result.skipped),
         paused: Boolean(result.paused),
         retryAfterMs: result.retryAfterMs || 0,
+        recoveryIntervalMs: recoveryIntervalMs(result.id),
         url: result.url || null,
         durationMs: result.durationMs ?? null,
         page,
