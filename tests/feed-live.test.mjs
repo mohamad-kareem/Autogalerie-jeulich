@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { SourceTextModule, SyntheticModule } from "node:vm";
-import { createCheckPool, streamCheck, readCheckStream } from "../lib/feed/live.js";
+import { createCheckPool, streamCheck, readCheckStream, requestCheck } from "../lib/feed/live.js";
+import { nextCheckDelay } from "../lib/feed/polling.js";
 import { detectNew, mergeFeed } from "../lib/feed/detect.js";
 import { join } from "node:path";
 import * as filters from "../lib/feed/filters.js";
@@ -13,6 +14,61 @@ const deferred = () => {
   return { promise, resolve };
 };
 const ad = (id) => ({ source: "KLEINANZEIGEN", key: `KLEINANZEIGEN:${id}`, numericId: id });
+
+test("predicted portal refresh never creates a long blind window", () => {
+  assert.equal(nextCheckDelay({ intervalMs: 3000, elapsedMs: 800, preferredDelayMs: 47000 }), 2200);
+  assert.equal(nextCheckDelay({ intervalMs: 3000, elapsedMs: 800, preferredDelayMs: 1700 }), 1700);
+  assert.equal(nextCheckDelay({ intervalMs: 3000, elapsedMs: 8000 }), 1500);
+});
+
+test("transient errors retry quickly, explicit portal cooldowns are respected", () => {
+  assert.deepEqual([1, 2, 3].map((failures) => nextCheckDelay({ intervalMs: 3000, failures })), [3000, 6000, 12000]);
+  assert.equal(nextCheckDelay({ intervalMs: 3000, failures: 20 }), 60000);
+  assert.equal(nextCheckDelay({ intervalMs: 3000, retryAfterMs: 290000 }), 290000);
+  assert.equal(nextCheckDelay({ intervalMs: 3000, failures: 0 }), 3000);
+});
+
+test("stalled response headers time out so a new check can run", async () => {
+  const fetchImpl = (_, { signal }) => new Promise((_, reject) => {
+    signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
+  });
+  await assert.rejects(requestCheck({}, "AUTOSCOUT24", { timeoutMs: 10, fetchImpl, onEvent: () => {} }), /dauert zu lange/);
+  const events = [];
+  await requestCheck({}, "AUTOSCOUT24", {
+    fetchImpl: async () => new Response('{"type":"complete"}\n'), onEvent: (event) => events.push(event),
+  });
+  assert.equal(events.length, 1);
+});
+
+test("a stalled stream times out after an early batch", async () => {
+  const events = [];
+  await assert.rejects(requestCheck({}, "KLEINANZEIGEN", {
+    timeoutMs: 10,
+    fetchImpl: async (_, { signal }) => new Response(new ReadableStream({ start(controller) {
+      controller.enqueue(new TextEncoder().encode('{"type":"batch"}\n'));
+      signal.addEventListener("abort", () => controller.error(new DOMException("Aborted", "AbortError")), { once: true });
+    } })),
+    onEvent: (event) => events.push(event.type),
+  }), /dauert zu lange/);
+  assert.deepEqual(events, ["batch"]);
+});
+
+test("manual cancellation stays distinct from a network failure", async () => {
+  const controller = new AbortController();
+  controller.abort();
+  let called = false;
+  await assert.rejects(requestCheck({}, "AUTOSCOUT24", {
+    signal: controller.signal, fetchImpl: () => { called = true; },
+  }), { name: "AbortError" });
+  assert.equal(called, false);
+});
+
+test("unchanged snapshots keep card identity and do not announce duplicates", () => {
+  const previous = [{ ...ad(10), price: 1000, rating: { label: "Fair" }, isNew: true, firstSeenAt: "before" }];
+  const result = mergeFeed(previous, [{ ...ad(10), price: 1000, rating: { label: "Fair" } }], [], "now");
+  assert.equal(result.feed, previous);
+  assert.equal(result.arrivals.length, 0);
+});
 
 test("fast results reach both subscribers before the slow search completes", async () => {
   const finish = deferred();

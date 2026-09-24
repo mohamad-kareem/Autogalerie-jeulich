@@ -4,7 +4,7 @@
  * Neue Angebote — the newest cars on AutoScout24, Kleinanzeigen and mobile.de,
  * as they are uploaded.
  *
- * While this page is open it asks the server every 5–120 seconds for the
+ * While this page is open it asks the server every 3–120 seconds for the
  * newest ads matching the filter (sorted newest first on each portal). Each
  * portal is asked on its own, at a fixed pace, so a slow answer from one never
  * delays the cars from another. A portal's first answer is its baseline: what
@@ -17,7 +17,7 @@
  * Runs without a paid Vercel plan: no background job, the open page drives it.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
@@ -56,7 +56,8 @@ import {
   normalizeFilters,
 } from "@/lib/feed/filters";
 import { detectNew, mergeFeed } from "@/lib/feed/detect";
-import { readCheckStream } from "@/lib/feed/live";
+import { requestCheck } from "@/lib/feed/live";
+import { nextCheckDelay } from "@/lib/feed/polling";
 import { KA_CYCLE_MS, KA_DEFAULT_LANDING_MS, nextKaCheck, observeKa } from "@/lib/feed/kaCycle";
 
 const FILTER_STORE = "neueAngebote.filters.v1";
@@ -67,7 +68,7 @@ const KA_TIMING_STORE = "neueAngebote.kaTiming.v1";
 const MAX_SAVED_FEED = 500;
 // Fast polling still depends on portal publication and response time.
 // Refusals retain the server cooldown and client failure backoff.
-const INTERVALS = [5, 15, 30, 60, 120];
+const INTERVALS = [3, 5, 15, 30, 60, 120];
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -503,7 +504,7 @@ function CardFacts({ item, dark, onLoad }) {
   );
 }
 
-function ListingCard({ item, dark, now, onHide, onLoadDetails, latest = false }) {
+const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadDetails, latest = false }) {
   const source = SOURCES.find((entry) => entry.id === item.source);
   const sellerType =
     item.details?.sellerType && item.details.sellerType !== "UNKNOWN" ? item.details.sellerType : item.sellerType;
@@ -667,7 +668,7 @@ function ListingCard({ item, dark, now, onHide, onLoadDetails, latest = false })
       </button>
     </article>
   );
-}
+});
 
 /** A section heading with its cars below, spaced as separate cards. */
 function FeedSection({ title, count, meta, dark, live = false, children }) {
@@ -706,7 +707,7 @@ export default function NeueAngebotePage() {
   // How many portal checks are under way right now.
   const [pending, setPending] = useState(0);
   const checking = pending > 0;
-  const [intervalSec, setIntervalSec] = useState(5);
+  const [intervalSec, setIntervalSec] = useState(3);
   const [sound, setSound] = useState(true);
   const [notify, setNotify] = useState(false);
 
@@ -716,6 +717,7 @@ export default function NeueAngebotePage() {
   const [lastCheck, setLastCheck] = useState(null);
   // Failed checks in a row, per portal.
   const [failures, setFailures] = useState({});
+  const [nextChecks, setNextChecks] = useState({});
   const [unread, setUnread] = useState(0);
   const [now, setNow] = useState(() => Date.now());
 
@@ -762,7 +764,7 @@ export default function NeueAngebotePage() {
     }
     const settings = readJson(SETTINGS_STORE, {});
     // Upgrade the previous default to fast mode; retain other chosen intervals.
-    if (INTERVALS.includes(settings.intervalSec) &&
+    if (!(settings.v < 4 && settings.intervalSec === 5) && INTERVALS.includes(settings.intervalSec) &&
         (settings.v >= 3 || (settings.intervalSec !== 15 && (settings.v >= 2 || settings.intervalSec !== 60)))) {
       setIntervalSec(settings.intervalSec);
     }
@@ -780,7 +782,7 @@ export default function NeueAngebotePage() {
   }, []);
 
   useEffect(() => {
-    writeJson(SETTINGS_STORE, { v: 3, intervalSec, sound, notify });
+    writeJson(SETTINGS_STORE, { v: 4, intervalSec, sound, notify });
   }, [intervalSec, sound, notify]);
 
   useEffect(() => {
@@ -810,13 +812,28 @@ export default function NeueAngebotePage() {
 
   const key = applied ? filterKey(applied) : null;
 
+  const pendingSavesRef = useRef(new Map());
+  const saveTimerRef = useRef(null);
+  const flushSaves = useCallback(() => {
+    clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = null;
+    for (const [savedKey, store] of pendingSavesRef.current) {
+      writeJson(FEED_STORE(savedKey), { ...store, feed: store.feed.slice(0, MAX_SAVED_FEED) });
+    }
+    pendingSavesRef.current.clear();
+  }, []);
+  useEffect(() => {
+    window.addEventListener("pagehide", flushSaves);
+    return () => { window.removeEventListener("pagehide", flushSaves); flushSaves(); };
+  }, [flushSaves]);
+
   const persist = useCallback(
     (store) => {
       if (!key) return;
-      // Limit disk usage only. Never truncate the results the user is viewing.
-      writeJson(FEED_STORE(key), { ...store, feed: store.feed.slice(0, MAX_SAVED_FEED) });
+      pendingSavesRef.current.set(key, store);
+      if (!saveTimerRef.current) saveTimerRef.current = setTimeout(flushSaves, 250);
     },
-    [key],
+    [key, flushSaves],
   );
 
   /* details: read each new car's ad page, two at a time, newest first */
@@ -882,6 +899,8 @@ export default function NeueAngebotePage() {
     pumpRef.current();
   }, []);
 
+  const loadCardDetails = useCallback((entry) => loadDetails([entry], { first: true }), [loadDetails]);
+
   /* sound, toast and desktop notification for new cars */
   const announceRef = useRef(null);
   announceRef.current = (arrivals) => {
@@ -926,25 +945,11 @@ export default function NeueAngebotePage() {
     const current = () => generation === generationRef.current && !controller.signal.aborted;
     setPending((count) => count + 1);
     try {
-      const response = await fetch("/api/neue-angebote", {
-        signal: controller.signal,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filters: applied, source, stream: true }),
-      });
-      if (!current()) return null;
-      if (response.status === 401) {
-        routerRef.current.push("/login");
-        return null;
-      }
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        throw new Error(data?.error || `Fehler ${response.status}`);
-      }
       let finalStatus = null;
       let detailBudget = 10;
       let newestId = 0;
-      await readCheckStream(response, (data) => {
+      let discovered = 0;
+      await requestCheck(applied, source, { signal: controller.signal, onEvent: (data) => {
         if (!current()) return;
         if (data.type === "complete") {
           const status = (data.sources || []).find((entry) => entry.id === source) || { id: source, ok: false };
@@ -958,7 +963,7 @@ export default function NeueAngebotePage() {
           }
           const order = applied.sources;
           setSources((list) =>
-            [...list.filter((entry) => entry.id !== source), { ...status, checkedAt: data.checkedAt }]
+            [...list.filter((entry) => entry.id !== source), { ...status, discovered, checkedAt: data.checkedAt }]
               .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)),
           );
           setLastCheck(data.checkedAt);
@@ -979,6 +984,7 @@ export default function NeueAngebotePage() {
           scope: data.scope || null,
         });
         const { feed: matchedFeed, arrivals } = mergeFeed(store.feed, items, fresh, atIso);
+        discovered += arrivals.length;
         // Baseline IDs stay in `seen`; old listing cards need no state/storage.
         const nextFeed = matchedFeed.filter((item) => item.isNew);
 
@@ -996,17 +1002,25 @@ export default function NeueAngebotePage() {
         }
 
         setLastCheck(data.checkedAt || atIso);
-      });
+      } });
       if (source === "KLEINANZEIGEN" && finalStatus?.ok && current()) noteKaCheck(serverStarted, newestId);
       return finalStatus;
     } catch (error) {
       if (!current() || error.name === "AbortError") return null;
+      if (error.status === 401) {
+        routerRef.current.push("/login");
+        return { id: source, ok: false, skipped: true };
+      }
       noteFailure(source, true);
+      setSources((list) => [...list.filter((entry) => entry.id !== source), {
+        id: source, label: SOURCES.find((entry) => entry.id === source)?.label || source,
+        ok: false, error: error.message, checkedAt: new Date().toISOString(),
+      }]);
       toast.error(`Prüfung fehlgeschlagen: ${error.message}`, { id: "feed-error" });
       return { id: source, ok: false };
     } finally {
       if (inFlightRef.current[requestKey] === controller) delete inFlightRef.current[requestKey];
-      if (current()) {
+      if (generation === generationRef.current) {
         setPending((count) => Math.max(0, count - 1));
       }
     }
@@ -1033,7 +1047,7 @@ export default function NeueAngebotePage() {
     let cancelled = false;
 
     const loops = applied.sources.map((source, index) => {
-      const loop = { source, ticker: createTicker(), stopped: false };
+      const loop = { source, ticker: createTicker(), stopped: false, nextAt: 0 };
       loop.run = async () => {
         if (cancelled) return;
         const started = Date.now();
@@ -1046,18 +1060,18 @@ export default function NeueAngebotePage() {
           return;
         }
 
-        const failing = (failuresRef.current[source] || 0) >= 3;
         const serverNow = Date.now() + clockOffsetRef.current;
-        let delay;
-        if (!failing && source === "KLEINANZEIGEN" && serverNow >= kaRef.current.relearnUntil) {
-          // Kleinanzeigen: right when its search refreshes (every 2 min), not in between.
-          delay = nextKaCheck(serverNow, kaRef.current.landing) - serverNow;
-        } else {
-          const period = failing ? 5 * 60_000 : intervalSec * 1_000;
-          // The next check is due one interval after this one started, not after it ended.
-          delay = period - (Date.now() - started);
-        }
-        loop.ticker.set(Math.max(1_000, delay), loop.run);
+        const delay = nextCheckDelay({
+          intervalMs: intervalSec * 1_000,
+          elapsedMs: Date.now() - started,
+          failures: failuresRef.current[source] || 0,
+          retryAfterMs: status?.retryAfterMs || 0,
+          preferredDelayMs: source === "KLEINANZEIGEN" && serverNow >= kaRef.current.relearnUntil
+            ? nextKaCheck(serverNow, kaRef.current.landing) - serverNow : undefined,
+        });
+        loop.nextAt = Date.now() + delay;
+        setNextChecks((current) => ({ ...current, [source]: loop.nextAt }));
+        loop.ticker.set(delay, loop.run);
       };
       // A few hundred milliseconds apart, so the portals are not hit in the same instant.
       loop.ticker.set(index * 300, loop.run);
@@ -1068,29 +1082,32 @@ export default function NeueAngebotePage() {
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
       for (const loop of loops) {
-        const last = lastStartRef.current[loop.source] || 0;
-        const failing = (failuresRef.current[loop.source] || 0) >= 3;
-        // Kleinanzeigen waits up to ~50 s between its checks on purpose.
-        const period = failing ? 5 * 60_000 : loop.source === "KLEINANZEIGEN" ? 60_000 : intervalSec * 1_000;
-        if (!loop.stopped && !inFlightRef.current[loop.source] && Date.now() - last > period + 1_000) {
+        if (!loop.stopped && !inFlightRef.current[loop.source] && Date.now() >= loop.nextAt) {
           loop.ticker.set(0, loop.run);
         }
       }
     };
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", onVisible);
 
     return () => {
       cancelled = true;
-      for (const loop of loops) loop.ticker.stop();
+      for (const loop of loops) {
+        loop.ticker.stop();
+        inFlightRef.current[loop.source]?.abort();
+      }
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", onVisible);
     };
   }, [running, applied, intervalSec, checkSource]);
 
   /* start with a filter: load that filter's memory, or begin a new baseline */
   const apply = () => {
+    flushSaves();
     cancelSearch();
     setPending(0);
     setLastCheck(null);
+    setNextChecks({});
     const normalized = normalizeFilters(draft);
     writeJson(FILTER_STORE, draft);
     const saved = readJson(FEED_STORE(filterKey(normalized)), null) || emptyStore();
@@ -1169,7 +1186,7 @@ export default function NeueAngebotePage() {
   const inLatest = (item) => new Date(item.firstSeenAt).getTime() >= roundStart;
   const latest = fresh.filter(inLatest);
   const earlier = fresh.filter((item) => !inLatest(item));
-  const hide = (itemKey) => setHidden((list) => [...list, itemKey]);
+  const hide = useCallback((itemKey) => setHidden((list) => [...list, itemKey]), []);
 
 
   if (status === "loading") {
@@ -1186,17 +1203,17 @@ export default function NeueAngebotePage() {
     dark ? "hover:bg-slate-800" : "hover:bg-slate-50"
   }`;
   const sourceDot = (source) =>
-    source.ok ? "bg-emerald-500" : source.skipped ? "bg-slate-400" : "bg-amber-500";
-  const renderRows = (list, { isLatest = false, first = true } = {}) =>
+    source.paused ? "bg-amber-500" : source.ok ? "bg-emerald-500" : source.skipped ? "bg-slate-400" : "bg-amber-500";
+  const renderRows = (list, { isLatest = false } = {}) =>
     list.map((item) => (
       <ListingCard
         key={item.key}
         item={item}
         dark={dark}
-        now={now}
+        now={Math.floor(now / 60_000) * 60_000}
         latest={isLatest}
         onHide={hide}
-        onLoadDetails={(entry) => loadDetails([entry], { first })}
+        onLoadDetails={loadCardDetails}
       />
     ));
 
@@ -1259,12 +1276,12 @@ export default function NeueAngebotePage() {
                       <select
                         value={intervalSec}
                         onChange={(e) => setIntervalSec(Number(e.target.value))}
-                        title="Wie oft AutoScout24 und mobile.de geprüft werden. Kleinanzeigen wird direkt nach jeder Aktualisierung seiner Suche geprüft (alle 2 Minuten)."
+                        title="Prüfintervall für alle Portale. Bei Verbindungsfehlern oder Portal-Sperren wird automatisch gewartet."
                         aria-label="Prüfintervall"
                         className={`h-7 bg-transparent px-2 text-[12px] outline-none ${dark ? "text-slate-100" : ""}`}
                       >
                         {INTERVALS.map((seconds) => (
-                          <option key={seconds} value={seconds}>{seconds === 5 ? "Schnell · alle 5 s" : `alle ${seconds} s`}</option>
+                          <option key={seconds} value={seconds}>{seconds === 3 ? "Live · alle 3 s" : `alle ${seconds} s`}</option>
                         ))}
                       </select>
                       <button type="button" onClick={checkAll} disabled={checking} title="Jetzt prüfen" aria-label="Jetzt prüfen" className={toolButton}>
@@ -1305,8 +1322,8 @@ export default function NeueAngebotePage() {
               >
                 <span className={`size-1.5 rounded-full ${sourceDot(source)}`} />
                 {source.url ? <a href={source.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">{source.label}</a> : <span>{source.label}</span>}
-                {source.ok ? (
-                  <span>{source.count} geprüft{Number.isFinite(source.total) ? ` · ${source.total.toLocaleString("de-DE")} insgesamt` : ""} · {Number.isFinite(source.durationMs) ? `${(source.durationMs / 1000).toFixed(1)} s` : ""}</span>
+                {source.ok && !source.paused ? (
+                  <span>{source.count} geprüft · {source.discovered || 0} neu{Number.isFinite(source.total) ? ` · ${source.total.toLocaleString("de-DE")} insgesamt` : ""} · {Number.isFinite(source.durationMs) ? `${(source.durationMs / 1000).toFixed(1)} s` : ""}</span>
                 ) : (
                   <span className={source.skipped ? "" : "text-amber-600"}>
                     {source.paused ? "pausiert" : /freigeschaltet|nicht eingerichtet/.test(source.error || "") ? "kein Zugang" : "nicht erreichbar"}
@@ -1315,13 +1332,15 @@ export default function NeueAngebotePage() {
               </span>
             ))}
             {lastCheck ? <span>Letzte Antwort: {clock(lastCheck)} · {Math.max(0, Math.floor((now - new Date(lastCheck).getTime()) / 1000))} s her</span> : null}
+            {running ? <span>{sources.filter((source) => !source.skipped).map((source) =>
+              `${source.label}: ${nextChecks[source.id] > now ? `in ${Math.ceil((nextChecks[source.id] - now) / 1000)} s` : "prüft …"}`).join(" · ")}</span> : null}
             {Object.entries(failures).some(([, count]) => count >= 3) ? (
               <span className="w-full text-amber-600">
                 {Object.entries(failures)
                   .filter(([, count]) => count >= 3)
                   .map(([id]) => SOURCES.find((entry) => entry.id === id)?.label || id)
                   .join(", ")}
-                : mehrere Prüfungen fehlgeschlagen – dort wird jetzt nur alle 5 Minuten geprüft.
+                : Verbindung gestört – automatische Wiederholung; Wartezeit siehe oben.
               </span>
             ) : null}
           </div>
@@ -1335,8 +1354,7 @@ export default function NeueAngebotePage() {
             </div>
             <p className="text-[15px] font-semibold">Filter setzen und Live-Suche starten</p>
             <p className={`mx-auto mt-1.5 max-w-md text-[13px] leading-6 ${muted}`}>
-              Solange diese Seite offen ist, wird AutoScout24 alle paar Sekunden geprüft und Kleinanzeigen genau
-              dann, wenn es seine Suche aktualisiert (alle 2 Minuten).
+              Solange diese Seite offen ist, werden die Portale im Live-Modus alle 3 Sekunden geprüft.
               Entdeckte Fahrzeuge erscheinen direkt nach der Portalantwort – mit Ton und auf Wunsch als Desktop-Benachrichtigung.
             </p>
           </div>
@@ -1377,8 +1395,7 @@ export default function NeueAngebotePage() {
 
             <div className={`mt-2 flex flex-wrap items-center justify-between gap-2 text-[12px] ${muted}`}>
               <span>
-                AutoScout24 alle {intervalSec} s · Kleinanzeigen direkt nach jeder Aktualisierung seiner Suche (alle 2 Min.) –
-                früher zeigt die Website neue Anzeigen nicht.
+                Live-Prüfung alle {intervalSec} s · Neue Treffer erscheinen direkt nach der Portalantwort.
               </span>
               {feed.length ? (
                 <button type="button" onClick={resetFeed} className="inline-flex items-center gap-1 hover:text-red-600">

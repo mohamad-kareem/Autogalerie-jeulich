@@ -71,7 +71,7 @@ export async function POST(request) {
         if (paused > 0) {
           const minutes = Math.ceil(paused / 60_000);
           return {
-            id, ok: false, items: [], url: null, paused: true,
+            id, ok: false, items: [], url: null, paused: true, retryAfterMs: paused,
             error: `hat abgelehnt – Pause, wieder in ${minutes} Min.`,
           };
         }
@@ -87,8 +87,9 @@ export async function POST(request) {
         try {
           const result = await withTimeout(search(filters, publish, { page }), 10_000, fallback);
           if (!streamed) publish({ ok: Boolean(result.ok), items: result.items || [] });
-          if (looksRefused(result)) pauseSource(id);
-          return { id, ...result, durationMs: Date.now() - began };
+          const refused = looksRefused(result);
+          if (refused) pauseSource(id);
+          return { id, ...result, paused: refused, retryAfterMs: pauseRemainingMs(id), durationMs: Date.now() - began };
         } catch (error) {
           return { id, ok: false, items: [], error: error?.message || "Fehler.", url: null, durationMs: Date.now() - began };
         } finally {
@@ -108,6 +109,7 @@ export async function POST(request) {
         error: result.error || null,
         skipped: Boolean(result.skipped),
         paused: Boolean(result.paused),
+        retryAfterMs: result.retryAfterMs || 0,
         url: result.url || null,
         durationMs: result.durationMs ?? null,
         page,
