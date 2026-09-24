@@ -2,9 +2,9 @@
 
 /**
  * Neue Angebote — the newest cars on AutoScout24, Kleinanzeigen and mobile.de,
- * as they are uploaded.
+ * as they become discoverable in portal search results.
  *
- * While this page is open it asks the server every 3–120 seconds for the
+ * While this page is visible and online it asks the server every 3–120 seconds for the
  * newest ads matching the filter (sorted newest first on each portal). Each
  * portal is asked on its own, at a fixed pace, so a slow answer from one never
  * delays the cars from another. A portal's first answer is its baseline: what
@@ -14,7 +14,7 @@
  * "New" means first discovered by this search, not a verified upload time.
  * Every returned match is kept; ordering and ad IDs must not hide vehicles.
  *
- * Runs without a paid Vercel plan: no background job, the open page drives it.
+ * The active page drives all work; no offline collector is installed.
  */
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -57,6 +57,7 @@ import {
 } from "@/lib/feed/filters";
 import { detectNew, mergeFeed } from "@/lib/feed/detect";
 import { requestCheck } from "@/lib/feed/live";
+import { createCoverage, advanceCoverage } from "@/lib/feed/coverage";
 import { nextCheckDelay } from "@/lib/feed/polling";
 import { KA_CYCLE_MS, KA_DEFAULT_LANDING_MS, nextKaCheck, observeKa } from "@/lib/feed/kaCycle";
 
@@ -119,9 +120,8 @@ function emptyStore() {
 }
 
 /**
- * A timer that keeps its pace in a background tab. Browsers slow page timers
- * in hidden tabs to about once a minute; timers inside a Web Worker are not
- * slowed that way. Falls back to a plain timer where workers are unavailable.
+ * A worker timer keeps scheduling separate from card rendering. The page
+ * explicitly stops it when hidden/offline. Browser scheduling is best effort.
  */
 function createTicker() {
   let worker = null;
@@ -704,6 +704,9 @@ export default function NeueAngebotePage() {
   const [showFilters, setShowFilters] = useState(true);
 
   const [running, setRunning] = useState(false);
+  const [pageActive, setPageActive] = useState(true);
+  const [coverageWarnings, setCoverageWarnings] = useState({});
+  const coverageRef = useRef({});
   // How many portal checks are under way right now.
   const [pending, setPending] = useState(0);
   const checking = pending > 0;
@@ -753,6 +756,23 @@ export default function NeueAngebotePage() {
   }, []);
 
   useEffect(() => () => cancelSearch(), [cancelSearch]);
+
+  useEffect(() => {
+    if (!running || !pageActive) { cancelSearch(); setPending(0); }
+  }, [running, pageActive, cancelSearch]);
+
+  useEffect(() => {
+    const update = () => setPageActive(document.visibilityState === "visible" && navigator.onLine);
+    update();
+    document.addEventListener("visibilitychange", update);
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      document.removeEventListener("visibilitychange", update);
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
 
   /* restore settings */
   useEffect(() => {
@@ -935,9 +955,9 @@ export default function NeueAngebotePage() {
   };
 
   /* one check of one portal */
-  const checkSource = useCallback(async (source) => {
-    const requestKey = source;
-    if (!applied || inFlightRef.current[requestKey]) return null;
+  const checkSource = useCallback(async (source, { page = 1, baseline = false } = {}) => {
+    const requestKey = page === 1 ? source : `${source}:coverage`;
+    if (!applied || document.visibilityState !== "visible" || !navigator.onLine || inFlightRef.current[requestKey]) return null;
     const generation = generationRef.current;
     const controller = new AbortController();
     inFlightRef.current[requestKey] = controller;
@@ -946,14 +966,24 @@ export default function NeueAngebotePage() {
     setPending((count) => count + 1);
     try {
       let finalStatus = null;
-      let detailBudget = 10;
       let newestId = 0;
       let discovered = 0;
-      await requestCheck(applied, source, { signal: controller.signal, onEvent: (data) => {
+      const scopeOverlap = new Map();
+      const knownAtStart = new Set(Object.keys(storeRef.current.seen || {}));
+      await requestCheck(applied, source, { page, signal: controller.signal, onEvent: (data) => {
         if (!current()) return;
         if (data.type === "complete") {
           const status = (data.sources || []).find((entry) => entry.id === source) || { id: source, ok: false };
-          finalStatus = { ...status, newestId };
+          const overlap = scopeOverlap.size > 0 && [...scopeOverlap.values()].every(Boolean);
+          finalStatus = { ...status, newestId, overlap, ...(page > 1 && status.error ? { ok: false } : {}) };
+          if (page > 1) {
+            if (finalStatus.ok) {
+              const store = { ...storeRef.current, coverageReady: { ...storeRef.current.coverageReady, [source]: true } };
+              storeRef.current = store;
+              persist(store);
+            }
+            return;
+          }
           const serverAt = Date.parse(data.checkedAt);
           if (Number.isFinite(serverAt)) {
             // Median of the last few samples: one slow answer must not skew it.
@@ -976,12 +1006,17 @@ export default function NeueAngebotePage() {
         // Read the memory only now: another portal may have answered meanwhile.
         const store = storeRef.current;
         const items = (Array.isArray(data.items) ? data.items : []).filter((item) => item.source === source);
+        const scopeKey = data.scope || source;
+        scopeOverlap.set(scopeKey, Boolean(scopeOverlap.get(scopeKey)) ||
+          (!data.partial && items.length === 0) || items.some((item) => !item.promoted && knownAtStart.has(item.key)));
         for (const item of items) {
           if (!item.promoted && Number.isFinite(item.numericId) && item.numericId > newestId) newestId = item.numericId;
         }
         const { fresh, seen, kaMaxId, baselines, watermarks } = detectNew(store, items, at, {
           answered: [source],
           scope: data.scope || null,
+          backfill: baseline,
+          partial: Boolean(data.partial),
         });
         const { feed: matchedFeed, arrivals } = mergeFeed(store.feed, items, fresh, atIso);
         discovered += arrivals.length;
@@ -995,18 +1030,17 @@ export default function NeueAngebotePage() {
 
         if (arrivals.length) {
           announceRef.current(arrivals);
-          // Read the ad pages of the new arrivals right away — at most ten per
-          // check, so a flood of new ads cannot hammer the portals.
-          loadDetails(arrivals.slice(0, detailBudget), { first: true });
-          detailBudget = Math.max(0, detailBudget - arrivals.length);
+          // Additional ad-page requests start when a dealer opens the details.
+          // A burst of arrivals must not create ten competing portal requests.
         }
 
         setLastCheck(data.checkedAt || atIso);
       } });
-      if (source === "KLEINANZEIGEN" && finalStatus?.ok && current()) noteKaCheck(serverStarted, newestId);
+      if (page === 1 && source === "KLEINANZEIGEN" && finalStatus?.ok && current()) noteKaCheck(serverStarted, newestId);
       return finalStatus;
     } catch (error) {
       if (!current() || error.name === "AbortError") return null;
+      if (page > 1) return { id: source, ok: false, error: error.message };
       if (error.status === 401) {
         routerRef.current.push("/login");
         return { id: source, ok: false, skipped: true };
@@ -1024,7 +1058,7 @@ export default function NeueAngebotePage() {
         setPending((count) => Math.max(0, count - 1));
       }
     }
-  }, [applied, persist, loadDetails]);
+  }, [applied, persist]);
 
   const checkAll = () => applied?.sources.forEach((source) => checkSource(source));
 
@@ -1043,7 +1077,7 @@ export default function NeueAngebotePage() {
 
   /* the loops: one per portal, each at a fixed pace — slower after repeated failures */
   useEffect(() => {
-    if (!running || !applied) return undefined;
+    if (!running || !pageActive || !applied) return undefined;
     let cancelled = false;
 
     const loops = applied.sources.map((source, index) => {
@@ -1054,6 +1088,9 @@ export default function NeueAngebotePage() {
         lastStartRef.current[source] = started;
         const status = await checkSource(source);
         if (cancelled) return;
+        const coverage = coverageRef.current[source] ||= createCoverage(!storeRef.current.coverageReady?.[source]);
+        // A completely replaced first page can hide a burst on further pages.
+        if (status?.ok && status.hasMore && !status.overlap) coverage.dueAt = 0;
         // No access (mobile.de without the API): nothing to ask until that changes.
         if (status?.skipped) {
           loop.stopped = true;
@@ -1078,6 +1115,31 @@ export default function NeueAngebotePage() {
       return loop;
     });
 
+    const recovery = applied.sources.map((source) => {
+      const ticker = createTicker();
+      const run = async () => {
+        if (cancelled) return;
+        const state = coverageRef.current[source] ||= createCoverage(!storeRef.current.coverageReady?.[source]);
+        // Let the initial live page establish each combination's baseline.
+        if (!lastStartRef.current[source] || inFlightRef.current[source] ||
+            (failuresRef.current[source] || 0) > 0 || Date.now() < state.dueAt) {
+          ticker.set(1000, run);
+          return;
+        }
+        const result = await checkSource(source, { page: state.page, baseline: state.baseline });
+        if (cancelled) return;
+        if (result?.skipped) return;
+        if (result) {
+          const next = advanceCoverage(state, result);
+          coverageRef.current[source] = next;
+          setCoverageWarnings((warnings) => ({ ...warnings, [source]: next.warning }));
+        }
+        ticker.set(1000, run);
+      };
+      ticker.set(1500, run);
+      return ticker;
+    });
+
     // Coming back to a tab the browser slowed down: check right away where due.
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
@@ -1092,6 +1154,8 @@ export default function NeueAngebotePage() {
 
     return () => {
       cancelled = true;
+      for (const ticker of recovery) ticker.stop();
+      for (const source of applied.sources) inFlightRef.current[`${source}:coverage`]?.abort();
       for (const loop of loops) {
         loop.ticker.stop();
         inFlightRef.current[loop.source]?.abort();
@@ -1099,12 +1163,15 @@ export default function NeueAngebotePage() {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", onVisible);
     };
-  }, [running, applied, intervalSec, checkSource]);
+  }, [running, pageActive, applied, intervalSec, checkSource]);
 
   /* start with a filter: load that filter's memory, or begin a new baseline */
   const apply = () => {
     flushSaves();
     cancelSearch();
+    coverageRef.current = {};
+    lastStartRef.current = {};
+    setCoverageWarnings({});
     setPending(0);
     setLastCheck(null);
     setNextChecks({});
@@ -1152,6 +1219,8 @@ export default function NeueAngebotePage() {
     cancelSearch();
     setPending(0);
     const store = emptyStore();
+    coverageRef.current = {};
+    setCoverageWarnings({});
     storeRef.current = store;
     persist(store);
     setFeed([]);
@@ -1170,7 +1239,7 @@ export default function NeueAngebotePage() {
     const permission = await Notification.requestPermission();
     if (permission === "granted") {
       setNotify(true);
-      toast.success("Benachrichtigungen an – auch wenn der Tab im Hintergrund ist.");
+      toast.success("Benachrichtigungen für neue Funde aktiviert.");
     } else {
       toast.error("Benachrichtigungen wurden im Browser nicht erlaubt.");
     }
@@ -1269,7 +1338,7 @@ export default function NeueAngebotePage() {
                 >
                   <span className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${dark ? "text-slate-300" : "text-slate-600"}`}>
                     <span className={`size-1.5 rounded-full ${running ? "bg-emerald-500" : "bg-slate-400"}`} />
-                    {running ? "Live-Suche läuft" : "Live-Suche pausiert"}
+                    {running ? (pageActive ? "Live-Suche läuft" : "Suche wartet – Seite nicht aktiv oder offline") : "Live-Suche pausiert"}
                   </span>
                   <div className="flex flex-wrap items-center gap-1.5">
                     <div className={`flex items-center divide-x overflow-hidden rounded-md border ${dark ? "divide-slate-700 border-slate-700 bg-slate-900" : "divide-slate-200 border-slate-300 bg-white"}`}>
@@ -1343,6 +1412,9 @@ export default function NeueAngebotePage() {
                 : Verbindung gestört – automatische Wiederholung; Wartezeit siehe oben.
               </span>
             ) : null}
+            {Object.entries(coverageWarnings).filter(([, warning]) => warning).map(([source, warning]) => (
+              <span key={source} className="w-full text-amber-600">{SOURCES.find((entry) => entry.id === source)?.label}: {warning}</span>
+            ))}
           </div>
         ) : null}
 

@@ -1,12 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { SourceTextModule, SyntheticModule } from "node:vm";
+import { SourceTextModule, SyntheticModule, createContext } from "node:vm";
 import { createCheckPool, streamCheck, readCheckStream, requestCheck } from "../lib/feed/live.js";
 import { nextCheckDelay } from "../lib/feed/polling.js";
 import { detectNew, mergeFeed } from "../lib/feed/detect.js";
 import { join } from "node:path";
 import * as filters from "../lib/feed/filters.js";
+import { createCoverage, advanceCoverage } from "../lib/feed/coverage.js";
 
 const deferred = () => {
   let resolve;
@@ -373,4 +374,137 @@ test("API still rejects unauthenticated searches before contacting portals", asy
   const post = await loadRoute({ session: null, search: async () => { contacted = true; } });
   assert.equal((await post(feedRequest())).status, 401);
   assert.equal(contacted, false);
+});
+
+test("incremental initial cards remain baseline until the complete search arrives", () => {
+  let store = { seen: {}, baselines: {}, feed: [] };
+  for (const id of [1, 2, 3]) {
+    const result = detectNew(store, [ad(id)], id, { scope: "petrol", answered: ["KLEINANZEIGEN"], partial: true });
+    assert.equal(result.fresh.length, 0);
+    assert.equal(result.baselines.petrol, undefined);
+    store = { ...store, ...result };
+  }
+  store = { ...store, ...detectNew(store, [ad(1), ad(2), ad(3)], 4, { scope: "petrol", answered: ["KLEINANZEIGEN"] }) };
+  const live = detectNew(store, [ad(4)], 5, { scope: "petrol", answered: ["KLEINANZEIGEN"], partial: true });
+  assert.deepEqual(live.fresh.map((item) => item.numericId), [4]);
+  const duplicate = detectNew({ ...store, ...live }, [ad(4)], 6, { scope: "petrol", answered: ["KLEINANZEIGEN"] });
+  assert.equal(duplicate.fresh.length, 0);
+});
+
+test("coverage baselines quietly, follows overflowing bursts, and stops at known ads", () => {
+  let state = advanceCoverage(createCoverage(), { ok: true, hasMore: true, overlap: false }, 100);
+  assert.equal(state.baseline, false);
+  assert.equal(state.page, 2);
+  state = advanceCoverage(state, { ok: true, hasMore: true, overlap: false }, 200);
+  assert.equal(state.page, 3);
+  assert.ok(state.warning);
+  state = advanceCoverage(state, { ok: true, hasMore: true, overlap: true }, 300);
+  assert.equal(state.page, 2);
+  assert.equal(state.warning, null);
+  assert.equal(state.dueAt, 10300);
+});
+
+test("coverage failures retain the failed page and honor refusal cooldown", () => {
+  const state = { ...createCoverage(false), page: 5 };
+  const failed = advanceCoverage(state, { ok: false, retryAfterMs: 300000 }, 100);
+  assert.equal(failed.page, 5);
+  assert.equal(failed.dueAt, 300100);
+  assert.ok(failed.warning);
+  const recovered = advanceCoverage(failed, { ok: true, hasMore: false }, 1000);
+  assert.equal(recovered.page, 2);
+  assert.equal(recovered.failures, 0);
+});
+
+test("coverage reports the portal limit instead of claiming completeness", () => {
+  const state = advanceCoverage({ ...createCoverage(false), page: 200 }, { ok: true, hasMore: true, overlap: false }, 0);
+  assert.match(state.warning, /Seitenlimit/);
+});
+
+test("client passes the recovery page and preserves the live default", async () => {
+  const pages = [];
+  const fetchImpl = async (_, options) => {
+    pages.push(JSON.parse(options.body).page);
+    return new Response('{"type":"complete"}\n');
+  };
+  await requestCheck({}, "AUTOSCOUT24", { page: 3, fetchImpl, onEvent() {} });
+  await requestCheck({}, "AUTOSCOUT24", { fetchImpl, onEvent() {} });
+  assert.deepEqual(pages, [3, 1]);
+});
+
+const kaArticle = (id) => `<article data-adid="${id}" data-href="/s-anzeige/auto/${id}-216-1"><h2>Auto ${id}</h2><p class="font-strong">2.000 €</p><span>Heute, 12:00</span></article>`;
+
+test("Kleinanzeigen publishes each complete card before the HTTP body finishes", async () => {
+  const finish = deferred();
+  const early = deferred();
+  const html = kaArticle(1) + kaArticle(2);
+  const sources = await loadSources(async (_, { onChunk }) => {
+    const boundary = html.indexOf("</article>") + 5;
+    onChunk(html.slice(0, boundary));
+    onChunk(html.slice(boundary));
+    early.resolve();
+    await finish.promise;
+    return { ok: true, body: html };
+  });
+  const batches = [];
+  const search = sources.searchKleinanzeigen(filters.normalizeFilters({}), (batch) => batches.push(batch));
+  await early.promise;
+  assert.equal(batches.length, 2);
+  assert.ok(batches.every((batch) => batch.partial));
+  assert.deepEqual(batches.map((batch) => batch.items[0].numericId), [1, 2]);
+  finish.resolve();
+  await search;
+  assert.equal(batches.at(-1).partial, undefined);
+  assert.equal(batches.at(-1).items.length, 2);
+});
+
+test("AutoScout publishes the JSON payload before a delayed page footer", async () => {
+  const finish = deferred();
+  const early = deferred();
+  const html = `<script id="__NEXT_DATA__">${JSON.stringify({ props: { pageProps: { listings: [{ id: "a", url: "/angebote/a" }] } } })}</script>`;
+  const sources = await loadSources(async (_, { onChunk }) => {
+    onChunk(html.slice(0, -4)); onChunk(html.slice(-4));
+    early.resolve();
+    await finish.promise;
+    return { ok: true, body: html };
+  });
+  const batches = [];
+  const search = sources.searchAutoScout(filters.normalizeFilters({}), (batch) => batches.push(batch));
+  await early.promise;
+  assert.equal(batches.length, 1);
+  assert.equal(batches[0].items[0].id, "a");
+  finish.resolve();
+  await search;
+});
+
+test("unexpected Kleinanzeigen pages cannot silently establish an empty baseline", async () => {
+  const sources = await loadSources();
+  assert.match(sources.parseKleinanzeigenPage("<html>Maintenance</html>").error, /nicht gelesen/);
+  assert.equal(sources.parseKleinanzeigenPage("<h1>Keine Anzeigen gefunden</h1>").error, null);
+});
+
+test("HTTP chunk callbacks run before body completion and preserve split UTF-8", async () => {
+  let sender;
+  const bytes = new TextEncoder().encode("Auto für Jülich");
+  const stream = new ReadableStream({ start(controller) { sender = controller; } });
+  const context = createContext({ fetch: async () => new Response(stream), URL, AbortController,
+    TextDecoder, setTimeout, clearTimeout });
+  const http = new SourceTextModule(await readFile(new URL("../lib/market/http.js", import.meta.url), "utf8"), { context });
+  await http.link(() => new SyntheticModule(["FETCH_PROXY_TEMPLATE", "POLICY"], function () {
+    this.setExport("FETCH_PROXY_TEMPLATE", null);
+    this.setExport("POLICY", { requestTimeoutMs: 1000, requestRetries: 0 });
+  }, { context }));
+  await http.evaluate();
+  const first = deferred();
+  const chunks = [];
+  let done = false;
+  const reading = http.namespace.request("https://example.test", { onChunk(chunk) { chunks.push(chunk); first.resolve(); } })
+    .then((result) => { done = true; return result; });
+  sender.enqueue(bytes.slice(0, 7));
+  await first.promise;
+  assert.equal(done, false);
+  assert.equal(chunks.join(""), "Auto f");
+  sender.enqueue(bytes.slice(7)); sender.close();
+  const result = await reading;
+  assert.equal(result.body, "Auto für Jülich");
+  assert.equal(chunks.join(""), result.body);
 });
