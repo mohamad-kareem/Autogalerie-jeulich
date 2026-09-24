@@ -59,7 +59,8 @@ export async function POST(request) {
   const filters = normalizeFilters(body?.filters || {});
   const only = typeof body?.source === "string" && filters.sources.includes(body.source) ? body.source : null;
   const asked = only ? [only] : filters.sources;
-  const cacheKey = `${filterKey(filters)}|${asked.slice().sort().join(",")}`;
+  const page = Math.max(1, Math.min(200, Math.floor(Number(body?.page) || 1)));
+  const cacheKey = `${filterKey(filters)}|${asked.slice().sort().join(",")}|${page}`;
 
   const job = getCheck(cacheKey, async (emit) => {
     const startedAt = Date.now();
@@ -81,10 +82,10 @@ export async function POST(request) {
         const publish = (batch) => {
           if (!accepting) return;
           streamed = true;
-          emit({ type: "batch", source: id, ...batch, checkedAt: new Date().toISOString() });
+          emit({ type: "batch", source: id, ...batch, page, checkedAt: new Date().toISOString() });
         };
         try {
-          const result = await withTimeout(search(filters, publish), 10_000, fallback);
+          const result = await withTimeout(search(filters, publish, { page }), 10_000, fallback);
           if (!streamed) publish({ ok: Boolean(result.ok), items: result.items || [] });
           if (looksRefused(result)) pauseSource(id);
           return { id, ...result, durationMs: Date.now() - began };
@@ -109,6 +110,9 @@ export async function POST(request) {
         paused: Boolean(result.paused),
         url: result.url || null,
         durationMs: result.durationMs ?? null,
+        page,
+        hasMore: Boolean(result.hasMore) && page < 200,
+        total: result.total ?? null,
       })),
       checkedAt: new Date().toISOString(),
       durationMs: Date.now() - startedAt,

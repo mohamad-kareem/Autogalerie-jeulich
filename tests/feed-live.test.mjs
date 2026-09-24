@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { SourceTextModule, SyntheticModule } from "node:vm";
 import { createCheckPool, streamCheck, readCheckStream } from "../lib/feed/live.js";
-import { detectNew } from "../lib/feed/detect.js";
+import { detectNew, mergeFeed } from "../lib/feed/detect.js";
+import { join } from "node:path";
 import * as filters from "../lib/feed/filters.js";
 
 const deferred = () => {
@@ -87,7 +88,7 @@ test("stream reader handles split UTF-8 and rejects truncated streams", async ()
   await assert.rejects(readCheckStream(new Response('{"type":"batch"}\n'), () => {}), /unterbrochen/);
 });
 
-test("each combination has its own baseline and high-water mark", () => {
+test("each combination has its own baseline, and delayed lower IDs remain visible", () => {
   let store = { seen: {}, baselines: {}, kaMaxId: 0 };
   const check = (scope, items, ok = true) => {
     const result = detectNew(store, items, Date.now(), { scope, answered: ok ? ["KLEINANZEIGEN"] : [] });
@@ -98,11 +99,95 @@ test("each combination has its own baseline and high-water mark", () => {
   assert.equal(check("slow", [ad(20)]).baselineItems.length, 1);
   assert.deepEqual(check("fast", [ad(110), ad(100)]).fresh.map((item) => item.numericId), [110]);
   assert.deepEqual(check("slow", [ad(30), ad(20)]).fresh.map((item) => item.numericId), [30]);
-  assert.equal(check("slow", [ad(30), ad(19)]).fresh.length, 0);
+  assert.deepEqual(check("slow", [ad(30), ad(19)]).fresh.map((item) => item.numericId), [19]);
   check("failed", [], false);
   assert.equal(store.baselines.failed, undefined);
   assert.equal(check("empty", []).baselineItems.length, 0);
   assert.equal(check("empty", [ad(120)]).fresh.length, 1);
+});
+
+test("unseen AutoScout results below a known ad are discovered", () => {
+  const item = (id) => ({ key: `AUTOSCOUT24:${id}`, source: "AUTOSCOUT24" });
+  const result = detectNew({ seen: { "AUTOSCOUT24:known": 1 }, baselines: { AUTOSCOUT24: true } },
+    [item("known"), item("delayed")], 2);
+  assert.deepEqual(result.fresh.map((entry) => entry.key), ["AUTOSCOUT24:delayed"]);
+});
+
+test("pagination does not announce old cars or establish the live baseline", () => {
+  const result = detectNew({ seen: {}, baselines: {} }, [ad(20)], 1, { backfill: true });
+  assert.equal(result.fresh.length, 0);
+  assert.equal(result.otherItems.length, 1);
+  assert.equal(result.baselines.KLEINANZEIGEN, undefined);
+});
+
+test("merge restores previously discarded ads, refreshes prices, and keeps more than 150 matches", () => {
+  const previous = Array.from({ length: 160 }, (_, i) => ({ ...ad(i), firstSeenAt: "before", isNew: false }));
+  previous[0].details = { hu: "loaded" };
+  previous[0].price = 1000;
+  const merged = mergeFeed(previous, [{ ...ad(0), price: 900 }, ad(200), ad(201)], [ad(201)], "now");
+  assert.equal(merged.feed.length, 162);
+  assert.equal(merged.feed[0].key, ad(201).key);
+  assert.equal(merged.arrivals.length, 1);
+  const updated = merged.feed.find((item) => item.key === ad(0).key);
+  assert.equal(updated.price, 900);
+  assert.equal(updated.firstSeenAt, "before");
+  assert.equal(updated.details.hu, "loaded");
+  assert.equal(merged.feed.find((item) => item.key === ad(200).key).isNew, false);
+});
+
+async function loadSources(request = async () => ({ ok: true, body: "" })) {
+  const source = new SourceTextModule(await readFile(new URL("../lib/feed/sources.js", import.meta.url), "utf8"));
+  await source.link(async (name) => {
+    const exports = name.endsWith("/http") ? { request, requestJson: async () => ({ data: {} }) }
+      : name.endsWith("/autoscout24") ? { makeSlug: (value) => value }
+        : { searchNewest: async () => ({}), isConfigured: () => false };
+    return new SyntheticModule(Object.keys(exports), function () {
+      for (const [key, value] of Object.entries(exports)) this.setExport(key, value);
+    });
+  });
+  await source.evaluate();
+  return source.namespace;
+}
+
+test("search URLs preserve Germany and chosen filters while supporting further pages", async () => {
+  const sources = await loadSources();
+  const f = filters.normalizeFilters({ fuels: ["PETROL"], seller: "PRIVATE", priceMin: 1500, priceMax: 12000 });
+  const url = new URL(sources.autoscoutUrl(f, 2));
+  assert.equal(url.searchParams.get("cy"), "D");
+  assert.equal(url.searchParams.get("page"), "2");
+  assert.equal(url.searchParams.get("fuel"), "B");
+  assert.equal(url.searchParams.has("adage"), false);
+  assert.match(sources.kleinanzeigenUrls(f, null, 2)[0], /\/seite:2\//);
+});
+
+test("AutoScout parser retains matches, reports coverage, excludes foreign cars and relaxed recommendations", async () => {
+  const sources = await loadSources();
+  const listing = { id: "a", url: "/angebote/a", location: { countryCode: "DE" }, searchResultSection: "Main", searchResultType: "Organic" };
+  const html = `<script id="__NEXT_DATA__">${JSON.stringify({ props: { pageProps: {
+    listings: [listing, { ...listing, id: "b", location: { countryCode: "IT" } },
+      { ...listing, id: "c", searchResultSection: "Recommendation" }], numberOfResults: 4781, numberOfPages: 200,
+  } } })}</script>`;
+  const result = sources.parseAutoScoutPage(html);
+  assert.equal(result.items.length, 1);
+  assert.equal(result.total, 4781);
+  assert.equal(result.totalPages, 200);
+  assert.equal(result.items[0].promoted, false);
+});
+
+test("downloaded live search pages parse with pagination and Germany-only AutoScout results", {
+  skip: !process.env.FEED_LIVE_FIXTURES,
+}, async (t) => {
+  const sources = await loadSources();
+  const as = sources.parseAutoScoutPage(await readFile(join(process.env.FEED_LIVE_FIXTURES, "feed-autoscout.html"), "utf8"));
+  const ka = sources.parseKleinanzeigenPage(await readFile(join(process.env.FEED_LIVE_FIXTURES, "feed-kleinanzeigen.html"), "utf8"));
+  assert.equal(as.ok, true);
+  assert.ok(as.items.length > 0);
+  assert.ok(as.total > as.items.length);
+  assert.ok(as.totalPages > 1);
+  assert.equal(ka.ok, true);
+  assert.ok(ka.items.length > 0);
+  assert.equal(ka.hasMore, true);
+  t.diagnostic(`Live fixtures: AutoScout24 ${as.items.length} parsed / ${as.total} total; Kleinanzeigen ${ka.items.length} parsed, further pages available.`);
 });
 
 test("paid placements and repeated results do not create new arrivals", () => {
@@ -161,9 +246,42 @@ async function loadRoute({ session, search }) {
   return source.namespace.POST;
 }
 
-const feedRequest = (stream = true) => new Request("https://example.test/api/neue-angebote", {
+const feedRequest = (stream = true, page = 1) => new Request("https://example.test/api/neue-angebote", {
   method: "POST", headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ filters: { sources: ["KLEINANZEIGEN"] }, source: "KLEINANZEIGEN", stream }),
+  body: JSON.stringify({ filters: { sources: ["KLEINANZEIGEN"] }, source: "KLEINANZEIGEN", stream, page }),
+});
+
+test("slow older-page requests neither share cache entries with nor delay the live page", async () => {
+  const gate = deferred();
+  const started = deferred();
+  const post = await loadRoute({ session: { user: {} }, search: async (_, publish, { page }) => {
+    if (page === 2) { started.resolve(); await gate.promise; }
+    publish({ scope: "same-search", ok: true, items: [ad(page)] });
+    return { ok: true, items: [ad(page)], page, hasMore: true };
+  } });
+  const older = post(feedRequest(false, 2));
+  await started.promise;
+  const live = await (await post(feedRequest(false, 1))).json();
+  assert.equal(live.items[0].numericId, 1);
+  assert.equal(live.sources[0].page, 1);
+  gate.resolve();
+  const backfill = await (await older).json();
+  assert.equal(backfill.items[0].numericId, 2);
+  assert.equal(backfill.sources[0].hasMore, true);
+});
+
+test("Kleinanzeigen pagination keeps the same detection scope across pages", async () => {
+  const requested = [];
+  const sources = await loadSources(async (url) => {
+    requested.push(url);
+    return { ok: true, body: '<a title="Nächste" href="/next">next</a>' };
+  });
+  const f = filters.normalizeFilters({ fuels: ["PETROL"] });
+  const batches = [];
+  const result = await sources.searchKleinanzeigen(f, (batch) => batches.push(batch), { page: 2 });
+  assert.match(requested[0], /\/seite:2\//);
+  assert.equal(batches[0].scope.includes("seite:2"), false);
+  assert.equal(result.hasMore, true);
 });
 
 test("API streams an early batch and preserves its JSON response for other callers", async () => {

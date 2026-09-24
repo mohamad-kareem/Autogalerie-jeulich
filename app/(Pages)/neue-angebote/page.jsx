@@ -11,11 +11,8 @@
  * was already online. Everything that turns up after that is new and lands at
  * the top, with a sound and a desktop notification if wanted.
  *
- * What counts as new is decided here, per portal:
- *   Kleinanzeigen  ad numbers only ever grow, so "higher than any number seen
- *                  at the baseline" is new — pushed-up old ads are not.
- *   AutoScout24 /  unseen ads above the first already-seen one in the newest-
- *   mobile.de      first list; ones below it are older ads filling the page.
+ * "New" means first discovered by this search, not a verified upload time.
+ * Every returned match is kept; ordering and ad IDs must not hide vehicles.
  *
  * Runs without a paid Vercel plan: no background job, the open page drives it.
  */
@@ -58,13 +55,13 @@ import {
   kleinanzeigenSearchCount,
   normalizeFilters,
 } from "@/lib/feed/filters";
-import { detectNew } from "@/lib/feed/detect";
+import { detectNew, mergeFeed } from "@/lib/feed/detect";
 import { readCheckStream } from "@/lib/feed/live";
 
 const FILTER_STORE = "neueAngebote.filters.v1";
 const SETTINGS_STORE = "neueAngebote.settings.v1";
 const FEED_STORE = (key) => `neueAngebote.feed.v1.${key}`;
-const MAX_FEED = 150;
+const MAX_SAVED_FEED = 500;
 // Fast polling still depends on portal publication and response time.
 // Refusals retain the server cooldown and client failure backoff.
 const INTERVALS = [5, 15, 30, 60, 120];
@@ -524,7 +521,7 @@ function ListingCard({ item, dark, now, onHide, onLoadDetails, latest = false })
     ? `online seit ${clock(item.postedAt)}`
     : item.isNew
       ? `entdeckt ${ago(item.firstSeenAt, now)}`
-      : "beim Start online";
+      : "passendes Angebot";
 
   const ratingColor = item.rating
     ? item.rating.tone === "good"
@@ -712,7 +709,6 @@ export default function NeueAngebotePage() {
   // Failed checks in a row, per portal.
   const [failures, setFailures] = useState({});
   const [unread, setUnread] = useState(0);
-  const [showOld, setShowOld] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
   const storeRef = useRef(emptyStore());
@@ -795,7 +791,8 @@ export default function NeueAngebotePage() {
   const persist = useCallback(
     (store) => {
       if (!key) return;
-      writeJson(FEED_STORE(key), store);
+      // Limit disk usage only. Never truncate the results the user is viewing.
+      writeJson(FEED_STORE(key), { ...store, feed: store.feed.slice(0, MAX_SAVED_FEED) });
     },
     [key],
   );
@@ -898,10 +895,11 @@ export default function NeueAngebotePage() {
 
   /* one check of one portal */
   const checkSource = useCallback(async (source) => {
-    if (!applied || inFlightRef.current[source]) return null;
+    const requestKey = source;
+    if (!applied || inFlightRef.current[requestKey]) return null;
     const generation = generationRef.current;
     const controller = new AbortController();
-    inFlightRef.current[source] = controller;
+    inFlightRef.current[requestKey] = controller;
     const current = () => generation === generationRef.current && !controller.signal.aborted;
     setPending((count) => count + 1);
     try {
@@ -929,7 +927,8 @@ export default function NeueAngebotePage() {
           finalStatus = status;
           const order = applied.sources;
           setSources((list) =>
-            [...list.filter((entry) => entry.id !== source), status].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)),
+            [...list.filter((entry) => entry.id !== source), { ...status, checkedAt: data.checkedAt }]
+              .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)),
           );
           setLastCheck(data.checkedAt);
           noteFailure(source, !status.ok && !status.skipped);
@@ -941,20 +940,13 @@ export default function NeueAngebotePage() {
         // Read the memory only now: another portal may have answered meanwhile.
         const store = storeRef.current;
         const items = (Array.isArray(data.items) ? data.items : []).filter((item) => item.source === source);
-        const { fresh, baselineItems, seen, kaMaxId, baselines, watermarks } = detectNew(store, items, at, {
+        const { fresh, seen, kaMaxId, baselines, watermarks } = detectNew(store, items, at, {
           answered: [source],
           scope: data.scope || null,
         });
-
-        const known = new Set(store.feed.map((item) => item.key));
-        const arrivals = fresh
-          .filter((item) => !known.has(item.key))
-          .map((item) => ({ ...item, isNew: true, firstSeenAt: atIso }));
-        // A portal's first answer: what is online there now, shown below as "schon online".
-        const already = baselineItems
-          .filter((item) => !known.has(item.key))
-          .map((item) => ({ ...item, isNew: false, firstSeenAt: atIso }));
-        const nextFeed = [...arrivals, ...store.feed, ...already].slice(0, MAX_FEED);
+        const { feed: matchedFeed, arrivals } = mergeFeed(store.feed, items, fresh, atIso);
+        // Baseline IDs stay in `seen`; old listing cards need no state/storage.
+        const nextFeed = matchedFeed.filter((item) => item.isNew);
 
         const nextStore = { ...store, baselineDone: true, baselines, watermarks, seen, kaMaxId, feed: nextFeed };
         storeRef.current = nextStore;
@@ -978,8 +970,10 @@ export default function NeueAngebotePage() {
       toast.error(`Prüfung fehlgeschlagen: ${error.message}`, { id: "feed-error" });
       return { id: source, ok: false };
     } finally {
-      if (inFlightRef.current[source] === controller) delete inFlightRef.current[source];
-      if (current()) setPending((count) => Math.max(0, count - 1));
+      if (inFlightRef.current[requestKey] === controller) delete inFlightRef.current[requestKey];
+      if (current()) {
+        setPending((count) => Math.max(0, count - 1));
+      }
     }
   }, [applied, persist, loadDetails]);
 
@@ -1049,7 +1043,7 @@ export default function NeueAngebotePage() {
     // A lookup still "loading" when the page was closed never finished.
     const store = {
       ...saved,
-      feed: (saved.feed || []).map((entry) =>
+      feed: (saved.feed || []).filter((entry) => entry.isNew).map((entry) =>
         entry.detailsState === "loading" ? { ...entry, detailsState: undefined } : entry,
       ),
     };
@@ -1105,9 +1099,9 @@ export default function NeueAngebotePage() {
     }
   };
 
-  const visible = useMemo(() => feed.filter((item) => !hidden.includes(item.key)), [feed, hidden]);
+  const visible = useMemo(() => feed.filter((item) =>
+    !hidden.includes(item.key) && (!applied || applied.sources.includes(item.source))), [feed, hidden, applied]);
   const fresh = visible.filter((item) => item.isNew);
-  const old = visible.filter((item) => !item.isNew);
   // The newest of the new: what the most recent round of checks found. The
   // portals answer separately, so a round spans a few seconds.
   const latestAt = fresh.reduce((max, item) => (item.firstSeenAt > max ? item.firstSeenAt : max), "");
@@ -1162,7 +1156,7 @@ export default function NeueAngebotePage() {
           <div className="mr-auto min-w-0">
             <h1 className="text-lg font-semibold tracking-tight">Neue Angebote</h1>
             <p className={`mt-0.5 text-[12px] ${muted}`}>
-              Frisch hochgeladene Fahrzeuge von AutoScout24, Kleinanzeigen und mobile.de
+              Neue und passende Fahrzeuge in Deutschland · AutoScout24, Kleinanzeigen und mobile.de
             </p>
           </div>
 
@@ -1250,9 +1244,9 @@ export default function NeueAngebotePage() {
                 className="inline-flex items-center gap-1.5"
               >
                 <span className={`size-1.5 rounded-full ${sourceDot(source)}`} />
-                <span className={dark ? "text-slate-300" : "text-slate-700"}>{source.label}</span>
+                {source.url ? <a href={source.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">{source.label}</a> : <span>{source.label}</span>}
                 {source.ok ? (
-                  <span>{source.count} Treffer</span>
+                  <span>{source.count} geprüft{Number.isFinite(source.total) ? ` · ${source.total.toLocaleString("de-DE")} insgesamt` : ""} · {Number.isFinite(source.durationMs) ? `${(source.durationMs / 1000).toFixed(1)} s` : ""}</span>
                 ) : (
                   <span className={source.skipped ? "" : "text-amber-600"}>
                     {source.paused ? "pausiert" : /freigeschaltet|nicht eingerichtet/.test(source.error || "") ? "kein Zugang" : "nicht erreichbar"}
@@ -1260,6 +1254,7 @@ export default function NeueAngebotePage() {
                 )}
               </span>
             ))}
+            {lastCheck ? <span>Letzte Antwort: {clock(lastCheck)} · {Math.max(0, Math.floor((now - new Date(lastCheck).getTime()) / 1000))} s her</span> : null}
             {Object.entries(failures).some(([, count]) => count >= 3) ? (
               <span className="w-full text-amber-600">
                 {Object.entries(failures)
@@ -1291,7 +1286,7 @@ export default function NeueAngebotePage() {
                 <FeedSection
                   dark={dark}
                   live
-                  title="Gerade reingekommen"
+                  title="Neu entdeckt"
                   count={latest.length}
                   meta={`Prüfung um ${clock(latestAt)} · ${ago(latestAt, now)}`}
                 >
@@ -1318,29 +1313,6 @@ export default function NeueAngebotePage() {
                 )}
               </div>
             )}
-
-            {old.length ? (
-              <section className={`mb-5 overflow-hidden rounded-lg border ${panel}`}>
-                <button
-                  type="button"
-                  onClick={() => setShowOld((value) => !value)}
-                  aria-expanded={showOld}
-                  className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-[13px] font-semibold ${
-                    showOld ? (dark ? "border-b border-slate-800" : "border-b border-slate-100") : ""
-                  }`}
-                >
-                  <span>Beim Start schon online · {old.length}</span>
-                  <span className={`flex items-center gap-1 text-[12px] font-normal ${muted}`}>
-                    {showOld ? "ausblenden" : "anzeigen"} {showOld ? <FiChevronUp /> : <FiChevronDown />}
-                  </span>
-                </button>
-                {showOld ? (
-                  <div className={`space-y-2.5 p-2.5 ${dark ? "bg-slate-950/40" : "bg-slate-50"}`}>
-                    {renderRows(old, { first: false })}
-                  </div>
-                ) : null}
-              </section>
-            ) : null}
 
             <div className={`mt-2 flex flex-wrap items-center justify-between gap-2 text-[12px] ${muted}`}>
               <span>Prüfung alle {intervalSec} s · Veröffentlichung und Antwortzeit des Portals bestimmen die Verzögerung.</span>
