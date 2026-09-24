@@ -57,10 +57,13 @@ import {
 } from "@/lib/feed/filters";
 import { detectNew, mergeFeed } from "@/lib/feed/detect";
 import { readCheckStream } from "@/lib/feed/live";
+import { KA_CYCLE_MS, KA_DEFAULT_LANDING_MS, nextKaCheck, observeKa } from "@/lib/feed/kaCycle";
 
 const FILTER_STORE = "neueAngebote.filters.v1";
 const SETTINGS_STORE = "neueAngebote.settings.v1";
 const FEED_STORE = (key) => `neueAngebote.feed.v1.${key}`;
+// Where in its two-minute cycle Kleinanzeigen's search last refreshed (learned, see kaCycle.js).
+const KA_TIMING_STORE = "neueAngebote.kaTiming.v1";
 const MAX_SAVED_FEED = 500;
 // Fast polling still depends on portal publication and response time.
 // Refusals retain the server cooldown and client failure backoff.
@@ -86,6 +89,11 @@ function ago(iso, now) {
 function clock(iso) {
   if (!iso) return null;
   return new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+}
+
+function clockSeconds(iso) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
 function readJson(key, fallback) {
@@ -518,9 +526,9 @@ function ListingCard({ item, dark, now, onHide, onLoadDetails, latest = false })
         : null;
 
   const when = item.postedAt
-    ? `online seit ${clock(item.postedAt)}`
+    ? `online seit ${clock(item.postedAt)}${item.isNew && item.firstSeenAt ? ` · gefunden ${clockSeconds(item.firstSeenAt)}` : ""}`
     : item.isNew
-      ? `entdeckt ${ago(item.firstSeenAt, now)}`
+      ? `gefunden ${clockSeconds(item.firstSeenAt)} · ${ago(item.firstSeenAt, now)}`
       : "passendes Angebot";
 
   const ratingColor = item.rating
@@ -723,6 +731,13 @@ export default function NeueAngebotePage() {
   // Per portal: a check under way, and when the last one started.
   const inFlightRef = useRef({});
   const lastStartRef = useRef({});
+  // Server clock minus this PC's clock: a PC can be seconds off, and the
+  // Kleinanzeigen timing is measured on the server's clock.
+  const clockOffsetRef = useRef(0);
+  const clockSamplesRef = useRef([]);
+  // Kleinanzeigen timing: where its refresh lands, the newest ad number seen,
+  // and until when to ask at the normal pace while the timing is relearned.
+  const kaRef = useRef({ landing: KA_DEFAULT_LANDING_MS, lastMax: 0, lastAt: null, relearnUntil: 0 });
   const generationRef = useRef(0);
   const detailControllersRef = useRef(new Set());
 
@@ -754,6 +769,13 @@ export default function NeueAngebotePage() {
     if (typeof settings.sound === "boolean") setSound(settings.sound);
     if (settings.notify && typeof Notification !== "undefined" && Notification.permission === "granted") {
       setNotify(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timing = readJson(KA_TIMING_STORE, null);
+    if (timing && Number.isFinite(timing.landing) && timing.landing >= 0 && timing.landing < KA_CYCLE_MS) {
+      kaRef.current = { ...kaRef.current, landing: timing.landing };
     }
   }, []);
 
@@ -900,6 +922,7 @@ export default function NeueAngebotePage() {
     const generation = generationRef.current;
     const controller = new AbortController();
     inFlightRef.current[requestKey] = controller;
+    const serverStarted = Date.now() + clockOffsetRef.current;
     const current = () => generation === generationRef.current && !controller.signal.aborted;
     setPending((count) => count + 1);
     try {
@@ -920,11 +943,19 @@ export default function NeueAngebotePage() {
       }
       let finalStatus = null;
       let detailBudget = 10;
+      let newestId = 0;
       await readCheckStream(response, (data) => {
         if (!current()) return;
         if (data.type === "complete") {
           const status = (data.sources || []).find((entry) => entry.id === source) || { id: source, ok: false };
-          finalStatus = status;
+          finalStatus = { ...status, newestId };
+          const serverAt = Date.parse(data.checkedAt);
+          if (Number.isFinite(serverAt)) {
+            // Median of the last few samples: one slow answer must not skew it.
+            const samples = [...clockSamplesRef.current, serverAt - Date.now()].slice(-7);
+            clockSamplesRef.current = samples;
+            clockOffsetRef.current = samples.slice().sort((a, b) => a - b)[Math.floor(samples.length / 2)];
+          }
           const order = applied.sources;
           setSources((list) =>
             [...list.filter((entry) => entry.id !== source), { ...status, checkedAt: data.checkedAt }]
@@ -940,6 +971,9 @@ export default function NeueAngebotePage() {
         // Read the memory only now: another portal may have answered meanwhile.
         const store = storeRef.current;
         const items = (Array.isArray(data.items) ? data.items : []).filter((item) => item.source === source);
+        for (const item of items) {
+          if (!item.promoted && Number.isFinite(item.numericId) && item.numericId > newestId) newestId = item.numericId;
+        }
         const { fresh, seen, kaMaxId, baselines, watermarks } = detectNew(store, items, at, {
           answered: [source],
           scope: data.scope || null,
@@ -963,6 +997,7 @@ export default function NeueAngebotePage() {
 
         setLastCheck(data.checkedAt || atIso);
       });
+      if (source === "KLEINANZEIGEN" && finalStatus?.ok && current()) noteKaCheck(serverStarted, newestId);
       return finalStatus;
     } catch (error) {
       if (!current() || error.name === "AbortError") return null;
@@ -978,6 +1013,19 @@ export default function NeueAngebotePage() {
   }, [applied, persist, loadDetails]);
 
   const checkAll = () => applied?.sources.forEach((source) => checkSource(source));
+
+  /**
+   * After each Kleinanzeigen check: did its newest ad number go up? Then its
+   * search refreshed since the last check — confirm or correct when that
+   * happens in its two-minute cycle.
+   */
+  const noteKaCheck = (serverAt, newestId) => {
+    const before = kaRef.current;
+    const after = observeKa(before, serverAt, newestId);
+    if (after.landing !== before.landing) writeJson(KA_TIMING_STORE, { landing: after.landing, at: Date.now() });
+    kaRef.current = after;
+  };
+
 
   /* the loops: one per portal, each at a fixed pace — slower after repeated failures */
   useEffect(() => {
@@ -997,9 +1045,19 @@ export default function NeueAngebotePage() {
           loop.stopped = true;
           return;
         }
-        const period = (failuresRef.current[source] || 0) >= 3 ? 5 * 60_000 : intervalSec * 1_000;
-        // The next check is due one interval after this one started, not after it ended.
-        loop.ticker.set(Math.max(1_000, period - (Date.now() - started)), loop.run);
+
+        const failing = (failuresRef.current[source] || 0) >= 3;
+        const serverNow = Date.now() + clockOffsetRef.current;
+        let delay;
+        if (!failing && source === "KLEINANZEIGEN" && serverNow >= kaRef.current.relearnUntil) {
+          // Kleinanzeigen: right when its search refreshes (every 2 min), not in between.
+          delay = nextKaCheck(serverNow, kaRef.current.landing) - serverNow;
+        } else {
+          const period = failing ? 5 * 60_000 : intervalSec * 1_000;
+          // The next check is due one interval after this one started, not after it ended.
+          delay = period - (Date.now() - started);
+        }
+        loop.ticker.set(Math.max(1_000, delay), loop.run);
       };
       // A few hundred milliseconds apart, so the portals are not hit in the same instant.
       loop.ticker.set(index * 300, loop.run);
@@ -1011,7 +1069,9 @@ export default function NeueAngebotePage() {
       if (document.visibilityState !== "visible") return;
       for (const loop of loops) {
         const last = lastStartRef.current[loop.source] || 0;
-        const period = (failuresRef.current[loop.source] || 0) >= 3 ? 5 * 60_000 : intervalSec * 1_000;
+        const failing = (failuresRef.current[loop.source] || 0) >= 3;
+        // Kleinanzeigen waits up to ~50 s between its checks on purpose.
+        const period = failing ? 5 * 60_000 : loop.source === "KLEINANZEIGEN" ? 60_000 : intervalSec * 1_000;
         if (!loop.stopped && !inFlightRef.current[loop.source] && Date.now() - last > period + 1_000) {
           loop.ticker.set(0, loop.run);
         }
@@ -1199,7 +1259,7 @@ export default function NeueAngebotePage() {
                       <select
                         value={intervalSec}
                         onChange={(e) => setIntervalSec(Number(e.target.value))}
-                        title="Wie oft geprüft wird"
+                        title="Wie oft AutoScout24 und mobile.de geprüft werden. Kleinanzeigen wird direkt nach jeder Aktualisierung seiner Suche geprüft (alle 2 Minuten)."
                         aria-label="Prüfintervall"
                         className={`h-7 bg-transparent px-2 text-[12px] outline-none ${dark ? "text-slate-100" : ""}`}
                       >
@@ -1275,7 +1335,8 @@ export default function NeueAngebotePage() {
             </div>
             <p className="text-[15px] font-semibold">Filter setzen und Live-Suche starten</p>
             <p className={`mx-auto mt-1.5 max-w-md text-[13px] leading-6 ${muted}`}>
-              Solange diese Seite offen ist, werden die Portale im Schnellmodus alle 5 Sekunden geprüft.
+              Solange diese Seite offen ist, wird AutoScout24 alle paar Sekunden geprüft und Kleinanzeigen genau
+              dann, wenn es seine Suche aktualisiert (alle 2 Minuten).
               Entdeckte Fahrzeuge erscheinen direkt nach der Portalantwort – mit Ton und auf Wunsch als Desktop-Benachrichtigung.
             </p>
           </div>
@@ -1315,7 +1376,10 @@ export default function NeueAngebotePage() {
             )}
 
             <div className={`mt-2 flex flex-wrap items-center justify-between gap-2 text-[12px] ${muted}`}>
-              <span>Prüfung alle {intervalSec} s · Veröffentlichung und Antwortzeit des Portals bestimmen die Verzögerung.</span>
+              <span>
+                AutoScout24 alle {intervalSec} s · Kleinanzeigen direkt nach jeder Aktualisierung seiner Suche (alle 2 Min.) –
+                früher zeigt die Website neue Anzeigen nicht.
+              </span>
               {feed.length ? (
                 <button type="button" onClick={resetFeed} className="inline-flex items-center gap-1 hover:text-red-600">
                   <FiTrash2 /> Liste leeren
