@@ -28,6 +28,20 @@ it never schedules another search on its own.
 
 ## What this cannot guarantee
 
+Freshness correction (Twingo `3515465635`, detail date 17 September 2026):
+unseen does not mean newly uploaded. Each search combination now keeps a fixed
+initial Kleinanzeigen ID floor and a session time cutoff (rounded to the minute
+because portal timestamps have minute precision). Older IDs are excluded even
+if their displayed date is refreshed. Available dates must pass the cutoff;
+an empty ID baseline requires a recent date. The floor does not advance during
+live checks, allowing newer uploads to be indexed out of order. This is a
+conservative heuristic, not proof of original publication: older IDs newly
+activated later can be excluded. Existing v1 saved cards are discarded by the
+v2 storage key. Dates are displayed with their calendar day and dated arrivals
+are ordered by portal time instead of detection time. AutoScout24 search results
+have no publication timestamp; their badge says "Neu gefunden", and their
+original upload age remains unverified. No extra network requests were added.
+
 Discovery time is not upload time. Ads absent from the portal's returned search
 cannot be delivered yet. Search pages can be cached, blocked, reordered or
 truncated, and the first baseline intentionally hides existing stock. Overlapping
@@ -63,3 +77,29 @@ For a live comparison, record the same listing URL, the time CarDeluxe displays
 it, the time the portal search first exposes it, and our `gefunden` time. That
 separates source delay from our fetch/render delay without mistaking an older
 or differently filtered listing for a missed upload.
+
+## Mondeo investigation, 24 September 2026
+
+The user supplied ad `3522302331` and their exact Kleinanzeigen search URL.
+That URL includes petrol, private sellers, EUR 1,500–12,000, registration
+2008–2024 and 20,000–100,000 km. It does **not** exclude damaged vehicles.
+The ad's returned card says 14,400 km and 08/2018. A focused search includes
+the ad; adding the user's mileage range excludes it. The application's parser
+retains the ad when the portal includes it. Its damage status is therefore not
+the explanation for this user's active search.
+
+Normal and fresh-query requests to the exact user search at approximately
+19:40 UTC both returned their newest dated results at 19:38 UTC. The added
+query parameter did not improve this sample. This observation does not measure
+upload-to-index latency or prove a universal two-minute cache lifetime.
+
+Two rotating paid placements in that response were previously misclassified
+as organic: the site renders their TOP badges as SVG outside `<article>`.
+Detection now uses Astro's explicit `topAd` metadata when present and recognizes
+the observed outer SVG badge in early streamed fragments. This prevents those
+placements from generating fresh-ad alerts or acting as catch-up anchors.
+
+The unauthenticated mobile API request returned HTTP 401. No credentials from
+the unofficial repository were used. Removing the remaining acquisition delay
+requires verified faster source access; these parsing corrections do not
+establish CarDeluxe-equivalent latency.

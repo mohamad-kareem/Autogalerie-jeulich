@@ -63,7 +63,8 @@ import { KA_CYCLE_MS, KA_DEFAULT_LANDING_MS, nextKaCheck, observeKa } from "@/li
 
 const FILTER_STORE = "neueAngebote.filters.v1";
 const SETTINGS_STORE = "neueAngebote.settings.v1";
-const FEED_STORE = (key) => `neueAngebote.feed.v1.${key}`;
+// v1 classified old, newly encountered inventory as fresh. Do not restore it.
+const FEED_STORE = (key) => `neueAngebote.feed.v2.${key}`;
 // Where in its two-minute cycle Kleinanzeigen's search last refreshed (learned, see kaCycle.js).
 const KA_TIMING_STORE = "neueAngebote.kaTiming.v1";
 const MAX_SAVED_FEED = 500;
@@ -116,7 +117,7 @@ function writeJson(key, value) {
 }
 
 function emptyStore() {
-  return { baselineDone: false, seen: {}, kaMaxId: 0, feed: [] };
+  return { baselineDone: false, startedAt: Date.now(), seen: {}, kaMaxId: 0, feed: [] };
 }
 
 /**
@@ -527,7 +528,7 @@ const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadD
         : null;
 
   const when = item.postedAt
-    ? `online seit ${clock(item.postedAt)}${item.isNew && item.firstSeenAt ? ` · gefunden ${clockSeconds(item.firstSeenAt)}` : ""}`
+    ? `online seit ${new Date(item.postedAt).toLocaleDateString("de-DE")} ${clock(item.postedAt)}${item.isNew && item.firstSeenAt ? ` · gefunden ${clockSeconds(item.firstSeenAt)}` : ""}`
     : item.isNew
       ? `gefunden ${clockSeconds(item.firstSeenAt)} · ${ago(item.firstSeenAt, now)}`
       : "passendes Angebot";
@@ -575,7 +576,7 @@ const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadD
               }`}
             >
               <span className={`size-1 rounded-full bg-emerald-500 ${latest ? "animate-pulse" : ""}`} />
-              {latest ? "Neueste" : "Neu"}
+              {item.postedAt ? (latest ? "Neueste" : "Neu") : "Neu gefunden"}
             </span>
           ) : null}
           <span>{source?.label || item.source}</span>
@@ -1012,7 +1013,7 @@ export default function NeueAngebotePage() {
         for (const item of items) {
           if (!item.promoted && Number.isFinite(item.numericId) && item.numericId > newestId) newestId = item.numericId;
         }
-        const { fresh, seen, kaMaxId, baselines, watermarks } = detectNew(store, items, at, {
+        const { fresh, seen, kaMaxId, baselines, watermarks, freshness } = detectNew(store, items, at, {
           answered: [source],
           scope: data.scope || null,
           backfill: baseline,
@@ -1023,7 +1024,7 @@ export default function NeueAngebotePage() {
         // Baseline IDs stay in `seen`; old listing cards need no state/storage.
         const nextFeed = matchedFeed.filter((item) => item.isNew);
 
-        const nextStore = { ...store, baselineDone: true, baselines, watermarks, seen, kaMaxId, feed: nextFeed };
+        const nextStore = { ...store, baselineDone: true, baselines, watermarks, freshness, seen, kaMaxId, feed: nextFeed };
         storeRef.current = nextStore;
         persist(nextStore);
         setFeed(nextFeed);
@@ -1247,12 +1248,14 @@ export default function NeueAngebotePage() {
 
   const visible = useMemo(() => feed.filter((item) =>
     !hidden.includes(item.key) && (!applied || applied.sources.includes(item.source))), [feed, hidden, applied]);
-  const fresh = visible.filter((item) => item.isNew);
-  // The newest of the new: what the most recent round of checks found. The
-  // portals answer separately, so a round spans a few seconds.
-  const latestAt = fresh.reduce((max, item) => (item.firstSeenAt > max ? item.firstSeenAt : max), "");
+  // Use the portal date where available; late discovery must not move an
+  // earlier upload above a later one. Undated sources remain explicitly found.
+  const listingTime = (item) => item.postedAt || item.firstSeenAt;
+  const fresh = visible.filter((item) => item.isNew)
+    .sort((a, b) => Date.parse(listingTime(b)) - Date.parse(listingTime(a)));
+  const latestAt = fresh.length ? listingTime(fresh[0]) : "";
   const roundStart = latestAt ? new Date(latestAt).getTime() - 10_000 : 0;
-  const inLatest = (item) => new Date(item.firstSeenAt).getTime() >= roundStart;
+  const inLatest = (item) => new Date(listingTime(item)).getTime() >= roundStart;
   const latest = fresh.filter(inLatest);
   const earlier = fresh.filter((item) => !inLatest(item));
   const hide = useCallback((itemKey) => setHidden((list) => [...list, itemKey]), []);
@@ -1439,7 +1442,7 @@ export default function NeueAngebotePage() {
                   live
                   title="Neu entdeckt"
                   count={latest.length}
-                  meta={`Prüfung um ${clock(latestAt)} · ${ago(latestAt, now)}`}
+                  meta={`Online / gefunden ${clock(latestAt)} · ${ago(latestAt, now)}`}
                 >
                   {renderRows(latest, { isLatest: true })}
                 </FeedSection>

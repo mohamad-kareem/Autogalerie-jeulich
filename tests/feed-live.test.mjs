@@ -145,7 +145,7 @@ test("stream reader handles split UTF-8 and rejects truncated streams", async ()
   await assert.rejects(readCheckStream(new Response('{"type":"batch"}\n'), () => {}), /unterbrochen/);
 });
 
-test("each combination has its own baseline, and delayed lower IDs remain visible", () => {
+test("each combination freezes its initial ID floor while allowing newer IDs out of order", () => {
   let store = { seen: {}, baselines: {}, kaMaxId: 0 };
   const check = (scope, items, ok = true) => {
     const result = detectNew(store, items, Date.now(), { scope, answered: ok ? ["KLEINANZEIGEN"] : [] });
@@ -156,11 +156,42 @@ test("each combination has its own baseline, and delayed lower IDs remain visibl
   assert.equal(check("slow", [ad(20)]).baselineItems.length, 1);
   assert.deepEqual(check("fast", [ad(110), ad(100)]).fresh.map((item) => item.numericId), [110]);
   assert.deepEqual(check("slow", [ad(30), ad(20)]).fresh.map((item) => item.numericId), [30]);
-  assert.deepEqual(check("slow", [ad(30), ad(19)]).fresh.map((item) => item.numericId), [19]);
+  assert.deepEqual(check("slow", [ad(30), ad(19), ad(29)]).fresh.map((item) => item.numericId), [29]);
   check("failed", [], false);
   assert.equal(store.baselines.failed, undefined);
   assert.equal(check("empty", []).baselineItems.length, 0);
-  assert.equal(check("empty", [ad(120)]).fresh.length, 1);
+  assert.equal(check("empty", [{ ...ad(120), postedAt: new Date().toISOString() }]).fresh.length, 1);
+});
+
+test("old Twingo and old catch-up results never become new uploads", () => {
+  const start = Date.parse("2026-09-24T19:40:30Z");
+  const initial = { seen: {}, startedAt: start, baselines: {} };
+  const baseline = detectNew(initial, [ad(3522310452)], start);
+  const store = { ...initial, ...baseline };
+  const old = { ...ad(3515465635), postedAt: "2026-09-17T10:00:00Z" };
+  const snapshot = JSON.stringify(store);
+  const result = detectNew(store, [old,
+    { ...old, postedAt: "2026-09-24T19:41:00Z" }, // bumped old ID, refreshed display date
+    { ...ad(3522310500), postedAt: "2026-09-23T10:00:00Z" },
+    { ...ad(3522310501), postedAt: "invalid" },
+    { ...ad(3522310502), postedAt: "2026-09-24T19:41:00Z" },
+  ], start + 60_000);
+  assert.deepEqual(result.fresh.map((item) => item.numericId), [3522310502]);
+  assert.equal(JSON.stringify(store), snapshot, "detection does not mutate stored anchors");
+  assert.equal(result.freshness.KLEINANZEIGEN.minimumId, 3522310452);
+  // Eviction from the bounded seen cache does not resurrect older inventory.
+  assert.equal(detectNew({ ...store, seen: {} }, [old], start + 120_000).fresh.length, 0);
+});
+
+test("empty initial search needs a recent date before accepting an unknown Kleinanzeigen ID", () => {
+  const start = Date.parse("2026-09-24T19:40:30Z");
+  const initial = { seen: {}, startedAt: start };
+  const baseline = detectNew(initial, [], start, { answered: ["KLEINANZEIGEN"] });
+  const result = detectNew({ ...initial, ...baseline }, [ad(1),
+    { ...ad(2), postedAt: "2026-09-24T19:40:00Z" },
+    { ...ad(3), postedAt: "2026-09-24T19:39:00Z" },
+  ], start + 10_000);
+  assert.deepEqual(result.fresh.map((item) => item.numericId), [2]);
 });
 
 test("unseen AutoScout results below a known ad are discovered", () => {
@@ -507,4 +538,54 @@ test("HTTP chunk callbacks run before body completion and preserve split UTF-8",
   const result = await reading;
   assert.equal(result.body, "Auto für Jülich");
   assert.equal(chunks.join(""), result.body);
+});
+
+test("damage exclusion is visible in the summary and agrees with the portal URL", async () => {
+  const sources = await loadSources();
+  for (const hideDamaged of [true, false]) {
+    const f = filters.normalizeFilters({ hideDamaged });
+    assert.equal(sources.kleinanzeigenUrls(f, null)[0].includes("autos.schaden_s:nein"), hideDamaged);
+    assert.match(filters.describeFilters(f), hideDamaged ? /ohne Unfall-\/Defektfahrzeuge/ : /inkl\. Unfall-\/Defektfahrzeuge/);
+  }
+});
+
+test("reported Mondeo is retained by the parser when the portal includes it", {
+  skip: !process.env.FEED_MONDEO_FIXTURE,
+}, async () => {
+  const sources = await loadSources();
+  const result = sources.parseKleinanzeigenPage(await readFile(process.env.FEED_MONDEO_FIXTURE, "utf8"));
+  const car = result.items.find((item) => item.id === "3522302331");
+  assert.ok(car, "The reported ad must not be discarded by the parser");
+  assert.match(car.title, /Ford Mondeo/);
+  assert.equal(car.promoted, false);
+  assert.equal(car.mileageKm, 14400);
+  assert.equal(car.firstRegistration, "08/2018");
+});
+
+test("SVG TOP badges outside articles cannot become organic coverage anchors", async () => {
+  const sources = await loadSources();
+  const html = '<li data-clickable="card"><svg width="33" height="16" class="absolute right-none top-none"><path /></svg>' + kaArticle(10) + '</li><li data-clickable="card">' + kaArticle(11) + '</li>';
+  const result = sources.parseKleinanzeigenPage(html);
+  assert.equal(result.items[0].promoted, true);
+  assert.equal(result.items[1].promoted, false);
+  const at = Date.parse(result.items[1].postedAt);
+  const detected = detectNew({ seen: {}, startedAt: at, kaMaxId: 9, baselines: { KLEINANZEIGEN: true } }, result.items, at + 60_000);
+  assert.deepEqual(detected.fresh.map((item) => item.numericId), [11]);
+});
+
+test("Astro tracker promotion flags survive badge markup changes", async () => {
+  const sources = await loadSources();
+  const props = JSON.stringify({ resultAds: [1, [[0, { organicAdPreview: [0, { id: [0, 10], topAd: [0, true] }] }]]] }).replaceAll('"', '&quot;');
+  const result = sources.parseKleinanzeigenPage(kaArticle(10) + `<astro-island component-url="/ImpressionTracker.abc.js" props="${props}"></astro-island>`);
+  assert.equal(result.items[0].promoted, true);
+});
+
+test("actual search page marks its two rotating paid placements", {
+  skip: !process.env.FEED_EXACT_FIXTURE,
+}, async () => {
+  const sources = await loadSources();
+  const result = sources.parseKleinanzeigenPage(await readFile(process.env.FEED_EXACT_FIXTURE, "utf8"));
+  assert.equal(result.items.find((item) => item.id === "3504015814")?.promoted, true);
+  assert.equal(result.items.find((item) => item.id === "3520433917")?.promoted, true);
+  assert.equal(result.items.find((item) => item.id === "3522310452")?.promoted, false);
 });
