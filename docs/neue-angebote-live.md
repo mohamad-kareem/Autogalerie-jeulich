@@ -37,6 +37,23 @@ it never schedules another search on its own.
 
 ## What this cannot guarantee
 
+Alternative-source trial (not connected to production):
+`scripts/compare-feed-sources.mjs` compares the public website with the independent
+kleinanzeigen-agent.de API, using the user's own `KLAZ_API_KEY` from `.env.local`.
+Run with `node --experimental-vm-modules --env-file=.env.local scripts/compare-feed-sources.mjs`.
+It makes at most 12 API searches, ten seconds apart, stops on errors, and writes
+`feed-source-comparison.json` to the OS temporary directory. Both searches use
+Germany, private cars, EUR 1,500–12,000. This broader discovery comparison does
+not validate the final vehicle filters. Original publication dates, complete
+coverage, and CarDeluxe-equivalent speed are not established by this trial.
+There is no live API result until the user provides trial access; website query
+variants tested so far have not demonstrated earlier matching cars.
+
+Client stream completion now releases its polling lock without waiting for the
+HTTP connection or cancellation to finish. The request deadline also rejects
+independently of whether the transport honors AbortSignal. These bounded wait
+fixes do not establish a reduction in the portal's discovery delay.
+
 Live comparison on 24 September 2026, using the signed-in deployed page:
 
 - Germany, private petrol, EUR 1,500–12,000, 10,000–100,000 km, 2008–2024,

@@ -139,6 +139,26 @@ test("manual cancellation stays distinct from a network failure", async () => {
   assert.equal(called, false);
 });
 
+test("hard deadline releases a request even when transport ignores abort", async () => {
+  await assert.rejects(requestCheck({}, "KLEINANZEIGEN", {
+    timeoutMs: 10, fetchImpl: () => new Promise(() => {}), onEvent: () => {},
+  }), /dauert zu lange/);
+});
+
+test("completion releases a stream even if the connection and cancellation never finish", async () => {
+  let cancellationStarted = false;
+  const stream = new ReadableStream({
+    start(controller) { controller.enqueue(new TextEncoder().encode('{"type":"complete"}\n')); },
+    cancel() { cancellationStarted = true; return new Promise(() => {}); },
+  });
+  const events = [];
+  await requestCheck({}, "KLEINANZEIGEN", {
+    timeoutMs: 1000, fetchImpl: async () => new Response(stream), onEvent: (event) => events.push(event.type),
+  });
+  assert.deepEqual(events, ["complete"]);
+  assert.equal(cancellationStarted, true);
+});
+
 test("unchanged snapshots keep card identity and do not announce duplicates", () => {
   const previous = [{ ...ad(10), price: 1000, rating: { label: "Fair" }, isNew: true, firstSeenAt: "before" }];
   const result = mergeFeed(previous, [{ ...ad(10), price: 1000, rating: { label: "Fair" } }], [], "now");
