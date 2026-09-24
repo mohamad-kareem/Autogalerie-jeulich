@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { detailSource, fetchDetails } from "@/lib/feed/details";
-import { looksRefused, pauseRemainingMs, pauseSource } from "@/lib/feed/pause";
+import { looksRefused, pauseRemainingMs, pauseSource, resumeSource } from "@/lib/feed/pause";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,14 +34,17 @@ export async function POST(request) {
   const source = detailSource(url);
   if (!source) return json({ ok: false, error: "Nur Anzeigen von AutoScout24 und Kleinanzeigen." }, 400);
 
-  const paused = pauseRemainingMs(source);
+  // An individual ad page refusal is not evidence that search is unavailable.
+  const detailKey = `${source}:details`;
+  const paused = Math.max(pauseRemainingMs(source), pauseRemainingMs(detailKey));
   if (paused > 0) {
     return json({ ok: false, paused: true, error: `Portal pausiert, wieder in ${Math.ceil(paused / 60_000)} Min.` });
   }
 
   try {
     const result = await fetchDetails(url);
-    if (!result.ok && looksRefused(result)) pauseSource(source);
+    if (!result.ok && looksRefused(result)) pauseSource(detailKey, result);
+    else if (result.ok) resumeSource(detailKey);
     return json(result);
   } catch (error) {
     return json({ ok: false, error: error?.message || "Fehler." });

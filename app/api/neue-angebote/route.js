@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { filterKey, normalizeFilters } from "@/lib/feed/filters";
-import { looksRefused, pauseRemainingMs, pauseSource } from "@/lib/feed/pause";
+import { looksRefused, pauseRemainingMs, pauseSource, resumeSource } from "@/lib/feed/pause";
 import { SEARCHERS } from "@/lib/feed/sources";
 import { createCheckPool, streamCheck } from "@/lib/feed/live";
 
@@ -88,8 +88,10 @@ export async function POST(request) {
           const result = await withTimeout(search(filters, publish, { page }), 10_000, fallback);
           if (!streamed) publish({ ok: Boolean(result.ok), items: result.items || [] });
           const refused = looksRefused(result);
-          if (refused) pauseSource(id);
-          return { id, ...result, paused: refused, retryAfterMs: pauseRemainingMs(id), durationMs: Date.now() - began };
+          if (refused || result.retryAfterMs > 0) pauseSource(id, result);
+          else if (result.ok) resumeSource(id);
+          return { id, ...result, paused: pauseRemainingMs(id) > 0,
+            retryAfterMs: pauseRemainingMs(id), durationMs: Date.now() - began };
         } catch (error) {
           return { id, ok: false, items: [], error: error?.message || "Fehler.", url: null, durationMs: Date.now() - began };
         } finally {

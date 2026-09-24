@@ -16,6 +16,58 @@ const deferred = () => {
 };
 const ad = (id) => ({ source: "KLEINANZEIGEN", key: `KLEINANZEIGEN:${id}`, numericId: id });
 
+async function loadPause(clock) {
+  const context = createContext({ Date: class extends Date { static now() { return clock.now; } } });
+  const module = new SourceTextModule(await readFile(new URL("../lib/feed/pause.js", import.meta.url), "utf8"), { context });
+  await module.link(() => { throw new Error("Unexpected import"); });
+  await module.evaluate();
+  return module.namespace;
+}
+
+test("first refusal recovers in 30 seconds, repeats back off, success resets and details are isolated", async () => {
+  const clock = { now: 1000 };
+  const pause = await loadPause(clock);
+  pause.pauseSource("AUTOSCOUT24:details");
+  assert.equal(pause.pauseRemainingMs("AUTOSCOUT24"), 0);
+  pause.pauseSource("AUTOSCOUT24");
+  assert.equal(pause.pauseRemainingMs("AUTOSCOUT24"), 30_000);
+  clock.now += 10_000;
+  pause.pauseSource("AUTOSCOUT24");
+  pause.resumeSource("AUTOSCOUT24");
+  assert.equal(pause.pauseRemainingMs("AUTOSCOUT24"), 20_000);
+  clock.now += 20_000;
+  pause.pauseSource("AUTOSCOUT24");
+  assert.equal(pause.pauseRemainingMs("AUTOSCOUT24"), 60_000);
+  clock.now += 60_000;
+  pause.resumeSource("AUTOSCOUT24");
+  pause.pauseSource("AUTOSCOUT24");
+  assert.equal(pause.pauseRemainingMs("AUTOSCOUT24"), 30_000);
+  pause.pauseSource("AUTOSCOUT24", { retryAfterMs: 600_000 });
+  assert.equal(pause.pauseRemainingMs("AUTOSCOUT24"), 600_000);
+});
+
+test("HTTP Retry-After seconds and dates survive transport without an early retry", async () => {
+  let calls = 0;
+  const context = createContext({ fetch: async () => { calls++; return new Response("limited", {
+    status: 429, headers: { "Retry-After": "120" },
+  }); }, URL, AbortController, setTimeout, clearTimeout });
+  const http = new SourceTextModule(await readFile(new URL("../lib/market/http.js", import.meta.url), "utf8"), { context });
+  await http.link(() => new SyntheticModule(["FETCH_PROXY_TEMPLATE", "POLICY"], function () {
+    this.setExport("FETCH_PROXY_TEMPLATE", "");
+    this.setExport("POLICY", { requestTimeoutMs: 1000, requestRetries: 2 });
+  }, { context }));
+  await http.evaluate();
+  const parse = http.namespace.retryAfterMs;
+  assert.equal(parse("120"), 120_000);
+  assert.equal(parse("Thu, 24 Sep 2026 20:00:30 GMT", Date.parse("2026-09-24T20:00:00Z")), 30_000);
+  assert.equal(parse(null), 0);
+  assert.equal(parse("invalid"), 0);
+  const result = await http.namespace.request("https://example.test");
+  assert.equal(calls, 1);
+  assert.equal(result.blocked, true);
+  assert.ok(result.retryAfterMs > 119_000);
+});
+
 test("predicted portal refresh never creates a long blind window", () => {
   assert.equal(nextCheckDelay({ intervalMs: 3000, elapsedMs: 800, preferredDelayMs: 47000 }), 2200);
   assert.equal(nextCheckDelay({ intervalMs: 3000, elapsedMs: 800, preferredDelayMs: 1700 }), 1700);
@@ -317,13 +369,13 @@ test("Kleinanzeigen adapter publishes fast combination without waiting for slow 
   assert.notEqual(batches[0].scope, batches[1].scope);
 });
 
-async function loadRoute({ session, search }) {
+async function loadRoute({ session, search, pause }) {
   const source = new SourceTextModule(await readFile(new URL("../app/api/neue-angebote/route.js", import.meta.url), "utf8"));
   await source.link(async (name) => {
     const exports = name === "next-auth" ? { getServerSession: async () => session }
       : name.includes("nextauth") ? { authOptions: {} }
         : name.endsWith("/filters") ? filters
-          : name.endsWith("/pause") ? { looksRefused: () => false, pauseRemainingMs: () => 0, pauseSource: () => {} }
+          : name.endsWith("/pause") ? (pause || { looksRefused: () => false, pauseRemainingMs: () => 0, pauseSource: () => {}, resumeSource: () => {} })
             : name.endsWith("/live") ? { createCheckPool, streamCheck }
               : { SEARCHERS: { KLEINANZEIGEN: search } };
     return new SyntheticModule(Object.keys(exports), function () {
@@ -337,6 +389,27 @@ async function loadRoute({ session, search }) {
 const feedRequest = (stream = true, page = 1) => new Request("https://example.test/api/neue-angebote", {
   method: "POST", headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ filters: { sources: ["KLEINANZEIGEN"] }, source: "KLEINANZEIGEN", stream, page }),
+});
+
+test("API preserves portal cooldown, skips requests while paused and resumes after expiry", async () => {
+  const clock = { now: 1000 };
+  const pause = await loadPause(clock);
+  let calls = 0;
+  const post = await loadRoute({ session: { user: {} }, pause, search: async () => {
+    calls++;
+    return calls === 1 ? { ok: false, blocked: true, retryAfterMs: 90_000, items: [] }
+      : { ok: true, items: [ad(1)] };
+  } });
+  const refused = await (await post(feedRequest(false))).json();
+  assert.equal(refused.sources[0].retryAfterMs, 90_000);
+  const paused = await (await post(feedRequest(false, 2))).json();
+  assert.equal(paused.sources[0].paused, true);
+  assert.equal(calls, 1);
+  clock.now += 90_000;
+  const recovered = await (await post(feedRequest(false, 3))).json();
+  assert.equal(recovered.sources[0].ok, true);
+  assert.equal(recovered.sources[0].paused, false);
+  assert.equal(calls, 2);
 });
 
 test("slow older-page requests neither share cache entries with nor delay the live page", async () => {
@@ -493,7 +566,8 @@ test("AutoScout publishes the JSON payload before a delayed page footer", async 
   const early = deferred();
   const html = `<script id="__NEXT_DATA__">${JSON.stringify({ props: { pageProps: { listings: [{ id: "a", url: "/angebote/a" }] } } })}</script>`;
   const sources = await loadSources(async (_, { onChunk }) => {
-    onChunk(html.slice(0, -4)); onChunk(html.slice(-4));
+    assert.notEqual(onChunk(html.slice(0, -4)), false);
+    assert.equal(onChunk(html.slice(-4)), false, "complete JSON requests transport cancellation");
     early.resolve();
     await finish.promise;
     return { ok: true, body: html };
@@ -538,6 +612,26 @@ test("HTTP chunk callbacks run before body completion and preserve split UTF-8",
   const result = await reading;
   assert.equal(result.body, "Auto für Jülich");
   assert.equal(chunks.join(""), result.body);
+});
+
+test("complete parser payload cancels a never-ending footer and releases the HTTP request", async () => {
+  let cancelled = false;
+  const stream = new ReadableStream({
+    start(controller) { controller.enqueue(new TextEncoder().encode("complete payload")); },
+    cancel() { cancelled = true; },
+  });
+  const context = createContext({ fetch: async () => new Response(stream), URL, AbortController,
+    TextDecoder, setTimeout, clearTimeout });
+  const http = new SourceTextModule(await readFile(new URL("../lib/market/http.js", import.meta.url), "utf8"), { context });
+  await http.link(() => new SyntheticModule(["FETCH_PROXY_TEMPLATE", "POLICY"], function () {
+    this.setExport("FETCH_PROXY_TEMPLATE", null);
+    this.setExport("POLICY", { requestTimeoutMs: 1000, requestRetries: 0 });
+  }, { context }));
+  await http.evaluate();
+  const result = await http.namespace.request("https://example.test", { onChunk: () => false });
+  assert.equal(result.ok, true);
+  assert.equal(result.body, "complete payload");
+  assert.equal(cancelled, true);
 });
 
 test("damage exclusion is visible in the summary and agrees with the portal URL", async () => {

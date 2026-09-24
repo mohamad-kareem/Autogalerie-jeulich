@@ -10,10 +10,15 @@ it never schedules another search on its own.
 ## Delivery and coverage
 
 - Each portal has its own live loop. Default starts are three seconds apart
-  where response time permits. Explicit refusals retain a five-minute cooldown.
+  where response time permits. Refusals start with a 30-second cooldown, doubling
+  on repeated refusals to five minutes. Longer portal Retry-After values win.
+  A successful check after expiry resets the backoff. Detail-page refusals only
+  pause detail lookups; detail lookups respect a search pause too.
 - Portal HTML is consumed incrementally. Kleinanzeigen publishes each complete
   article; AutoScout24 publishes as soon as its listing JSON is complete. The
   existing NDJSON response forwards these batches without waiting for the footer.
+  Once AutoScout24's complete JSON is parsed, the remaining HTTP body is cancelled
+  so a slow footer cannot hold the live request lock or delay the next check.
 - Partial startup batches remain a quiet baseline until the source completes.
   Later batches are deduplicated by source and ad ID, including out-of-order IDs.
 - A separate lower-priority check scans page two about every ten seconds.
