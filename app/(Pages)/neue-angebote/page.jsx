@@ -57,7 +57,8 @@ import {
 } from "@/lib/feed/filters";
 import { detectNew, mergeFeed } from "@/lib/feed/detect";
 import { requestCheck } from "@/lib/feed/live";
-import { createCoverage, advanceCoverage } from "@/lib/feed/coverage";
+import { createChime, notifyArrivals } from "@/lib/feed/alerts";
+import { createCoverage, advanceCoverage, scheduleCoverage } from "@/lib/feed/coverage";
 import { nextCheckDelay } from "@/lib/feed/polling";
 import { KA_CYCLE_MS, KA_DEFAULT_LANDING_MS, nextKaCheck, observeKa } from "@/lib/feed/kaCycle";
 
@@ -159,29 +160,10 @@ function createTicker() {
   };
 }
 
-/** A short two-tone chime, made on the spot — no sound file to ship. */
-function chime() {
-  try {
-    const Context = window.AudioContext || window.webkitAudioContext;
-    if (!Context) return;
-    const context = chime.context || (chime.context = new Context());
-    const now = context.currentTime;
-    [880, 1320].forEach((frequency, index) => {
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-      oscillator.type = "sine";
-      oscillator.frequency.value = frequency;
-      gain.gain.setValueAtTime(0.0001, now + index * 0.16);
-      gain.gain.exponentialRampToValueAtTime(0.25, now + index * 0.16 + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.16 + 0.3);
-      oscillator.connect(gain).connect(context.destination);
-      oscillator.start(now + index * 0.16);
-      oscillator.stop(now + index * 0.16 + 0.32);
-    });
-  } catch {
-    // No audio — the list and the title still show it.
-  }
-}
+const chime = createChime(() => window.AudioContext || window.webkitAudioContext);
+const playAlertSound = () => chime().then((played) => {
+  if (!played) toast.error("Ton blockiert. Bitte Ton testen und die Website im Browser nicht stummschalten.", { id: "feed-audio" });
+});
 
 /* ------------------------------------------------------------------- UI bits */
 
@@ -926,26 +908,25 @@ export default function NeueAngebotePage() {
   const announceRef = useRef(null);
   announceRef.current = (arrivals) => {
     setUnread((count) => count + arrivals.length);
-    if (soundRef.current) chime();
+    if (soundRef.current) void playAlertSound();
     const first = arrivals[0];
     toast.success(
       arrivals.length === 1 ? `Neu: ${first.title} · ${euro(first.price)}` : `${arrivals.length} neue Angebote`,
       { duration: 6_000 },
     );
-    if (notifyRef.current && typeof Notification !== "undefined" && Notification.permission === "granted" && document.visibilityState !== "visible") {
+    if (notifyRef.current) {
       try {
-        const note = new Notification(arrivals.length === 1 ? "Neues Angebot" : `${arrivals.length} neue Angebote`, {
-          body: arrivals.slice(0, 3).map((item) => `${item.title} · ${euro(item.price)}`).join("\n"),
-          icon: first.image || undefined,
-          tag: "neue-angebote",
+        const sent = notifyArrivals(arrivals, {
+          NotificationClass: typeof Notification === "undefined" ? null : Notification,
+          formatPrice: euro,
+          onClick: (item) => {
+            window.focus();
+            window.open(item.url, "_blank", "noopener");
+          },
         });
-        note.onclick = () => {
-          window.focus();
-          if (arrivals.length === 1) window.open(first.url, "_blank", "noopener");
-          note.close();
-        };
+        if (!sent) throw new Error("Permission unavailable");
       } catch {
-        // Some browsers only allow notifications from a service worker.
+        toast.error("Desktop-Meldung blockiert. Bitte Browser- und Windows-Benachrichtigungen prüfen.", { id: "feed-notification" });
       }
     }
   };
@@ -958,7 +939,10 @@ export default function NeueAngebotePage() {
   /* one check of one portal */
   const checkSource = useCallback(async (source, { page = 1, baseline = false } = {}) => {
     const requestKey = page === 1 ? source : `${source}:coverage`;
-    if (!applied || document.visibilityState !== "visible" || !navigator.onLine || inFlightRef.current[requestKey]) return null;
+    // Live, manual and catch-up checks share one slot per portal. A slow older
+    // page must not cause concurrent requests to a rate-limited portal.
+    if (!applied || document.visibilityState !== "visible" || !navigator.onLine ||
+        inFlightRef.current[source] || inFlightRef.current[`${source}:coverage`]) return null;
     const generation = generationRef.current;
     const controller = new AbortController();
     inFlightRef.current[requestKey] = controller;
@@ -1090,13 +1074,8 @@ export default function NeueAngebotePage() {
         const status = await checkSource(source);
         if (cancelled) return;
         const coverage = coverageRef.current[source] ||= createCoverage(!storeRef.current.coverageReady?.[source]);
-        // A completely replaced first page can hide a burst on further pages.
-        if (status?.ok && status.hasMore && !status.overlap) coverage.dueAt = 0;
-        // Catch-up requests must not defeat the portal's recovery pace.
-        if (status?.recoveryIntervalMs && coverage.recoveryIntervalMs !== status.recoveryIntervalMs) {
-          coverage.dueAt = Math.max(coverage.dueAt, Date.now() + status.recoveryIntervalMs * 4);
-        }
-        coverage.recoveryIntervalMs = status?.recoveryIntervalMs || 0;
+        // A skipped check has no new portal status; retain its recovery pace.
+        if (status) coverageRef.current[source] = scheduleCoverage(coverage, status);
         // No access (mobile.de without the API): nothing to ask until that changes.
         if (status?.skipped) {
           loop.stopped = true;
@@ -1209,16 +1188,7 @@ export default function NeueAngebotePage() {
     setRunning(true);
     setShowFilters(false);
     setUnread(0);
-    // A click is the one moment browsers allow sound to start.
-    if (sound) {
-      try {
-        const Context = window.AudioContext || window.webkitAudioContext;
-        if (Context && !chime.context) chime.context = new Context();
-        chime.context?.resume?.();
-      } catch {
-        /* no audio */
-      }
-    }
+    if (sound) void playAlertSound();
   };
 
   const resetFeed = () => {
@@ -1243,12 +1213,20 @@ export default function NeueAngebotePage() {
       setNotify(false);
       return;
     }
-    const permission = await Notification.requestPermission();
-    if (permission === "granted") {
+    try {
+      const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+      if (permission !== "granted") {
+        toast.error("Benachrichtigungen nicht erlaubt. Bitte in den Website-Einstellungen des Browsers freigeben.");
+        return;
+      }
       setNotify(true);
-      toast.success("Benachrichtigungen für neue Funde aktiviert.");
-    } else {
-      toast.error("Benachrichtigungen wurden im Browser nicht erlaubt.");
+      new Notification("Benachrichtigungen aktiviert", {
+        body: "Neue Fahrzeuge erscheinen hier, während die Live-Suche läuft.",
+        tag: "neue-angebote-test", silent: true,
+      });
+    } catch {
+      setNotify(false);
+      toast.error("Desktop-Meldungen sind in diesem Browser nicht verfügbar. Bitte Chrome oder Edge verwenden.");
     }
   };
 
@@ -1365,16 +1343,25 @@ export default function NeueAngebotePage() {
                       <button type="button" onClick={checkAll} disabled={checking} title="Jetzt prüfen" aria-label="Jetzt prüfen" className={toolButton}>
                         <FiRefreshCw className={checking ? "animate-spin" : ""} />
                       </button>
-                      <button type="button" onClick={() => setSound((value) => !value)} title={sound ? "Ton aus" : "Ton an"} aria-label={sound ? "Ton aus" : "Ton an"} className={toolButton}>
+                      <button type="button" onClick={() => { if (!sound) void playAlertSound(); setSound(!sound); }} title={sound ? "Ton aus" : "Ton an"} aria-label={sound ? "Ton aus" : "Ton an"} className={toolButton}>
                         {sound ? <FiVolume2 /> : <FiVolumeX className={muted} />}
                       </button>
+                      <button type="button" className={toolButton} title="Ton und aktivierte Desktop-Meldung testen" onClick={() => {
+                        void playAlertSound();
+                        if (notify) {
+                          try {
+                            if (typeof Notification === "undefined" || Notification.permission !== "granted") throw new Error("Permission unavailable");
+                            new Notification("Neue Angebote · Test", { body: "Desktop-Benachrichtigungen sind aktiviert.", tag: "neue-angebote-test", silent: true });
+                          } catch { toast.error("Desktop-Meldung blockiert. Bitte Browser- und Windows-Einstellungen prüfen."); }
+                        }
+                      }}>Test</button>
                       <button type="button" onClick={askNotifications} title="Desktop-Benachrichtigung" aria-label="Desktop-Benachrichtigung" className={`${toolButton} ${notify ? "text-emerald-600" : ""}`}>
                         {notify ? <FiBell /> : <FiBellOff className={muted} />}
                       </button>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setRunning((value) => !value)}
+                      onClick={() => { if (!running && sound) void playAlertSound(); setRunning(!running); }}
                       className={`inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium ${
                         dark ? "border-slate-700 bg-slate-900 hover:bg-slate-800" : "border-slate-300 bg-white hover:bg-slate-50"
                       }`}

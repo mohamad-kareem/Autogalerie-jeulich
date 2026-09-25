@@ -27,7 +27,11 @@ it never schedules another search on its own.
   Later batches are deduplicated by source and ad ID, including out-of-order IDs.
 - A separate lower-priority check scans page two about every ten seconds.
   If it sees no previously known organic ad, it continues through further pages.
-  First-page polling continues independently. Failures retain the recovery page
+  Live, manual and catch-up requests share one in-flight slot per portal in
+  this page, preventing overlapping requests. Other portals remain independent.
+  Bursts cannot reset the catch-up deadline during recovery; repeated successful
+  live checks also do not continually postpone that deadline.
+  Failures retain the recovery page
   for retry; incomplete scans and the page limit have visible warnings.
 - The initial page-two scan records existing stock without displaying it. That
   baseline survives reloads in this search's local storage. It is not a complete
@@ -88,6 +92,11 @@ Discovery time is not upload time. Ads absent from the portal's returned search
 cannot be delivered yet. Search pages can be cached, blocked, reordered or
 truncated, and the first baseline intentionally hides existing stock. Overlapping
 pagination reduces losses but is not an atomic snapshot of the marketplace.
+
+Listings are deduplicated only by portal and ad ID. The same vehicle advertised
+on Kleinanzeigen and AutoScout24 remains two separate arrivals. No cross-portal
+vehicle matching delays delivery. Request coordination above is page-local;
+multiple tabs and server instances do not share a global request budget.
 There is no claim that every matching upload is captured or that latency matches
 CarDeluxe until measured side by side with identical active filters.
 
