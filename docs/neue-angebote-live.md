@@ -1,8 +1,12 @@
 # Neue Angebote: active-page delivery
 
-The page searches only while the user has started it, the tab is visible and
-the browser is online. Pause, navigation away, hiding the tab and disconnecting
-stop its timers and cancel browser requests. Returning resumes immediately.
+The page searches while the user has started it, the tab remains open and
+the browser is online, including when another tab or Windows app is foreground.
+Switching tabs no longer cancels requests or stops the live loops. Pause,
+navigation away from the page, closing it and disconnecting stop the search.
+Returning to a visible tab also checks promptly if its next request is overdue.
+Browser tab suspension and computer sleep can still interrupt execution; this
+is not a native background service and cannot guarantee delivery while suspended.
 There is no installed Windows service, scheduled task or offline collector.
 An already-running shared server request may finish its bounded portal fetch;
 it never schedules another search on its own.

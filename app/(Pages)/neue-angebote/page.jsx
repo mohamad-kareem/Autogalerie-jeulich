@@ -4,7 +4,7 @@
  * Neue Angebote — the newest cars on AutoScout24, Kleinanzeigen and mobile.de,
  * as they become discoverable in portal search results.
  *
- * While this page is visible and online it asks the server every 3–120 seconds for the
+ * While this page is open and online it asks the server every 3–120 seconds for the
  * newest ads matching the filter (sorted newest first on each portal). Each
  * portal is asked on its own, at a fixed pace, so a slow answer from one never
  * delays the cars from another. A portal's first answer is its baseline: what
@@ -14,7 +14,7 @@
  * "New" means first discovered by this search, not a verified upload time.
  * Every returned match is kept; ordering and ad IDs must not hide vehicles.
  *
- * The active page drives all work; no offline collector is installed.
+ * The open page drives all work, including in background tabs; no offline collector is installed.
  */
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -687,7 +687,7 @@ export default function NeueAngebotePage() {
   const [showFilters, setShowFilters] = useState(true);
 
   const [running, setRunning] = useState(false);
-  const [pageActive, setPageActive] = useState(true);
+  const [pageOnline, setPageOnline] = useState(true);
   const [coverageWarnings, setCoverageWarnings] = useState({});
   const coverageRef = useRef({});
   // How many portal checks are under way right now.
@@ -741,17 +741,15 @@ export default function NeueAngebotePage() {
   useEffect(() => () => cancelSearch(), [cancelSearch]);
 
   useEffect(() => {
-    if (!running || !pageActive) { cancelSearch(); setPending(0); }
-  }, [running, pageActive, cancelSearch]);
+    if (!running || !pageOnline) { cancelSearch(); setPending(0); }
+  }, [running, pageOnline, cancelSearch]);
 
   useEffect(() => {
-    const update = () => setPageActive(document.visibilityState === "visible" && navigator.onLine);
+    const update = () => setPageOnline(navigator.onLine);
     update();
-    document.addEventListener("visibilitychange", update);
     window.addEventListener("online", update);
     window.addEventListener("offline", update);
     return () => {
-      document.removeEventListener("visibilitychange", update);
       window.removeEventListener("online", update);
       window.removeEventListener("offline", update);
     };
@@ -941,7 +939,7 @@ export default function NeueAngebotePage() {
     const requestKey = page === 1 ? source : `${source}:coverage`;
     // Live, manual and catch-up checks share one slot per portal. A slow older
     // page must not cause concurrent requests to a rate-limited portal.
-    if (!applied || document.visibilityState !== "visible" || !navigator.onLine ||
+    if (!applied || !navigator.onLine ||
         inFlightRef.current[source] || inFlightRef.current[`${source}:coverage`]) return null;
     const generation = generationRef.current;
     const controller = new AbortController();
@@ -1062,7 +1060,7 @@ export default function NeueAngebotePage() {
 
   /* the loops: one per portal, each at a fixed pace — slower after repeated failures */
   useEffect(() => {
-    if (!running || !pageActive || !applied) return undefined;
+    if (!running || !pageOnline || !applied) return undefined;
     let cancelled = false;
 
     const loops = applied.sources.map((source, index) => {
@@ -1149,7 +1147,7 @@ export default function NeueAngebotePage() {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", onVisible);
     };
-  }, [running, pageActive, applied, intervalSec, checkSource]);
+  }, [running, pageOnline, applied, intervalSec, checkSource]);
 
   /* start with a filter: load that filter's memory, or begin a new baseline */
   const apply = () => {
@@ -1325,7 +1323,7 @@ export default function NeueAngebotePage() {
                 >
                   <span className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${dark ? "text-slate-300" : "text-slate-600"}`}>
                     <span className={`size-1.5 rounded-full ${running ? "bg-emerald-500" : "bg-slate-400"}`} />
-                    {running ? (pageActive ? "Live-Suche läuft" : "Suche wartet – Seite nicht aktiv oder offline") : "Live-Suche pausiert"}
+                    {running ? (pageOnline ? "Live-Suche läuft" : "Suche wartet – offline") : "Live-Suche pausiert"}
                   </span>
                   <div className="flex flex-wrap items-center gap-1.5">
                     <div className={`flex items-center divide-x overflow-hidden rounded-md border ${dark ? "divide-slate-700 border-slate-700 bg-slate-900" : "divide-slate-200 border-slate-300 bg-white"}`}>
