@@ -303,6 +303,23 @@ test("pagination does not announce old cars or establish the live baseline", () 
   assert.equal(result.baselines.KLEINANZEIGEN, undefined);
 });
 
+test("initial catch-up cannot silently consume a new Kleinanzeigen upload", () => {
+  const start = Date.parse("2026-09-25T10:00:00Z");
+  const initial = { seen: {}, startedAt: start, baselines: {} };
+  const baseline = detectNew(initial, [ad(100)], start, { scope: "petrol" });
+  const store = { ...initial, ...baseline };
+  const recent = { ...ad(110), postedAt: new Date(start + 60_000).toISOString() };
+  const old = { ...ad(90), postedAt: new Date(start - 86_400_000).toISOString() };
+  const recovery = detectNew(store, [recent, old, { ...ad(111), promoted: true,
+    postedAt: recent.postedAt }, ad(112)], start + 65_000, { scope: "petrol", backfill: true });
+  assert.deepEqual(recovery.fresh.map((item) => item.numericId), [110]);
+  assert.equal(recovery.freshness.petrol.minimumId, 100);
+  const live = detectNew({ ...store, ...recovery }, [recent], start + 70_000, { scope: "petrol" });
+  assert.equal(live.fresh.length, 0, "no second notification when the live page catches up");
+  const unstarted = detectNew(initial, [recent], start + 65_000, { scope: "other", backfill: true });
+  assert.equal(unstarted.fresh.length, 0, "recovery cannot invent a baseline for another search");
+});
+
 test("merge restores previously discarded ads, refreshes prices, and keeps more than 150 matches", () => {
   const previous = Array.from({ length: 160 }, (_, i) => ({ ...ad(i), firstSeenAt: "before", isNew: false }));
   previous[0].details = { hu: "loaded" };
