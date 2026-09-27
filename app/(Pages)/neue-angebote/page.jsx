@@ -55,10 +55,9 @@ import {
   kleinanzeigenSearchCount,
   normalizeFilters,
 } from "@/lib/feed/filters";
-import { detectNew, mergeFeed } from "@/lib/feed/detect";
+import { detectNew, mergeFeed, startSession } from "@/lib/feed/detect";
 import { requestCheck } from "@/lib/feed/live";
 import { createChime, notifyArrivals } from "@/lib/feed/alerts";
-import { createCoverage, advanceCoverage, scheduleCoverage } from "@/lib/feed/coverage";
 import { nextCheckDelay } from "@/lib/feed/polling";
 import { KA_CYCLE_MS, KA_DEFAULT_LANDING_MS, nextKaCheck, observeKa } from "@/lib/feed/kaCycle";
 
@@ -72,6 +71,15 @@ const MAX_SAVED_FEED = 500;
 // Fast polling still depends on portal publication and response time.
 // Refusals retain the server cooldown and client failure backoff.
 const INTERVALS = [3, 5, 15, 30, 60, 120];
+// AutoScout24 refuses servers that ask too often. One look at its newest
+// 20 ads every 10 s still catches every new car (a filter rarely gets more
+// than a few per minute) and keeps the server off its block list.
+const AUTOSCOUT_MIN_INTERVAL_MS = 10_000;
+// Away longer than this (page closed, PC asleep, no connection): what went
+// online meanwhile is not "just arrived" — the next answer is a new baseline.
+const SESSION_GAP_MS = 3 * 60_000;
+// Arrivals within this window are announced together: one sound, one message.
+const ANNOUNCE_WINDOW_MS = 800;
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -510,7 +518,7 @@ const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadD
         : null;
 
   const when = item.postedAt
-    ? `online seit ${new Date(item.postedAt).toLocaleDateString("de-DE")} ${clock(item.postedAt)}${item.isNew && item.firstSeenAt ? ` · gefunden ${clockSeconds(item.firstSeenAt)}` : ""}`
+    ? `Portal-Zeit ${new Date(item.postedAt).toLocaleDateString("de-DE")} ${clock(item.postedAt)}${item.isNew && item.firstSeenAt ? ` · gefunden ${clockSeconds(item.firstSeenAt)}` : ""}`
     : item.isNew
       ? `gefunden ${clockSeconds(item.firstSeenAt)} · ${ago(item.firstSeenAt, now)}`
       : "passendes Angebot";
@@ -558,12 +566,12 @@ const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadD
               }`}
             >
               <span className={`size-1 rounded-full bg-emerald-500 ${latest ? "animate-pulse" : ""}`} />
-              {item.postedAt ? (latest ? "Neueste" : "Neu") : "Neu gefunden"}
+              {"Neu gefunden"}
             </span>
           ) : null}
           <span>{source?.label || item.source}</span>
           <span aria-hidden>·</span>
-          <span>{when}</span>
+          <span title="Portal-Zeit: Zeitangabe im Suchergebnis, ursprüngliche Veröffentlichung nicht verifiziert. Gefunden: erstmals von dieser Suche erkannt.">{when}</span>
         </div>
 
         <h3 className={`mt-1 line-clamp-2 text-[15px] font-semibold leading-snug sm:line-clamp-1 ${strong}`}>
@@ -688,8 +696,8 @@ export default function NeueAngebotePage() {
 
   const [running, setRunning] = useState(false);
   const [pageOnline, setPageOnline] = useState(true);
-  const [coverageWarnings, setCoverageWarnings] = useState({});
-  const coverageRef = useRef({});
+  // When the last check of any portal finished — to notice a gap (page closed, PC asleep).
+  const lastAliveRef = useRef(0);
   // How many portal checks are under way right now.
   const [pending, setPending] = useState(0);
   const checking = pending > 0;
@@ -904,24 +912,50 @@ export default function NeueAngebotePage() {
 
   /* sound, toast and desktop notification for new cars */
   const announceRef = useRef(null);
+  const pendingArrivalsRef = useRef([]);
+  const announceTimerRef = useRef(null);
   announceRef.current = (arrivals) => {
+    // Kleinanzeigen streams its cards one by one; collect them briefly so a
+    // round of arrivals makes one sound and one message, not twenty.
+    pendingArrivalsRef.current.push(...arrivals);
+    if (announceTimerRef.current) return;
+    announceTimerRef.current = setTimeout(() => {
+      announceTimerRef.current = null;
+      const batch = pendingArrivalsRef.current;
+      pendingArrivalsRef.current = [];
+      if (batch.length) flushAnnouncement(batch);
+    }, ANNOUNCE_WINDOW_MS);
+  };
+  const flushAnnouncement = (arrivals) => {
     setUnread((count) => count + arrivals.length);
     if (soundRef.current) void playAlertSound();
     const first = arrivals[0];
     toast.success(
       arrivals.length === 1 ? `Neu: ${first.title} · ${euro(first.price)}` : `${arrivals.length} neue Angebote`,
-      { duration: 6_000 },
+      { duration: 6_000, id: "feed-arrivals" },
     );
     if (notifyRef.current) {
       try {
-        const sent = notifyArrivals(arrivals, {
-          NotificationClass: typeof Notification === "undefined" ? null : Notification,
-          formatPrice: euro,
-          onClick: (item) => {
-            window.focus();
-            window.open(item.url, "_blank", "noopener");
-          },
-        });
+        const NotificationClass = typeof Notification === "undefined" ? null : Notification;
+        let sent;
+        if (arrivals.length <= 3) {
+          sent = notifyArrivals(arrivals, {
+            NotificationClass,
+            formatPrice: euro,
+            onClick: (item) => {
+              window.focus();
+              window.open(item.url, "_blank", "noopener");
+            },
+          });
+        } else if (NotificationClass?.permission === "granted") {
+          const note = new NotificationClass(`${arrivals.length} neue Fahrzeuge gefunden`, {
+            body: arrivals.slice(0, 3).map((item) => `${item.title} · ${euro(item.price)}`).join("\n"),
+            tag: "neue-angebote",
+            silent: true,
+          });
+          note.onclick = () => { window.focus(); note.close(); };
+          sent = true;
+        }
         if (!sent) throw new Error("Permission unavailable");
       } catch {
         toast.error("Desktop-Meldung blockiert. Bitte Browser- und Windows-Benachrichtigungen prüfen.", { id: "feed-notification" });
@@ -1013,8 +1047,11 @@ export default function NeueAngebotePage() {
 
         if (arrivals.length) {
           announceRef.current(arrivals);
-          // Additional ad-page requests start when a dealer opens the details.
-          // A burst of arrivals must not create ten competing portal requests.
+          // Kleinanzeigen tolerates reading a new car's ad page: HU, accident
+          // and owners arrive by themselves (a few per round). AutoScout24 ad
+          // pages load only when the dealer asks — it blocks readily.
+          const readable = arrivals.filter((item) => item.source === "KLEINANZEIGEN").slice(0, 4);
+          if (readable.length) loadDetails(readable, { first: true });
         }
 
         setLastCheck(data.checkedAt || atIso);
@@ -1041,7 +1078,7 @@ export default function NeueAngebotePage() {
         setPending((count) => Math.max(0, count - 1));
       }
     }
-  }, [applied, persist]);
+  }, [applied, persist, loadDetails]);
 
   const checkAll = () => applied?.sources.forEach((source) => checkSource(source));
 
@@ -1068,12 +1105,17 @@ export default function NeueAngebotePage() {
       loop.run = async () => {
         if (cancelled) return;
         const started = Date.now();
+        // Back after a gap (page closed, PC asleep, offline): start a new
+        // session, so the cars that went online meanwhile are not announced
+        // as if they had just arrived.
+        if (lastAliveRef.current && started - lastAliveRef.current > SESSION_GAP_MS) {
+          storeRef.current = startSession(storeRef.current, started);
+          persist(storeRef.current);
+        }
         lastStartRef.current[source] = started;
         const status = await checkSource(source);
+        if (status?.ok) lastAliveRef.current = Date.now();
         if (cancelled) return;
-        const coverage = coverageRef.current[source] ||= createCoverage(!storeRef.current.coverageReady?.[source]);
-        // A skipped check has no new portal status; retain its recovery pace.
-        if (status) coverageRef.current[source] = scheduleCoverage(coverage, status);
         // No access (mobile.de without the API): nothing to ask until that changes.
         if (status?.skipped) {
           loop.stopped = true;
@@ -1082,7 +1124,7 @@ export default function NeueAngebotePage() {
 
         const serverNow = Date.now() + clockOffsetRef.current;
         const delay = nextCheckDelay({
-          intervalMs: intervalSec * 1_000,
+          intervalMs: source === "AUTOSCOUT24" ? Math.max(AUTOSCOUT_MIN_INTERVAL_MS, intervalSec * 1_000) : intervalSec * 1_000,
           elapsedMs: Date.now() - started,
           failures: failuresRef.current[source] || 0,
           retryAfterMs: status?.retryAfterMs || 0,
@@ -1099,31 +1141,6 @@ export default function NeueAngebotePage() {
       return loop;
     });
 
-    const recovery = applied.sources.map((source) => {
-      const ticker = createTicker();
-      const run = async () => {
-        if (cancelled) return;
-        const state = coverageRef.current[source] ||= createCoverage(!storeRef.current.coverageReady?.[source]);
-        // Let the initial live page establish each combination's baseline.
-        if (!lastStartRef.current[source] || inFlightRef.current[source] ||
-            (failuresRef.current[source] || 0) > 0 || Date.now() < state.dueAt) {
-          ticker.set(1000, run);
-          return;
-        }
-        const result = await checkSource(source, { page: state.page, baseline: state.baseline });
-        if (cancelled) return;
-        if (result?.skipped) return;
-        if (result) {
-          const next = advanceCoverage(state, result);
-          coverageRef.current[source] = next;
-          setCoverageWarnings((warnings) => ({ ...warnings, [source]: next.warning }));
-        }
-        ticker.set(1000, run);
-      };
-      ticker.set(1500, run);
-      return ticker;
-    });
-
     // Coming back to a tab the browser slowed down: check right away where due.
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
@@ -1138,8 +1155,6 @@ export default function NeueAngebotePage() {
 
     return () => {
       cancelled = true;
-      for (const ticker of recovery) ticker.stop();
-      for (const source of applied.sources) inFlightRef.current[`${source}:coverage`]?.abort();
       for (const loop of loops) {
         loop.ticker.stop();
         inFlightRef.current[loop.source]?.abort();
@@ -1147,15 +1162,14 @@ export default function NeueAngebotePage() {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", onVisible);
     };
-  }, [running, pageOnline, applied, intervalSec, checkSource]);
+  }, [running, pageOnline, applied, intervalSec, checkSource, persist]);
 
   /* start with a filter: load that filter's memory, or begin a new baseline */
   const apply = () => {
     flushSaves();
     cancelSearch();
-    coverageRef.current = {};
     lastStartRef.current = {};
-    setCoverageWarnings({});
+    lastAliveRef.current = 0;
     setPending(0);
     setLastCheck(null);
     setNextChecks({});
@@ -1168,9 +1182,12 @@ export default function NeueAngebotePage() {
       const started = new Set(Object.keys(saved.seen || {}).map((itemKey) => itemKey.split(":")[0]));
       saved.baselines = saved.baselineDone ? Object.fromEntries([...started].map((source) => [source, true])) : {};
     }
+    // Starting (or reopening the page) is a new session: what is online now is
+    // the baseline, whatever went online while the page was closed is not
+    // announced. Cards found earlier stay in the list.
     // A lookup still "loading" when the page was closed never finished.
     const store = {
-      ...saved,
+      ...startSession(saved),
       feed: (saved.feed || []).filter((entry) => entry.isNew).map((entry) =>
         entry.detailsState === "loading" ? { ...entry, detailsState: undefined } : entry,
       ),
@@ -1194,8 +1211,6 @@ export default function NeueAngebotePage() {
     cancelSearch();
     setPending(0);
     const store = emptyStore();
-    coverageRef.current = {};
-    setCoverageWarnings({});
     storeRef.current = store;
     persist(store);
     setFeed([]);
@@ -1406,9 +1421,6 @@ export default function NeueAngebotePage() {
                 : Verbindung gestört – automatische Wiederholung; Wartezeit siehe oben.
               </span>
             ) : null}
-            {Object.entries(coverageWarnings).filter(([, warning]) => warning).map(([source, warning]) => (
-              <span key={source} className="w-full text-amber-600">{SOURCES.find((entry) => entry.id === source)?.label}: {warning}</span>
-            ))}
           </div>
         ) : null}
 
@@ -1433,7 +1445,7 @@ export default function NeueAngebotePage() {
                   live
                   title="Neu entdeckt"
                   count={latest.length}
-                  meta={`Online / gefunden ${clock(latestAt)} · ${ago(latestAt, now)}`}
+                  meta={`${fresh[0]?.postedAt ? "Portal-Zeit" : "Gefunden"} ${clock(latestAt)} · ${ago(latestAt, now)}`}
                 >
                   {renderRows(latest, { isLatest: true })}
                 </FeedSection>
