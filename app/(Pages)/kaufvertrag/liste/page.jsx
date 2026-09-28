@@ -1,927 +1,607 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+/**
+ * Kaufverträge — every open (not archived) sales contract.
+ *
+ * Search, filter by month / seller / status, sort by column, 25 per page.
+ * A click on a contract opens it. Admins can select contracts and mark,
+ * ignore or archive them (one by one via "⋯" or several at once).
+ *
+ * Uses the same building blocks as the Fahrzeugverwaltung, so both pages
+ * look and behave the same.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { toast } from "react-hot-toast";
 import {
-  FiSearch,
-  FiUser,
-  FiX,
-  FiChevronLeft,
-  FiChevronRight,
-  FiStar,
   FiArchive,
-  FiEyeOff,
+  FiArrowDown,
+  FiArrowUp,
   FiCalendar,
   FiChevronDown,
-  FiSun,
-  FiMoon,
-  FiArrowLeft,
+  FiChevronLeft,
+  FiChevronRight,
+  FiEyeOff,
   FiMenu,
+  FiPlus,
+  FiSearch,
+  FiStar,
+  FiUser,
+  FiX,
 } from "react-icons/fi";
-import { motion } from "framer-motion";
+
 import { useSidebar } from "@/app/(components)/SidebarContext";
 import PageLoader from "@/app/(components)/helpers/PageLoader";
-// Currency formatter
-const currencyFmt = (v, currency = "EUR") => {
+import { theme } from "@/app/(Pages)/Fahrzeugverwaltung/_components/ui";
+
+const PAGE_SIZE = 25;
+
+const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+
+const STATUS_TABS = [
+  { id: "all", label: "Alle" },
+  { id: "starred", label: "Markiert" },
+  { id: "ignored", label: "Ignoriert" },
+];
+
+/* ------------------------------------------------------------ helpers */
+
+const euro = (value) => {
   try {
-    return new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Number(v ?? 0));
+    return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(value ?? 0));
   } catch {
-    return `${currency} ${Number(v ?? 0).toFixed(2)}`;
+    return `${Number(value ?? 0).toFixed(2)} €`;
   }
 };
 
-// Date formatter
-const formatDate = (date) =>
-  date ? new Date(date).toLocaleDateString("de-DE") : "-";
+const formatDate = (value) => {
+  if (!value) return "–";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "–" : date.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+};
 
-// Pagination items builder
-const getPageItems = (page, pages) => {
+const formatKm = (value) => (value || value === 0 ? `${Number(value).toLocaleString("de-DE")} km` : "");
+
+/** 1 … 4 5 6 … 12 */
+function pageItems(page, pages) {
   if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
   const items = [1];
   if (page > 3) items.push("…");
-  const start = Math.max(2, page - 1);
-  const end = Math.min(pages - 1, page + 1);
-  for (let p = start; p <= end; p++) items.push(p);
+  for (let p = Math.max(2, page - 1); p <= Math.min(pages - 1, page + 1); p += 1) items.push(p);
   if (page < pages - 2) items.push("…");
   items.push(pages);
   return items;
-};
+}
 
-export default function KaufvertragListe() {
-  const [contracts, setContracts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [monthFilter, setMonthFilter] = useState("all");
-  const [sellerFilter, setSellerFilter] = useState("all");
-  const [sortConfig, setSortConfig] = useState({
-    key: "invoiceDate",
-    direction: "desc",
-  });
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const contractsPerPage = 25;
-
-  const [selectedIds, setSelectedIds] = useState([]);
-
-  const { data: session } = useSession();
-  const router = useRouter();
-  const isAdmin = session?.user?.role === "admin";
-  const { openSidebar } = useSidebar();
-  // Initialize dark mode
+function useDarkMode() {
+  const [dark, setDark] = useState(false);
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
-
-    const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
-    setDarkMode(isDark);
-
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, []);
-
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-
-    if (newDarkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  };
-
-  const monthOptions = [
-    { value: "all", label: "Alle Monate" },
-    { value: "1", label: "Januar" },
-    { value: "2", label: "Februar" },
-    { value: "3", label: "März" },
-    { value: "4", label: "April" },
-    { value: "5", label: "Mai" },
-    { value: "6", label: "Juni" },
-    { value: "7", label: "Juli" },
-    { value: "8", label: "August" },
-    { value: "9", label: "September" },
-    { value: "10", label: "Oktober" },
-    { value: "11", label: "November" },
-    { value: "12", label: "Dezember" },
-  ];
-
-  // Fetch data
-  useEffect(() => {
-    const fetchData = async () => {
+    const read = () => {
       try {
-        const res = await fetch("/api/kaufvertrag");
-        const data = await res.json();
-        setContracts(data);
-      } catch (error) {
-        console.error("Error fetching contracts:", error);
-      } finally {
-        setLoading(false);
+        const saved = localStorage.getItem("theme");
+        setDark(saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches));
+      } catch {
+        setDark(document.documentElement.classList.contains("dark"));
       }
     };
-    fetchData();
+    read();
+    const observer = new MutationObserver(() => setDark(document.documentElement.classList.contains("dark")));
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+  return dark;
+}
+
+/* ------------------------------------------------------------ small parts */
+
+function Select({ icon: Icon, value, onChange, children, dark, label }) {
+  const t = theme(dark);
+  return (
+    <label className={`relative flex h-8 items-center rounded-lg border ${t.input}`}>
+      <Icon className={`pointer-events-none absolute left-2.5 size-3.5 ${t.faint}`} />
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-full w-full cursor-pointer appearance-none rounded-lg bg-transparent pl-7 pr-7 text-[12.5px] outline-none"
+      >
+        {children}
+      </select>
+      <FiChevronDown className={`pointer-events-none absolute right-2 size-3.5 ${t.faint}`} />
+    </label>
+  );
+}
+
+function Checkbox({ checked, indeterminate, onChange, label }) {
+  return (
+    <input
+      type="checkbox"
+      aria-label={label}
+      checked={checked}
+      ref={(node) => {
+        if (node) node.indeterminate = Boolean(indeterminate);
+      }}
+      onClick={(event) => event.stopPropagation()}
+      onChange={onChange}
+      className="size-4 cursor-pointer rounded accent-emerald-600"
+    />
+  );
+}
+
+function StatusBadges({ contract, dark }) {
+  return (
+    <>
+      {contract.starred ? (
+        <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset ${dark ? "bg-amber-400/10 text-amber-300 ring-amber-400/25" : "bg-amber-50 text-amber-800 ring-amber-600/20"}`}>
+          <FiStar className="size-3" /> Markiert
+        </span>
+      ) : null}
+      {contract.ignored ? (
+        <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset ${dark ? "bg-red-400/10 text-red-300 ring-red-400/25" : "bg-red-50 text-red-700 ring-red-600/20"}`}>
+          <FiEyeOff className="size-3" /> Ignoriert
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+function SortHeader({ label, sortKey, sort, onSort, dark, align = "left", className = "" }) {
+  const active = sort.key === sortKey;
+  const Arrow = sort.direction === "asc" ? FiArrowUp : FiArrowDown;
+  return (
+    <th className={`px-3 py-2.5 font-medium ${className}`} aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : undefined}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`group inline-flex items-center gap-1 rounded transition ${align === "right" ? "flex-row-reverse" : ""} ${
+          active ? (dark ? "text-slate-100" : "text-slate-900") : dark ? "hover:text-slate-200" : "hover:text-slate-800"
+        }`}
+      >
+        {label}
+        {active ? <Arrow className="size-3" /> : <FiArrowDown className="size-3 opacity-0 transition group-hover:opacity-40" />}
+      </button>
+    </th>
+  );
+}
+
+/* ------------------------------------------------------------ page */
+
+export default function KaufvertragListe() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const { openSidebar } = useSidebar();
+  const dark = useDarkMode();
+  const t = theme(dark);
+  const isAdmin = session?.user?.role === "admin";
+
+  const [contracts, setContracts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [tab, setTab] = useState("all");
+  const [month, setMonth] = useState("all");
+  const [seller, setSeller] = useState("all");
+  const [sort, setSort] = useState({ key: "invoiceDate", direction: "desc" });
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState([]);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/kaufvertrag")
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error())))
+      .then((data) => !cancelled && setContracts(Array.isArray(data) ? data : []))
+      .catch(() => toast.error("Verträge konnten nicht geladen werden"))
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Clear selection when page or filter changes
-  useEffect(() => {
-    setSelectedIds([]);
-  }, [currentPage, searchTerm, monthFilter, sellerFilter]);
+  // A new search, filter or page starts without a selection.
+  const filterKey = `${query}|${tab}|${month}|${seller}`;
+  useEffect(() => setPage(1), [filterKey]);
+  useEffect(() => setSelected([]), [filterKey, page]);
 
-  // Client-side filtering & sorting
-  const filteredContracts = useMemo(() => {
-    let results = [...contracts];
+  /* ---------------------------------------------------------- data */
 
-    if (searchTerm) {
-      const lower = searchTerm.toLowerCase();
-      results = results.filter((contract) =>
-        Object.values(contract).some(
-          (value) => value && value.toString().toLowerCase().includes(lower)
-        )
-      );
-    }
+  const sellers = useMemo(() => [...new Set(contracts.map((c) => c.issuer).filter(Boolean))].sort(), [contracts]);
 
-    if (monthFilter !== "all") {
-      results = results.filter((contract) => {
-        if (!contract.invoiceDate) return false;
-        const d = new Date(contract.invoiceDate);
-        return (
-          d.getMonth() + 1 === parseInt(monthFilter, 10) &&
-          d.getFullYear() === new Date().getFullYear()
-        );
-      });
-    }
-
-    if (sellerFilter !== "all") {
-      results = results.filter((c) => c.issuer === sellerFilter);
-    }
-
-    if (sortConfig.key) {
-      results.sort((a, b) => {
-        let aVal = a[sortConfig.key];
-        let bVal = b[sortConfig.key];
-
-        if (sortConfig.key === "invoiceDate") {
-          aVal = aVal ? new Date(aVal).getTime() : 0;
-          bVal = bVal ? new Date(bVal).getTime() : 0;
-        }
-
-        // 👉 total + mileage als Zahlen sortieren
-        if (sortConfig.key === "total" || sortConfig.key === "mileage") {
-          aVal = Number(aVal) || 0;
-          bVal = Number(bVal) || 0;
-        }
-
-        if (typeof aVal === "string") aVal = aVal.toLowerCase();
-        if (typeof bVal === "string") bVal = bVal.toLowerCase();
-
-        if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
-        if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
-        return 0;
-      });
-    }
-
-    return results;
-  }, [contracts, searchTerm, monthFilter, sellerFilter, sortConfig]);
-
-  // Pagination
-  const totalPages =
-    Math.ceil(filteredContracts.length / contractsPerPage) || 1;
-  const indexOfLast = currentPage * contractsPerPage;
-  const indexOfFirst = indexOfLast - contractsPerPage;
-  const currentContracts = filteredContracts.slice(indexOfFirst, indexOfLast);
-
-  // Unique sellers
-  const uniqueSellers = useMemo(
-    () => [...new Set(contracts.map((c) => c.issuer))].filter(Boolean),
-    [contracts]
-  );
-
-  const requestSort = (key) => {
-    setSortConfig((prev) => {
-      if (prev.key === key && prev.direction === "asc") {
-        return { key, direction: "desc" };
+  const filtered = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    const year = new Date().getFullYear();
+    const list = contracts.filter((contract) => {
+      if (tab === "starred" && !contract.starred) return false;
+      if (tab === "ignored" && !contract.ignored) return false;
+      if (seller !== "all" && contract.issuer !== seller) return false;
+      if (month !== "all") {
+        const date = contract.invoiceDate ? new Date(contract.invoiceDate) : null;
+        if (!date || date.getFullYear() !== year || date.getMonth() + 1 !== Number(month)) return false;
       }
-      return { key, direction: "asc" };
+      if (term && !Object.values(contract).some((value) => value !== null && value !== undefined && String(value).toLowerCase().includes(term))) return false;
+      return true;
     });
+
+    const value = (contract) => {
+      const raw = contract[sort.key];
+      if (sort.key === "invoiceDate") return raw ? new Date(raw).getTime() : 0;
+      if (sort.key === "total" || sort.key === "mileage") return Number(raw) || 0;
+      return String(raw ?? "").toLowerCase();
+    };
+    return list.sort((a, b) => {
+      const x = value(a);
+      const y = value(b);
+      if (x < y) return sort.direction === "asc" ? -1 : 1;
+      if (x > y) return sort.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [contracts, query, tab, month, seller, sort]);
+
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  useEffect(() => {
+    if (page > pages) setPage(pages);
+  }, [page, pages]);
+  const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const onSort = (key) =>
+    setSort((current) => ({ key, direction: current.key === key && current.direction === "asc" ? "desc" : "asc" }));
+
+  const filtersActive = query || month !== "all" || seller !== "all" || tab !== "all";
+  const resetFilters = () => {
+    setQuery("");
+    setTab("all");
+    setMonth("all");
+    setSeller("all");
   };
 
-  const updateContract = async (id, updates) => {
+  /* ---------------------------------------------------------- actions */
+
+  const updateContract = useCallback(async (id, updates) => {
+    const res = await fetch(`/api/kaufvertrag/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Speichern fehlgeschlagen");
+    // Archived contracts leave this list (they are in the Archiv).
+    setContracts((list) =>
+      data.archived ? list.filter((c) => c._id !== data._id) : list.map((c) => (c._id === data._id ? { ...c, ...data } : c)),
+    );
+    return data;
+  }, []);
+
+  const ACTIONS = {
+    star: { updates: { toggleStar: true }, done: "Markierung geändert" },
+    ignore: { updates: { toggleIgnore: true }, done: "Ignorieren geändert" },
+    archive: { updates: { archived: true }, done: "archiviert", confirm: true },
+  };
+
+  const run = async (kind, ids) => {
+    if (!ids.length || busy) return;
+    const action = ACTIONS[kind];
+    if (action.confirm && !window.confirm(ids.length === 1 ? "Diesen Vertrag archivieren?" : `${ids.length} Verträge archivieren?`)) return;
+    setBusy(true);
     try {
-      const res = await fetch(`/api/kaufvertrag/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      });
-      const updated = await res.json();
-      setContracts((prev) =>
-        prev.map((c) => (c._id === updated._id ? updated : c))
-      );
+      await Promise.all(ids.map((id) => updateContract(id, action.updates)));
+      toast.success(kind === "archive" ? `${ids.length === 1 ? "Vertrag" : `${ids.length} Verträge`} ${action.done}` : action.done);
+      setSelected([]);
     } catch (error) {
-      console.error("Error updating contract:", error);
+      toast.error(error.message || "Aktion fehlgeschlagen");
+    } finally {
+      setBusy(false);
     }
   };
 
-  const archiveContract = async (id) => {
-    if (!confirm("Diesen Vertrag archivieren?")) return;
-    await updateContract(id, { archived: true });
-  };
+  const open = (contract) => router.push(`/kaufvertrag/${contract._id}`);
 
-  const toggleStar = async (id) => {
-    await updateContract(id, { toggleStar: true });
-  };
+  /* ---------------------------------------------------------- selection */
 
-  const toggleIgnore = async (id) => {
-    await updateContract(id, { toggleIgnore: true });
-  };
+  const visibleIds = visible.map((c) => c._id);
+  const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));
+  const someSelected = selected.length > 0;
+  const toggleOne = (id) => setSelected((list) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]));
+  const toggleAll = () => setSelected(allSelected ? [] : visibleIds);
 
-  // Bulk actions
-  const handleBulkArchive = async () => {
-    if (selectedIds.length === 0) return;
-    if (!confirm("Ausgewählte Verträge archivieren?")) return;
-    await Promise.all(
-      selectedIds.map((id) => updateContract(id, { archived: true }))
-    );
-    setSelectedIds([]);
-  };
+  if (status === "loading") return <PageLoader />;
 
-  const handleBulkStar = async () => {
-    if (selectedIds.length === 0) return;
-    await Promise.all(
-      selectedIds.map((id) => updateContract(id, { toggleStar: true }))
-    );
-    setSelectedIds([]);
-  };
-
-  const handleBulkIgnore = async () => {
-    if (selectedIds.length === 0) return;
-    await Promise.all(
-      selectedIds.map((id) => updateContract(id, { toggleIgnore: true }))
-    );
-    setSelectedIds([]);
-  };
-
-  // Selection helpers
-  const toggleSelectOne = (id) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
-
-  const someSelected = selectedIds.length > 0;
-
-  const resetFilters = () => {
-    setSearchTerm("");
-    setMonthFilter("all");
-    setSellerFilter("all");
-    setCurrentPage(1);
-  };
-
-  const pageItems = useMemo(
-    () => getPageItems(currentPage, totalPages),
-    [currentPage, totalPages]
-  );
-
-  // Theme classes
-  const bgClass = darkMode ? "bg-slate-900" : "bg-slate-50";
-  const cardBg = darkMode ? "bg-slate-800" : "bg-white";
-  const borderColor = darkMode ? "border-slate-700" : "border-slate-200";
-  const textPrimary = darkMode ? "text-white" : "text-slate-900";
-  const textSecondary = darkMode ? "text-slate-300" : "text-slate-600";
-  const textMuted = darkMode ? "text-slate-400" : "text-slate-500";
-
-  const buttonPrimary = darkMode
-    ? "bg-slate-700 hover:bg-slate-600 text-white"
-    : "bg-slate-600 hover:bg-slate-700 text-white";
-
-  const buttonSecondary = darkMode
-    ? "bg-slate-700 hover:bg-slate-600 text-white"
-    : "bg-slate-200 hover:bg-slate-300 text-slate-700";
-
-  const inputBg = darkMode
-    ? "bg-slate-800 border-slate-600 text-white placeholder-slate-400"
-    : "bg-white border-slate-300 text-slate-900 placeholder-slate-500";
-
-  if (loading) {
-    return <PageLoader dark={darkMode} />;
-  }
-
-  // 👉 +1 Spalte für Kilometer
-  const columnCount = isAdmin ? 8 : 7;
+  const bulkButton = `inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[12px] font-medium transition disabled:opacity-50 ${t.secondary}`;
 
   return (
-    <div
-      className={`min-h-screen transition-colors duration-300 ${bgClass} px-2 py-3 sm:px-4 sm:py-3 lg:px-6`}
-    >
-      <div className="w-full max-w-screen-2xl mx-auto">
-        {/* Header */}
-        <motion.header
-          initial={{ y: -15, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="mb-2 sm:mb-3 lg:mb-4"
-        >
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-            {/* Mobile hamburger */}
-            <button
-              onClick={openSidebar}
-              className={`md:hidden p-2 rounded-lg transition-colors duration-300 ${
-                darkMode
-                  ? "bg-slate-800 hover:bg-slate-700 text-white"
-                  : "bg-slate-200 hover:bg-slate-300 text-slate-700"
-              }`}
-              aria-label="Menü öffnen"
-            >
-              <FiMenu className="h-4 w-4" />
-            </button>
-
-            <h1
-              className={`text-base sm:text-lg lg:text-2xl font-bold ${textPrimary}`}
-            >
-              Kaufverträge
-            </h1>
+    <main className={`min-h-screen ${t.page}`}>
+      <div className="mx-auto max-w-screen-2xl px-3 py-4 sm:px-6 sm:py-6">
+        {/* header */}
+        <header className="mb-5 flex items-center gap-3">
+          <button type="button" onClick={openSidebar} aria-label="Menü öffnen" className={`rounded-lg p-2 md:hidden ${t.ghost}`}>
+            <FiMenu className="size-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-semibold tracking-tight">Kaufverträge</h1>
           </div>
-        </motion.header>
+          <Link
+            href="/kaufvertrag/auswahl"
+            className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold shadow-sm transition sm:px-4 ${t.primary}`}
+          >
+            <FiPlus className="size-4" />
+            <span className="hidden sm:inline">Neuer Vertrag</span>
+            <span className="sm:hidden">Neu</span>
+          </Link>
+        </header>
 
-        {/* Filters + Bulk actions (same row) */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className={`mb-3 sm:mb-4 rounded-lg border transition-colors duration-300 ${borderColor} ${cardBg} p-2 sm:p-3 lg:p-3 shadow-sm`}
-        >
-          <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {/* Left side: Archiv button + Search */}
-            <div className="flex w-full sm:w-auto items-center gap-2">
-              <div className="relative flex-1 min-w-[160px] max-w-xs sm:max-w-sm">
-                <FiSearch
-                  className={`pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs sm:text-sm transition-colors duration-300 ${
-                    darkMode ? "text-slate-400" : "text-slate-500"
+        <section className={`overflow-hidden rounded-xl border shadow-sm ${t.card}`}>
+          {/* status tabs */}
+          <nav aria-label="Status" className={`scrollbar-hide flex gap-1 overflow-x-auto border-b px-3 sm:px-4 ${t.divider}`}>
+            {STATUS_TABS.map((entry) => {
+              const active = tab === entry.id;
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => setTab(entry.id)}
+                  aria-current={active ? "true" : undefined}
+                  className={`relative flex h-11 shrink-0 items-center gap-2 px-2.5 text-[13px] font-medium transition ${
+                    active ? t.title : dark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800"
                   }`}
-                />
+                >
+                  {entry.label}
+                  {active ? <span className="absolute inset-x-1 -bottom-px h-0.5 rounded-full bg-emerald-600" /> : null}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* toolbar, or the bulk bar while contracts are selected */}
+          {isAdmin && someSelected ? (
+            <div className={`flex flex-wrap items-center gap-2 border-b px-3 py-2.5 sm:px-4 ${t.divider} ${dark ? "bg-emerald-500/5" : "bg-emerald-50/60"}`}>
+              <span className={`mr-1 text-[13px] font-semibold ${t.title}`}>{selected.length} ausgewählt</span>
+              <button type="button" disabled={busy} onClick={() => run("star", selected)} className={bulkButton}>
+                <FiStar className="size-3.5" /> Markieren
+              </button>
+              <button type="button" disabled={busy} onClick={() => run("ignore", selected)} className={bulkButton}>
+                <FiEyeOff className="size-3.5" /> Ignorieren
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => run("archive", selected)}
+                className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[12px] font-medium transition disabled:opacity-50 ${
+                  dark ? "border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20" : "border-red-200 bg-white text-red-600 hover:bg-red-50"
+                }`}
+              >
+                <FiArchive className="size-3.5" /> Archivieren
+              </button>
+              <button type="button" onClick={() => setSelected([])} className={`ml-auto inline-flex h-8 items-center gap-1 rounded-lg px-2 text-[12px] ${t.ghost}`}>
+                <FiX className="size-3.5" /> Auswahl aufheben
+              </button>
+            </div>
+          ) : (
+            <div className={`flex flex-col gap-2 border-b px-3 py-2.5 sm:flex-row sm:items-center sm:px-4 ${t.divider}`}>
+              <label className={`flex h-8 w-full items-center gap-2 rounded-lg border px-2.5 sm:w-64 ${t.input}`}>
+                <FiSearch className={`size-3.5 shrink-0 ${t.faint}`} />
                 <input
-                  type="text"
-                  placeholder="Verträge suchen..."
-                  className={`w-full rounded-md border pl-7 pr-2 py-1.5 h-8 text-[11px] sm:text-xs md:text-sm focus:outline-none focus:ring-1 transition-colors duration-300 ${inputBg} ${
-                    darkMode
-                      ? "focus:border-slate-400 focus:ring-slate-400"
-                      : "focus:border-blue-500 focus:ring-blue-200"
-                  }`}
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(1);
-                  }}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Suchen …"
+                  aria-label="Verträge suchen"
+                  className="min-w-0 flex-1 bg-transparent text-[12.5px] outline-none"
                 />
-              </div>
-            </div>
-
-            {/* Right side: Filters + Gmail-style icons */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 justify-end">
-              {/* Filters group */}
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Month filter */}
-                <div
-                  className={`flex items-center gap-1 rounded-md border px-1.5 py-1 text-[11px] sm:text-xs transition-colors duration-300 ${
-                    darkMode
-                      ? "bg-slate-700 border-slate-600 text-slate-300"
-                      : "bg-slate-50 border-slate-300 text-slate-600"
-                  }`}
-                >
-                  <FiCalendar
-                    className={`text-xs transition-colors duration-300 ${
-                      darkMode ? "text-slate-400" : "text-slate-500"
-                    }`}
-                  />
-                  <select
-                    className={`bg-transparent text-[11px] sm:text-xs focus:outline-none transition-colors duration-300 ${
-                      darkMode ? "text-slate-300" : "text-slate-600"
-                    }`}
-                    value={monthFilter}
-                    onChange={(e) => {
-                      setMonthFilter(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                  >
-                    {monthOptions.map((m) => (
-                      <option key={m.value} value={m.value}>
-                        {m.label}
+                {query ? (
+                  <button type="button" onClick={() => setQuery("")} aria-label="Suche leeren" className={`rounded p-0.5 ${t.ghost}`}>
+                    <FiX className="size-3.5" />
+                  </button>
+                ) : null}
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1 sm:w-40 sm:flex-none">
+                  <Select icon={FiCalendar} value={month} onChange={setMonth} dark={dark} label="Monat">
+                    <option value="all">Alle Monate</option>
+                    {MONTHS.map((name, index) => (
+                      <option key={name} value={String(index + 1)}>
+                        {name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
-
-                {/* Seller filter */}
-                <div
-                  className={`flex items-center gap-1 rounded-md border px-1.5 sm:px-2 py-1 text-[11px] sm:text-xs transition-colors duration-300 ${
-                    darkMode
-                      ? "bg-slate-700 border-slate-600 text-slate-300"
-                      : "bg-slate-50 border-slate-300 text-slate-600"
-                  }`}
-                >
-                  <FiUser
-                    className={`text-xs transition-colors duration-300 ${
-                      darkMode ? "text-slate-400" : "text-slate-500"
-                    }`}
-                  />
-                  <select
-                    className={`bg-transparent text-[11px] sm:text-xs focus:outline-none transition-colors duration-300 ${
-                      darkMode ? "text-slate-300" : "text-slate-600"
-                    }`}
-                    value={sellerFilter}
-                    onChange={(e) => {
-                      setSellerFilter(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                  >
+                <div className="min-w-0 flex-1 sm:w-40 sm:flex-none">
+                  <Select icon={FiUser} value={seller} onChange={setSeller} dark={dark} label="Verkäufer">
                     <option value="all">Alle Verkäufer</option>
-                    {uniqueSellers.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
+                    {sellers.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
-
-                {/* Reset filters */}
-                {(searchTerm ||
-                  monthFilter !== "all" ||
-                  sellerFilter !== "all") && (
-                  <button
-                    onClick={resetFilters}
-                    className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] sm:text-xs font-medium transition ${
-                      darkMode
-                        ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                        : "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                    }`}
-                  >
-                    <FiX className="text-xs" /> Zurücksetzen
+                {filtersActive ? (
+                  <button type="button" onClick={resetFilters} title="Filter zurücksetzen" aria-label="Filter zurücksetzen" className={`inline-flex size-8 shrink-0 items-center justify-center rounded-lg ${t.ghost}`}>
+                    <FiX className="size-4" />
                   </button>
-                )}
-              </div>
-
-              {/* Bulk actions (Gmail-style icons) */}
-              {isAdmin && someSelected && (
-                <div className="flex items-center gap-1 sm:gap-2">
-                  {/* tiny separator line like Gmail */}
-                  <span
-                    className={`hidden sm:inline-block h-6 w-px transition-colors duration-300 ${
-                      darkMode ? "bg-slate-600" : "bg-slate-300"
-                    }`}
-                  />
-
-                  <button
-                    onClick={handleBulkArchive}
-                    className={`flex h-8 w-8 items-center justify-center rounded-full border transition-colors duration-300 ${
-                      darkMode
-                        ? "text-slate-400 hover:bg-slate-700 hover:border-slate-500 hover:text-white"
-                        : "text-slate-600 hover:bg-slate-200 hover:border-slate-300"
-                    } cursor-pointer`}
-                    title="Archivieren"
-                  >
-                    <FiArchive className="text-base" />
-                  </button>
-                  <button
-                    onClick={handleBulkStar}
-                    className={`flex h-8 w-8 items-center justify-center rounded-full border transition-colors duration-300 ${
-                      darkMode
-                        ? "text-slate-400 hover:bg-slate-700 hover:border-slate-500 hover:text-white"
-                        : "text-slate-600 hover:bg-slate-200 hover:border-slate-300"
-                    } cursor-pointer`}
-                    title="Markieren"
-                  >
-                    <FiStar className="text-base" />
-                  </button>
-                  <button
-                    onClick={handleBulkIgnore}
-                    className={`flex h-8 w-8 items-center justify-center rounded-full border transition-colors duration-300 ${
-                      darkMode
-                        ? "text-slate-400 hover:bg-slate-700 hover:border-slate-500 hover:text-white"
-                        : "text-slate-600 hover:bg-slate-200 hover:border-slate-300"
-                    } cursor-pointer`}
-                    title="Ignorieren"
-                  >
-                    <FiEyeOff className="text-base" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Table wrapper */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className={`overflow-hidden rounded-lg border transition-colors duration-300 ${borderColor} ${cardBg} shadow-sm`}
-        >
-          <div className="w-full overflow-x-auto">
-            <table className="min-w-full divide-y transition-colors duration-300 text-xs sm:text-sm">
-              <thead
-                className={`sticky top-0 z-10 transition-colors duration-300 ${
-                  darkMode ? "bg-slate-800" : "bg-slate-50"
-                }`}
-              >
-                <tr
-                  className={`text-left text-[10px] sm:text-xs font-medium uppercase tracking-wider transition-colors duration-300 ${
-                    darkMode ? "text-slate-400" : "text-slate-500"
-                  }`}
-                >
-                  {isAdmin && (
-                    <th className="w-8 px-3 py-2">
-                      {/* empty header for checkbox */}
-                    </th>
-                  )}
-                  <th
-                    className={`px-3 py-3 cursor-pointer whitespace-nowrap transition-colors duration-300 ${
-                      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-100"
-                    }`}
-                    onClick={() => requestSort("invoiceDate")}
-                  >
-                    <div className="flex items-center gap-1">
-                      Datum
-                      <FiChevronDown className="text-[10px] sm:text-xs" />
-                    </div>
-                  </th>
-                  <th
-                    className={`px-3 py-2 cursor-pointer whitespace-nowrap transition-colors duration-300 ${
-                      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-100"
-                    }`}
-                    onClick={() => requestSort("buyerName")}
-                  >
-                    <div className="flex items-center gap-1">
-                      Käufer
-                      <FiChevronDown className="text-[10px] sm:text-xs" />
-                    </div>
-                  </th>
-                  <th
-                    className={`px-3 py-2 cursor-pointer whitespace-nowrap transition-colors duration-300 ${
-                      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-100"
-                    }`}
-                    onClick={() => requestSort("carType")}
-                  >
-                    <div className="flex items-center gap-1">
-                      Fahrzeug
-                      <FiChevronDown className="text-[10px] sm:text-xs" />
-                    </div>
-                  </th>
-                  <th
-                    className={`px-16 py-2 text-left whitespace-nowrap sm:table-cell transition-colors duration-300 ${
-                      darkMode ? "text-slate-400" : "text-slate-500"
-                    }`}
-                  >
-                    FIN
-                  </th>
-                  {/* 👉 Neue Kilometer-Spalte (nur ab md) */}
-                  <th
-                    className={`px-3 py-2 cursor-pointer whitespace-nowrap hidden md:table-cell transition-colors duration-300 ${
-                      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-100"
-                    }`}
-                    onClick={() => requestSort("mileage")}
-                  >
-                    <div className="flex items-center gap-1">
-                      Kilometer
-                      <FiChevronDown className="text-[10px] sm:text-xs" />
-                    </div>
-                  </th>
-                  <th
-                    className={`px-3 py-2 cursor-pointer whitespace-nowrap md:table-cell transition-colors duration-300 ${
-                      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-100"
-                    }`}
-                    onClick={() => requestSort("invoiceNumber")}
-                  >
-                    <div className="flex items-center gap-1">
-                      Re-Nr.
-                      <FiChevronDown className="text-[10px] sm:text-xs" />
-                    </div>
-                  </th>
-                  <th
-                    className={`px-3 py-2 text-left cursor-pointer whitespace-nowrap transition-colors duration-300 ${
-                      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-100"
-                    }`}
-                    onClick={() => requestSort("total")}
-                  >
-                    <div className="flex items-center gap-1 justify-end">
-                      Betrag
-                      <FiChevronDown className="text-[10px] sm:text-xs" />
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody
-                className={`divide-y transition-colors duration-300 ${
-                  darkMode
-                    ? "divide-slate-700 bg-slate-800"
-                    : "divide-slate-200 bg-white"
-                }`}
-              >
-                {loading ? (
-                  [...Array(6)].map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      {Array.from({ length: columnCount }).map((__, j) => (
-                        <td key={j} className="px-3 py-3">
-                          <div
-                            className={`h-4 w-20 rounded transition-colors duration-300 ${
-                              darkMode ? "bg-slate-700" : "bg-slate-200"
-                            }`}
-                          />
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                ) : currentContracts.length === 0 ? (
-                  <tr>
-                    <td colSpan={columnCount} className="px-3 py-8 text-center">
-                      <div className="mx-auto max-w-md">
-                        <div
-                          className={`mb-1 text-sm font-medium transition-colors duration-300 ${
-                            darkMode ? "text-slate-300" : "text-slate-700"
-                          }`}
-                        >
-                          Keine Verträge gefunden
-                        </div>
-                        <p
-                          className={`transition-colors duration-300 ${
-                            darkMode ? "text-slate-400" : "text-slate-500"
-                          } text-xs`}
-                        >
-                          Suchbegriff oder Filter anpassen
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  currentContracts.map((contract) => {
-                    const isSelected = selectedIds.includes(contract._id);
-
-                    return (
-                      <tr
-                        key={contract._id}
-                        className={`cursor-pointer transition-colors duration-300 ${
-                          darkMode
-                            ? `hover:bg-slate-700 ${
-                                isSelected ? "bg-slate-700" : ""
-                              }`
-                            : `hover:bg-blue-50 ${
-                                isSelected ? "bg-blue-50" : ""
-                              }`
-                        }`}
-                        onClick={() =>
-                          router.push(`/kaufvertrag/${contract._id}`)
-                        }
-                      >
-                        {isAdmin && (
-                          <td
-                            className="px-3 py-5 align-middle"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <input
-                              type="checkbox"
-                              className={`kv-checkbox ${
-                                darkMode ? "dark" : ""
-                              }`}
-                              checked={isSelected}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={() => toggleSelectOne(contract._id)}
-                            />
-                          </td>
-                        )}
-                        <td
-                          className={`px-3 py-3 text-[11px] sm:text-sm whitespace-nowrap transition-colors duration-300 ${
-                            darkMode ? "text-slate-300" : "text-slate-900"
-                          }`}
-                        >
-                          {formatDate(contract.invoiceDate)}
-                        </td>
-                        <td className="px-3 py-2 max-w-[140px] sm:max-w-[180px] lg:max-w-[220px]">
-                          <div
-                            className={`text-[11px] sm:text-sm truncate transition-colors duration-300 ${
-                              darkMode ? "text-slate-300" : "text-slate-900"
-                            }`}
-                          >
-                            {contract.buyerName || "-"}
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 max-w-[180px] sm:max-w-[220px] lg:max-w-[260px]">
-                          <div
-                            className={`text-[11px] sm:text-sm truncate transition-colors duration-300 ${
-                              darkMode ? "text-slate-300" : "text-slate-900"
-                            }`}
-                          >
-                            {contract.carType || "-"}
-                          </div>
-                        </td>
-                        <td
-                          className={`px-3 py-2 text-[11px] sm:text-sm text-left whitespace-nowrap font-mono sm:table-cell transition-colors duration-300 ${
-                            darkMode ? "text-slate-400" : "text-slate-500"
-                          }`}
-                        >
-                          {contract.vin || "-"}
-                        </td>
-                        {/* 👉 Kilometer-Zelle */}
-                        <td
-                          className={`px-6 py-2 text-[11px] sm:text-sm whitespace-nowrap hidden md:table-cell transition-colors duration-300 ${
-                            darkMode ? "text-slate-400" : "text-slate-500"
-                          }`}
-                        >
-                          {contract.mileage
-                            ? contract.mileage.toLocaleString("de-DE")
-                            : "-"}
-                        </td>
-                        <td
-                          className={`px-3 py-2 text-[11px] sm:text-sm font-medium whitespace-nowrap md:table-cell transition-colors duration-300 ${
-                            contract.ignored
-                              ? "text-red-500"
-                              : contract.starred
-                              ? "text-blue-500"
-                              : darkMode
-                              ? "text-slate-300"
-                              : "text-slate-900"
-                          }`}
-                        >
-                          {contract.invoiceNumber || "-"}
-                        </td>
-                        <td
-                          className={`px-3 sm:px-4 py-2 text-[11px] sm:text-sm text-right whitespace-nowrap transition-colors duration-300 ${
-                            darkMode ? "text-slate-300" : "text-slate-900"
-                          }`}
-                        >
-                          {currencyFmt(contract.total, "EUR")}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          {filteredContracts.length > 0 && !loading && (
-            <div
-              className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 sm:px-4 sm:py-3 text-[11px] sm:text-xs border-t transition-colors duration-300 ${
-                darkMode
-                  ? "border-slate-700 text-slate-400"
-                  : "border-slate-200 text-slate-600"
-              }`}
-            >
-              <div className="flex items-center gap-1 sm:gap-1.5">
-                <button
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                  className={`rounded border p-1 disabled:opacity-50 transition-colors duration-300 ${
-                    darkMode
-                      ? "border-slate-600 text-slate-400 hover:bg-slate-700"
-                      : "border-slate-300 text-slate-600 hover:bg-slate-100"
-                  }`}
-                  aria-label="Erste Seite"
-                >
-                  <FiChevronLeft size={14} />
-                </button>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(1, prev - 1))
-                  }
-                  disabled={currentPage === 1}
-                  className={`rounded border p-1 disabled:opacity-50 transition-colors duration-300 ${
-                    darkMode
-                      ? "border-slate-600 text-slate-400 hover:bg-slate-700"
-                      : "border-slate-300 text-slate-600 hover:bg-slate-100"
-                  }`}
-                  aria-label="Vorherige Seite"
-                >
-                  <FiChevronLeft size={14} />
-                </button>
-
-                {pageItems.map((item, idx) =>
-                  item === "…" ? (
-                    <span
-                      key={`e-${idx}`}
-                      className={`px-1 select-none text-[11px] sm:text-xs transition-colors duration-300 ${
-                        darkMode ? "text-slate-400" : "text-slate-500"
-                      }`}
-                    >
-                      …
-                    </span>
-                  ) : (
-                    <button
-                      key={item}
-                      onClick={() => setCurrentPage(item)}
-                      className={`rounded w-6 h-6 text-[11px] sm:text-xs border flex items-center justify-center transition-colors duration-300 ${
-                        currentPage === item
-                          ? darkMode
-                            ? "border-slate-400 text-slate-200 font-medium"
-                            : "border-blue-600 text-blue-700 font-medium"
-                          : darkMode
-                          ? "border-slate-600 text-slate-400 hover:bg-slate-700"
-                          : "border-slate-300 text-slate-600 hover:bg-slate-100"
-                      }`}
-                    >
-                      {item}
-                    </button>
-                  )
-                )}
-
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className={`rounded border p-1 disabled:opacity-50 transition-colors duration-300 ${
-                    darkMode
-                      ? "border-slate-600 text-slate-400 hover:bg-slate-700"
-                      : "border-slate-300 text-slate-600 hover:bg-slate-100"
-                  }`}
-                  aria-label="Nächste Seite"
-                >
-                  <FiChevronRight size={14} />
-                </button>
-                <button
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                  className={`rounded border p-1 disabled:opacity-50 transition-colors duration-300 ${
-                    darkMode
-                      ? "border-slate-600 text-slate-400 hover:bg-slate-700"
-                      : "border-slate-300 text-slate-600 hover:bg-slate-100"
-                  }`}
-                  aria-label="Letzte Seite"
-                >
-                  <FiChevronRight size={14} />
-                </button>
-              </div>
-
-              <div
-                className={`transition-colors duration-300 ${
-                  darkMode ? "text-slate-400" : "text-slate-500"
-                } text-[11px] sm:text-xs`}
-              >
-                Seite {currentPage} von {totalPages} •{" "}
-                {filteredContracts.length} Einträge
+                ) : null}
               </div>
             </div>
           )}
-        </motion.div>
+
+          {/* list */}
+          {loading ? (
+            <div className={`divide-y ${dark ? "divide-slate-800" : "divide-slate-100"}`}>
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="flex animate-pulse items-center gap-6 px-5 py-4">
+                  <div className={`h-3.5 w-20 rounded ${t.skeleton}`} />
+                  <div className="space-y-2">
+                    <div className={`h-3.5 w-40 rounded ${t.skeleton}`} />
+                    <div className={`h-3 w-24 rounded ${t.skeleton}`} />
+                  </div>
+                  <div className={`ml-auto h-3.5 w-24 rounded ${t.skeleton}`} />
+                </div>
+              ))}
+            </div>
+          ) : !filtered.length ? (
+            <div className="px-6 py-16 text-center">
+              <p className={`text-[14px] font-medium ${t.title}`}>Keine Verträge gefunden</p>
+              <p className={`mt-1 text-[13px] ${t.muted}`}>Suchbegriff oder Filter anpassen.</p>
+              {filtersActive ? (
+                <button type="button" onClick={resetFilters} className={`mt-4 inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-[13px] ${t.secondary}`}>
+                  <FiX className="size-4" /> Filter zurücksetzen
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <>
+              {/* phone and tablet */}
+              <ul className={`divide-y lg:hidden ${dark ? "divide-slate-800" : "divide-slate-100"}`}>
+                {visible.map((contract) => {
+                  const isSelected = selected.includes(contract._id);
+                  return (
+                    <li
+                      key={contract._id}
+                      onClick={() => open(contract)}
+                      className={`flex cursor-pointer gap-3 px-4 py-3 ${isSelected ? (dark ? "bg-emerald-500/5" : "bg-emerald-50/60") : ""}`}
+                    >
+                      {isAdmin ? (
+                        <div className="pt-0.5" onClick={(event) => event.stopPropagation()}>
+                          <Checkbox checked={isSelected} onChange={() => toggleOne(contract._id)} label="Vertrag auswählen" />
+                        </div>
+                      ) : null}
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className={`truncate text-[14px] font-medium ${t.title}`}>{contract.buyerName || "–"}</p>
+                          <p className={`shrink-0 text-[14px] font-semibold tabular-nums ${t.title}`}>{euro(contract.total)}</p>
+                        </div>
+                        <p className={`truncate text-[13px] ${t.text}`}>{contract.carType || "–"}</p>
+                        <p className={`text-[12px] tabular-nums ${t.muted}`}>{formatKm(contract.mileage) || "– km"}</p>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className={`font-mono text-[12px] tracking-wide ${t.muted}`}>{contract.vin || "Keine FIN"}</span>
+                          <StatusBadges contract={contract} dark={dark} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <p className={`min-w-0 flex-1 truncate text-[12px] tabular-nums ${t.muted}`}>
+                            <span className={`font-mono text-[13px] font-bold ${t.title}`}>{contract.invoiceNumber || "–"}</span>
+                            {" · "}
+                            {formatDate(contract.invoiceDate)}
+                            {contract.issuer ? ` · ${contract.issuer}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* computer */}
+              <table className="hidden w-full text-left lg:table">
+                <thead className={`border-b text-[12px] ${t.divider} ${t.muted}`}>
+                  <tr>
+                    {isAdmin ? (
+                      <th className="w-10 py-2.5 pl-5 pr-1">
+                        <Checkbox checked={allSelected} indeterminate={someSelected && !allSelected} onChange={toggleAll} label="Alle auf dieser Seite auswählen" />
+                      </th>
+                    ) : null}
+                    <SortHeader label="Datum" sortKey="invoiceDate" sort={sort} onSort={onSort} dark={dark} className={isAdmin ? "" : "pl-5"} />
+                    <SortHeader label="Käufer" sortKey="buyerName" sort={sort} onSort={onSort} dark={dark} />
+                    <SortHeader label="Fahrzeug" sortKey="carType" sort={sort} onSort={onSort} dark={dark} />
+                    <SortHeader label="Kilometer" sortKey="mileage" sort={sort} onSort={onSort} dark={dark} />
+                    <th className="py-2.5 pl-8 pr-3 font-medium">FIN</th>
+                    <SortHeader label="Re-Nr." sortKey="invoiceNumber" sort={sort} onSort={onSort} dark={dark} />
+                    <SortHeader label="Betrag" sortKey="total" sort={sort} onSort={onSort} dark={dark} align="right" className="pr-5 text-right" />
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${dark ? "divide-slate-800" : "divide-slate-100"}`}>
+                  {visible.map((contract) => {
+                    const isSelected = selected.includes(contract._id);
+                    return (
+                      <tr
+                        key={contract._id}
+                        onClick={() => open(contract)}
+                        className={`cursor-pointer transition-colors ${isSelected ? (dark ? "bg-emerald-500/5" : "bg-emerald-50/60") : t.rowHover}`}
+                      >
+                        {isAdmin ? (
+                          <td className="py-3 pl-5 pr-1" onClick={(event) => event.stopPropagation()}>
+                            <Checkbox checked={isSelected} onChange={() => toggleOne(contract._id)} label="Vertrag auswählen" />
+                          </td>
+                        ) : null}
+                        <td className={`whitespace-nowrap px-3 py-3 text-[13px] tabular-nums ${t.text} ${isAdmin ? "" : "pl-5"}`}>{formatDate(contract.invoiceDate)}</td>
+                        <td className="max-w-[14rem] px-3 py-3">
+                          <p className={`truncate text-[14px] font-medium ${t.title}`}>{contract.buyerName || "–"}</p>
+                          {contract.issuer ? <p className={`truncate text-[12px] ${t.muted}`}>Verkäufer: {contract.issuer}</p> : null}
+                        </td>
+                        <td className="max-w-[16rem] px-3 py-3">
+                          <p className={`truncate text-[13px] ${t.text}`}>{contract.carType || "–"}</p>
+                        </td>
+                        <td className={`whitespace-nowrap px-3 py-3 text-[13px] tabular-nums ${t.text}`}>{formatKm(contract.mileage) || "–"}</td>
+                        <td className={`whitespace-nowrap py-3 pl-8 pr-3 font-mono text-[12.5px] tracking-wide ${t.muted}`}>{contract.vin || "–"}</td>
+                        <td className="px-3 py-3">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className={`font-mono text-[13.5px] font-bold ${t.title}`}>{contract.invoiceNumber || "–"}</span>
+                            <StatusBadges contract={contract} dark={dark} />
+                          </div>
+                        </td>
+                        <td className={`whitespace-nowrap py-3 pl-3 pr-5 text-right text-[14px] font-semibold tabular-nums ${t.title}`}>{euro(contract.total)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              {/* pages */}
+              <div className={`flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-[12px] sm:px-5 ${t.divider} ${t.muted}`}>
+                <span className="tabular-nums">
+                  {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} von {filtered.length}
+                </span>
+                {pages > 1 ? (
+                  <nav aria-label="Seiten" className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      aria-label="Vorherige Seite"
+                      disabled={page === 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      className={`inline-flex size-8 items-center justify-center rounded-lg transition disabled:opacity-30 ${t.ghost}`}
+                    >
+                      <FiChevronLeft className="size-4" />
+                    </button>
+                    {pageItems(page, pages).map((item, index) =>
+                      item === "…" ? (
+                        <span key={`gap-${index}`} className="hidden px-1 sm:inline">
+                          …
+                        </span>
+                      ) : (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => setPage(item)}
+                          aria-current={item === page ? "page" : undefined}
+                          className={`hidden size-8 items-center justify-center rounded-lg text-[12px] tabular-nums transition sm:inline-flex ${
+                            item === page
+                              ? dark
+                                ? "bg-emerald-500/15 font-semibold text-emerald-300"
+                                : "bg-emerald-50 font-semibold text-emerald-700"
+                              : t.ghost
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ),
+                    )}
+                    <span className="px-1 tabular-nums sm:hidden">
+                      Seite {page} von {pages}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="Nächste Seite"
+                      disabled={page === pages}
+                      onClick={() => setPage((p) => Math.min(pages, p + 1))}
+                      className={`inline-flex size-8 items-center justify-center rounded-lg transition disabled:opacity-30 ${t.ghost}`}
+                    >
+                      <FiChevronRight className="size-4" />
+                    </button>
+                  </nav>
+                ) : null}
+              </div>
+            </>
+          )}
+        </section>
       </div>
-
-      {/* Custom checkbox styling */}
-      <style jsx>{`
-        .kv-checkbox {
-          width: 14px;
-          height: 14px;
-          appearance: none;
-          cursor: pointer;
-          border: 1px solid #9ca3af;
-          background-color: #ffffff;
-          position: relative;
-          display: inline-block;
-          border-radius: 0;
-        }
-
-        .kv-checkbox.dark {
-          border-color: #6b7280;
-          background-color: #374151;
-        }
-
-        .kv-checkbox:checked {
-          border-color: #4b5563;
-        }
-
-        .kv-checkbox.dark:checked {
-          border-color: #9ca3af;
-        }
-
-        .kv-checkbox:checked::after {
-          content: "";
-          position: absolute;
-          left: 3px;
-          top: 0px;
-          width: 6px;
-          height: 10px;
-          border-right: 2px solid #4b5563;
-          border-bottom: 2px solid #4b5563;
-          transform: rotate(45deg);
-        }
-
-        .kv-checkbox.dark:checked::after {
-          border-right-color: #ffffff;
-          border-bottom-color: #ffffff;
-        }
-      `}</style>
-    </div>
+    </main>
   );
 }

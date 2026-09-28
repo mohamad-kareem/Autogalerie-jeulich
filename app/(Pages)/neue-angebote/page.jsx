@@ -30,9 +30,11 @@ import {
   FiEyeOff,
   FiFilter,
   FiLoader,
+  FiMail,
   FiMapPin,
   FiMenu,
   FiPause,
+  FiPhone,
   FiPlay,
   FiRefreshCw,
   FiTrash2,
@@ -496,6 +498,30 @@ function CardFacts({ item, dark, onLoad }) {
   );
 }
 
+/** The seller's phone and e-mail, when he published them in the ad. */
+function SellerContact({ contact, dark }) {
+  if (!contact || (!contact.phones?.length && !contact.email)) return null;
+  const link = `inline-flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[12.5px] font-medium transition ${
+    dark ? "text-emerald-300 hover:bg-emerald-500/10" : "text-emerald-700 hover:bg-emerald-50"
+  }`;
+  return (
+    <div className="-ml-1.5 mt-1 flex flex-wrap items-center gap-x-1 gap-y-0.5">
+      {(contact.phones || []).map((phone) => (
+        <a key={phone} href={`tel:${phone.replace(/[^\d+]/g, "")}`} className={`${link} tabular-nums`} title="Anrufen">
+          <FiPhone className="size-3.5 shrink-0" />
+          {phone}
+        </a>
+      ))}
+      {contact.email ? (
+        <a href={`mailto:${contact.email}`} className={link} title="E-Mail schreiben">
+          <FiMail className="size-3.5 shrink-0" />
+          <span className="truncate">{contact.email}</span>
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
 const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadDetails, latest = false }) {
   const source = SOURCES.find((entry) => entry.id === item.source);
   const sellerType =
@@ -604,6 +630,8 @@ const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadD
           {item.location && seller ? <span aria-hidden className="mx-1">·</span> : null}
           {seller ? <span className="shrink-0">{seller}</span> : null}
         </p>
+
+        <SellerContact contact={item.details?.contact} dark={dark} />
       </div>
 
       {/* facts: full width on a phone, under the car on a wider screen */}
