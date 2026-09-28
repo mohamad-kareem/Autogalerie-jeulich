@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import PageLogger from "@/app/(components)/PageLogger";
 import LayoutWrapper from "@/app/(components)/helpers/LayoutWrapper";
 import { Playfair_Display } from "next/font/google";
+import RouteProgress from "@/app/(components)/helpers/RouteProgress";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -59,6 +60,7 @@ export default function RootLayout({ children }) {
       </head>
 
       <body>
+        <RouteProgress />
         <Toaster
           position="top-center"
           toastOptions={{

@@ -25,6 +25,8 @@ const ADMIN_PATHS = [
   "/preisschild",
   "/Rotkennzeichen",
   "/Kundenkontakte",
+  "/marktanalyse",
+  "/neue-angebote",
 ];
 
 export default function LayoutWrapper({ children }) {

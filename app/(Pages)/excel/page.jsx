@@ -18,6 +18,7 @@ import EntryForm from "@/app/(components)/admin/excel/EntryForm";
 import Tabs from "@/app/(components)/admin/excel/Tabs";
 import { exportToExcel } from "@/app/utils/ExportService";
 import { printEntries } from "@/app/utils/PrintService";
+import PageLoader from "@/app/(components)/helpers/PageLoader";
 
 const CashBookPage = () => {
   const { data: session, status } = useSession();
@@ -284,11 +285,7 @@ const CashBookPage = () => {
   };
 
   if (state.isLoading || status === "loading") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lime-400"></div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   const {

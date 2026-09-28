@@ -31,6 +31,7 @@ import {
   HeadingLevel,
 } from "docx";
 import { saveAs } from "file-saver";
+import PageLoader from "@/app/(components)/helpers/PageLoader";
 
 /* -----------------------
    Helpers
@@ -1768,13 +1769,7 @@ export default function CarLocationsPage() {
     }
   };
   if (loading) {
-    return (
-      <div
-        className={`flex items-center justify-center h-screen transition-colors duration-300 ${bgClass}`}
-      >
-        <div className="h-11 w-11 rounded-full animate-spin border-[3px] border-transparent border-t-slate-500 border-b-slate-500" />
-      </div>
-    );
+    return <PageLoader dark={darkMode} />;
   }
 
   return (

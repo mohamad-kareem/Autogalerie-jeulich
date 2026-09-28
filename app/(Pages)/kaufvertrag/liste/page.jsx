@@ -21,6 +21,7 @@ import {
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useSidebar } from "@/app/(components)/SidebarContext";
+import PageLoader from "@/app/(components)/helpers/PageLoader";
 // Currency formatter
 const currencyFmt = (v, currency = "EUR") => {
   try {
@@ -316,17 +317,7 @@ export default function KaufvertragListe() {
     : "bg-white border-slate-300 text-slate-900 placeholder-slate-500";
 
   if (loading) {
-    return (
-      <div
-        className={`flex justify-center items-center h-screen transition-colors duration-300 ${bgClass}`}
-      >
-        <div
-          className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 transition-colors duration-300 ${
-            darkMode ? "border-slate-400" : "border-slate-600"
-          }`}
-        />
-      </div>
-    );
+    return <PageLoader dark={darkMode} />;
   }
 
   // 👉 +1 Spalte für Kilometer

@@ -60,6 +60,7 @@ import { requestCheck } from "@/lib/feed/live";
 import { createChime, notifyArrivals } from "@/lib/feed/alerts";
 import { nextCheckDelay } from "@/lib/feed/polling";
 import { KA_CYCLE_MS, KA_DEFAULT_LANDING_MS, nextKaCheck, observeKa } from "@/lib/feed/kaCycle";
+import PageLoader from "@/app/(components)/helpers/PageLoader";
 
 const FILTER_STORE = "neueAngebote.filters.v1";
 const SETTINGS_STORE = "neueAngebote.settings.v1";
@@ -1259,11 +1260,7 @@ export default function NeueAngebotePage() {
 
 
   if (status === "loading") {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <FiLoader className="animate-spin text-2xl" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   const muted = dark ? "text-slate-400" : "text-slate-500";

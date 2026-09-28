@@ -22,6 +22,7 @@ import {
 import { motion } from "framer-motion";
 import { ArrowUturnLeftIcon, NoSymbolIcon } from "@heroicons/react/24/solid";
 import { useSidebar } from "@/app/(components)/SidebarContext";
+import PageLoader from "@/app/(components)/helpers/PageLoader";
 // Currency formatter (same style as Liste page)
 const currencyFmt = (v, currency = "EUR") => {
   try {
@@ -327,17 +328,7 @@ export default function ArchivPage() {
   const columnCount = 8;
 
   if (status === "loading" || loading) {
-    return (
-      <div
-        className={`flex justify-center items-center h-screen transition-colors duration-300 ${bgClass}`}
-      >
-        <div
-          className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 transition-colors duration-300 ${
-            darkMode ? "border-slate-400" : "border-slate-600"
-          }`}
-        />
-      </div>
-    );
+    return <PageLoader dark={darkMode} />;
   }
 
   return (

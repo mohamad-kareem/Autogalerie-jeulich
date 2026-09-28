@@ -12,6 +12,7 @@ import {
   FiTrash2,
   FiGrid,
 } from "react-icons/fi";
+import PageLoader from "@/app/(components)/helpers/PageLoader";
 
 // Color options for tasks
 const COLOR_OPTIONS = [
@@ -381,11 +382,7 @@ export default function AufgabenboardPage() {
   };
 
   if (loading || !board) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-amber-900 via-amber-900/90 to-slate-950 flex items-center justify-center text-amber-50">
-        <p className="text-sm">Lade Aufgabenboard…</p>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   const totalTasks = Object.keys(board.tasks || {}).length;

@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { useSidebar } from "@/app/(components)/SidebarContext";
 import CarsTable from "./CarsTable";
 import SubmissionsTable from "./SubmissionsTable";
+import PageLoader from "@/app/(components)/helpers/PageLoader";
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
@@ -55,17 +56,7 @@ export default function AdminDashboard() {
   const borderColor = darkMode ? "border-gray-700" : "border-slate-200";
 
   if (status === "loading") {
-    return (
-      <div
-        className={`flex justify-center items-center h-screen transition-colors duration-300 ${bgClass}`}
-      >
-        <div
-          className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${
-            darkMode ? "border-slate-400" : "border-slate-700"
-          }`}
-        />
-      </div>
-    );
+    return <PageLoader dark={darkMode} />;
   }
 
   if (!session?.user) {

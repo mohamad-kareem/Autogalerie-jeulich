@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import DashboardContent from "./DashboardContent";
+import PageLoader from "@/app/(components)/helpers/PageLoader";
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -67,13 +68,7 @@ export default function Dashboard() {
   };
 
   if (loading || status === "loading") {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-950 to-blue-950">
-        <div className="text-center max-w-2xl mx-auto px-4">
-          <div className="mx-auto h-10 w-10 md:h-12 md:w-12 animate-spin rounded-full border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!user && status === "authenticated") {

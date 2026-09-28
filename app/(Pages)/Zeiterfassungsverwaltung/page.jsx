@@ -48,6 +48,7 @@ import {
   ChevronUpDownIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import PageLoader from "@/app/(components)/helpers/PageLoader";
 
 const PER_PAGE = 10;
 
@@ -548,19 +549,7 @@ export default function Zeiterfassungsverwaltung() {
   // ------------ Rendering ------------
   // While NextAuth is still checking the session → show loader
   if (status === "loading") {
-    return (
-      <div
-        className={`flex justify-center items-center h-screen transition-colors duration-300 ${
-          darkMode ? "bg-slate-900" : "bg-slate-50"
-        }`}
-      >
-        <div
-          className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${
-            darkMode ? "border-slate-400" : "border-slate-600"
-          }`}
-        ></div>
-      </div>
-    );
+    return <PageLoader dark={darkMode} />;
   }
 
   // If not logged in → do nothing, redirect effect will push to /login
@@ -569,19 +558,7 @@ export default function Zeiterfassungsverwaltung() {
   }
 
   if (initialLoading) {
-    return (
-      <div
-        className={`flex justify-center items-center h-screen transition-colors duration-300 ${
-          darkMode ? "bg-slate-900" : "bg-slate-50"
-        }`}
-      >
-        <div
-          className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${
-            darkMode ? "border-slate-400" : "border-slate-600"
-          }`}
-        ></div>
-      </div>
-    );
+    return <PageLoader dark={darkMode} />;
   }
 
   // Theme classes

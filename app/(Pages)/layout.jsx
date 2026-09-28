@@ -44,6 +44,28 @@ export default function PagesLayout({ children }) {
   // ✅ Sidebar only for logged-in users AND not auth pages
   const shouldShowSidebar = !!session?.user && !shouldHideSidebar;
 
+  // The sidebar stays the way it was left (collapsed or open).
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("sidebar.minimized");
+      if (saved !== null) setIsMinimized(saved === "1");
+    } catch {
+      /* storage blocked: keep the default */
+    }
+  }, []);
+
+  const toggleMinimized = () => {
+    setIsMinimized((previous) => {
+      const next = !previous;
+      try {
+        localStorage.setItem("sidebar.minimized", next ? "1" : "0");
+      } catch {
+        /* storage blocked */
+      }
+      return next;
+    });
+  };
+
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const systemPrefersDark = window.matchMedia(
@@ -85,12 +107,12 @@ export default function PagesLayout({ children }) {
             isMinimized={isMinimized}
             mobileOpen={mobileOpen}
             onToggleDarkMode={handleToggleDarkMode}
-            onToggleMinimize={() => setIsMinimized((p) => !p)}
+            onToggleMinimize={toggleMinimized}
             onToggleMobile={() => setMobileOpen((p) => !p)}
           />
         )}
 
-        <main className="flex-1 overflow-x-hidden">{children}</main>
+        <main className="min-w-0 flex-1 overflow-x-hidden">{children}</main>
       </div>
     </SidebarContext.Provider>
   );

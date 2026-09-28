@@ -45,6 +45,7 @@ import {
 // earlier still delivers its ad here, so the receiving end stays.
 import { decodeImport, IMPORT_PREFIX } from "@/lib/market/bookmarklet";
 import { useSidebar } from "@/app/(components)/SidebarContext";
+import PageLoader from "@/app/(components)/helpers/PageLoader";
 
 /* ------------------------------------------------------------------ setup */
 
@@ -3753,11 +3754,7 @@ export default function MarktanalysePage() {
   };
 
   if (status === "loading") {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <FiLoader className="animate-spin text-2xl" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (
