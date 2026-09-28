@@ -1,315 +1,262 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+/**
+ * Fahrzeugverwaltung — every vehicle in stock: registration document, keys,
+ * phase (Werkstatt → Verkauft), warranty and claims.
+ *
+ * The page keeps the list; each dialog lives in _components/ and talks to
+ * /api/carschein through _components/api.js.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
+import { FiMenu, FiPlus, FiSearch, FiX } from "react-icons/fi";
 
-import ScheinForm from "@/app/(components)/Schein/ScheinForm";
-import ScheinTable from "@/app/(components)/Schein/ScheinTable";
 import { useSidebar } from "@/app/(components)/SidebarContext";
-import {
-  FiPlus,
-  FiSearch,
-  FiUser,
-  FiChevronDown,
-  FiCheck,
-  FiSun,
-  FiMoon,
-  FiArrowLeft,
-  FiMenu,
-} from "react-icons/fi";
+import PageLoader from "@/app/(components)/helpers/PageLoader";
 
-const LIMIT = 100;
-const OWNERS = ["Karim"];
+import { deleteSchein, fetchScheins } from "./_components/api";
+import { LIST_LIMIT, STAGES, normalizeStage } from "./_components/constants";
+import DetailsModal from "./_components/DetailsModal";
+import ImagePreviewModal from "./_components/ImagePreviewModal";
+import KeyModal from "./_components/KeyModal";
+import { printSchein } from "./_components/printSchein";
+import StageModal from "./_components/StageModal";
+import VehicleFormModal from "./_components/VehicleFormModal";
+import VehicleList from "./_components/VehicleList";
+import WarrantyModal from "./_components/WarrantyModal";
+import { theme } from "./_components/ui";
 
-export default function CarScheinPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const { openSidebar } = useSidebar();
-  const [scheins, setScheins] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedOwners, setSelectedOwners] = useState([]);
-  const [showOwnerFilter, setShowOwnerFilter] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-
-  // Initialize dark mode
+function useDarkMode() {
+  const [dark, setDark] = useState(false);
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches;
-
-    const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
-    setDarkMode(isDark);
-
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    const read = () => {
+      try {
+        const saved = localStorage.getItem("theme");
+        setDark(saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches));
+      } catch {
+        setDark(document.documentElement.classList.contains("dark"));
+      }
+    };
+    read();
+    // Follows a theme change made in the settings.
+    const observer = new MutationObserver(() => setDark(document.documentElement.classList.contains("dark")));
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
   }, []);
-
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-
-    if (newDarkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  };
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
-  }, [status, router]);
-
-  // Initial load
-  useEffect(() => {
-    fetchScheins();
-  }, []);
-
-  const fetchScheins = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/carschein?page=1&limit=${LIMIT}`);
-      if (!res.ok) throw new Error("Abruf fehlgeschlagen");
-      const { docs } = await res.json();
-      setScheins(docs || []);
-    } catch (err) {
-      toast.error("Scheine konnten nicht geladen werden");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const toggleOwner = (owner) => {
-    setSelectedOwners((prev) =>
-      prev.includes(owner) ? prev.filter((o) => o !== owner) : [...prev, owner],
-    );
-  };
-
-  const handleNewSchein = (newDoc) => {
-    setScheins((prev) => [newDoc, ...prev]);
-    setShowUploadModal(false);
-  };
-
-  const handleUpdateSchein = (updatedDoc) => {
-    setScheins((prev) =>
-      prev.map((doc) => (doc._id === updatedDoc._id ? updatedDoc : doc)),
-    );
-  };
-
-  const handleDeleteSchein = (id) => {
-    setScheins((prev) => prev.filter((s) => s._id !== id));
-  };
-
-  const filteredScheins = scheins.filter((schein) => {
-    const query = searchQuery.toLowerCase().trim();
-
-    const searchMatch =
-      !query ||
-      [
-        schein.carName,
-        schein.finNumber, // VIN/FIN search
-      ].some((field) => field?.toString().toLowerCase().includes(query));
-
-    const ownerMatch =
-      selectedOwners.length === 0 || selectedOwners.includes(schein.owner);
-
-    return searchMatch && ownerMatch;
-  });
-
-  // Theme classes
-  const bgClass = darkMode ? "bg-gray-900" : "bg-gray-50";
-  const textPrimary = darkMode ? "text-white" : "text-gray-900";
-
-  return (
-    <div
-      className={`min-h-screen transition-colors duration-300 ${bgClass} p-2 sm:p-4`}
-    >
-      <div className="w-full max-w-screen-2xl mx-auto">
-        {/* Header */}
-        <header className="mb-3 sm:mb-4 flex items-center gap-4">
-          {/* Mobile hamburger */}
-          <button
-            onClick={openSidebar}
-            className={`md:hidden p-2 rounded-lg transition-colors duration-300 ${
-              darkMode
-                ? "bg-slate-800 hover:bg-slate-700 text-white"
-                : "bg-slate-200 hover:bg-slate-300 text-slate-700"
-            }`}
-            aria-label="Menü öffnen"
-          >
-            <FiMenu className="h-4 w-4" />
-          </button>
-          <h1
-            className={`text-lg sm:text-xl font-bold transition-colors duration-300 ${textPrimary}`}
-          >
-            Fahrzeugverwaltung
-          </h1>
-        </header>
-
-        {/* Filter + Upload Row */}
-        <FilterSection
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          selectedOwners={selectedOwners}
-          toggleOwner={toggleOwner}
-          showOwnerFilter={showOwnerFilter}
-          setShowOwnerFilter={setShowOwnerFilter}
-          owners={OWNERS}
-          onOpenUpload={() => setShowUploadModal(true)}
-          darkMode={darkMode}
-        />
-
-        {/* Table */}
-        <ScheinTable
-          scheins={filteredScheins}
-          loading={loading}
-          onUpdateSchein={handleUpdateSchein}
-          onDeleteSchein={handleDeleteSchein}
-          darkMode={darkMode}
-        />
-
-        {/* Upload Modal */}
-        {showUploadModal && (
-          <ScheinForm
-            mode="create"
-            onClose={() => setShowUploadModal(false)}
-            onSuccess={handleNewSchein}
-            darkMode={darkMode}
-          />
-        )}
-      </div>
-    </div>
-  );
+  return dark;
 }
 
-// Filter + Upload Row
-function FilterSection({
-  searchQuery,
-  setSearchQuery,
-  selectedOwners,
-  toggleOwner,
-  showOwnerFilter,
-  setShowOwnerFilter,
-  owners,
-  onOpenUpload,
-  darkMode,
-}) {
-  const cardBg = darkMode ? "bg-gray-800" : "bg-white";
-  const borderColor = darkMode ? "border-gray-700" : "border-gray-200";
-  const inputBg = darkMode
-    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500";
-  const buttonBg = darkMode
-    ? "bg-gray-700 hover:bg-gray-600 text-white"
-    : "bg-gray-600 hover:bg-gray-700 text-white";
-  const filterButtonBg = darkMode
-    ? "bg-gray-700 border-gray-600 text-gray-300"
-    : "bg-gray-50 border-gray-300 text-gray-600";
-  const iconColor = darkMode ? "text-gray-400" : "text-gray-500";
+export default function FahrzeugverwaltungPage() {
+  const { status } = useSession();
+  const router = useRouter();
+  const { openSidebar } = useSidebar();
+  const dark = useDarkMode();
+  const t = theme(dark);
+
+  const [scheins, setScheins] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [stage, setStage] = useState("ALL");
+  // One dialog at a time: { type, schein }.
+  const [dialog, setDialog] = useState(null);
+
+  useEffect(() => {
+    if (status === "unauthenticated") router.push("/login");
+  }, [status, router]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchScheins(LIST_LIMIT)
+      .then((docs) => !cancelled && setScheins(docs))
+      .catch(() => toast.error("Fahrzeuge konnten nicht geladen werden"))
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /* ---------------------------------------------------------- list updates */
+
+  const replace = useCallback((doc) => {
+    if (!doc?._id) return;
+    setScheins((list) => list.map((entry) => (entry._id === doc._id ? doc : entry)));
+    // Open dialogs show the fresh data too.
+    setDialog((current) => (current?.schein?._id === doc._id ? { ...current, schein: doc } : current));
+  }, []);
+
+  // A dialog opened from the details goes back to the details when it closes.
+  const closeDialog = useCallback(() => {
+    setDialog((current) => (current?.back ? { type: current.back, schein: current.schein } : null));
+  }, []);
+
+  const savedAndClose = useCallback((doc) => {
+    replace(doc);
+    setDialog((current) => (current?.back ? { type: current.back, schein: doc } : null));
+  }, [replace]);
+
+  const openFromDetails = useCallback((type) => {
+    const schein = dialog?.schein;
+    if (!schein) return;
+    if (type === "print") return void printSchein(schein);
+    if (type === "image" && !schein.imageUrl) return void toast.error("Kein Bild für dieses Fahrzeug.");
+    setDialog({ type, schein, back: "details" });
+  }, [dialog]);
+
+  const created = useCallback((doc) => {
+    setScheins((list) => [doc, ...list]);
+    setDialog(null);
+  }, []);
+
+  const remove = useCallback(async (schein) => {
+    if (!window.confirm(`„${schein.carName || "Fahrzeug"}“ wirklich löschen?`)) return;
+    try {
+      await deleteSchein(schein._id);
+      setScheins((list) => list.filter((entry) => entry._id !== schein._id));
+      toast.success("Fahrzeug gelöscht");
+    } catch (error) {
+      toast.error(error.message || "Löschen fehlgeschlagen");
+    }
+  }, []);
+
+  const onAction = useCallback((type, schein) => {
+    if (type === "print") return void printSchein(schein);
+    if (type === "delete") return void remove(schein);
+    if (type === "image" && !schein.imageUrl) return void toast.error("Kein Bild für dieses Fahrzeug.");
+    setDialog({ type, schein });
+    return undefined;
+  }, [remove]);
+
+  /* ---------------------------------------------------------- filters */
+
+  const stageCounts = useMemo(() => {
+    const counts = {};
+    for (const schein of scheins) {
+      const id = normalizeStage(schein.stage);
+      counts[id] = (counts[id] || 0) + 1;
+    }
+    return counts;
+  }, [scheins]);
+
+  const filtered = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return scheins.filter((schein) => {
+      if (term && ![schein.carName, schein.finNumber].some((field) => String(field || "").toLowerCase().includes(term))) return false;
+      if (stage !== "ALL" && normalizeStage(schein.stage) !== stage) return false;
+      return true;
+    });
+  }, [scheins, query, stage]);
+
+  if (status === "loading") return <PageLoader />;
+
+  const tabs = [{ id: "ALL", label: "Alle", count: scheins.length }, ...STAGES.map((entry) => ({ id: entry.id, label: entry.label, count: stageCounts[entry.id] || 0 }))];
 
   return (
-    <div
-      className={`mb-3 rounded-lg border transition-colors duration-300 ${borderColor} ${cardBg} p-2 shadow-sm`}
-    >
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        {/* LEFT: Search (car name + FIN) */}
-        <div className="relative w-full sm:max-w-xs">
-          <FiSearch
-            className={`pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-sm transition-colors duration-300 ${iconColor}`}
-          />
-          <input
-            type="text"
-            placeholder="Nach Fahrzeug oder FIN suchen..."
-            className={`w-full rounded-md border pl-8 pr-2 py-1.5 h-8 text-xs sm:text-sm focus:outline-none focus:ring-1 transition-colors duration-300 ${inputBg} ${
-              darkMode
-                ? "focus:border-gray-400 focus:ring-gray-400"
-                : "focus:border-blue-500 focus:ring-blue-200"
-            }`}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        {/* RIGHT: Owner Filter + Upload Button */}
-        <div className="flex w-full sm:w-auto items-center justify-end gap-1 sm:gap-2">
-          {/* Owner Filter */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowOwnerFilter(!showOwnerFilter)}
-              className={`flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors duration-300 ${filterButtonBg}`}
-            >
-              <FiUser
-                className={`text-xs transition-colors duration-300 ${iconColor}`}
-              />
-              <span>Besitzer</span>
-              <FiChevronDown
-                className={` transition-colors duration-300 ${iconColor} ${
-                  showOwnerFilter ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {showOwnerFilter && (
-              <div
-                className={`absolute right-0 z-20 mt-1 w-32 border rounded-md shadow-lg py-1 transition-colors duration-300 ${
-                  darkMode
-                    ? "bg-gray-800 border-gray-700"
-                    : "bg-white border-gray-200"
-                }`}
-              >
-                {owners.map((owner) => (
-                  <button
-                    key={owner}
-                    type="button"
-                    className={`w-full px-3 py-1 text-left text-xs flex items-center transition-colors duration-300 ${
-                      darkMode
-                        ? "hover:bg-gray-700 text-gray-300"
-                        : "hover:bg-gray-50 text-gray-600"
-                    }`}
-                    onClick={() => toggleOwner(owner)}
-                  >
-                    {selectedOwners.includes(owner) ? (
-                      <FiCheck className="text-blue-500 mr-2" />
-                    ) : (
-                      <div
-                        className={`w-3 h-3 mr-2 border rounded transition-colors duration-300 ${
-                          darkMode ? "border-gray-600" : "border-gray-300"
-                        }`}
-                      />
-                    )}
-                    <span>{owner}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+    <main className={`min-h-screen ${t.page}`}>
+      <div className="mx-auto max-w-screen-2xl px-3 py-4 sm:px-6 sm:py-6">
+        {/* header */}
+        <header className="mb-5 flex items-center gap-3">
+          <button type="button" onClick={openSidebar} aria-label="Menü öffnen" className={`rounded-lg p-2 md:hidden ${t.ghost}`}>
+            <FiMenu className="size-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-semibold tracking-tight">Fahrzeugverwaltung</h1>
+            <p className={`mt-0.5 text-[13px] ${t.muted}`}>Fahrzeugscheine, Schlüssel, Phasen und Garantie</p>
           </div>
-
-          {/* Upload Button */}
           <button
             type="button"
-            onClick={onOpenUpload}
-            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs sm:text-sm font-medium text-white shadow-sm transition ${buttonBg}`}
+            onClick={() => setDialog({ type: "create", schein: null })}
+            className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold shadow-sm transition sm:px-4 ${t.primary}`}
           >
-            <FiPlus className="text-sm" />
-            <span className="hidden xs:inline">Schein hochladen</span>
-            <span className="xs:hidden">Neu</span>
+            <FiPlus className="size-4" />
+            <span className="hidden sm:inline">Fahrzeug hinzufügen</span>
+            <span className="sm:hidden">Neu</span>
           </button>
-        </div>
+        </header>
+
+        <section className={`overflow-hidden rounded-xl border shadow-sm ${t.card}`}>
+          {/* phase tabs */}
+          <nav aria-label="Phasen" className={`scrollbar-hide flex gap-1 overflow-x-auto border-b px-3 sm:px-4 ${t.divider}`}>
+            {tabs.map((tab) => {
+              const active = stage === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setStage(tab.id)}
+                  aria-current={active ? "true" : undefined}
+                  className={`relative flex h-11 shrink-0 items-center gap-2 px-2.5 text-[13px] font-medium transition ${
+                    active ? t.title : dark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  {tab.label}
+                  <span
+                    className={`rounded-full px-1.5 text-[11px] tabular-nums ${
+                      active ? (dark ? "bg-emerald-500/15 text-emerald-300" : "bg-emerald-50 text-emerald-700") : dark ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                  {active ? <span className="absolute inset-x-1.5 bottom-0 h-0.5 rounded-full bg-emerald-500" /> : null}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* toolbar */}
+          <div className={`flex items-center gap-3 border-b px-3 py-2.5 sm:px-4 ${t.divider}`}>
+            <label className={`flex h-9 w-full items-center gap-2 rounded-lg border px-3 sm:max-w-xs ${t.input}`}>
+              <FiSearch className={`size-4 shrink-0 ${t.faint}`} />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Fahrzeug oder FIN suchen …"
+                aria-label="Fahrzeug oder FIN suchen"
+                className="min-w-0 flex-1 bg-transparent text-[13px] outline-none"
+              />
+              {query ? (
+                <button type="button" onClick={() => setQuery("")} aria-label="Suche leeren" className={`rounded p-0.5 ${t.ghost}`}>
+                  <FiX className="size-4" />
+                </button>
+              ) : null}
+            </label>
+            <span className={`ml-auto hidden shrink-0 text-[13px] tabular-nums sm:inline ${t.muted}`}>
+              {loading ? "Lädt …" : `${filtered.length} von ${scheins.length} Fahrzeugen`}
+            </span>
+          </div>
+
+          <VehicleList scheins={filtered} loading={loading} dark={dark} onAction={onAction} resetKey={`${query}|${stage}`} />
+        </section>
       </div>
-    </div>
+
+      {/* dialogs */}
+      <VehicleFormModal
+        open={dialog?.type === "create" || dialog?.type === "edit"}
+        schein={dialog?.type === "edit" ? dialog.schein : null}
+        dark={dark}
+        onClose={closeDialog}
+        onSaved={dialog?.type === "edit" ? savedAndClose : created}
+      />
+      <DetailsModal
+        open={dialog?.type === "details"}
+        schein={dialog?.schein}
+        dark={dark}
+        onClose={closeDialog}
+        onEdit={() => openFromDetails("edit")}
+        onAction={openFromDetails}
+        onSaved={replace}
+      />
+      <KeyModal open={dialog?.type === "key"} schein={dialog?.schein} dark={dark} onClose={closeDialog} onSaved={savedAndClose} />
+      <StageModal open={dialog?.type === "stage"} schein={dialog?.schein} dark={dark} onClose={closeDialog} onSaved={savedAndClose} />
+      <WarrantyModal open={dialog?.type === "warranty"} schein={dialog?.schein} dark={dark} onClose={closeDialog} onSaved={savedAndClose} />
+      <ImagePreviewModal
+        open={dialog?.type === "image"}
+        schein={dialog?.schein}
+        onClose={closeDialog}
+        onPrint={() => dialog?.schein && printSchein(dialog.schein)}
+      />
+    </main>
   );
 }

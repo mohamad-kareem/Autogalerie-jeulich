@@ -15,5 +15,13 @@ const pageVisitSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Visits are kept for 3 days only: MongoDB deletes older ones by itself
+// (TTL index, checked about once a minute).
+export const VISIT_RETENTION_DAYS = 3;
+pageVisitSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: VISIT_RETENTION_DAYS * 24 * 60 * 60 },
+);
+
 export default mongoose.models.PageVisit ||
   mongoose.model("PageVisit", pageVisitSchema);
