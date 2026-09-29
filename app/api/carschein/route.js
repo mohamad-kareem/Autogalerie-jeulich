@@ -324,6 +324,10 @@ export async function POST(req) {
 ========================================================= */
 export async function GET(req) {
   try {
+    // Buyer names, phones and addresses are in here — staff only.
+    const session = await requireAuth();
+    if (!session) return json({ error: "Unauthorized" }, 401);
+
     await connectDB();
 
     const { searchParams } = new URL(req.url);
@@ -332,7 +336,19 @@ export async function GET(req) {
     const limit = Math.max(parseInt(searchParams.get("limit") || "10", 10), 1);
     const hideDead = searchParams.get("hideDead") === "1";
     const finNumber = toStr(searchParams.get("finNumber"));
-    const filter = finNumber ? { finNumber } : {};
+    // FINs are compared without spaces and case ("wba 123…" = "WBA123…").
+    const finPlain = finNumber.replace(/\s+/g, "");
+    const filter = finPlain
+      ? {
+          finNumber: {
+            $regex: `^\\s*${finPlain
+              .split("")
+              .map((ch) => ch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+              .join("\\s*")}\\s*$`,
+            $options: "i",
+          },
+        }
+      : {};
     const skip = (page - 1) * limit;
 
     const [total, docs] = await Promise.all([

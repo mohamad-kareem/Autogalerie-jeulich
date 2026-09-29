@@ -67,6 +67,12 @@ export default function FahrzeugverwaltungPage() {
     if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
 
+  // Opened from a Kaufvertrag (?fin=…): show that car right away.
+  useEffect(() => {
+    const fin = new URLSearchParams(window.location.search).get("fin");
+    if (fin) setQuery(fin.trim());
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     fetchScheins(LIST_LIMIT)

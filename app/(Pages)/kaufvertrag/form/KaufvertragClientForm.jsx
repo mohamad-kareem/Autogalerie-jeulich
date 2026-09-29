@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import logo from "@/app/(assets)/kauftraglogo.png";
 import toast from "react-hot-toast";
 import Button from "@/app/(components)/helpers/Button";
 import { useSearchParams } from "next/navigation";
 import LogoKarim from "@/app/(assets)/logo1111.png";
+import Fahrzeugakte, { keysOf, tuevOf } from "./Fahrzeugakte";
+
 export default function KaufvertragClientForm() {
   const initialFormState = {
     downPayment: 0,
@@ -36,7 +38,12 @@ export default function KaufvertragClientForm() {
 
   const [form, setForm] = useState(initialFormState);
   const searchParams = useSearchParams();
-  const [scheinDetails, setScheinDetails] = useState(null);
+  // The car's entry in the Fahrzeugverwaltung, found by FIN.
+  // status: "empty" | "short" | "loading" | "found" | "missing" | "error"
+  const [akte, setAkte] = useState({ status: "empty", schein: null, fin: "" });
+  // The website ad the contract was started from (Gebrauchtwagen → Kaufvertrag).
+  const [websiteCar, setWebsiteCar] = useState(null);
+  const appliedFor = useRef("");
   const issuerQP = useMemo(
     () => searchParams.get("issuer") || "",
     [searchParams],
@@ -148,6 +155,7 @@ export default function KaufvertragClientForm() {
             ? String(car.mileage)
             : car.mileage || "";
 
+        setWebsiteCar(car);
         setForm((prev) => ({
           ...prev,
           carType,
@@ -155,7 +163,7 @@ export default function KaufvertragClientForm() {
           firstRegistration,
           mileage,
         }));
-        fetchScheinByVin(car.vin || car.VIN || "");
+        // The Fahrzeugakte loads by itself once the FIN is in the form.
       } catch (e) {
         console.error(e);
         toast.error("Fahrzeugdaten konnten nicht geladen werden.");
@@ -170,24 +178,57 @@ export default function KaufvertragClientForm() {
     const parsedValue = type === "checkbox" ? checked : value;
     setForm((prev) => ({ ...prev, [name]: parsedValue }));
   };
-  const fetchScheinByVin = async (vin) => {
-    if (!vin?.trim()) return;
-
-    try {
-      const res = await fetch(
-        `/api/carschein?finNumber=${encodeURIComponent(vin.trim())}&limit=1`,
-      );
-
-      if (!res.ok) return;
-
-      const data = await res.json();
-      const found = Array.isArray(data.docs) ? data.docs[0] : null;
-
-      setScheinDetails(found || null);
-    } catch (err) {
-      console.error("Schein konnte nicht geladen werden:", err);
+  // 3) Load the Fahrzeugakte whenever the FIN changes (prefilled or typed).
+  useEffect(() => {
+    const fin = String(form.vin || "").replace(/\s+/g, "").toUpperCase();
+    if (!fin) {
+      appliedFor.current = "";
+      setAkte({ status: "empty", schein: null, fin: "" });
+      return undefined;
     }
-  };
+    if (fin.length < 10) {
+      setAkte({ status: "short", schein: null, fin });
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    setAkte((prev) => ({ status: "loading", schein: prev.fin === fin ? prev.schein : null, fin }));
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/carschein?finNumber=${encodeURIComponent(fin)}&limit=1`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const found = Array.isArray(data.docs) ? data.docs[0] : null;
+        setAkte({ status: found ? "found" : "missing", schein: found || null, fin });
+      } catch (err) {
+        if (err.name === "AbortError") return;
+        console.error("Fahrzeugakte konnte nicht geladen werden:", err);
+        setAkte({ status: "error", schein: null, fin });
+      }
+    }, 350);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [form.vin]);
+
+  // 4) Once per car: fill the contract's TÜV and key fields if still empty.
+  useEffect(() => {
+    const schein = akte.schein;
+    if (!schein?._id || appliedFor.current === schein._id) return;
+    appliedFor.current = schein._id;
+    const tuev = tuevOf(schein, websiteCar)?.value || "";
+    const keys = keysOf(schein);
+    setForm((prev) => ({
+      ...prev,
+      tuev: String(prev.tuev || "").trim() ? prev.tuev : tuev,
+      keys: String(prev.keys || "").trim() ? prev.keys : keys ? String(keys) : "",
+    }));
+  }, [akte.schein, websiteCar]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -273,6 +314,7 @@ export default function KaufvertragClientForm() {
       }));
       setRawTotal("");
       setRawDownPayment("€ 0,00");
+      setWebsiteCar(null);
     } catch (err) {
       console.error(err);
       toast.error(
@@ -340,8 +382,8 @@ export default function KaufvertragClientForm() {
   }
 
   return (
-    <div className="mx-auto flex max-w-7xl gap-4 p-4 font-sans text-[13px] print:block print:max-w-none print:p-0">
-      <div className="max-w-5xl flex-1">
+    <div className="mx-auto flex max-w-7xl flex-col gap-4 p-4 font-sans text-[13px] lg:flex-row lg:items-start print:block print:max-w-none print:p-0">
+      <div className="min-w-0 max-w-5xl flex-1">
         <form
           autoComplete="off"
           onSubmit={handleSubmit}
@@ -1005,65 +1047,18 @@ export default function KaufvertragClientForm() {
           `}</style>
         </form>
       </div>
-      <div className="hidden w-80 shrink-0 lg:block print:hidden">
-        <div className="sticky top-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-2 text-sm font-bold text-gray-900">
-            Aufgaben zum Fahrzeug
-          </h3>
-
-          <p className="mb-3 text-xs text-gray-500">
-            {scheinDetails?.carName ||
-              form.carType ||
-              "Kein Fahrzeug ausgewählt"}
-          </p>
-
-          {scheinDetails?.notes?.length > 0 ? (
-            <ol className="space-y-2">
-              {scheinDetails.notes.map((task, index) => (
-                <li
-                  key={index}
-                  className="rounded-lg border border-green-200 bg-green-50 p-2 text-xs text-green-800"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <span>
-                      <span className="mr-1 font-semibold">{index + 1}.</span>
-                      {task}
-                    </span>
-
-                    <span className="shrink-0 rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                      Erledigt
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="rounded-lg bg-gray-50 p-3 text-xs text-gray-500">
-              Keine Aufgaben für dieses Fahrzeug gefunden.
-            </p>
-          )}
-
-          {scheinDetails?.completedTasks?.length > 0 && (
-            <div className="mt-4">
-              <h4 className="mb-2 text-xs font-semibold text-green-700">
-                Erledigte Aufgaben
-              </h4>
-
-              <ol className="space-y-2">
-                {scheinDetails.completedTasks.map((task, index) => (
-                  <li
-                    key={index}
-                    className="rounded-lg border border-green-200 bg-green-50 p-2 text-xs text-green-800"
-                  >
-                    <span className="mr-1 font-semibold">{index + 1}.</span>
-                    {task}
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-        </div>
-      </div>
+      <aside className="order-first w-full shrink-0 lg:order-none lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-[300px] lg:overflow-y-auto print:hidden">
+        <Fahrzeugakte
+          status={akte.status}
+          schein={akte.schein}
+          websiteCar={websiteCar}
+          onSaved={(updated) =>
+            setAkte((prev) =>
+              prev.schein?._id === updated?._id ? { ...prev, schein: updated } : prev,
+            )
+          }
+        />
+      </aside>
     </div>
   );
 }
