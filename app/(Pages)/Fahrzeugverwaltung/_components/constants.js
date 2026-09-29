@@ -69,6 +69,20 @@ export function stageBadge(stage, stageMeta, dark) {
   return { badge: STAGE_BADGES[key][dark ? 1 : 0], dot: STAGE_DOTS[key] };
 }
 
+/**
+ * TÜV of a car standing in Boora: { text: "TÜV bis 05/2027", expired } or null.
+ */
+export function platzTuev(schein) {
+  if (normalizeStage(schein?.stage) !== "PLATZ") return null;
+  const platz = schein?.stageMeta?.platz || {};
+  if (!platz.hasTuev) return null;
+  const match = String(platz.tuevUntil || "").match(/^(\d{4})-(\d{2})$/);
+  if (!match) return { text: "TÜV vorhanden", expired: false };
+  const now = new Date();
+  const expired = Number(match[1]) * 12 + Number(match[2]) < now.getFullYear() * 12 + now.getMonth() + 1;
+  return { text: `${expired ? "TÜV abgelaufen" : "TÜV bis"} ${match[2]}/${match[1]}`, expired };
+}
+
 /** One short line about the current phase (where, what, defects …). */
 export function stageDetail(schein) {
   const meta = schein?.stageMeta || {};

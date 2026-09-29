@@ -10,7 +10,7 @@ import { toast } from "react-hot-toast";
 import { FiCheck, FiDroplet, FiEdit2, FiImage, FiPrinter } from "react-icons/fi";
 
 import { updateSchein } from "./api";
-import { addressOf, computeWarranty, formatDate, normalizeStage, notesOf, soldContactOf } from "./constants";
+import { addressOf, computeWarranty, formatDate, normalizeStage, notesOf, platzTuev, soldContactOf } from "./constants";
 import { Button, FinCopy, InfoRow, InfoSection, Modal, ScheinThumb, StageBadge, theme } from "./ui";
 
 function LinkButton({ dark, onClick, children }) {
@@ -205,7 +205,18 @@ export default function DetailsModal({ open, schein, dark, onClose, onEdit, onAc
                 <InfoRow label="Arbeiten" dark={dark}>{meta.werkstatt?.what || dash}</InfoRow>
               </>
             ) : null}
-            {stage === "PLATZ" ? <InfoRow label="Stellplatz" dark={dark}>{meta.platz?.note || dash}</InfoRow> : null}
+            {stage === "PLATZ" ? (
+              <>
+                <InfoRow label="Stellplatz" dark={dark}>{meta.platz?.note || dash}</InfoRow>
+                <InfoRow label="TÜV" dark={dark}>
+                  {platzTuev(schein) ? (
+                    <span className={platzTuev(schein).expired ? "text-red-600" : dark ? "text-sky-400" : "text-sky-700"}>{platzTuev(schein).text}</span>
+                  ) : (
+                    <span className={t.muted}>Kein TÜV eingetragen</span>
+                  )}
+                </InfoRow>
+              </>
+            ) : null}
             {stage === "TUEV" && !meta.tuev?.passed ? (
               <InfoRow label="Mängel" dark={dark}>
                 {issues.length ? (

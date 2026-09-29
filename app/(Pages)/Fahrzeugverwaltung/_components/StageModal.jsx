@@ -8,14 +8,18 @@ import { FiCheck, FiMapPin, FiPhone, FiSave } from "react-icons/fi";
 
 import { updateSchein } from "./api";
 import { STAGES, addressOf, formatDate, normalizeStage, soldContactOf } from "./constants";
-import { AddToList, Button, Field, Modal, NumberedList, inputClass, theme } from "./ui";
+import { AddToList, Button, Checkbox, Field, Modal, NumberedList, inputClass, theme } from "./ui";
 
 function metaOf(schein) {
   const meta = schein?.stageMeta || {};
   const issues = Array.isArray(meta?.tuev?.issues) ? meta.tuev.issues : meta?.tuev?.issue ? [meta.tuev.issue] : [];
   return {
     werkstatt: { where: meta?.werkstatt?.where || "", what: meta?.werkstatt?.what || "" },
-    platz: { note: meta?.platz?.note || "" },
+    platz: {
+      note: meta?.platz?.note || "",
+      hasTuev: Boolean(meta?.platz?.hasTuev),
+      tuevUntil: meta?.platz?.tuevUntil || "",
+    },
     tuev: { passed: Boolean(meta?.tuev?.passed), issues },
   };
 }
@@ -213,9 +217,23 @@ export default function StageModal({ open, schein, dark, onClose, onSaved }) {
           ) : null}
 
           {stage === "PLATZ" ? (
-            <Field label="Stellplatz / Notiz (optional)" dark={dark}>
-              <input value={meta.platz.note} onChange={(e) => setPart("platz", "note", e.target.value)} placeholder="z. B. Platz A3" className={inputClass(dark)} />
-            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Stellplatz / Notiz (optional)" dark={dark} className="sm:col-span-2">
+                <input value={meta.platz.note} onChange={(e) => setPart("platz", "note", e.target.value)} placeholder="z. B. Platz A3" className={inputClass(dark)} />
+              </Field>
+              <div className="flex h-10 items-center sm:mt-5">
+                <Checkbox dark={dark} checked={meta.platz.hasTuev} onChange={(value) => setPart("platz", "hasTuev", value)} label="Fahrzeug hat TÜV" />
+              </div>
+              <Field label="TÜV bis" dark={dark}>
+                <input
+                  type="month"
+                  value={meta.platz.tuevUntil}
+                  disabled={!meta.platz.hasTuev}
+                  onChange={(e) => setPart("platz", "tuevUntil", e.target.value)}
+                  className={inputClass(dark, "disabled:opacity-50")}
+                />
+              </Field>
+            </div>
           ) : null}
 
           {stage === "TUEV" ? (

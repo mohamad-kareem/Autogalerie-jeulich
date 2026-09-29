@@ -296,14 +296,9 @@ export function ActionMenu({ dark, items, label = "Aktionen" }) {
 
 /** The phase as a small status badge (optionally a button). */
 export function StageBadge({ stage, stageMeta, dark, onClick, className = "" }) {
-  const { badge, dot } = stageBadge(stage, stageMeta, dark);
-  const look = `inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 text-[12px] font-medium ring-1 ring-inset ${badge} ${className}`;
-  const content = (
-    <>
-      <span className={`size-1.5 shrink-0 rounded-full ${dot}`} />
-      {stageLabel(stage, stageMeta)}
-    </>
-  );
+  const { badge } = stageBadge(stage, stageMeta, dark);
+  const look = `inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-[12px] font-medium ring-1 ring-inset ${badge} ${className}`;
+  const content = stageLabel(stage, stageMeta);
   if (!onClick) return <span className={look}>{content}</span>;
   return (
     <button

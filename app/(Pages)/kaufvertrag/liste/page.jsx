@@ -3,7 +3,7 @@
 /**
  * Kaufverträge — every open (not archived) sales contract.
  *
- * Search, filter by month / seller / status, sort by column, 25 per page.
+ * Search, filter by month / status, sort by column, 25 per page.
  * A click on a contract opens it. Admins can select contracts and mark,
  * ignore or archive them (one by one via "⋯" or several at once).
  *
@@ -29,7 +29,6 @@ import {
   FiPlus,
   FiSearch,
   FiStar,
-  FiUser,
   FiX,
 } from "react-icons/fi";
 
@@ -182,7 +181,6 @@ export default function KaufvertragListe() {
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("all");
   const [month, setMonth] = useState("all");
-  const [seller, setSeller] = useState("all");
   const [sort, setSort] = useState({ key: "invoiceDate", direction: "desc" });
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState([]);
@@ -201,13 +199,11 @@ export default function KaufvertragListe() {
   }, []);
 
   // A new search, filter or page starts without a selection.
-  const filterKey = `${query}|${tab}|${month}|${seller}`;
+  const filterKey = `${query}|${tab}|${month}`;
   useEffect(() => setPage(1), [filterKey]);
   useEffect(() => setSelected([]), [filterKey, page]);
 
   /* ---------------------------------------------------------- data */
-
-  const sellers = useMemo(() => [...new Set(contracts.map((c) => c.issuer).filter(Boolean))].sort(), [contracts]);
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -215,7 +211,6 @@ export default function KaufvertragListe() {
     const list = contracts.filter((contract) => {
       if (tab === "starred" && !contract.starred) return false;
       if (tab === "ignored" && !contract.ignored) return false;
-      if (seller !== "all" && contract.issuer !== seller) return false;
       if (month !== "all") {
         const date = contract.invoiceDate ? new Date(contract.invoiceDate) : null;
         if (!date || date.getFullYear() !== year || date.getMonth() + 1 !== Number(month)) return false;
@@ -237,7 +232,7 @@ export default function KaufvertragListe() {
       if (x > y) return sort.direction === "asc" ? 1 : -1;
       return 0;
     });
-  }, [contracts, query, tab, month, seller, sort]);
+  }, [contracts, query, tab, month, sort]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   useEffect(() => {
@@ -248,12 +243,11 @@ export default function KaufvertragListe() {
   const onSort = (key) =>
     setSort((current) => ({ key, direction: current.key === key && current.direction === "asc" ? "desc" : "asc" }));
 
-  const filtersActive = query || month !== "all" || seller !== "all" || tab !== "all";
+  const filtersActive = query || month !== "all" || tab !== "all";
   const resetFilters = () => {
     setQuery("");
     setTab("all");
     setMonth("all");
-    setSeller("all");
   };
 
   /* ---------------------------------------------------------- actions */
@@ -404,16 +398,6 @@ export default function KaufvertragListe() {
                     ))}
                   </Select>
                 </div>
-                <div className="min-w-0 flex-1 sm:w-40 sm:flex-none">
-                  <Select icon={FiUser} value={seller} onChange={setSeller} dark={dark} label="Verkäufer">
-                    <option value="all">Alle Verkäufer</option>
-                    {sellers.map((name) => (
-                      <option key={name} value={name}>
-                        {name}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
                 {filtersActive ? (
                   <button type="button" onClick={resetFilters} title="Filter zurücksetzen" aria-label="Filter zurücksetzen" className={`inline-flex size-8 shrink-0 items-center justify-center rounded-lg ${t.ghost}`}>
                     <FiX className="size-4" />
@@ -466,8 +450,8 @@ export default function KaufvertragListe() {
                       ) : null}
                       <div className="min-w-0 flex-1 space-y-1.5">
                         <div className="flex items-start justify-between gap-3">
-                          <p className={`truncate text-[14px] font-medium ${t.title}`}>{contract.buyerName || "–"}</p>
-                          <p className={`shrink-0 text-[14px] font-semibold tabular-nums ${t.title}`}>{euro(contract.total)}</p>
+                          <p className={`truncate text-[14px] font-normal ${t.title}`}>{contract.buyerName || "–"}</p>
+                          <p className={`shrink-0 text-[14px] font-normal tabular-nums ${t.title}`}>{euro(contract.total)}</p>
                         </div>
                         <p className={`truncate text-[13px] ${t.text}`}>{contract.carType || "–"}</p>
                         <p className={`text-[12px] tabular-nums ${t.muted}`}>{formatKm(contract.mileage) || "– km"}</p>
@@ -480,7 +464,6 @@ export default function KaufvertragListe() {
                             <span className={`font-mono text-[13px] font-bold ${t.title}`}>{contract.invoiceNumber || "–"}</span>
                             {" · "}
                             {formatDate(contract.invoiceDate)}
-                            {contract.issuer ? ` · ${contract.issuer}` : ""}
                           </p>
                         </div>
                       </div>
@@ -523,8 +506,7 @@ export default function KaufvertragListe() {
                         ) : null}
                         <td className={`whitespace-nowrap px-3 py-3 text-[13px] tabular-nums ${t.text} ${isAdmin ? "" : "pl-5"}`}>{formatDate(contract.invoiceDate)}</td>
                         <td className="max-w-[14rem] px-3 py-3">
-                          <p className={`truncate text-[14px] font-medium ${t.title}`}>{contract.buyerName || "–"}</p>
-                          {contract.issuer ? <p className={`truncate text-[12px] ${t.muted}`}>Verkäufer: {contract.issuer}</p> : null}
+                          <p className={`truncate text-[14px] font-normal ${t.title}`}>{contract.buyerName || "–"}</p>
                         </td>
                         <td className="max-w-[16rem] px-3 py-3">
                           <p className={`truncate text-[13px] ${t.text}`}>{contract.carType || "–"}</p>
@@ -537,7 +519,7 @@ export default function KaufvertragListe() {
                             <StatusBadges contract={contract} dark={dark} />
                           </div>
                         </td>
-                        <td className={`whitespace-nowrap py-3 pl-3 pr-5 text-right text-[14px] font-semibold tabular-nums ${t.title}`}>{euro(contract.total)}</td>
+                        <td className={`whitespace-nowrap py-3 pl-3 pr-5 text-right text-[14px] font-normal tabular-nums ${t.title}`}>{euro(contract.total)}</td>
                       </tr>
                     );
                   })}

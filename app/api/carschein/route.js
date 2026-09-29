@@ -87,6 +87,9 @@ function normalizeStageMeta(meta) {
 
     platz: {
       note: toStr(m?.platz?.note),
+      hasTuev: toBool(m?.platz?.hasTuev),
+      // "YYYY-MM" from the month picker; anything else is dropped.
+      tuevUntil: /^\d{4}-(0[1-9]|1[0-2])$/.test(toStr(m?.platz?.tuevUntil)) ? toStr(m.platz.tuevUntil) : "",
     },
 
     tuev: {

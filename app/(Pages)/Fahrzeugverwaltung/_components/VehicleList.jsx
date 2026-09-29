@@ -21,7 +21,7 @@ import {
   FiTrash2,
 } from "react-icons/fi";
 
-import { PAGE_SIZE, computeWarranty, formatDate, stageDetail } from "./constants";
+import { PAGE_SIZE, computeWarranty, formatDate, platzTuev, stageDetail } from "./constants";
 import { ActionMenu, FinCopy, IconButton, StageBadge, theme } from "./ui";
 
 /* ------------------------------------------------------------ cells */
@@ -61,6 +61,18 @@ function WarrantyLine({ schein, dark, onClick }) {
   );
 }
 
+/** In Boora: "TÜV bis 05/2027" in blue (red once it has run out). */
+function TuevLine({ schein, dark }) {
+  const tuev = platzTuev(schein);
+  if (!tuev) return null;
+  const tone = tuev.expired ? (dark ? "text-red-400" : "text-red-600") : dark ? "text-sky-400" : "text-sky-700";
+  return (
+    <span className={`inline-flex items-center gap-1 text-[12px] font-medium ${tone}`}>
+      <FiShield className="size-3" /> {tuev.text}
+    </span>
+  );
+}
+
 function PhaseCell({ schein, dark, onAction }) {
   const detail = stageDetail(schein);
   return (
@@ -68,9 +80,12 @@ function PhaseCell({ schein, dark, onAction }) {
       <StageBadge stage={schein.stage} stageMeta={schein.stageMeta} dark={dark} onClick={() => onAction("stage", schein)} />
       {schein.keySold ? (
         <WarrantyLine schein={schein} dark={dark} onClick={() => onAction("warranty", schein)} />
-      ) : detail ? (
-        <span className={`max-w-full truncate text-[12px] ${theme(dark).muted}`}>{detail}</span>
-      ) : null}
+      ) : (
+        <>
+          <TuevLine schein={schein} dark={dark} />
+          {detail ? <span className={`max-w-full truncate text-[12px] ${theme(dark).muted}`}>{detail}</span> : null}
+        </>
+      )}
     </div>
   );
 }

@@ -19,6 +19,9 @@ const StageMetaSchema = new mongoose.Schema(
     },
     platz: {
       note: { type: String, default: "" },
+      // TÜV while the car stands in Boora: has it one, and until when ("2027-05").
+      hasTuev: { type: Boolean, default: false },
+      tuevUntil: { type: String, default: "" },
     },
     tuev: {
       passed: { type: Boolean, default: false },
@@ -106,6 +109,12 @@ const CarScheinSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+// In development a model loaded before this change stays in memory and
+// would drop the new TÜV fields; replace it.
+if (mongoose.models.CarSchein && !mongoose.models.CarSchein.schema.path("stageMeta")?.schema?.path("platz.tuevUntil")) {
+  mongoose.deleteModel("CarSchein");
+}
 
 export default mongoose.models.CarSchein ||
   mongoose.model("CarSchein", CarScheinSchema);
