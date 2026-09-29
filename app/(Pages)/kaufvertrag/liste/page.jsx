@@ -24,6 +24,8 @@ import {
   FiChevronDown,
   FiChevronLeft,
   FiChevronRight,
+  FiCheck,
+  FiCopy,
   FiEyeOff,
   FiMenu,
   FiPlus,
@@ -127,6 +129,57 @@ function Checkbox({ checked, indeterminate, onChange, label }) {
       onChange={onChange}
       className="size-4 cursor-pointer rounded accent-emerald-600"
     />
+  );
+}
+
+/** "Hauptstr. 1, 52428 Jülich" from what the contract stores. */
+function addressOf(contract) {
+  return [contract.buyerStreet, contract.buyerCity].map((part) => String(part || "").trim()).filter(Boolean).join(", ");
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const field = document.createElement("textarea");
+    field.value = text;
+    field.style.position = "fixed";
+    field.style.opacity = "0";
+    document.body.appendChild(field);
+    field.select();
+    const ok = document.execCommand("copy");
+    field.remove();
+    return ok;
+  }
+}
+
+/** A small link under the buyer: one click copies the full address. */
+function AddressCopy({ contract, dark }) {
+  const [copied, setCopied] = useState(false);
+  const address = addressOf(contract);
+  useEffect(() => {
+    if (!copied) return undefined;
+    const timer = setTimeout(() => setCopied(false), 1600);
+    return () => clearTimeout(timer);
+  }, [copied]);
+  if (!address) return null;
+  return (
+    <button
+      type="button"
+      title={`${address} – klicken zum Kopieren`}
+      aria-label={copied ? "Adresse kopiert" : `Adresse kopieren: ${address}`}
+      onClick={async (event) => {
+        event.stopPropagation();
+        if (await copyText(address)) setCopied(true);
+      }}
+      className={`mt-0.5 inline-flex max-w-full items-center gap-1 text-[12px] transition ${
+        copied ? (dark ? "text-emerald-400" : "text-emerald-700") : dark ? "text-slate-500 hover:text-emerald-400" : "text-slate-400 hover:text-emerald-700"
+      }`}
+    >
+      {copied ? <FiCheck className="size-3 shrink-0" /> : <FiCopy className="size-3 shrink-0" />}
+      <span className="truncate">Adresse</span>
+    </button>
   );
 }
 
@@ -450,7 +503,10 @@ export default function KaufvertragListe() {
                       ) : null}
                       <div className="min-w-0 flex-1 space-y-1.5">
                         <div className="flex items-start justify-between gap-3">
-                          <p className={`truncate text-[14px] font-normal ${t.title}`}>{contract.buyerName || "–"}</p>
+                          <div className="min-w-0">
+                            <p className={`truncate text-[14px] font-normal ${t.title}`}>{contract.buyerName || "–"}</p>
+                            <AddressCopy contract={contract} dark={dark} />
+                          </div>
                           <p className={`shrink-0 text-[14px] font-normal tabular-nums ${t.title}`}>{euro(contract.total)}</p>
                         </div>
                         <p className={`truncate text-[13px] ${t.text}`}>{contract.carType || "–"}</p>
@@ -507,6 +563,7 @@ export default function KaufvertragListe() {
                         <td className={`whitespace-nowrap px-3 py-3 text-[13px] tabular-nums ${t.text} ${isAdmin ? "" : "pl-5"}`}>{formatDate(contract.invoiceDate)}</td>
                         <td className="max-w-[14rem] px-3 py-3">
                           <p className={`truncate text-[14px] font-normal ${t.title}`}>{contract.buyerName || "–"}</p>
+                          <AddressCopy contract={contract} dark={dark} />
                         </td>
                         <td className="max-w-[16rem] px-3 py-3">
                           <p className={`truncate text-[13px] ${t.text}`}>{contract.carType || "–"}</p>

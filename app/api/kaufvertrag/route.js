@@ -145,7 +145,7 @@ export async function GET(req) {
     )
       .sort({ createdAt: -1 })
       .select(
-        "buyerName issuer carType vin mileage invoiceNumber invoiceDate total starred ignored archived originalInvoiceNumber"
+        "buyerName buyerStreet buyerCity issuer carType vin mileage invoiceNumber invoiceDate total starred ignored archived originalInvoiceNumber"
       )
       .lean();
 
