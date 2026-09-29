@@ -1,5 +1,7 @@
 // app/api/carschein/route.js
 import { connectDB } from "@/lib/mongodb";
+import { monthYear } from "@/lib/cars/format";
+import Car from "@/models/Car";
 import CarSchein from "@/models/CarSchein";
 import ContactCustomer from "@/models/ContactCustomer";
 import cloudinary from "@/app/utils/cloudinary";
@@ -97,6 +99,119 @@ function normalizeStageMeta(meta) {
       issues: rawIssues.map(toStr).filter(Boolean),
     },
   };
+}
+
+/* -----------------------
+   mobile.de TÜV fallback
+------------------------ */
+function normalizeFin(value) {
+  return toStr(value).replace(/\s+/g, "").toUpperCase();
+}
+
+function normalizeText(value) {
+  return toStr(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function mobileTuevFromCar(car) {
+  const raw = toStr(car?.newHuAu);
+  if (!raw) return null;
+  if (/^neu$/i.test(raw) || /^hu\s*\/\s*au\s*neu$/i.test(raw)) {
+    return { hasTuev: false, tuevUntil: "" };
+  }
+  const tuevUntil = monthYear(raw);
+  return tuevUntil ? { hasTuev: true, tuevUntil } : null;
+}
+
+function mobileTitleOf(car) {
+  return normalizeText([car?.make, car?.model, car?.modelDescription].filter(Boolean).join(" "));
+}
+
+function likelySameCarByName(schein, car) {
+  const name = normalizeText(schein?.carName);
+  if (!name) return false;
+  const title = mobileTitleOf(car);
+  if (!title) return false;
+  if (name === title || name.includes(title) || title.includes(name)) return true;
+
+  const make = normalizeText(car?.make);
+  const model = normalizeText(car?.model);
+  if (!make || !model) return false;
+  return name.includes(make) && name.includes(model);
+}
+
+function findMobileCar(schein, cars, byVin) {
+  const fin = normalizeFin(schein?.finNumber);
+  if (fin && byVin.has(fin)) return byVin.get(fin);
+
+  const matches = cars.filter((car) => likelySameCarByName(schein, car));
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function needsMobileTuevBackfill(schein) {
+  const platz = schein?.stageMeta?.platz || {};
+  return !toStr(platz.tuevUntil);
+}
+
+async function backfillTuevFromMobile(docs) {
+  const candidates = docs.filter(needsMobileTuevBackfill);
+  if (!candidates.length) return docs;
+
+  const cars = await Car.find({ newHuAu: { $nin: [null, ""] } })
+    .select("vin make model modelDescription newHuAu")
+    .lean();
+  if (!cars.length) return docs;
+
+  const byVin = new Map();
+  for (const car of cars) {
+    const vin = normalizeFin(car?.vin);
+    if (vin && !byVin.has(vin)) byVin.set(vin, car);
+  }
+
+  const operations = [];
+  const byId = new Map(docs.map((doc) => [String(doc._id), doc]));
+  for (const schein of candidates) {
+    const mobileCar = findMobileCar(schein, cars, byVin);
+    const mobileTuev = mobileTuevFromCar(mobileCar);
+    if (!mobileTuev) continue;
+
+    const id = String(schein._id);
+    const currentPlatz = schein.stageMeta?.platz || {};
+    const nextPlatz = {
+      ...currentPlatz,
+      hasTuev: mobileTuev.hasTuev,
+      tuevUntil: mobileTuev.tuevUntil || currentPlatz.tuevUntil || "",
+    };
+
+    schein.stageMeta = {
+      ...(schein.stageMeta || {}),
+      platz: nextPlatz,
+    };
+    byId.set(id, schein);
+
+    operations.push({
+      updateOne: {
+        filter: { _id: schein._id, "stageMeta.platz.tuevUntil": { $in: [null, ""] } },
+        update: {
+          $set: {
+            "stageMeta.platz.hasTuev": nextPlatz.hasTuev,
+            "stageMeta.platz.tuevUntil": nextPlatz.tuevUntil,
+          },
+        },
+      },
+    });
+  }
+
+  if (operations.length) {
+    await CarSchein.bulkWrite(operations, { ordered: false });
+  }
+
+  return docs.map((doc) => byId.get(String(doc._id)) || doc);
 }
 
 /* -----------------------
@@ -311,8 +426,9 @@ export async function POST(req) {
     const populated = await CarSchein.findById(doc._id)
       .populate("soldContactId", "customerName phone street postalCode city")
       .lean();
+    const [withMobileTuev] = await backfillTuevFromMobile(populated ? [populated] : []);
 
-    return json(populated, 201);
+    return json(withMobileTuev || populated, 201);
   } catch (err) {
     console.error("POST /api/carschein error:", err);
     return json({ error: err.message || "Server error" }, 500);
@@ -362,9 +478,11 @@ export async function GET(req) {
     ]);
 
     // ✅ Server-side cleanup filter if hideDead=1
+    const withMobileTuev = await backfillTuevFromMobile(docs);
+
     const finalDocs = hideDead
-      ? docs.filter((d) => !isDeadSoldRecord(d))
-      : docs;
+      ? withMobileTuev.filter((d) => !isDeadSoldRecord(d))
+      : withMobileTuev;
 
     const totalPages = Math.max(1, Math.ceil(total / limit));
     return json({ docs: finalDocs, page, totalPages, total }, 200);
@@ -624,8 +742,9 @@ export async function PUT(req) {
     const updated = await CarSchein.findByIdAndUpdate(id, update, { new: true })
       .populate("soldContactId", "customerName phone street postalCode city")
       .lean();
+    const [withMobileTuev] = await backfillTuevFromMobile(updated ? [updated] : []);
 
-    return json(updated, 200);
+    return json(withMobileTuev || updated, 200);
   } catch (err) {
     console.error("PUT /api/carschein error:", err);
     return json({ error: err.message || "Server error" }, 500);
