@@ -22,7 +22,10 @@ export async function POST(req) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const folder = process.env.CLOUDINARY_UPLOAD_FOLDER || "medicines";
+    const requestedFolder = form.get("folder");
+    const folder = requestedFolder === "inventory"
+      ? "autogalerie/inventory"
+      : process.env.CLOUDINARY_UPLOAD_FOLDER || "medicines";
 
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(

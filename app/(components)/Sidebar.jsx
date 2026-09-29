@@ -84,6 +84,7 @@ const SECTIONS = [
       { href: "/schlussel", icon: FiKey, label: "Schlüssel", tone: "slate" },
       { href: "/Toni-Werkstatt", icon: FaPaintRoller, label: "Lackieren", tone: "purple" },
       { href: "/Autoteil", icon: FiPackage, label: "Teile-Reklamation", tone: "orange" },
+      { href: "/Lagerbestand", icon: FiArchive, label: "Lagerbestand", tone: "green" },
     ],
   },
   {

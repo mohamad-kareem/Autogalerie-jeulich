@@ -59,6 +59,7 @@ const adminRoutes = [
   "/ai-chats",
   "/marktanalyse",
   "/neue-angebote",
+  "/Lagerbestand",
 ];
 
 const hasSubMenu = (menu) =>
