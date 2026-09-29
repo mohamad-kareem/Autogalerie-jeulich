@@ -1,33 +1,32 @@
+import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
+import mongoose from "mongoose";
+
+import { staffSession } from "@/lib/cars/auth";
 import { connectDB } from "@/lib/mongodb";
 import Car from "@/models/Car";
-import { NextResponse } from "next/server";
 
-export async function PUT(request, context) {
+/** PUT /api/cars/:id/sold { sold } — only for signed-in employees. */
+export async function PUT(request, { params }) {
+  if (!(await staffSession())) {
+    return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
+  }
+
+  const { id } = await params;
+  if (!mongoose.isValidObjectId(id)) {
+    return NextResponse.json({ error: "Fahrzeug nicht gefunden." }, { status: 404 });
+  }
+
   try {
-    await connectDB();
-
-    const { params } = context; // ✅ No need to await — `context` is directly available
-    const id = params?.id;
-
-    if (!id) {
-      return NextResponse.json({ error: "Missing car ID" }, { status: 400 });
-    }
-
     const { sold } = await request.json();
+    await connectDB();
+    const car = await Car.findByIdAndUpdate(id, { sold: Boolean(sold) }, { new: true }).lean();
+    if (!car) return NextResponse.json({ error: "Fahrzeug nicht gefunden." }, { status: 404 });
 
-    const updatedCar = await Car.findByIdAndUpdate(
-      id,
-      { sold },
-      { new: true, runValidators: true }
-    ).lean();
-
-    if (!updatedCar) {
-      return NextResponse.json({ error: "Car not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(updatedCar, { status: 200 });
+    revalidatePath("/gebrauchtwagen");
+    revalidatePath(`/gebrauchtwagen/${id}`);
+    return NextResponse.json(car);
   } catch (error) {
-    console.error("Error updating car sold status:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error?.message || "Fehler." }, { status: 500 });
   }
 }

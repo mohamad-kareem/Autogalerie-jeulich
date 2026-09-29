@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 const imageSchema = new mongoose.Schema(
   {
     ref: { type: String, required: true },
-    hash: { type: String, required: true },
+    hash: { type: String, default: "" },
   },
   { _id: false }
 );
@@ -12,9 +12,11 @@ const imageSchema = new mongoose.Schema(
 // ⬛ Price Subschema
 const priceSchema = new mongoose.Schema(
   {
-    consumerPriceGross: { type: String, required: true },
-    type: { type: String, required: true },
-    currency: { type: String, required: true },
+    consumerPriceGross: { type: String, default: "" },
+    type: { type: String, default: "" },
+    currency: { type: String, default: "EUR" },
+    // "19.00" when VAT can be shown on the invoice; empty for §25a cars.
+    vatRate: { type: String, default: "" },
   },
   { _id: false }
 );
@@ -26,6 +28,17 @@ const carSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+
+    // mobile.de ad number — how the daily sync recognises a car.
+    mobileAdId: { type: String, default: null, index: true },
+    mobileCreatedAt: { type: Date, default: null },
+    mobileUpdatedAt: { type: Date, default: null },
+    detailPageUrl: { type: String },
+    // Set by every sync; cars the last sync did not see are removed.
+    syncedAt: { type: Date, default: null },
+    // Price as a number, for sorting and filtering.
+    priceValue: { type: Number, default: null },
+    numberOfPreviousOwners: { type: Number },
 
     make: { type: String, required: true },
     model: { type: String, required: true },
@@ -149,5 +162,9 @@ carSchema.index(
   { name: "fallback_no_vin_match" }
 );
 
-// ✅ Export
+// ✅ Export — in development a model loaded before a schema change stays
+// in memory; replace it so new fields are never silently dropped.
+if (mongoose.models.Car && !mongoose.models.Car.schema.path("syncedAt")) {
+  mongoose.deleteModel("Car");
+}
 export default mongoose.models.Car || mongoose.model("Car", carSchema);

@@ -3,10 +3,31 @@ import { connectDB } from "@/lib/mongodb";
 
 import Kaufvertrag from "@/models/Kaufvertrag";
 import CarSchein from "@/models/CarSchein";
+import Car from "@/models/Car";
+import { revalidatePath } from "next/cache";
+import mongoose from "mongoose";
 import ContactCustomer from "@/models/ContactCustomer";
 
 import { generateNextNumber } from "@/app/utils/invoiceHelpers";
 import { getLastValidContract } from "@/app/utils/getLastValidContract";
+
+/** Never lets the contract fail: the contract matters more than the label. */
+async function markWebsiteCarSold({ vin, carId }) {
+  try {
+    const match = [];
+    const fin = String(vin || "").trim().toUpperCase();
+    if (fin.length >= 11) match.push({ vin: fin });
+    if (carId && mongoose.isValidObjectId(carId)) match.push({ _id: carId });
+    if (!match.length) return;
+    const result = await Car.updateMany({ $or: match }, { $set: { sold: true } });
+    if (result.modifiedCount) {
+      revalidatePath("/gebrauchtwagen");
+      revalidatePath("/gebrauchtwagen/[id]", "page");
+    }
+  } catch (error) {
+    console.error("Kaufvertrag: website car not marked sold:", error?.message);
+  }
+}
 
 /* ─────────────────────────────────────────────
    POST → Create Kaufvertrag
@@ -96,6 +117,11 @@ export async function POST(req) {
         });
       }
     }
+
+    /* 7️⃣ Website: the car sold with this contract shows "Verkauft".
+          Found by FIN (and by the car picked in the list, if any). It is
+          removed from the website when its mobile.de ad is deleted. */
+    await markWebsiteCarSold({ vin, carId: data.carId });
 
     return NextResponse.json(contract, { status: 201 });
   } catch (err) {

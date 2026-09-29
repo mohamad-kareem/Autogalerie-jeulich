@@ -1,629 +1,568 @@
 "use client";
 
+/**
+ * Gebrauchtwagen — the public stock (synced daily from mobile.de).
+ *
+ * Search, filters and sorting run in the browser on the list the server
+ * already sent, so they react instantly. Up to three cars can be compared.
+ * Signed-in employees also see: Aktualisieren (mobile.de sync), Verkauft /
+ * Verfügbar and Kaufvertrag per car.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { toast } from "react-hot-toast";
 import {
-  RefreshCw,
-  ChevronRight,
+  ArrowRight,
   Calendar,
-  Gauge,
-  Fuel,
-  Zap,
-  MapPin,
-  BadgeCheck,
   CarFront,
-  Scale,
-  X,
-  Plus,
-  Tag,
+  Check,
   FileText,
+  Fuel,
+  Gauge,
+  Plus,
+  RefreshCw,
+  Scale,
+  Search,
+  SlidersHorizontal,
+  Tag,
+  X,
+  Zap,
 } from "lucide-react";
 
-import SearchAndFilter from "@/app/(components)/helpers/SearchAndFilter";
+import { euro, imagesOf, km, label, powerPs, priceOf, registration, registrationYear, sizedImage, subtitleOf, titleOf } from "@/lib/cars/format";
 
-const fuelMap = {
-  PETROL: "Benzin",
-  DIESEL: "Diesel",
-  petrol: "Benzin",
-  diesel: "Diesel",
-};
+const WRAPPER = "mx-auto w-full max-w-[1240px] px-4 sm:px-6";
+const MAX_COMPARE = 3;
 
-const WRAPPER = "mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-8";
+const SORTS = [
+  { id: "new", label: "Neueste zuerst" },
+  { id: "price-asc", label: "Preis aufsteigend" },
+  { id: "price-desc", label: "Preis absteigend" },
+  { id: "km-asc", label: "Kilometer aufsteigend" },
+  { id: "year-desc", label: "Erstzulassung neueste" },
+];
 
-const btnBase =
-  "inline-flex h-10 items-center justify-center gap-1.5 rounded-xl px-3 text-[13px] font-medium transition disabled:cursor-not-allowed disabled:opacity-60";
+const PRICE_STEPS = [5000, 7500, 10000, 12500, 15000, 20000, 25000, 30000, 40000, 50000];
+const KM_STEPS = [25000, 50000, 75000, 100000, 125000, 150000, 200000];
 
-export default function UsedCarsPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { data: session } = useSession();
+const EMPTY_FILTERS = { make: "", fuel: "", gearbox: "", maxPrice: "", maxKm: "", minYear: "" };
 
-  const [cars, setCars] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [syncing, setSyncing] = useState(false);
+/* ------------------------------------------------------------ small parts */
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState({
-    make: "",
-    model: "",
-    fuelType: "",
-    minPrice: 0,
-    maxPrice: 100000,
-    minYear: 1990,
-    maxYear: new Date().getFullYear(),
-    maxMileage: "",
-    transmission: "",
-  });
-
-  const [comparisonMode, setComparisonMode] = useState(false);
-  const [selectedForComparison, setSelectedForComparison] = useState([]);
-
-  const fetchCars = async () => {
-    setLoading(true);
-
-    try {
-      const query = searchParams.toString();
-      const res = await fetch(`/api/cars${query ? `?${query}` : ""}`, {
-        cache: "no-store",
-      });
-
-      const data = await res.json();
-      setCars(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Failed to fetch cars:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const syncCars = async () => {
-    setSyncing(true);
-
-    try {
-      const res = await fetch("/api/sync", {
-        headers: {
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET}`,
-        },
-      });
-
-      if (res.ok) await fetchCars();
-    } catch (error) {
-      console.error("Sync failed:", error);
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  useEffect(() => {
-    const q = searchParams.get("q") || "";
-    const make = searchParams.get("make") || "";
-    const model = searchParams.get("model") || "";
-    const minYear = searchParams.get("minYear");
-    const maxMileage = searchParams.get("maxMileage");
-    const maxPrice = searchParams.get("maxPrice");
-
-    setSearchTerm(q);
-
-    setFilters((prev) => ({
-      ...prev,
-      make,
-      model,
-      minYear: minYear ? Number(minYear) : 1990,
-      maxMileage: maxMileage || "",
-      maxPrice: maxPrice ? Number(maxPrice) : 100000,
-    }));
-
-    fetchCars();
-  }, [searchParams]);
-
-  const filteredCars = useMemo(() => {
-    return cars.filter((car) => {
-      const title = `${car.make || ""} ${car.model || ""} ${
-        car.modelDescription || ""
-      }`.toLowerCase();
-
-      const price = Number(car.price?.consumerPriceGross || 0);
-      const year = car.firstRegistration
-        ? Number(String(car.firstRegistration).slice(0, 4))
-        : 0;
-
-      return (
-        (!searchTerm || title.includes(searchTerm.toLowerCase())) &&
-        (!filters.make || car.make === filters.make) &&
-        (!filters.model || car.model === filters.model) &&
-        (!filters.fuelType || car.fuel === filters.fuelType) &&
-        (!filters.maxMileage ||
-          Number(car.mileage || 0) <= Number(filters.maxMileage)) &&
-        price >= filters.minPrice &&
-        price <= filters.maxPrice &&
-        year >= filters.minYear &&
-        year <= filters.maxYear &&
-        (!filters.transmission || car.gearbox === filters.transmission)
-      );
-    });
-  }, [cars, searchTerm, filters]);
-
-  const selectedCars = useMemo(
-    () => cars.filter((car) => selectedForComparison.includes(car._id)),
-    [cars, selectedForComparison],
-  );
-
-  const toggleComparisonMode = () => {
-    setComparisonMode((prev) => {
-      if (prev) setSelectedForComparison([]);
-      return !prev;
-    });
-  };
-
-  const toggleCarForComparison = (carId) => {
-    setSelectedForComparison((prev) =>
-      prev.includes(carId)
-        ? prev.filter((id) => id !== carId)
-        : prev.length < 3
-          ? [...prev, carId]
-          : prev,
-    );
-  };
-
-  const handleCompareNavigate = () => {
-    if (selectedForComparison.length < 2) return;
-
-    localStorage.setItem(
-      "carComparison",
-      JSON.stringify(selectedForComparison),
-    );
-
-    const query = selectedForComparison.map((id) => `id=${id}`).join("&");
-    router.push(`/vergleich?${query}`);
-  };
-
-  const goToKaufvertrag = (carId) => {
-    router.push(`/kaufvertrag/auswahl?carId=${encodeURIComponent(carId)}`);
-  };
-
-  const toggleSold = async (car) => {
-    const res = await fetch(`/api/cars/${car._id}/sold`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sold: !car.sold }),
-    });
-
-    if (!res.ok) return;
-
-    const updated = await res.json();
-
-    setCars((prev) =>
-      prev.map((item) => (item._id === updated._id ? updated : item)),
-    );
-  };
-
+function FilterSelect({ value, onChange, label: text, children }) {
   return (
-    <main className="relative min-h-screen bg-[#f5f5f2] pb-14 pt-5 text-[#101510] sm:pb-16 sm:pt-8">
-      {comparisonMode && (
-        <ComparisonBar
-          selectedCars={selectedCars}
-          selectedForComparison={selectedForComparison}
-          toggleCarForComparison={toggleCarForComparison}
-          toggleComparisonMode={toggleComparisonMode}
-          handleCompareNavigate={handleCompareNavigate}
-        />
-      )}
-
-      <div className={WRAPPER}>
-        <header className="mb-4 rounded-[20px] border border-white/80 bg-white px-4 py-4 shadow-lg shadow-black/5 sm:mb-6 sm:rounded-[24px] sm:px-5 sm:py-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#146c2e] sm:text-[10px] sm:tracking-[0.22em]">
-                Autogalerie Jülich
-              </p>
-
-              <h1 className="mt-1.5 text-[26px] font-semibold tracking-[-0.04em] text-[#07111f] sm:mt-2 sm:text-3xl">
-                Unsere Fahrzeuge
-              </h1>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
-              <button
-                onClick={syncCars}
-                disabled={syncing}
-                className={`${btnBase} w-full border border-black/10 bg-[#fafaf8] text-[#101510] hover:border-[#146c2e]/40 hover:bg-[#f1f6f2] sm:w-auto`}
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`}
-                />
-                Aktualisieren
-              </button>
-
-              <button
-                onClick={toggleComparisonMode}
-                className={`${btnBase} w-full sm:w-auto ${
-                  comparisonMode
-                    ? "bg-[#146c2e] text-white hover:bg-[#0f5724]"
-                    : "border border-[#146c2e]/20 bg-[#e6f1e9] text-[#146c2e] hover:bg-[#dceee0]"
-                }`}
-              >
-                <Scale className="h-4 w-4" />
-                Vergleich
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-6">
-          <div className="w-full lg:w-[290px] lg:shrink-0">
-            <SearchAndFilter
-              cars={cars}
-              loading={loading}
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              filters={filters}
-              setFilters={setFilters}
-            />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="mb-4 rounded-[18px] border border-white/80 bg-white px-4 py-3 shadow-md shadow-black/5 sm:mb-5 sm:rounded-[20px] sm:px-5 sm:py-4">
-              <p className="text-sm text-[#101510]">
-                {loading ? (
-                  <span className="inline-flex items-center gap-2 text-[#5f695f]">
-                    <RefreshCw className="h-4 w-4 animate-spin text-[#146c2e]" />
-                    Fahrzeuge werden geladen...
-                  </span>
-                ) : (
-                  <>
-                    <span className="font-semibold text-[#146c2e]">
-                      {filteredCars.length}
-                    </span>{" "}
-                    {filteredCars.length === 1 ? "Fahrzeug" : "Fahrzeuge"}{" "}
-                    gefunden
-                  </>
-                )}
-              </p>
-            </div>
-
-            <section
-              aria-label="Fahrzeugliste"
-              className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-2"
-            >
-              {filteredCars.map((car) => (
-                <CarCard
-                  key={car._id}
-                  car={car}
-                  session={session}
-                  comparisonMode={comparisonMode}
-                  isSelected={selectedForComparison.includes(car._id)}
-                  toggleCarForComparison={toggleCarForComparison}
-                  setComparisonMode={setComparisonMode}
-                  goToKaufvertrag={goToKaufvertrag}
-                  toggleSold={toggleSold}
-                />
-              ))}
-            </section>
-
-            {!loading && filteredCars.length === 0 && (
-              <EmptyState
-                setFilters={setFilters}
-                setSearchTerm={setSearchTerm}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-    </main>
+    <label className="relative block min-w-0">
+      <span className="sr-only">{text}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={`h-10 w-full cursor-pointer appearance-none truncate rounded-lg border bg-white pl-3 pr-8 text-[13px] outline-none transition focus:border-[#146c2e] focus:ring-2 focus:ring-[#146c2e]/15 ${
+          value ? "border-[#146c2e]/50 font-medium text-[#0f3d1c]" : "border-slate-200 text-slate-700"
+        }`}
+      >
+        {children}
+      </select>
+      <svg className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" />
+      </svg>
+    </label>
   );
 }
 
-function CarCard({
-  car,
-  session,
-  comparisonMode,
-  isSelected,
-  toggleCarForComparison,
-  setComparisonMode,
-  goToKaufvertrag,
-  toggleSold,
-}) {
+/** A photo that falls back to the original link if the sized copy fails. */
+function CarPhoto({ url, alt, size = 640, className = "" }) {
+  const [src, setSrc] = useState(sizedImage(url, size));
+  useEffect(() => setSrc(sizedImage(url, size)), [url, size]);
+  if (!url) {
+    return (
+      <div className={`flex items-center justify-center bg-slate-100 text-slate-300 ${className}`}>
+        <CarFront className="size-10" />
+      </div>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      onError={() => src !== url && setSrc(url)}
+      className={`object-cover ${className}`}
+    />
+  );
+}
+
+/** A red corner ribbon on sold cars. */
+function SoldRibbon() {
+  return (
+    <div className="pointer-events-none absolute left-0 top-0 size-28 overflow-hidden" aria-label="Verkauft">
+      <span className="absolute left-[-42px] top-[22px] block w-[170px] -rotate-45 bg-red-600 py-1.5 text-center text-[11.5px] font-bold uppercase tracking-[0.14em] text-white shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
+        Verkauft
+      </span>
+    </div>
+  );
+}
+
+function Fact({ icon: Icon, children }) {
+  return (
+    <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-slate-600">
+      <Icon className="size-3.5 shrink-0 text-slate-400" strokeWidth={2} />
+      <span className="truncate">{children}</span>
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------ card */
+
+function CarCard({ car, staff, comparing, onCompare, onToggleSold, onContract }) {
+  const title = titleOf(car);
+  const subtitle = subtitleOf(car);
+  const price = priceOf(car);
+  const ps = powerPs(car);
+  const href = `/gebrauchtwagen/${car._id}`;
+
   return (
     <article
-      className={`group relative overflow-hidden rounded-[20px] border bg-white shadow-lg shadow-black/5 transition-all duration-300 sm:rounded-[24px] ${
-        comparisonMode && isSelected
-          ? "border-[#146c2e] ring-2 ring-[#146c2e]/20"
-          : "border-white/80 hover:border-[#146c2e]/30 hover:shadow-xl sm:hover:-translate-y-1"
+      className={`group relative flex flex-col overflow-hidden rounded-xl border bg-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-12px_rgba(15,23,42,0.25)] ${
+        comparing ? "border-[#146c2e] ring-2 ring-[#146c2e]/20" : "border-slate-200"
       }`}
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-[#f3f5f1]">
-        {car.sold && (
-          <div className="absolute left-3 top-3 z-30 inline-flex items-center gap-1.5 rounded-full border border-white/60 bg-[#146c2e]/95 px-3 py-1.5 text-[11px] font-semibold text-white shadow-lg backdrop-blur sm:left-4 sm:top-4 sm:text-[12px]">
-            <Tag className="h-3.5 w-3.5" />
-            Verkauft
-          </div>
-        )}
+      <Link href={href} className="relative block aspect-[4/3] overflow-hidden bg-slate-100">
+        <CarPhoto
+          url={imagesOf(car)[0]}
+          alt={`${title} ${subtitle}`.trim()}
+          className="size-full transition duration-500 group-hover:scale-[1.03]"
+        />
+        {car.sold ? <SoldRibbon /> : null}
+      </Link>
 
-        {car.certified && !car.sold && (
-          <div className="absolute left-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-medium text-[#146c2e] shadow-md backdrop-blur sm:left-4 sm:top-4 sm:text-[12px]">
-            <BadgeCheck className="h-4 w-4" />
-            Zertifiziert
-          </div>
-        )}
 
-        {car.images?.[0]?.ref ? (
-          <img
-            src={car.images[0].ref}
-            alt={`${car.make} ${car.model}`}
-            className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${
-              car.sold ? "opacity-80 grayscale-[15%]" : ""
-            }`}
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-[#8b958b]">
-            <CarFront className="h-12 w-12" />
-          </div>
-        )}
+      <div className="flex flex-1 flex-col p-4">
+        <Link href={href} className="min-w-0">
+          <h2 className="truncate text-[15.5px] font-semibold tracking-[-0.01em] text-slate-900 group-hover:text-[#146c2e]">{title}</h2>
+          <p className="mt-0.5 h-[18px] truncate text-[12.5px] text-slate-500">{subtitle}</p>
+        </Link>
 
-        {comparisonMode && (
-          <button
-            onClick={() => toggleCarForComparison(car._id)}
-            className={`absolute bottom-3 right-3 z-20 flex h-9 w-9 items-center justify-center rounded-xl shadow-lg transition sm:bottom-4 sm:right-4 ${
-              isSelected
-                ? "bg-[#146c2e] text-white"
-                : "bg-white text-[#101510] hover:bg-[#e6f1e9]"
-            }`}
-          >
-            {isSelected ? (
-              <X className="h-4 w-4" />
-            ) : (
-              <Plus className="h-4 w-4" />
-            )}
-          </button>
-        )}
-      </div>
-
-      <div className="flex min-h-[300px] flex-col p-4 sm:min-h-[330px] sm:p-5">
-        <div className="mb-4 flex items-start justify-between gap-3 sm:gap-4">
-          <div className="min-w-0">
-            <h3 className="line-clamp-1 text-[18px] font-semibold tracking-[-0.03em] text-[#07111f] sm:text-[20px]">
-              {car.make} {car.model}
-            </h3>
-
-            {car.modelDescription && (
-              <p className="mt-1 line-clamp-1 text-[13px] leading-5 text-[#5f695f] sm:text-sm">
-                {car.modelDescription}
-              </p>
-            )}
-          </div>
-
-          {car.price?.consumerPriceGross && (
-            <div className="shrink-0 text-right">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#8b958b] sm:text-[10px]">
-                Preis
-              </p>
-
-              <p className="whitespace-nowrap text-base font-semibold text-[#146c2e] sm:text-lg">
-                {parseFloat(car.price.consumerPriceGross).toLocaleString(
-                  "de-DE",
-                  {
-                    style: "currency",
-                    currency: car.price.currency || "EUR",
-                    maximumFractionDigits: 0,
-                  },
-                )}
-              </p>
-            </div>
-          )}
+        <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5">
+          <Fact icon={Calendar}>{registration(car.firstRegistration) ? `EZ ${registration(car.firstRegistration)}` : "EZ –"}</Fact>
+          <Fact icon={Gauge}>{km(car.mileage) || "– km"}</Fact>
+          <Fact icon={Fuel}>{label("fuel", car.fuel) || "–"}</Fact>
+          <Fact icon={Zap}>{ps ? `${ps} PS` : "–"}</Fact>
         </div>
 
-        <dl className="grid grid-cols-2 gap-2">
-          <SpecItem
-            icon={<Calendar />}
-            label="Erstzulassung"
-            value={
-              car.firstRegistration ? car.firstRegistration.slice(0, 4) : "-"
-            }
-          />
-
-          <SpecItem
-            icon={<Gauge />}
-            label="Kilometerstand"
-            value={
-              car.mileage
-                ? `${Number(car.mileage).toLocaleString("de-DE")} km`
-                : "-"
-            }
-          />
-
-          <SpecItem
-            icon={<Fuel />}
-            label="Kraftstoff"
-            value={fuelMap[car.fuel] || car.fuel || "-"}
-          />
-
-          <SpecItem
-            icon={<Zap />}
-            label="Leistung"
-            value={car.power ? `${car.power} kW` : "-"}
-          />
-        </dl>
-
-        {car.location && (
-          <div className="mt-4">
-            <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-[#f1f6f2] px-3 py-1.5 text-[12px] font-medium text-[#5f695f]">
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-[#146c2e]" />
-              <span className="truncate">{car.location}</span>
-            </span>
+        <div className="mt-4 flex items-end justify-between gap-3 border-t border-slate-100 pt-3">
+          <div>
+            <p className="text-[19px] font-bold leading-none tracking-[-0.02em] text-slate-900">{euro(price)}</p>
+            <p className="mt-1 text-[11px] text-slate-500">{label("gearbox", car.gearbox) || " "}</p>
           </div>
-        )}
-
-        <div className="mt-auto space-y-2.5 pt-5">
-          <div className="grid grid-cols-2 gap-2">
-            <Link
-              href={`/gebrauchtwagen/${car._id}`}
-              className={`${btnBase} bg-[#146c2e] text-white shadow-md shadow-green-900/10 hover:bg-[#0f5724]`}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onCompare(car._id)}
+              title={comparing ? "Aus dem Vergleich entfernen" : "Vergleichen"}
+              aria-label={comparing ? "Aus dem Vergleich entfernen" : "Zum Vergleich hinzufügen"}
+              aria-pressed={comparing}
+              className={`inline-flex size-8 items-center justify-center rounded-lg border transition ${
+                comparing ? "border-[#146c2e] bg-[#146c2e] text-white" : "border-slate-200 text-slate-500 hover:border-[#146c2e]/40 hover:text-[#146c2e]"
+              }`}
             >
-              Details
-              <ChevronRight className="h-4 w-4" />
+              {comparing ? <Check className="size-4" /> : <Scale className="size-4" />}
+            </button>
+            <Link href={href} className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-[13px] font-semibold text-[#146c2e] hover:bg-[#146c2e]/5">
+              Details <ArrowRight className="size-3.5" />
             </Link>
-
-            {!comparisonMode && (
-              <button
-                onClick={() => {
-                  setComparisonMode(true);
-                  toggleCarForComparison(car._id);
-                }}
-                className={`${btnBase} border border-black/10 bg-white text-[#101510] hover:border-[#146c2e]/40 hover:bg-[#f1f6f2]`}
-              >
-                <Scale className="h-4 w-4" />
-                Vergleich
-              </button>
-            )}
           </div>
-
-          {session?.user && (
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => toggleSold(car)}
-                className={`${btnBase} ${
-                  car.sold
-                    ? "bg-[#e6f1e9] text-[#146c2e] hover:bg-[#dceee0]"
-                    : "bg-[#fff3d8] text-[#9a5b00] hover:bg-[#ffe8ad]"
-                }`}
-              >
-                <Tag className="h-4 w-4" />
-                {car.sold ? "Verfügbar" : "Verkauft"}
-              </button>
-
-              <button
-                onClick={() => goToKaufvertrag(car._id)}
-                className={`${btnBase} border border-[#146c2e]/25 bg-white text-[#146c2e] hover:bg-[#f1f6f2]`}
-              >
-                <FileText className="h-4 w-4" />
-                Vertrag
-              </button>
-            </div>
-          )}
         </div>
+
+        {staff ? (
+          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-dashed border-slate-200 pt-3">
+            <button
+              type="button"
+              onClick={() => onToggleSold(car)}
+              className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-lg text-[12px] font-medium transition ${
+                car.sold ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100" : "bg-amber-50 text-amber-800 hover:bg-amber-100"
+              }`}
+            >
+              <Tag className="size-3.5" /> {car.sold ? "Wieder verfügbar" : "Als verkauft"}
+            </button>
+            <button
+              type="button"
+              onClick={() => onContract(car)}
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              <FileText className="size-3.5" /> Kaufvertrag
+            </button>
+          </div>
+        ) : null}
       </div>
     </article>
   );
 }
 
-function SpecItem({ icon, label, value }) {
+/* ------------------------------------------------------------ page */
+
+export default function GebrauchtwagenClient({ initialCars = [], failed = false }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  const staff = Boolean(session?.user);
+
+  const [cars, setCars] = useState(initialCars);
+  const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [sort, setSort] = useState("new");
+  const [showFilters, setShowFilters] = useState(false);
+  const [compare, setCompare] = useState([]);
+  const [syncing, setSyncing] = useState(false);
+
+  // Links from the start page (?q=…&make=…&maxPrice=…) preset the filters.
+  const searchKey = searchParams.toString();
+  useEffect(() => {
+    const params = new URLSearchParams(searchKey);
+    setQuery(params.get("q") || params.get("model") || "");
+    setFilters({
+      ...EMPTY_FILTERS,
+      make: params.get("make") || "",
+      maxPrice: params.get("maxPrice") || "",
+      maxKm: params.get("maxMileage") || "",
+      minYear: params.get("minYear") || "",
+    });
+  }, [searchKey]);
+
+  useEffect(() => setCars(initialCars), [initialCars]);
+
+  const setFilter = (key, value) => setFilters((current) => ({ ...current, [key]: value }));
+
+  /* ---------------------------------------------------------- options */
+
+  const options = useMemo(() => {
+    const makes = new Map();
+    const fuels = new Set();
+    const gearboxes = new Set();
+    const years = new Set();
+    for (const car of cars) {
+      if (car.make) makes.set(car.make, (makes.get(car.make) || 0) + 1);
+      if (car.fuel) fuels.add(car.fuel);
+      if (car.gearbox) gearboxes.add(car.gearbox);
+      const year = registrationYear(car.firstRegistration);
+      if (year) years.add(year);
+    }
+    return {
+      makes: [...makes.entries()].sort((a, b) => a[0].localeCompare(b[0], "de")),
+      fuels: [...fuels].sort((a, b) => (label("fuel", a) || "").localeCompare(label("fuel", b) || "", "de")),
+      gearboxes: [...gearboxes],
+      years: [...years].sort((a, b) => b - a),
+    };
+  }, [cars]);
+
+  /* ---------------------------------------------------------- results */
+
+  const results = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    const list = cars.filter((car) => {
+      const price = priceOf(car);
+      if (term && !`${car.make} ${car.model} ${car.modelDescription || ""}`.toLowerCase().includes(term)) return false;
+      if (filters.make && car.make !== filters.make) return false;
+      if (filters.fuel && car.fuel !== filters.fuel) return false;
+      if (filters.gearbox && car.gearbox !== filters.gearbox) return false;
+      if (filters.maxPrice && (!price || price > Number(filters.maxPrice))) return false;
+      if (filters.maxKm && Number(car.mileage) > Number(filters.maxKm)) return false;
+      if (filters.minYear && (registrationYear(car.firstRegistration) || 0) < Number(filters.minYear)) return false;
+      return true;
+    });
+
+    const newest = (car) => new Date(car.mobileCreatedAt || car.createdAt || 0).getTime();
+    const by = {
+      new: (a, b) => newest(b) - newest(a),
+      "price-asc": (a, b) => (priceOf(a) ?? Infinity) - (priceOf(b) ?? Infinity),
+      "price-desc": (a, b) => (priceOf(b) ?? -1) - (priceOf(a) ?? -1),
+      "km-asc": (a, b) => (Number(a.mileage) || Infinity) - (Number(b.mileage) || Infinity),
+      "year-desc": (a, b) => String(b.firstRegistration || "").localeCompare(String(a.firstRegistration || "")),
+    }[sort];
+    return list.sort(by);
+  }, [cars, query, filters, sort]);
+
+  const available = cars.filter((car) => !car.sold).length;
+  const activeFilters = Object.values(filters).filter(Boolean).length + (query.trim() ? 1 : 0);
+  const reset = () => {
+    setQuery("");
+    setFilters(EMPTY_FILTERS);
+  };
+
+  /* ---------------------------------------------------------- actions */
+
+  const toggleCompare = (id) =>
+    setCompare((list) => {
+      if (list.includes(id)) return list.filter((entry) => entry !== id);
+      if (list.length >= MAX_COMPARE) {
+        toast.error(`Maximal ${MAX_COMPARE} Fahrzeuge vergleichen.`);
+        return list;
+      }
+      return [...list, id];
+    });
+
+  const openComparison = () => {
+    if (compare.length < 2) return;
+    try {
+      localStorage.setItem("carComparison", JSON.stringify(compare));
+    } catch {
+      /* private mode */
+    }
+    router.push(`/vergleich?${compare.map((id) => `id=${id}`).join("&")}`);
+  };
+
+  const sync = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/sync", { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || "Abgleich fehlgeschlagen.");
+      const fresh = await fetch("/api/cars", { cache: "no-store" }).then((r) => r.json());
+      if (Array.isArray(fresh)) setCars(fresh);
+      if (data.warning) toast.error(data.warning, { duration: 8000 });
+      toast.success(data.skipped ? "mobile.de hat keine Anzeigen geliefert – nichts geändert." : `Aktualisiert: ${data.saved} Fahrzeuge, ${data.removed} entfernt, HU bei ${data.withInspection}.`);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const toggleSold = async (car) => {
+    try {
+      const res = await fetch(`/api/cars/${car._id}/sold`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sold: !car.sold }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Speichern fehlgeschlagen.");
+      setCars((list) => list.map((entry) => (entry._id === car._id ? { ...entry, sold: data.sold } : entry)));
+      toast.success(data.sold ? "Als verkauft markiert" : "Wieder verfügbar");
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const openContract = (car) => router.push(`/kaufvertrag/auswahl?carId=${encodeURIComponent(car._id)}`);
+
+  const compareCars = compare.map((id) => cars.find((car) => car._id === id)).filter(Boolean);
+
+  /* ---------------------------------------------------------- render */
+
   return (
-    <div className="flex min-w-0 items-center gap-2 rounded-xl bg-[#fafaf8] p-2 shadow-sm shadow-black/[0.03] sm:gap-2.5 sm:rounded-2xl sm:p-2.5">
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-[#146c2e] shadow-sm sm:h-8 sm:w-8 sm:rounded-xl">
-        <span className="[&>svg]:h-3.5 [&>svg]:w-3.5 sm:[&>svg]:h-4 sm:[&>svg]:w-4">
-          {icon}
-        </span>
-      </div>
+    <main className={`min-h-screen bg-[#f6f7f5] pb-16 pt-6 text-slate-900 sm:pt-8 ${compare.length ? "pb-32" : ""}`}>
+      <div className={WRAPPER}>
+        {/* header */}
+        <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-[26px] font-semibold tracking-[-0.03em] sm:text-[30px]">Gebrauchtwagen</h1>
+            <p className="mt-0.5 text-[13.5px] text-slate-500">
+              {available} {available === 1 ? "Fahrzeug" : "Fahrzeuge"} sofort verfügbar · Finanzierung & Inzahlungnahme möglich
+            </p>
+          </div>
+          {staff ? (
+            <button
+              type="button"
+              onClick={sync}
+              disabled={syncing}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-700 transition hover:border-[#146c2e]/40 hover:text-[#146c2e] disabled:opacity-60"
+            >
+              <RefreshCw className={`size-4 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Wird abgeglichen …" : "mobile.de abgleichen"}
+            </button>
+          ) : null}
+        </header>
 
-      <div className="min-w-0 flex-1">
-        <dt className="truncate text-[9px] font-medium text-[#7b857b] sm:text-[10px]">
-          {label}
-        </dt>
-
-        <dd className="truncate text-[11px] font-semibold leading-5 text-[#101510] sm:text-[12px]">
-          {value}
-        </dd>
-      </div>
-    </div>
-  );
-}
-
-function ComparisonBar({
-  selectedCars,
-  selectedForComparison,
-  toggleCarForComparison,
-  toggleComparisonMode,
-  handleCompareNavigate,
-}) {
-  return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-black/10 bg-white/95 shadow-[0_-10px_35px_rgba(0,0,0,0.08)] backdrop-blur-xl">
-      <div
-        className={`${WRAPPER} flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between`}
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex h-9 items-center gap-2 rounded-xl border border-[#146c2e]/20 bg-[#e6f1e9] px-3 text-xs font-medium text-[#146c2e]">
-            <Scale className="h-4 w-4" />
-            Vergleich {selectedForComparison.length}/3
+        {/* search & filters */}
+        <section aria-label="Suche und Filter" className="mb-5 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+          <div className="flex gap-2">
+            <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-slate-200 px-3 transition focus-within:border-[#146c2e] focus-within:ring-2 focus-within:ring-[#146c2e]/15">
+              <Search className="size-4 shrink-0 text-slate-400" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Marke, Modell oder Ausstattung suchen …"
+                aria-label="Fahrzeug suchen"
+                className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-slate-400"
+              />
+              {query ? (
+                <button type="button" onClick={() => setQuery("")} aria-label="Suche leeren" className="rounded p-0.5 text-slate-400 hover:text-slate-700">
+                  <X className="size-4" />
+                </button>
+              ) : null}
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowFilters((open) => !open)}
+              aria-expanded={showFilters}
+              className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[13px] font-medium transition lg:hidden ${
+                showFilters || activeFilters ? "border-[#146c2e]/40 bg-[#146c2e]/5 text-[#146c2e]" : "border-slate-200 text-slate-700"
+              }`}
+            >
+              <SlidersHorizontal className="size-4" />
+              Filter{activeFilters ? ` (${activeFilters})` : ""}
+            </button>
+            <div className="hidden w-52 shrink-0 lg:block">
+              <FilterSelect value={sort} onChange={setSort} label="Sortierung">
+                {SORTS.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {entry.label}
+                  </option>
+                ))}
+              </FilterSelect>
+            </div>
           </div>
 
-          {selectedCars.slice(0, 3).map((car) => (
-            <div
-              key={car._id}
-              className="inline-flex h-9 max-w-full items-center gap-2 rounded-xl border border-black/10 bg-[#fafaf8] px-3 text-xs text-[#101510]"
-            >
-              <button
-                onClick={() => toggleCarForComparison(car._id)}
-                className="shrink-0 text-gray-400 hover:text-[#101510]"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-
-              <span className="truncate font-medium">
-                {car.make} {car.model}
-              </span>
+          <div className={`${showFilters ? "grid" : "hidden"} mt-2 grid-cols-2 gap-2 sm:grid-cols-3 lg:mt-3 lg:grid lg:grid-cols-6`}>
+            <FilterSelect value={filters.make} onChange={(v) => setFilter("make", v)} label="Marke">
+              <option value="">Alle Marken</option>
+              {options.makes.map(([make, count]) => (
+                <option key={make} value={make}>
+                  {make} ({count})
+                </option>
+              ))}
+            </FilterSelect>
+            <FilterSelect value={filters.fuel} onChange={(v) => setFilter("fuel", v)} label="Kraftstoff">
+              <option value="">Kraftstoff</option>
+              {options.fuels.map((fuel) => (
+                <option key={fuel} value={fuel}>
+                  {label("fuel", fuel)}
+                </option>
+              ))}
+            </FilterSelect>
+            <FilterSelect value={filters.gearbox} onChange={(v) => setFilter("gearbox", v)} label="Getriebe">
+              <option value="">Getriebe</option>
+              {options.gearboxes.map((gear) => (
+                <option key={gear} value={gear}>
+                  {label("gearbox", gear)}
+                </option>
+              ))}
+            </FilterSelect>
+            <FilterSelect value={filters.maxPrice} onChange={(v) => setFilter("maxPrice", v)} label="Preis bis">
+              <option value="">Preis bis</option>
+              {PRICE_STEPS.map((step) => (
+                <option key={step} value={step}>
+                  bis {euro(step)}
+                </option>
+              ))}
+            </FilterSelect>
+            <FilterSelect value={filters.maxKm} onChange={(v) => setFilter("maxKm", v)} label="Kilometer bis">
+              <option value="">Kilometer bis</option>
+              {KM_STEPS.map((step) => (
+                <option key={step} value={step}>
+                  bis {km(step)}
+                </option>
+              ))}
+            </FilterSelect>
+            <FilterSelect value={filters.minYear} onChange={(v) => setFilter("minYear", v)} label="Erstzulassung ab">
+              <option value="">Erstzulassung ab</option>
+              {options.years.map((year) => (
+                <option key={year} value={year}>
+                  ab {year}
+                </option>
+              ))}
+            </FilterSelect>
+            <div className="col-span-2 sm:col-span-3 lg:hidden">
+              <FilterSelect value={sort} onChange={setSort} label="Sortierung">
+                {SORTS.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    Sortierung: {entry.label}
+                  </option>
+                ))}
+              </FilterSelect>
             </div>
-          ))}
+          </div>
+        </section>
+
+        {/* result line */}
+        <div className="mb-3 flex items-center justify-between gap-3 text-[13px] text-slate-500">
+          <p>
+            <span className="font-semibold text-slate-900">{results.length}</span> {results.length === 1 ? "Ergebnis" : "Ergebnisse"}
+          </p>
+          {activeFilters ? (
+            <button type="button" onClick={reset} className="inline-flex items-center gap-1 font-medium text-[#146c2e] hover:underline">
+              <X className="size-3.5" /> Filter zurücksetzen
+            </button>
+          ) : null}
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
-          <button
-            onClick={toggleComparisonMode}
-            className={`${btnBase} border border-black/10 bg-white text-[#101510] hover:bg-[#f1f6f2]`}
-          >
-            Abbrechen
-          </button>
+        {/* list */}
+        {failed ? (
+          <div className="rounded-xl border border-slate-200 bg-white px-6 py-14 text-center">
+            <p className="text-[15px] font-semibold">Fahrzeuge konnten nicht geladen werden</p>
+            <p className="mt-1 text-[13px] text-slate-500">Bitte laden Sie die Seite in einem Moment neu.</p>
+          </div>
+        ) : results.length ? (
+          <section aria-label="Fahrzeuge" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {results.map((car) => (
+              <CarCard
+                key={car._id}
+                car={car}
+                staff={staff}
+                comparing={compare.includes(car._id)}
+                onCompare={toggleCompare}
+                onToggleSold={toggleSold}
+                onContract={openContract}
+              />
+            ))}
+          </section>
+        ) : (
+          <div className="rounded-xl border border-slate-200 bg-white px-6 py-14 text-center">
+            <CarFront className="mx-auto size-10 text-slate-300" />
+            <p className="mt-3 text-[15px] font-semibold">Keine passenden Fahrzeuge</p>
+            <p className="mt-1 text-[13px] text-slate-500">Passen Sie die Suche oder die Filter an.</p>
+            {activeFilters ? (
+              <button type="button" onClick={reset} className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#146c2e] px-4 text-[13px] font-semibold text-white hover:bg-[#0f5724]">
+                Filter zurücksetzen
+              </button>
+            ) : null}
+          </div>
+        )}
+      </div>
 
-          <button
-            onClick={handleCompareNavigate}
-            disabled={selectedForComparison.length < 2}
-            className={`${btnBase} bg-[#146c2e] text-white hover:bg-[#0f5724]`}
-          >
-            Vergleichen
-          </button>
+      {/* comparison bar */}
+      {compare.length ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur">
+          <div className={`${WRAPPER} flex flex-col gap-2 py-3 sm:flex-row sm:items-center`}>
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              <span className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[#146c2e]/10 px-2.5 text-[12px] font-semibold text-[#146c2e]">
+                <Scale className="size-3.5" /> {compare.length}/{MAX_COMPARE}
+              </span>
+              {compareCars.map((car) => (
+                <span key={car._id} className="inline-flex h-8 max-w-[220px] items-center gap-1.5 rounded-md border border-slate-200 bg-white pl-2.5 pr-1 text-[12px]">
+                  <span className="truncate font-medium">{titleOf(car)}</span>
+                  <button type="button" onClick={() => toggleCompare(car._id)} aria-label="Entfernen" className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                    <X className="size-3.5" />
+                  </button>
+                </span>
+              ))}
+              {compare.length < 2 ? (
+                <span className="inline-flex items-center gap-1 text-[12px] text-slate-500">
+                  <Plus className="size-3.5" /> noch ein Fahrzeug wählen
+                </span>
+              ) : null}
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setCompare([])} className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50 sm:flex-none">
+                Leeren
+              </button>
+              <button
+                type="button"
+                onClick={openComparison}
+                disabled={compare.length < 2}
+                className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#146c2e] px-4 text-[13px] font-semibold text-white transition hover:bg-[#0f5724] disabled:opacity-50 sm:flex-none"
+              >
+                <Scale className="size-4" /> Vergleichen
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function EmptyState({ setFilters, setSearchTerm }) {
-  return (
-    <div className="mt-6 rounded-[20px] border border-white/70 bg-white px-5 py-10 text-center shadow-lg shadow-black/5 sm:mt-8 sm:rounded-[24px] sm:px-6 sm:py-12">
-      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e6f1e9] sm:h-16 sm:w-16">
-        <CarFront className="h-7 w-7 text-[#146c2e] sm:h-8 sm:w-8" />
-      </div>
-
-      <h3 className="text-lg font-semibold text-[#07111f] sm:text-xl">
-        Keine passenden Fahrzeuge gefunden
-      </h3>
-
-      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#5f695f]">
-        Passen Sie Ihre Suchbegriffe oder Filter an.
-      </p>
-
-      <button
-        onClick={() => {
-          setFilters({
-            make: "",
-            model: "",
-            fuelType: "",
-            minPrice: 0,
-            maxPrice: 100000,
-            minYear: 1990,
-            maxYear: new Date().getFullYear(),
-            maxMileage: "",
-            transmission: "",
-          });
-
-          setSearchTerm("");
-        }}
-        className={`${btnBase} mt-5 bg-[#146c2e] text-white hover:bg-[#0f5724]`}
-      >
-        Filter zurücksetzen
-      </button>
-    </div>
+      ) : null}
+    </main>
   );
 }

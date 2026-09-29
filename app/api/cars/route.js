@@ -1,61 +1,42 @@
-import { connectDB } from "@/lib/mongodb";
-import Car from "@/models/Car";
 import { NextResponse } from "next/server";
 
+import { connectDB } from "@/lib/mongodb";
+import Car from "@/models/Car";
+
+const escape = (text) => String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * GET /api/cars — the public stock, newest first (used by the comparison
+ * and other pages). Optional filters: q, make, model, minYear, maxMileage,
+ * maxPrice.
+ */
 export async function GET(request) {
   try {
     await connectDB();
-
     const { searchParams } = new URL(request.url);
-
-    const q = searchParams.get("q");
+    const q = searchParams.get("q")?.trim();
     const make = searchParams.get("make");
     const model = searchParams.get("model");
-    const minYear = searchParams.get("minYear");
-    const maxMileage = searchParams.get("maxMileage");
-    const maxPrice = searchParams.get("maxPrice");
+    const minYear = Number(searchParams.get("minYear"));
+    const maxMileage = Number(searchParams.get("maxMileage"));
+    const maxPrice = Number(searchParams.get("maxPrice"));
 
     const query = {};
-
-    // 🔎 Search (name / model / description)
     if (q) {
-      query.$or = [
-        { make: { $regex: q, $options: "i" } },
-        { model: { $regex: q, $options: "i" } },
-        { modelDescription: { $regex: q, $options: "i" } },
-      ];
+      const pattern = { $regex: escape(q), $options: "i" };
+      query.$or = [{ make: pattern }, { model: pattern }, { modelDescription: pattern }];
     }
-
-    // 🏷️ Exact filters
     if (make) query.make = make;
     if (model) query.model = model;
+    // firstRegistration is "YYYYMM"; compare the year as text.
+    if (minYear > 1900) query.firstRegistration = { $gte: String(minYear) };
+    if (maxMileage > 0) query.mileage = { $lte: maxMileage };
+    if (maxPrice > 0) query.priceValue = { $lte: maxPrice };
 
-    // 📅 Year filter (based on firstRegistration like "2014-05")
-    if (minYear) {
-      query.firstRegistration = {
-        $gte: `${minYear}-01`,
-      };
-    }
-
-    // 🚗 Mileage
-    if (maxMileage) {
-      query.mileage = {
-        $lte: Number(maxMileage),
-      };
-    }
-
-    // 💰 Price
-    if (maxPrice) {
-      query["price.consumerPriceGross"] = {
-        $lte: Number(maxPrice),
-      };
-    }
-
-    const cars = await Car.find(query).lean();
-
+    const cars = await Car.find(query).sort({ mobileCreatedAt: -1, createdAt: -1 }).lean();
     return NextResponse.json(cars);
-  } catch (err) {
-    console.error(err);
-    return new NextResponse("Error loading cars", { status: 500 });
+  } catch (error) {
+    console.error("GET /api/cars failed:", error?.message);
+    return NextResponse.json({ error: "Fahrzeuge konnten nicht geladen werden." }, { status: 500 });
   }
 }

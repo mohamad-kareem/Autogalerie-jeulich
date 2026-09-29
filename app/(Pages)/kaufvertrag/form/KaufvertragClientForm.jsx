@@ -203,6 +203,8 @@ export default function KaufvertragClientForm() {
     // ✅ Clean payload
     const cleanedForm = {
       ...form,
+      // The website car this contract is for (marks it "Verkauft" there).
+      carId: carId || undefined,
       agreements: Array.isArray(form.agreements)
         ? form.agreements.map((l) => String(l || "").trim()).filter(Boolean)
         : [],
