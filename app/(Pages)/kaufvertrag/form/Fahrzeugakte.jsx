@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
-import { FiAlertTriangle, FiCheck, FiCopy, FiDroplet, FiExternalLink, FiFileText, FiShield, FiShoppingBag } from "react-icons/fi";
+import { FiCheck, FiCopy, FiDroplet, FiExternalLink, FiFileText, FiShield, FiShoppingBag } from "react-icons/fi";
 
 import { updateSchein } from "@/app/(Pages)/Fahrzeugverwaltung/_components/api";
 import { formatDate, normalizeStage, notesOf, soldContactOf } from "@/app/(Pages)/Fahrzeugverwaltung/_components/constants";
@@ -311,13 +311,6 @@ export default function Fahrzeugakte({ status, schein, websiteCar, onSaved }) {
       </Warning>,
     );
   }
-  if (rot) {
-    warnings.push(
-      <Warning key="rot" tone="amber" icon={FiAlertTriangle}>
-        Rotkennzeichen {rot} noch am Fahrzeug
-      </Warning>,
-    );
-  }
 
   return (
     <Shell
@@ -354,13 +347,11 @@ export default function Fahrzeugakte({ status, schein, websiteCar, onSaved }) {
         </Row>
         <Row label="Schlüssel" extra={schein.keyNote || null}>
           <span className="inline-flex items-center gap-1.5">
-            {schein.keyColor ? (
-              <span className="inline-block size-2.5 rounded-full ring-1 ring-inset ring-black/15" style={{ background: schein.keyColor }} />
-            ) : null}
             {keys ? `${keys} Stück` : "–"}
-            {schein.keyNumber ? <span className="font-normal text-slate-500">· Nr. {schein.keyNumber}</span> : null}
+            {schein.keyNumber ? <span className="font-normal text-slate-500">Nr. {schein.keyNumber}</span> : null}
           </span>
         </Row>
+        {rot ? <Row label="Rotkennzeichen">{rot}</Row> : null}
         {stage === "WERKSTATT" && werkstatt ? <Row label="Werkstatt">{werkstatt}</Row> : null}
         {stage === "PLATZ" && meta.platz?.note ? <Row label="Stellplatz">{meta.platz.note}</Row> : null}
         {standing != null ? (

@@ -425,7 +425,7 @@ export default function Sidebar({
     <>
       {/* desktop */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 hidden flex-col border-r transition-[width] duration-200 ease-out md:flex ${c.shell} ${
+        className={`fixed inset-y-0 left-0 z-40 hidden flex-col border-r transition-[width] duration-200 ease-out md:flex print:hidden ${c.shell} ${
           collapsed ? "w-16" : "w-64"
         }`}
       >
@@ -440,7 +440,7 @@ export default function Sidebar({
         <div
           role="tooltip"
           style={{ top: tooltip.top }}
-          className={`pointer-events-none fixed left-[4.5rem] z-50 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1 text-[12px] font-medium shadow-lg md:flex ${c.tooltip}`}
+          className={`pointer-events-none fixed left-[4.5rem] z-50 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1 text-[12px] font-medium shadow-lg md:flex print:hidden ${c.tooltip}`}
         >
           {tooltip.label}
           {tooltip.count > 0 ? (
@@ -453,7 +453,7 @@ export default function Sidebar({
       <div
         aria-hidden
         onClick={onToggleMobile}
-        className={`fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] transition-opacity duration-200 md:hidden ${
+        className={`fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] transition-opacity duration-200 md:hidden print:hidden ${
           mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
@@ -461,7 +461,7 @@ export default function Sidebar({
         aria-label="Menü"
         aria-hidden={!mobileOpen}
         inert={!mobileOpen}
-        className={`fixed inset-y-0 left-0 z-50 flex w-[18rem] max-w-[85vw] flex-col border-r shadow-2xl transition-transform duration-200 ease-out md:hidden ${c.shell} ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[18rem] max-w-[85vw] flex-col border-r shadow-2xl transition-transform duration-200 ease-out md:hidden print:hidden ${c.shell} ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -481,8 +481,8 @@ export default function Sidebar({
         />
       ) : null}
 
-      {/* keeps the page content clear of the fixed sidebar */}
-      <div aria-hidden className={`hidden shrink-0 transition-[width] duration-200 ease-out md:block ${collapsed ? "w-16" : "w-64"}`} />
+      {/* keeps the page content clear of the fixed sidebar (not on paper) */}
+      <div aria-hidden className={`hidden shrink-0 transition-[width] duration-200 ease-out md:block print:hidden ${collapsed ? "w-16" : "w-64"}`} />
     </>
   );
 }

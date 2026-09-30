@@ -382,7 +382,7 @@ export default function KaufvertragClientForm() {
   }
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-4 p-4 font-sans text-[13px] lg:flex-row lg:items-start print:block print:max-w-none print:p-0">
+    <div className="mx-auto flex max-w-7xl flex-col gap-6 p-4 font-sans text-[13px] lg:flex-row lg:items-start lg:gap-14 print:block print:max-w-none print:p-0">
       <div className="min-w-0 max-w-5xl flex-1">
         <form
           autoComplete="off"
@@ -1047,7 +1047,7 @@ export default function KaufvertragClientForm() {
           `}</style>
         </form>
       </div>
-      <aside className="order-first w-full shrink-0 lg:order-none lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-[300px] lg:overflow-y-auto print:hidden">
+      <aside className="w-full shrink-0 lg:w-[300px] print:hidden">
         <Fahrzeugakte
           status={akte.status}
           schein={akte.schein}

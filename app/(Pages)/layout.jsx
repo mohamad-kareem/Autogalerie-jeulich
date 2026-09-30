@@ -98,7 +98,7 @@ export default function PagesLayout({ children }) {
         toggleSidebar: () => setMobileOpen((p) => !p),
       }}
     >
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen print:block print:min-h-0">
         {shouldShowSidebar && (
           <Sidebar
             user={session?.user}
