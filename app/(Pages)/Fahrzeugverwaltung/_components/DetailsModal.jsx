@@ -154,7 +154,7 @@ export default function DetailsModal({ open, schein, dark, onClose, onEdit, onAc
             <FinCopy fin={schein.finNumber} dark={dark} />
           </div>
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-            <StageBadge stage={schein.stage} stageMeta={schein.stageMeta} dark={dark} onClick={() => onAction("stage")} />
+            <StageBadge stage={schein.stage} stageMeta={schein.stageMeta} dark={dark} onClick={onEdit} />
             {schein.fuelNeeded ? (
               <Pill tone={amber}>
                 <FiDroplet className="size-3" /> Tank leer
@@ -184,7 +184,7 @@ export default function DetailsModal({ open, schein, dark, onClose, onEdit, onAc
             <InfoRow label="Rotkennzeichen" dark={dark}>{rot || "Nein"}</InfoRow>
           </InfoSection>
 
-          <InfoSection title="Schlüssel" dark={dark} action={<LinkButton dark={dark} onClick={() => onAction("key")}>Ändern</LinkButton>}>
+          <InfoSection title="Schlüssel" dark={dark} action={<LinkButton dark={dark} onClick={onEdit}>Ändern</LinkButton>}>
             <InfoRow label="Nummer" dark={dark}>{schein.keyNumber ? `Nr. ${schein.keyNumber}` : dash}</InfoRow>
             <InfoRow label="Anzahl" dark={dark}>{`${schein.keyCount ?? 2} Stück`}</InfoRow>
             <InfoRow label="Farbe" dark={dark}>
@@ -195,7 +195,7 @@ export default function DetailsModal({ open, schein, dark, onClose, onEdit, onAc
         </div>
 
         <div className="space-y-5">
-          <InfoSection title="Phase" dark={dark} action={<LinkButton dark={dark} onClick={() => onAction("stage")}>Ändern</LinkButton>}>
+          <InfoSection title="Phase" dark={dark} action={<LinkButton dark={dark} onClick={onEdit}>Ändern</LinkButton>}>
             <InfoRow label="Status" dark={dark}>
               <StageBadge stage={schein.stage} stageMeta={schein.stageMeta} dark={dark} />
             </InfoRow>

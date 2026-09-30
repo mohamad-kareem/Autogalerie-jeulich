@@ -10,7 +10,7 @@ import { updateSchein } from "./api";
 import { STAGES, addressOf, formatDate, normalizeStage, soldContactOf } from "./constants";
 import { AddToList, Button, Checkbox, Field, Modal, NumberedList, inputClass, theme } from "./ui";
 
-function metaOf(schein) {
+export function metaOf(schein) {
   const meta = schein?.stageMeta || {};
   const issues = Array.isArray(meta?.tuev?.issues) ? meta.tuev.issues : meta?.tuev?.issue ? [meta.tuev.issue] : [];
   return {
@@ -107,7 +107,7 @@ function Stepper({ stage, onPick, dark }) {
 }
 
 /** Two-way switch (e.g. TÜV bestanden / nicht bestanden). */
-function Segmented({ value, onChange, options, dark }) {
+export function Segmented({ value, onChange, options, dark }) {
   return (
     <div className={`grid grid-cols-2 gap-1 rounded-lg p-1 ${dark ? "bg-slate-800" : "bg-slate-100"}`}>
       {options.map((option) => {

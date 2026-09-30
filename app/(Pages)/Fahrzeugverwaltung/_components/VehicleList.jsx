@@ -14,8 +14,6 @@ import {
   FiEdit2,
   FiFileText,
   FiInfo,
-  FiKey,
-  FiLayers,
   FiPrinter,
   FiShield,
   FiTrash2,
@@ -77,7 +75,7 @@ function PhaseCell({ schein, dark, onAction }) {
   const detail = stageDetail(schein);
   return (
     <div className="flex min-w-0 flex-col items-start gap-1">
-      <StageBadge stage={schein.stage} stageMeta={schein.stageMeta} dark={dark} onClick={() => onAction("stage", schein)} />
+      <StageBadge stage={schein.stage} stageMeta={schein.stageMeta} dark={dark} onClick={() => onAction("edit", schein)} />
       {schein.keySold ? (
         <WarrantyLine schein={schein} dark={dark} onClick={() => onAction("warranty", schein)} />
       ) : (
@@ -128,8 +126,6 @@ function menuItems(schein, onAction) {
   return [
     { key: "details", label: "Details", icon: FiInfo, onClick: () => onAction("details", schein) },
     { key: "edit", label: "Bearbeiten", icon: FiEdit2, onClick: () => onAction("edit", schein) },
-    { key: "key", label: "Schlüssel & Status", icon: FiKey, onClick: () => onAction("key", schein) },
-    { key: "stage", label: "Phase ändern", icon: FiLayers, onClick: () => onAction("stage", schein) },
     // Warranty only exists once a car is sold.
     ...(schein.keySold ? [{ key: "warranty", label: "Garantie & Reklamation", icon: FiShield, onClick: () => onAction("warranty", schein) }] : []),
     { key: "d1", divider: true },

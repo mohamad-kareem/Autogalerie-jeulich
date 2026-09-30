@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
-import logo from "@/app/(assets)/kauftraglogo.png";
+import logo from "@/app/(assets)/kauftraglogo-transparent.png";
 import toast from "react-hot-toast";
 import Button from "@/app/(components)/helpers/Button";
 import { useSearchParams } from "next/navigation";
@@ -76,12 +76,12 @@ export default function KaufvertragClientForm() {
     const day = String(date.getDate()).padStart(2, "0");
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
+    return `${day}.${month}.${year}`;
   };
 
   // Initialize down payment display
   useEffect(() => {
-    setRawDownPayment(`€ ${formatGermanNumber(0)}`);
+    setRawDownPayment(`${formatGermanNumber(0)} €`);
   }, []);
 
   // 1) Set issuer from query + compute next invoice number (your existing logic)
@@ -234,10 +234,8 @@ export default function KaufvertragClientForm() {
     e.preventDefault();
 
     // ✅ Validation
-    if (!form.phone?.trim() || !form.email?.trim()) {
-      toast.error(
-        "Bitte füllen Sie Telefon und E-Mail aus, bevor Sie fortfahren.",
-      );
+    if (!form.phone?.trim()) {
+      toast.error("Bitte füllen Sie die Telefonnummer aus, bevor Sie fortfahren.");
       return;
     }
 
@@ -313,7 +311,7 @@ export default function KaufvertragClientForm() {
         issuer: prev.issuer, // keep issuer
       }));
       setRawTotal("");
-      setRawDownPayment("€ 0,00");
+      setRawDownPayment("0,00 €");
       setWebsiteCar(null);
     } catch (err) {
       console.error(err);
@@ -325,7 +323,7 @@ export default function KaufvertragClientForm() {
 
   function AlawieHeader() {
     return (
-      <div className="flex flex-col sm:flex-row justify-between items-center border p-2 sm:p-7 bg-black text-white print:flex-row print:justify-between print:items-center print:p-2 print:px-6">
+      <div className="flex flex-col sm:flex-row justify-between items-center border p-2 sm:p-7 bg-gray-600 text-white print:flex-row print:justify-between print:items-center print:p-2 print:px-6">
         <div className="text-left w-full md:w-auto mb-2 md:mb-0 print:mb-2 print:text-left print:w-full">
           <p className="font-semibold text-sm md:text-lg print:text-sm">
             E-Mail: autogalerie.juelich@web.de / Tel.: 02461/916006613
@@ -346,7 +344,7 @@ export default function KaufvertragClientForm() {
   }
   function KarimHeader() {
     return (
-      <div className="flex flex-col sm:flex-row justify-between items-center border py-2 px-2 sm:px-7 sm:py-6 bg-gradient-to-b from-slate-950/95 to-slate-900/90 text-white print:flex-row print:justify-between print:items-center print:py-2 print:px-6">
+      <div className="flex flex-col sm:flex-row justify-between items-center border py-2 px-2 sm:px-7 sm:py-6 bg-gray-600 text-white print:flex-row print:justify-between print:items-center print:py-2 print:px-6">
         {/* Left: Logo + Name */}
         <div className="flex items-center gap-3 w-full md:w-auto mb-2 md:mb-0 print:mb-2 print:w-full">
           <Image
@@ -433,12 +431,12 @@ export default function KaufvertragClientForm() {
                 autoComplete="off"
                 value={form.title || ""}
                 onChange={handleChange}
-                className={`text-xl md:text-2xl print:text-2xl bg-transparent border-none outline-none w-[160px] text-right ${
+                className={`text-xl md:text-2xl print:text-2xl print:mb-1 bg-transparent border-none outline-none w-[160px] p-0 text-right ${
                   form.issuer === "karim" ? "text-slate-800" : "text-red-600"
                 }`}
               />
 
-              <div className="flex justify-end items-center gap-2 text-[13px]">
+              <div className="flex justify-end items-center gap-2 text-[13px] print:hidden">
                 <label
                   htmlFor="invoiceNumber"
                   className="font-medium whitespace-nowrap"
@@ -457,7 +455,7 @@ export default function KaufvertragClientForm() {
                 />
               </div>
 
-              <div className="flex justify-end items-center gap-2 text-[13px] mt-1">
+              <div className="flex justify-end items-center gap-2 text-[13px] mt-1 print:hidden">
                 <label
                   htmlFor="invoiceDate"
                   className="font-medium whitespace-nowrap"
@@ -471,14 +469,19 @@ export default function KaufvertragClientForm() {
                   autoComplete="off"
                   value={form.invoiceDate || ""}
                   onChange={handleChange}
-                  className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] print:hidden "
+                  className="border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px]"
                 />
-                {form.invoiceDate && (
-                  <p className="hidden print:flex items-center border border-gray-400 rounded px-2 py-1 w-[140px] text-[13px] print:border-none ">
-                    {formatDateToGermanDash(form.invoiceDate)}
-                  </p>
-                )}
               </div>
+
+              {/* Print: labels left, values flush right under the title */}
+              <dl className="hidden print:grid ml-auto w-fit grid-cols-[auto_auto] gap-x-8 gap-y-0.5 text-[13px] leading-snug">
+                <dt className="text-left font-medium">Rechnungsnummer:</dt>
+                <dd className="text-right tabular-nums">{form.invoiceNumber}</dd>
+                <dt className="text-left font-medium">Datum:</dt>
+                <dd className="text-right tabular-nums">
+                  {formatDateToGermanDash(form.invoiceDate)}
+                </dd>
+              </dl>
             </div>
           </div>
 
@@ -515,7 +518,6 @@ export default function KaufvertragClientForm() {
             <input
               type="email"
               name="email"
-              required
               value={form.email || ""}
               autoComplete="off"
               onChange={handleChange}
@@ -791,7 +793,7 @@ export default function KaufvertragClientForm() {
                   }));
                 }}
                 onBlur={() => {
-                  setRawTotal(`€ ${formatGermanNumber(form.total || 0)}`);
+                  setRawTotal(`${formatGermanNumber(form.total || 0)} €`);
                 }}
                 onFocus={() => {
                   setRawTotal(form.total?.toString() || "");
@@ -823,7 +825,7 @@ export default function KaufvertragClientForm() {
                     ? form.downPayment
                     : 0;
                   setForm((prev) => ({ ...prev, downPayment: value }));
-                  setRawDownPayment(`€ ${formatGermanNumber(value)}`);
+                  setRawDownPayment(`${formatGermanNumber(value)} €`);
                 }}
                 onFocus={() => {
                   setRawDownPayment(form.downPayment?.toString() || "0");
@@ -845,7 +847,7 @@ export default function KaufvertragClientForm() {
                 readOnly
                 value={
                   Number.isFinite(form.total - form.downPayment)
-                    ? `€ ${formatGermanNumber(form.total - form.downPayment)}`
+                    ? `${formatGermanNumber(form.total - form.downPayment)} €`
                     : ""
                 }
               />

@@ -71,7 +71,7 @@ export function Modal({ open, onClose, title, subtitle, dark, size = "md", foote
 
   if (!open) return null;
   const t = theme(dark);
-  const width = { sm: "max-w-md", md: "max-w-xl", lg: "max-w-3xl", xl: "max-w-5xl" }[size];
+  const width = { sm: "max-w-md", md: "max-w-xl", lg: "max-w-3xl", xl: "max-w-5xl", "2xl": "max-w-6xl" }[size];
 
   return (
     <div
@@ -303,7 +303,7 @@ export function StageBadge({ stage, stageMeta, dark, onClick, className = "" }) 
   return (
     <button
       type="button"
-      title="Phase ändern"
+      title="Bearbeiten"
       onClick={(event) => {
         event.stopPropagation();
         onClick();

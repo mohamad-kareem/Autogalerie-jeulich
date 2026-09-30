@@ -21,9 +21,7 @@ import { deleteSchein, fetchScheins } from "./_components/api";
 import { LIST_LIMIT, STAGES, normalizeStage } from "./_components/constants";
 import DetailsModal from "./_components/DetailsModal";
 import ImagePreviewModal from "./_components/ImagePreviewModal";
-import KeyModal from "./_components/KeyModal";
 import { printSchein } from "./_components/printSchein";
-import StageModal from "./_components/StageModal";
 import VehicleFormModal from "./_components/VehicleFormModal";
 import VehicleList from "./_components/VehicleList";
 import WarrantyModal from "./_components/WarrantyModal";
@@ -254,8 +252,6 @@ export default function FahrzeugverwaltungPage() {
         onAction={openFromDetails}
         onSaved={replace}
       />
-      <KeyModal open={dialog?.type === "key"} schein={dialog?.schein} dark={dark} onClose={closeDialog} onSaved={savedAndClose} />
-      <StageModal open={dialog?.type === "stage"} schein={dialog?.schein} dark={dark} onClose={closeDialog} onSaved={savedAndClose} />
       <WarrantyModal open={dialog?.type === "warranty"} schein={dialog?.schein} dark={dark} onClose={closeDialog} onSaved={savedAndClose} />
       <ImagePreviewModal
         open={dialog?.type === "image"}

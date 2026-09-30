@@ -9,7 +9,8 @@ import { updateSchein } from "./api";
 import { ROT_PLATES, toDateInput } from "./constants";
 import { Button, Checkbox, Field, Modal, inputClass, theme } from "./ui";
 
-function initialForm(schein) {
+/** The key/status fields of a vehicle, ready for the form. */
+export function initialForm(schein) {
   return {
     keyNumber: schein?.keyNumber || "",
     keyCount: typeof schein?.keyCount === "number" ? schein.keyCount : 2,
