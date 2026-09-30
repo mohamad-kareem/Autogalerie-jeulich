@@ -1,6 +1,14 @@
 // File: app/api/remove-bg/route.js
+// Old endpoint (the Fotostudio now uses /api/fotostudio/cutout). Staff only,
+// because every call costs remove.bg credits.
+
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function POST(request) {
+  const session = await getServerSession(authOptions);
+  if (!session) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
+
   try {
     const formData = await request.formData();
     const imageFile = formData.get("image");

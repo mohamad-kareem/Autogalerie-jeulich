@@ -72,6 +72,7 @@ export const config = {
     "/kaufvertrag/form/:path*",
     "/kaufvertrag/:id/:path*",
     "/Fahrzeugverwaltung/:path*",
+    "/Fotostudio/:path*",
     "/Autoteil/:path*",
     "/aufgabenboard/:path*",
     "/translator/:path*",
