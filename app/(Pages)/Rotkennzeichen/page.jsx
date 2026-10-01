@@ -15,6 +15,8 @@ import {
   FiAlertTriangle,
   FiMessageSquare,
   FiHash,
+  FiCheck,
+  FiChevronDown,
 } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
@@ -1496,100 +1498,26 @@ export default function CarLocationsPage() {
                             ? new Date(car.boughtAt).toLocaleDateString("de-DE")
                             : "–"}
                         </span>
-                        {(car.rotPlateNumber === "DN-06919" ||
-                          car.rotPlateNumber === "BEIDE") &&
-                          car.rotbuchNumber19 && (
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                                darkMode
-                                  ? "bg-blue-900/40 text-blue-300"
-                                  : "bg-blue-50 text-blue-700"
-                              }`}
-                            >
-                              Nr. {car.rotbuchNumber19} (DN-06919)
-                            </span>
-                          )}
-                        {(car.rotPlateNumber === "DN-06921" ||
-                          car.rotPlateNumber === "BEIDE") &&
-                          car.rotbuchNumber21 && (
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                                darkMode
-                                  ? "bg-blue-900/40 text-blue-300"
-                                  : "bg-blue-50 text-blue-700"
-                              }`}
-                            >
-                              Nr. {car.rotbuchNumber21} (DN-06921)
-                            </span>
-                          )}
-                        {car.rotPlateNumber === "BEIDE" ? (
-                          <div className="flex gap-1">
-                            {["DN-06919", "DN-06921"].map((plate) => (
-                              <span
-                                key={plate}
-                                className="relative flex h-[24px] overflow-hidden rounded-[3px] border border-slate-400 shadow-sm"
-                              >
-                                <span className="flex h-full w-[18px] flex-col items-center justify-center bg-blue-700">
-                                  <svg
-                                    viewBox="0 0 100 100"
-                                    className="h-[10px] w-[10px]"
-                                    fill="gold"
-                                  >
-                                    {[...Array(12)].map((_, i) => {
-                                      const angle = (i * 360) / 12;
-                                      const x =
-                                        50 +
-                                        30 * Math.cos((angle * Math.PI) / 180);
-                                      const y =
-                                        50 +
-                                        30 * Math.sin((angle * Math.PI) / 180);
-
-                                      return (
-                                        <circle key={i} cx={x} cy={y} r="3" />
-                                      );
-                                    })}
-                                  </svg>
-
-                                  <span className="mt-[1px] text-[7px] font-semibold leading-none text-white">
-                                    D
-                                  </span>
-                                </span>
-
-                                <span className="flex h-full items-center bg-white px-2 font-mono text-[12px] font-bold tracking-[1px] text-red-600">
-                                  {plate.replace("-", " ")}
-                                </span>
-                              </span>
-                            ))}
-                          </div>
-                        ) : car.rotPlateNumber ? (
-                          <span className="relative flex h-[24px] overflow-hidden rounded-[3px] border border-slate-400 shadow-sm">
-                            <span className="flex h-full w-[18px] flex-col items-center justify-center bg-blue-700">
-                              <svg
-                                viewBox="0 0 100 100"
-                                className="h-[10px] w-[10px]"
-                                fill="gold"
-                              >
-                                {[...Array(12)].map((_, i) => {
-                                  const angle = (i * 360) / 12;
-                                  const x =
-                                    50 + 30 * Math.cos((angle * Math.PI) / 180);
-                                  const y =
-                                    50 + 30 * Math.sin((angle * Math.PI) / 180);
-
-                                  return <circle key={i} cx={x} cy={y} r="3" />;
-                                })}
-                              </svg>
-
-                              <span className="mt-[1px] text-[7px] font-semibold leading-none text-white">
-                                D
-                              </span>
-                            </span>
-
-                            <span className="flex h-full items-center bg-white px-2 font-mono text-[12px] font-bold tracking-[1px] text-red-600">
-                              {car.rotPlateNumber.replace("-", " ")}
-                            </span>
-                          </span>
-                        ) : null}
+                        {/* each plate once, with its Rotbuch number right beside it */}
+                        {(car.rotPlateNumber === "BEIDE"
+                          ? ["DN-06919", "DN-06921"]
+                          : car.rotPlateNumber
+                            ? [car.rotPlateNumber]
+                            : []
+                        ).map((plate) => (
+                          <RotPlate
+                            key={plate}
+                            plate={plate}
+                            number={
+                              plate === "DN-06919"
+                                ? car.rotbuchNumber19
+                                : plate === "DN-06921"
+                                  ? car.rotbuchNumber21
+                                  : null
+                            }
+                            darkMode={darkMode}
+                          />
+                        ))}
                         {car.isSold && (
                           <span
                             className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -1630,42 +1558,32 @@ export default function CarLocationsPage() {
     setShowRotCarsModal(true);
   };
 
-  const toggleRotCar = (id) => {
+  // Put a car on a plate or take it off. A car on both plates is "BEIDE";
+  // taking it off one plate leaves it on the other.
+  const assignRotCar = (id, plate, on) => {
+    const other = plate === "DN-06919" ? "DN-06921" : "DN-06919";
+    const key = plate === "DN-06919" ? "rotbuchNumber19" : "rotbuchNumber21";
     setRotCarsDraft((prev) =>
       prev.map((car) => {
         if (car.id !== id) return car;
-
-        const nextValue = !car.rotKennzeichen;
-
+        const onOther =
+          car.rotKennzeichen &&
+          (car.rotPlateNumber === other || car.rotPlateNumber === "BEIDE");
+        if (on) {
+          return {
+            ...car,
+            rotKennzeichen: true,
+            rotPlateNumber: onOther ? "BEIDE" : plate,
+          };
+        }
+        if (onOther) return { ...car, rotPlateNumber: other, [key]: null };
         return {
           ...car,
-          rotKennzeichen: nextValue,
-          rotPlateNumber: nextValue ? car.rotPlateNumber || activePlate : "",
-          // clearing the flag frees up both Rotbuch numbers for reuse
-          rotbuchNumber19: nextValue ? car.rotbuchNumber19 : null,
-          rotbuchNumber21: nextValue ? car.rotbuchNumber21 : null,
+          rotKennzeichen: false,
+          rotPlateNumber: "",
+          rotbuchNumber19: null,
+          rotbuchNumber21: null,
         };
-      }),
-    );
-  };
-
-  const changeRotPlate = (id, plate) => {
-    setRotCarsDraft((prev) =>
-      prev.map((car) => {
-        if (car.id !== id) return car;
-
-        const nextCar = { ...car, rotPlateNumber: plate };
-
-        // a number only makes sense for a plate the car is actually
-        // assigned to (or both, if "BEIDE") — clear the rest
-        if (plate !== "DN-06919" && plate !== "BEIDE") {
-          nextCar.rotbuchNumber19 = null;
-        }
-        if (plate !== "DN-06921" && plate !== "BEIDE") {
-          nextCar.rotbuchNumber21 = null;
-        }
-
-        return nextCar;
       }),
     );
   };
@@ -1686,6 +1604,33 @@ export default function CarLocationsPage() {
         return { ...car, [field]: n };
       }),
     );
+  };
+
+  // New, empty Rotbuch for one plate: the plate and its number are removed
+  // from every car (cars on both plates keep the other one).
+  // Takes effect with "Speichern".
+  const resetRotbuch = (plate) => {
+    const other = plate === "DN-06919" ? "DN-06921" : "DN-06919";
+    const key = plate === "DN-06919" ? "rotbuchNumber19" : "rotbuchNumber21";
+    setRotCarsDraft((prev) =>
+      prev.map((car) => {
+        const onPlate =
+          car.rotKennzeichen &&
+          (car.rotPlateNumber === plate || car.rotPlateNumber === "BEIDE");
+        if (!onPlate) return { ...car, [key]: null };
+        if (car.rotPlateNumber === "BEIDE") {
+          return { ...car, rotPlateNumber: other, [key]: null };
+        }
+        return {
+          ...car,
+          rotKennzeichen: false,
+          rotPlateNumber: "",
+          rotbuchNumber19: null,
+          rotbuchNumber21: null,
+        };
+      }),
+    );
+    toast.success(`Rotbuch ${plate} zurückgesetzt – mit „Speichern“ übernehmen`);
   };
 
   const changeBoughtAt = (id, value) => {
@@ -1720,6 +1665,29 @@ export default function CarLocationsPage() {
         );
       });
 
+      // Step 1: free numbers that move away (reset, swap) first, so the
+      // server never sees the same number twice in one Rotbuch.
+      for (const car of changedCars) {
+        const original = allScheinOptions.find((entry) => entry.id === car.id);
+        const freeing = {};
+        ["rotbuchNumber19", "rotbuchNumber21"].forEach((key) => {
+          const before = original?.[key] ?? null;
+          if (before !== null && before !== (car[key] ?? null)) freeing[key] = null;
+        });
+        if (!Object.keys(freeing).length) continue;
+        const res = await fetch("/api/carschein", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: car.id, ...freeing }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          toast.error(data?.error || "Fehler beim Speichern");
+          return;
+        }
+      }
+
+      // Step 2: save the new values.
       for (const car of changedCars) {
         const res = await fetch("/api/carschein", {
           method: "PUT",
@@ -2701,262 +2669,385 @@ export default function CarLocationsPage() {
       `}</style>
 
       {showRotCarsModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 p-4">
-          <div
-            className={`flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border shadow-2xl ${
-              darkMode
-                ? "border-slate-800 bg-slate-950"
-                : "border-slate-200 bg-white"
-            }`}
+        <RotCarsDialog
+          darkMode={darkMode}
+          cars={rotCarsDraft}
+          search={rotSearch}
+          onSearch={setRotSearch}
+          saving={savingRotCars}
+          onAssign={assignRotCar}
+          onNumber={changeRotbuchNumber}
+          onBoughtAt={changeBoughtAt}
+          onResetBook={resetRotbuch}
+          onCancel={() => setShowRotCarsModal(false)}
+          onSave={saveRotCarsSelection}
+        />
+      )}
+    </div>
+  );
+}
+
+/** A red plate (EU strip + "DN 06919") and its Rotbuch number beside it. */
+function RotPlate({ plate, number, darkMode }) {
+  const hasNumber = number !== null && number !== undefined && number !== "";
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1.5">
+      <span
+        className="relative flex h-[24px] overflow-hidden rounded-[3px] border border-slate-400 shadow-sm"
+        aria-label={`Kennzeichen ${plate}`}
+      >
+        <span
+          aria-hidden="true"
+          className="flex h-full w-[18px] flex-col items-center justify-center bg-blue-700"
+        >
+          <svg viewBox="0 0 100 100" className="h-[10px] w-[10px]" fill="gold">
+            {[...Array(12)].map((_, i) => {
+              const angle = (i * 360) / 12;
+              const x = 50 + 30 * Math.cos((angle * Math.PI) / 180);
+              const y = 50 + 30 * Math.sin((angle * Math.PI) / 180);
+              return <circle key={i} cx={x} cy={y} r="3" />;
+            })}
+          </svg>
+          <span className="mt-[1px] select-none text-[7px] font-semibold leading-none text-white">
+            D
+          </span>
+        </span>
+        <span className="flex h-full items-center whitespace-nowrap bg-white px-2 font-mono text-[12px] font-bold tracking-[1px] text-red-600">
+          {plate.replace("-", " ")}
+        </span>
+      </span>
+      {hasNumber ? (
+        <span
+          className={`text-xs font-semibold ${
+            darkMode ? "text-slate-200" : "text-slate-700"
+          }`}
+        >
+          Nr. {number}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------ Fahrzeuge wählen */
+
+const ROT_BOOKS = [
+  { plate: "DN-06919", field: "rotbuchNumber19" },
+  { plate: "DN-06921", field: "rotbuchNumber21" },
+];
+const ROT_NUMBERS = Array.from({ length: 20 }, (_, i) => i + 1);
+
+function usesBook(car, plate) {
+  return Boolean(car.rotKennzeichen) && (car.rotPlateNumber === plate || car.rotPlateNumber === "BEIDE");
+}
+
+function otherPlate(plate) {
+  return plate === "DN-06919" ? "DN-06921" : "DN-06919";
+}
+
+function bookOf(plate) {
+  return ROT_BOOKS.find((book) => book.plate === plate);
+}
+
+/**
+ * Pick a plate first, then work on that plate only: which cars run on it,
+ * their number in its Rotbuch (1–20) and the purchase date.
+ * Changes are saved with "Speichern".
+ */
+function RotCarsDialog({ darkMode, cars, search, onSearch, saving, onAssign, onNumber, onBoughtAt, onResetBook, onCancel, onSave }) {
+  const [plate, setPlate] = useState(null);
+  const [filter, setFilter] = useState("all");
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  useEffect(() => {
+    const onKey = (event) => {
+      if (event.key !== "Escape") return;
+      if (confirmReset) setConfirmReset(false);
+      else onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel, confirmReset]);
+
+  const c = darkMode
+    ? {
+        panel: "border-slate-800 bg-slate-950",
+        line: "border-slate-800",
+        divide: "divide-slate-800",
+        head: "bg-slate-900 text-slate-300",
+        title: "text-slate-100",
+        text: "text-slate-200",
+        muted: "text-slate-400",
+        faint: "text-slate-500",
+        field: "border-slate-700 bg-slate-950 text-slate-100 focus:border-slate-400 disabled:opacity-40",
+        button: "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800",
+        rowOn: "bg-emerald-500/[0.05]",
+        card: "border-slate-800 bg-slate-900/60 hover:border-slate-500",
+        tagOther: "bg-slate-800 text-slate-300",
+        segment: "bg-slate-900",
+        segmentOn: "bg-slate-700 text-slate-100",
+        segmentOff: "text-slate-400 hover:text-slate-200",
+        check: "border-slate-600 bg-slate-950 hover:border-slate-400 checked:border-emerald-500/50 checked:bg-emerald-500/10",
+        checkMark: "text-emerald-400",
+        soft: "border-slate-800 bg-slate-950 text-slate-200 hover:border-slate-600 focus:border-slate-400 disabled:border-slate-900 disabled:text-slate-600",
+        chevron: "text-slate-500",
+        optionFree: "bg-slate-900 text-slate-100",
+        optionTaken: "bg-slate-950 text-slate-600",
+      }
+    : {
+        panel: "border-slate-200 bg-white",
+        line: "border-slate-200",
+        divide: "divide-slate-100",
+        head: "bg-slate-50 text-slate-600",
+        title: "text-slate-900",
+        text: "text-slate-800",
+        muted: "text-slate-500",
+        faint: "text-slate-400",
+        field: "border-slate-300 bg-white text-slate-900 focus:border-slate-600 disabled:bg-slate-50 disabled:text-slate-400",
+        button: "border-slate-300 bg-white text-slate-700 hover:bg-slate-50",
+        rowOn: "bg-emerald-50/50",
+        card: "border-slate-200 bg-white hover:border-slate-400",
+        tagOther: "bg-slate-100 text-slate-600",
+        segment: "bg-slate-100",
+        segmentOn: "bg-white text-slate-900 shadow-sm",
+        segmentOff: "text-slate-500 hover:text-slate-800",
+        check: "border-slate-300 bg-white hover:border-slate-500 checked:border-emerald-600/50 checked:bg-emerald-50",
+        checkMark: "text-emerald-700",
+        soft: "border-slate-200 bg-white text-slate-700 hover:border-slate-300 focus:border-slate-500 disabled:border-slate-100 disabled:bg-transparent disabled:text-slate-300",
+        chevron: "text-slate-400",
+        optionFree: "bg-white text-slate-900",
+        optionTaken: "bg-slate-100 text-slate-300",
+      };
+  const field = `h-8 rounded border px-2 text-[14px] outline-none transition-colors ${c.field}`;
+  // calm fields in the rows: light border, small grey chevron / calendar icon
+  const soft = `h-8 w-full rounded-md border px-2.5 text-[14px] outline-none transition-colors ${c.soft}`;
+
+  // per plate: cars on it and numbers in its Rotbuch
+  const stats = {};
+  ROT_BOOKS.forEach(({ plate: p, field: key }) => {
+    const on = cars.filter((car) => usesBook(car, p));
+    const numbers = new Map();
+    on.forEach((car) => car[key] != null && numbers.set(Number(car[key]), car.id));
+    stats[p] = { cars: on.length, numbers };
+  });
+
+  const closeButton = (
+    <button type="button" onClick={onCancel} aria-label="Schließen" title="Schließen" className={`shrink-0 rounded p-1.5 ${c.muted} hover:opacity-80`}>
+      <FiX size={18} />
+    </button>
+  );
+
+  const footer = (
+    <div className={`flex justify-end gap-2 border-t px-5 py-2.5 ${c.line}`}>
+      <button type="button" onClick={onCancel} className={`h-9 rounded border px-4 text-[14px] font-medium transition-colors ${c.button}`}>
+        Abbrechen
+      </button>
+      <button type="button" onClick={onSave} disabled={saving} className="h-9 rounded border border-emerald-700 bg-emerald-700 px-5 text-[14px] font-medium text-white transition-colors hover:bg-emerald-800 disabled:opacity-50">
+        {saving ? "Speichern …" : "Speichern"}
+      </button>
+    </div>
+  );
+
+  const shell = (children) => (
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/45 sm:items-center sm:p-3" onMouseDown={(event) => event.target === event.currentTarget && onCancel()}>
+      <div className={`relative flex h-[96vh] w-full max-w-6xl flex-col overflow-hidden rounded-t-xl border shadow-2xl sm:h-[94vh] sm:rounded-lg ${c.panel}`} role="dialog" aria-modal="true" aria-label="Fahrzeuge wählen">
+        {children}
+      </div>
+    </div>
+  );
+
+  /* ---------- step 1: choose the plate ---------- */
+  if (!plate) {
+    return shell(
+      <>
+        <div className={`flex items-center justify-between gap-3 border-b px-5 py-2.5 ${c.line}`}>
+          <h2 className={`text-[15px] font-semibold ${c.title}`}>Kennzeichen wählen</h2>
+          {closeButton}
+        </div>
+        <div className="grid flex-1 content-center gap-4 overflow-y-auto px-6 py-8 sm:grid-cols-2">
+          {ROT_BOOKS.map(({ plate: p }) => (
+            <button key={p} type="button" onClick={() => setPlate(p)} className={`flex flex-col items-center gap-4 rounded-lg border px-6 py-8 text-center transition-colors ${c.card}`}>
+              <span className="scale-150 py-2">
+                <RotPlate plate={p} number={null} darkMode={darkMode} />
+              </span>
+              <span className={`text-[14px] ${c.muted}`}>
+                <span className={`font-semibold tabular-nums ${c.text}`}>{stats[p].cars}</span> {stats[p].cars === 1 ? "Fahrzeug" : "Fahrzeuge"} ·{" "}
+                <span className={`font-semibold tabular-nums ${c.text}`}>{stats[p].numbers.size}</span> / 20 Rotbuch-Nummern
+              </span>
+              <span className={`inline-flex h-10 items-center rounded border px-5 text-[14px] font-medium ${c.button}`}>Dieses Kennzeichen bearbeiten</span>
+            </button>
+          ))}
+        </div>
+        {footer}
+      </>,
+    );
+  }
+
+  /* ---------- step 2: one plate ---------- */
+  const { field: key } = bookOf(plate);
+  const other = otherPlate(plate);
+  const otherKey = bookOf(other).field;
+  const { numbers } = stats[plate];
+  const assignedCount = stats[plate].cars;
+
+  const q = search.trim().toLowerCase();
+  const visible = cars
+    .filter((car) => (filter === "on" ? usesBook(car, plate) : filter === "off" ? !usesBook(car, plate) : true))
+    .filter((car) => !q || car.carName?.toLowerCase().includes(q) || car.finNumber?.toLowerCase().includes(q))
+    .sort((a, b) => Number(usesBook(b, plate)) - Number(usesBook(a, plate)) || String(a.carName || "").localeCompare(String(b.carName || ""), "de"));
+
+  return shell(
+    <>
+      {/* one compact toolbar: plate · search · filter · reset · close */}
+      <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-5 py-3.5 lg:flex-nowrap ${c.line}`}>
+        <div className="flex shrink-0 items-center gap-3">
+          <RotPlate plate={plate} number={null} darkMode={darkMode} />
+          <span className={`whitespace-nowrap text-[13px] ${c.muted}`}>
+            <span className={`font-semibold tabular-nums ${c.text}`}>{assignedCount}</span> Fzg. ·{" "}
+            <span className={`font-semibold tabular-nums ${c.text}`}>{numbers.size}</span>/20 Nr.
+          </span>
+          <button type="button" onClick={() => setPlate(null)} className={`whitespace-nowrap text-[13px] underline underline-offset-2 ${c.muted} hover:opacity-80`}>
+            Wechseln
+          </button>
+        </div>
+        <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Fahrzeug oder FIN suchen …" className={`${field} order-last w-full lg:order-none lg:w-60`} />
+        <div className={`inline-flex shrink-0 rounded p-0.5 text-[12px] ${c.segment}`}>
+          {[
+            ["all", "Alle"],
+            ["on", "Zugeordnet"],
+            ["off", "Nicht zugeordnet"],
+          ].map(([id, label]) => (
+            <button key={id} type="button" onClick={() => setFilter(id)} className={`rounded px-2.5 py-1 transition-colors ${filter === id ? c.segmentOn : c.segmentOff}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            disabled={!assignedCount && !numbers.size}
+            onClick={() => setConfirmReset(true)}
+            title="Neues, leeres Rotbuch: Kennzeichen und Nummern bei allen Fahrzeugen entfernen"
+            className={`h-8 whitespace-nowrap rounded border px-3 text-[13px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${c.button}`}
           >
-            <div
-              className={`flex items-center justify-between border-b px-5 py-1 ${
-                darkMode ? "border-slate-800" : "border-slate-200"
-              }`}
-            >
-              <div>
-                <h2 className={`text-base font-semibold ${textPrimary}`}>
-                  Fahrzeuge wählen
-                </h2>
-              </div>
+            Neues Rotbuch – zurücksetzen
+          </button>
+          {closeButton}
+        </div>
+      </div>
 
-              <button
-                onClick={() => setShowRotCarsModal(false)}
-                className={`rounded-full p-2 transition ${
-                  darkMode
-                    ? "text-slate-400 hover:bg-slate-800"
-                    : "text-slate-500 hover:bg-slate-100"
-                }`}
-              >
-                <FiX size={18} />
-              </button>
-            </div>
+      {/* table */}
+      <div className="min-h-0 flex-1 overflow-y-auto custom-scroll">
+        <div className={`sticky top-0 z-10 hidden grid-cols-[100px_minmax(0,1.15fr)_minmax(0,1fr)_96px_160px] items-center gap-4 border-b px-5 py-2.5 text-[12.5px] font-medium md:grid ${c.line} ${c.head}`}>
+          <span>Zugeordnet</span>
+          <span>Fahrzeug</span>
+          <span>Weiteres Kennzeichen</span>
+          <span>Rotbuch-Nr.</span>
+          <span>Ankaufdatum</span>
+        </div>
 
-            <div className="border-b px-5 py-3 dark:border-slate-800">
-              <input
-                value={rotSearch}
-                onChange={(e) => setRotSearch(e.target.value)}
-                placeholder="Fahrzeug oder FIN suchen..."
-                className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition ${
-                  darkMode
-                    ? "border-slate-700 bg-slate-900 text-white focus:border-emerald-500"
-                    : "border-slate-300 bg-white text-slate-900 focus:border-emerald-500"
-                }`}
-              />
-            </div>
+        {visible.length ? (
+          <ul className={`divide-y ${c.divide}`}>
+            {visible.map((car) => {
+              const on = usesBook(car, plate);
+              const onOther = usesBook(car, other);
+              const value = car[key] == null ? "" : String(car[key]);
+              return (
+                <li key={car.id} className={`grid grid-cols-[44px_minmax(0,1fr)] items-center gap-x-4 gap-y-2 px-5 py-2.5 md:grid-cols-[100px_minmax(0,1.15fr)_minmax(0,1fr)_96px_160px] ${on ? c.rowOn : ""}`}>
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <span className="relative inline-flex size-[15px] shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={on}
+                        onChange={(event) => onAssign(car.id, plate, event.target.checked)}
+                        className={`peer size-[15px] cursor-pointer appearance-none rounded-[3px] border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-slate-400 ${c.check}`}
+                        aria-label={`${car.carName || "Fahrzeug"} auf ${plate}`}
+                      />
+                      <FiCheck size={11} strokeWidth={3} className={`pointer-events-none absolute left-[2px] top-[2px] hidden peer-checked:block ${c.checkMark}`} />
+                    </span>
+                    <span className={`hidden text-[13px] md:inline ${on ? c.text : c.faint}`}>{on ? "Ja" : "Nein"}</span>
+                  </label>
 
-            <div className="flex-1 overflow-y-auto custom-scroll">
-              {rotCarsDraft
-                .filter((car) => {
-                  const q = rotSearch.toLowerCase();
+                  <div className="min-w-0">
+                    <p className={`truncate text-[14px] font-medium leading-5 ${on ? c.text : c.muted}`}>{car.carName || "Unbekanntes Fahrzeug"}</p>
+                    <p className={`truncate font-mono text-[11px] leading-4 ${c.faint}`}>{car.finNumber || "–"}</p>
+                  </div>
 
-                  return (
-                    car.carName?.toLowerCase().includes(q) ||
-                    car.finNumber?.toLowerCase().includes(q)
-                  );
-                })
-                .map((car) => (
-                  <div
-                    key={car.id}
-                    className={`border-b-2 px-5 py-4 last:border-b-0 ${
-                      darkMode ? "border-slate-800" : "border-slate-300"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="min-w-0">
-                        <h3
-                          className={`truncate text-sm font-semibold ${textPrimary}`}
-                        >
-                          {car.carName || "Unbekanntes Fahrzeug"}
-                        </h3>
-
-                        <p
-                          className={`mt-1 break-all text-xs ${textSecondary}`}
-                        >
-                          FIN: {car.finNumber || "–"}
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => toggleRotCar(car.id)}
-                        className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
-                          car.rotKennzeichen
-                            ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                            : darkMode
-                              ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        }`}
-                      >
-                        {car.rotKennzeichen ? "Aktiv" : "Inaktiv"}
-                      </button>
+                  <div className="col-span-2 grid grid-cols-2 gap-3 md:col-span-1 md:contents">
+                    <div className={`col-span-2 md:col-span-1 ${onOther ? "" : "hidden md:block"}`}>
+                      {onOther ? (
+                        <span className={`inline-flex items-center rounded px-2 py-0.5 text-[12px] ${c.tagOther}`}>
+                          auch {other.replace("-", " ")}
+                          {car[otherKey] != null ? ` · Nr. ${car[otherKey]}` : ""}
+                        </span>
+                      ) : (
+                        <span className={`hidden pl-2 text-[13px] md:inline ${c.faint}`}>–</span>
+                      )}
                     </div>
 
-                    {car.rotKennzeichen && (
-                      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_190px]">
-                        <div>
-                          <p
-                            className={`mb-2 text-[11px] font-medium ${textSecondary}`}
-                          >
-                            Kennzeichen
-                          </p>
+                    <label>
+                      <span className={`mb-0.5 block text-[12px] md:hidden ${c.muted}`}>Rotbuch-Nr.</span>
+                      <span className="relative block md:w-[76px]">
+                      <FiChevronDown size={14} className={`pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 ${on ? c.chevron : "opacity-0"}`} />
+                      <select value={on ? value : ""} disabled={!on} onChange={(event) => onNumber(car.id, key, event.target.value)} aria-label={`Rotbuch-Nr. ${plate}`} className={`${soft} cursor-pointer appearance-none pr-7 tabular-nums disabled:cursor-default md:w-[76px]`}>
+                        <option value="">{on ? "–" : ""}</option>
+                        {on
+                          ? ROT_NUMBERS.map((n) => {
+                              const owner = numbers.get(n);
+                              const used = owner !== undefined && owner !== car.id;
+                              return (
+                                <option key={n} value={n} disabled={used} className={used ? c.optionTaken : c.optionFree}>
+                                  {n}
+                                </option>
+                              );
+                            })
+                          : null}
+                      </select>
+                      </span>
+                    </label>
 
-                          <div className="flex flex-wrap gap-2">
-                            {["DN-06919", "DN-06921", "BEIDE"].map((plate) => (
-                              <button
-                                key={plate}
-                                type="button"
-                                onClick={() => changeRotPlate(car.id, plate)}
-                                className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-                                  car.rotPlateNumber === plate
-                                    ? "border-emerald-600 bg-emerald-600 text-white"
-                                    : darkMode
-                                      ? "border-slate-700 bg-slate-900 text-slate-300 hover:border-emerald-500"
-                                      : "border-slate-300 bg-white text-slate-700 hover:border-emerald-500"
-                                }`}
-                              >
-                                {plate === "BEIDE" ? "Beide" : plate}
-                              </button>
-                            ))}
-                          </div>
-
-                          {/* ✅ NEW: permanent Rotbuch number(s), 1-20, per plate */}
-                          <div className="mt-3 flex flex-wrap gap-3">
-                            {(car.rotPlateNumber === "DN-06919" ||
-                              car.rotPlateNumber === "BEIDE") && (
-                              <div>
-                                <label
-                                  className={`mb-1 block text-[11px] font-medium ${textSecondary}`}
-                                >
-                                  Rotbuch-Nr. (DN-06919)
-                                </label>
-                                <input
-                                  type="number"
-                                  min={1}
-                                  max={20}
-                                  value={
-                                    car.rotbuchNumber19 === null ||
-                                    car.rotbuchNumber19 === undefined
-                                      ? ""
-                                      : car.rotbuchNumber19
-                                  }
-                                  onChange={(e) =>
-                                    changeRotbuchNumber(
-                                      car.id,
-                                      "rotbuchNumber19",
-                                      e.target.value,
-                                    )
-                                  }
-                                  placeholder="1-20"
-                                  className={`h-9 w-24 rounded-lg border px-3 text-xs outline-none transition ${
-                                    darkMode
-                                      ? "border-slate-700 bg-slate-900 text-white focus:border-emerald-500"
-                                      : "border-slate-300 bg-white text-slate-900 focus:border-emerald-500"
-                                  }`}
-                                />
-                              </div>
-                            )}
-
-                            {(car.rotPlateNumber === "DN-06921" ||
-                              car.rotPlateNumber === "BEIDE") && (
-                              <div>
-                                <label
-                                  className={`mb-1 block text-[11px] font-medium ${textSecondary}`}
-                                >
-                                  Rotbuch-Nr. (DN-06921)
-                                </label>
-                                <input
-                                  type="number"
-                                  min={1}
-                                  max={20}
-                                  value={
-                                    car.rotbuchNumber21 === null ||
-                                    car.rotbuchNumber21 === undefined
-                                      ? ""
-                                      : car.rotbuchNumber21
-                                  }
-                                  onChange={(e) =>
-                                    changeRotbuchNumber(
-                                      car.id,
-                                      "rotbuchNumber21",
-                                      e.target.value,
-                                    )
-                                  }
-                                  placeholder="1-20"
-                                  className={`h-9 w-24 rounded-lg border px-3 text-xs outline-none transition ${
-                                    darkMode
-                                      ? "border-slate-700 bg-slate-900 text-white focus:border-emerald-500"
-                                      : "border-slate-300 bg-white text-slate-900 focus:border-emerald-500"
-                                  }`}
-                                />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label
-                            className={`mb-2 block text-[11px] font-medium ${textSecondary}`}
-                          >
-                            Ankaufdatum
-                          </label>
-
-                          <input
-                            type="date"
-                            value={
-                              car.boughtAt
-                                ? String(car.boughtAt).slice(0, 10)
-                                : ""
-                            }
-                            onChange={(e) =>
-                              changeBoughtAt(car.id, e.target.value)
-                            }
-                            className={`h-[38px] w-full rounded-lg border px-3 text-xs outline-none transition ${
-                              darkMode
-                                ? "border-slate-700 bg-slate-900 text-white focus:border-emerald-500"
-                                : "border-slate-300 bg-white text-slate-900 focus:border-emerald-500"
-                            }`}
-                          />
-                        </div>
-                      </div>
-                    )}
+                    <label>
+                      <span className={`mb-0.5 block text-[12px] md:hidden ${c.muted}`}>Ankaufdatum</span>
+                      <input type="date" value={car.boughtAt ? String(car.boughtAt).slice(0, 10) : ""} disabled={!on && !onOther} onChange={(event) => onBoughtAt(car.id, event.target.value)} className={`${soft} tabular-nums [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-35 hover:[&::-webkit-calendar-picker-indicator]:opacity-70`} />
+                    </label>
                   </div>
-                ))}
-            </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className={`px-6 py-12 text-center text-[14px] ${c.muted}`}>Keine Fahrzeuge gefunden.</p>
+        )}
+      </div>
 
-            <div
-              className={`flex items-center justify-between border-t px-5 py-4 ${
-                darkMode ? "border-slate-800" : "border-slate-200"
-              }`}
-            >
-              <span className={`text-xs ${textSecondary}`}>
-                {rotCarsDraft.filter((c) => c.rotKennzeichen).length} aktiv
-              </span>
+      {footer}
 
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowRotCarsModal(false)}
-                  className={`rounded-lg border px-4 py-2 text-xs font-semibold transition ${
-                    darkMode
-                      ? "border-slate-700 text-slate-300 hover:bg-slate-800"
-                      : "border-slate-300 text-slate-700 hover:bg-slate-100"
-                  }`}
-                >
-                  Abbrechen
-                </button>
-
-                <button
-                  onClick={saveRotCarsSelection}
-                  disabled={savingRotCars}
-                  className="rounded-lg bg-emerald-600 px-5 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
-                >
-                  {savingRotCars ? "Speichern..." : "Speichern"}
-                </button>
-              </div>
+      {confirmReset ? (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/30 p-4" onMouseDown={(event) => event.target === event.currentTarget && setConfirmReset(false)}>
+          <div className={`w-full max-w-sm rounded-lg border p-5 shadow-xl ${c.panel}`} role="alertdialog" aria-modal="true" aria-label="Rotbuch zurücksetzen">
+            <h3 className={`text-[15px] font-semibold ${c.title}`}>Neues Rotbuch für {plate.replace("-", " ")}?</h3>
+            <p className={`mt-2 text-[13px] leading-relaxed ${c.muted}`}>
+              Das Kennzeichen und alle Rotbuch-Nummern werden bei {assignedCount} {assignedCount === 1 ? "Fahrzeug" : "Fahrzeugen"} entfernt. Fahrzeuge mit beiden Kennzeichen behalten {other.replace("-", " ")}.
+            </p>
+            <p className={`mt-2 text-[13px] ${c.muted}`}>Wirksam erst nach „Speichern“.</p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" autoFocus onClick={() => setConfirmReset(false)} className={`h-9 rounded border px-4 text-[14px] font-medium transition-colors ${c.button}`}>
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmReset(false);
+                  onResetBook(plate);
+                }}
+                className="h-9 rounded border border-red-700 bg-red-700 px-4 text-[14px] font-medium text-white transition-colors hover:bg-red-800"
+              >
+                Zurücksetzen
+              </button>
             </div>
           </div>
         </div>
-      )}
-    </div>
+      ) : null}
+    </>,
   );
 }
