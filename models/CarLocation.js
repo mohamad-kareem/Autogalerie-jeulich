@@ -16,6 +16,10 @@ const CarLocationSchema = new mongoose.Schema(
     routeSummary: { type: String, default: "" },
     driverInfo: { type: String, default: "" },
 
+    // Rotbuch-Nr. the trip was entered with. Kept with the trip so that
+    // resetting a book (new numbers for the cars) does not change old trips.
+    rotbuchNumber: { type: Number, default: null },
+
     marked: {
       type: Boolean,
       default: false,

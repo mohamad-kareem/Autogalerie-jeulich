@@ -27,7 +27,15 @@ function normalizeDoc(doc) {
     plateNumber: doc.plateNumber || "DN-06919",
     marked: !!doc.marked,
     markNote: doc.markNote || "",
+    rotbuchNumber: doc.rotbuchNumber ?? null,
   };
+}
+
+/** Rotbuch numbers are 1–20; anything else is stored as "none". */
+function toRotbuchNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 && n <= 20 ? n : null;
 }
 
 function toDateOrNull(value) {
@@ -109,6 +117,7 @@ export async function POST(req) {
       vehicleId: body.vehicleId || "",
       routeSummary: body.routeSummary || "",
       driverInfo: body.driverInfo || "",
+      rotbuchNumber: toRotbuchNumber(body.rotbuchNumber),
 
       marked,
       markNote: marked ? String(body.markNote || "").trim() : "",
@@ -189,6 +198,10 @@ export async function PUT(req) {
       updateFields.driverInfo = body.driverInfo || "";
     }
 
+    if (body.rotbuchNumber !== undefined) {
+      updateFields.rotbuchNumber = toRotbuchNumber(body.rotbuchNumber);
+    }
+
     if (body.marked !== undefined) {
       updateFields.marked = !!body.marked;
 
@@ -228,6 +241,48 @@ export async function PUT(req) {
       },
       500,
     );
+  }
+}
+
+/**
+ * PATCH { updates: [{ id, rotbuchNumber }] }
+ * Stores the Rotbuch-Nr. on many trips at once (one-time fill for trips
+ * saved before trips kept their own number).
+ */
+export async function PATCH(req) {
+  try {
+    await connectDB();
+
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
+    const body = await req.json().catch(() => null);
+    const updates = Array.isArray(body?.updates) ? body.updates.slice(0, 5000) : [];
+
+    const ops = updates
+      .filter((u) => u?.id && /^[a-f0-9]{24}$/i.test(String(u.id)))
+      .map((u) => ({
+        updateOne: {
+          // only fills trips that have no number yet – never overwrites
+          filter: { _id: String(u.id), rotbuchNumber: null },
+          update: { $set: { rotbuchNumber: toRotbuchNumber(u.rotbuchNumber) } },
+        },
+      }));
+
+    if (!ops.length) {
+      return jsonResponse({ updated: 0 }, 200);
+    }
+
+    const result = await CarLocation.bulkWrite(ops, { ordered: false });
+
+    return jsonResponse({ updated: result?.modifiedCount ?? 0 }, 200);
+  } catch (err) {
+    console.error("PATCH /api/car-locations error:", err);
+
+    return jsonResponse({ error: err.message }, 500);
   }
 }
 

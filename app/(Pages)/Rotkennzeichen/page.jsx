@@ -154,6 +154,19 @@ function getRotbuchNumberForPlate(car, plate) {
   return null;
 }
 
+/**
+ * Rotbuch-Nr. of one trip. Every trip keeps the number it was entered with
+ * (stored as row.rotbuchNumber), so resetting a book later does not change
+ * old trips. Older trips saved before this existed fall back to the car's
+ * current number.
+ */
+function getRowRotbuchNumber(row, car, plate) {
+  if (row?.rotbuchNumber !== null && row?.rotbuchNumber !== undefined) {
+    return row.rotbuchNumber;
+  }
+  return getRotbuchNumberForPlate(car, plate);
+}
+
 function isValidRotbuchNumber(n) {
   return Number.isInteger(n) && n >= 1 && n <= 20;
 }
@@ -287,6 +300,12 @@ function findInvalidBoughtDateCids(rows, carOptions) {
   });
 
   return invalid;
+}
+
+/** A trip that is new, or whose car was changed since it was saved. */
+function isNewCarOnTrip(row) {
+  if (!row?._id) return true;
+  return normalizeFin(row.vehicleId) !== normalizeFin(row._savedVehicleId);
 }
 
 function getWrongPlateInfo(row, carOptions) {
@@ -538,9 +557,31 @@ export default function CarLocationsPage() {
                 driverInfo: item.driverInfo || "",
                 marked: !!item.marked,
                 markNote: item.markNote || "",
+                rotbuchNumber: item.rotbuchNumber ?? null,
+                _savedVehicleId: item.vehicleId || "",
               };
             })
           : [];
+
+        // One-time fill: trips saved before trips kept their own number get
+        // the number their car has right now, so a later reset keeps them.
+        const fill = [];
+        mapped.forEach((row) => {
+          if (!row._id || row.rotbuchNumber !== null || !row.vehicleId) return;
+          const car = options.find((c) => normalizeFin(c.finNumber) === normalizeFin(row.vehicleId));
+          const n = getRotbuchNumberForPlate(car, row.plateNumber);
+          if (n !== null && n !== undefined) {
+            row.rotbuchNumber = n;
+            fill.push({ id: row._id, rotbuchNumber: n });
+          }
+        });
+        if (fill.length) {
+          fetch("/api/car-locations", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ updates: fill }),
+          }).catch((e) => console.error(e));
+        }
 
         if (!mountedRef.current) return;
 
@@ -684,8 +725,8 @@ export default function CarLocationsPage() {
         const carA = carByFin.get(normalizeFin(a.vehicleId));
         const carB = carByFin.get(normalizeFin(b.vehicleId));
 
-        const numA = getRotbuchNumberForPlate(carA, activePlate);
-        const numB = getRotbuchNumberForPlate(carB, activePlate);
+        const numA = getRowRotbuchNumber(a, carA, activePlate);
+        const numB = getRowRotbuchNumber(b, carB, activePlate);
 
         const valA = numA === null || numA === undefined ? Infinity : numA;
         const valB = numB === null || numB === undefined ? Infinity : numB;
@@ -1009,7 +1050,7 @@ export default function CarLocationsPage() {
 
     const wrongPlateInfo = getWrongPlateInfo(row, carOptions);
 
-    if (wrongPlateInfo.isWrongPlate) {
+    if (wrongPlateInfo.isWrongPlate && isNewCarOnTrip(row)) {
       toast(
         `${row.manufacturer || "Dieses Fahrzeug"} ist für ${wrongPlateInfo.assignedPlate} eingetragen, nicht für ${wrongPlateInfo.currentPlate}.`,
         {
@@ -1031,8 +1072,21 @@ export default function CarLocationsPage() {
       }
     }
 
+    // Keep the number an old trip was entered with; a new trip (or a
+    // changed car) takes the car's current number on this plate.
+    const rowPlate = row.plateNumber || activePlate;
+    const keepStored =
+      row._id &&
+      row.rotbuchNumber !== null &&
+      row.rotbuchNumber !== undefined &&
+      normalizeFin(row.vehicleId) === normalizeFin(row._savedVehicleId);
+    const rotbuchNumber = keepStored
+      ? row.rotbuchNumber
+      : (getRotbuchNumberForPlate(selectedCar, rowPlate) ?? null);
+
     const payload = {
-      plateNumber: row.plateNumber || activePlate,
+      plateNumber: rowPlate,
+      rotbuchNumber,
       startDateTime: localInputToISO(row.startDateTime),
       endDateTime: localInputToISO(row.endDateTime),
       vehicleType: row.vehicleType || "",
@@ -1085,6 +1139,8 @@ export default function CarLocationsPage() {
             driverInfo: data?.driverInfo ?? r.driverInfo,
             marked: data?.marked ?? r.marked ?? false,
             markNote: data?.markNote ?? r.markNote ?? "",
+            rotbuchNumber: data?.rotbuchNumber ?? rotbuchNumber,
+            _savedVehicleId: data?.vehicleId ?? r.vehicleId ?? "",
           };
         }),
       );
@@ -1196,7 +1252,7 @@ export default function CarLocationsPage() {
 
       sortedFilteredRows.forEach((row) => {
         const rowCar = carByFin.get(normalizeFin(row.vehicleId));
-        const rowRotbuchNumber = getRotbuchNumberForPlate(rowCar, activePlate);
+        const rowRotbuchNumber = getRowRotbuchNumber(row, rowCar, activePlate);
         const firstColumnValue =
           rowRotbuchNumber === null || rowRotbuchNumber === undefined
             ? "-"
@@ -2043,13 +2099,17 @@ export default function CarLocationsPage() {
                     const hasOverlap = overlapCids.has(cid);
                     const hasInvalidBoughtDate = invalidBoughtDateCids.has(cid);
                     const isMarked = !!row.marked;
+                    // Only check trips being entered now: saved trips are history
+                    // and must not turn red when cars are reassigned or a book is reset.
                     const wrongPlateInfo = getWrongPlateInfo(row, carOptions);
-                    const isWrongPlate = wrongPlateInfo.isWrongPlate;
+                    const isWrongPlate =
+                      isNewCarOnTrip(row) && wrongPlateInfo.isWrongPlate;
 
                     // ✅ NEW: the car's permanent Rotbuch number for the
                     // active plate — shown in "Nr." instead of a row index.
                     const rowCar = carByFin.get(normalizeFin(row.vehicleId));
-                    const rowRotbuchNumber = getRotbuchNumberForPlate(
+                    const rowRotbuchNumber = getRowRotbuchNumber(
+                      row,
                       rowCar,
                       activePlate,
                     );
