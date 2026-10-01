@@ -71,16 +71,45 @@ function TuevLine({ schein, dark }) {
   );
 }
 
-function PhaseCell({ schein, dark, onAction }) {
+function vorbesitzerText(schein) {
+  const n = schein?.vorbesitzer;
+  if (n === null || n === undefined) return "";
+  return `${n} Vorbesitzer`;
+}
+
+/** Info column: TÜV (or the warranty once sold) first, previous owners below. */
+function InfoCell({ schein, dark, onAction }) {
+  const t = theme(dark);
+  const owners = vorbesitzerText(schein);
+  // sold: only the warranty
+  if (schein.keySold) {
+    return <WarrantyLine schein={schein} dark={dark} onClick={() => onAction("warranty", schein)} />;
+  }
+  let main;
+  if (platzTuev(schein)) {
+    main = <TuevLine schein={schein} dark={dark} />;
+  } else {
+    main = <span className={`text-[12px] ${t.faint}`}>TÜV –</span>;
+  }
+  return (
+    <div className="flex min-w-0 flex-col items-start gap-0.5">
+      {main}
+      <span className={`text-[12px] tabular-nums ${owners ? t.muted : t.faint}`}>{owners || "Vorbesitzer –"}</span>
+    </div>
+  );
+}
+
+// showInfo=false: TÜV and warranty are in the Info column (computer table)
+function PhaseCell({ schein, dark, onAction, showInfo = true }) {
   const detail = stageDetail(schein);
   return (
     <div className="flex min-w-0 flex-col items-start gap-1">
       <StageBadge stage={schein.stage} stageMeta={schein.stageMeta} dark={dark} onClick={() => onAction("edit", schein)} />
       {schein.keySold ? (
-        <WarrantyLine schein={schein} dark={dark} onClick={() => onAction("warranty", schein)} />
+        showInfo ? <WarrantyLine schein={schein} dark={dark} onClick={() => onAction("warranty", schein)} /> : null
       ) : (
         <>
-          <TuevLine schein={schein} dark={dark} />
+          {showInfo ? <TuevLine schein={schein} dark={dark} /> : null}
           {detail ? <span className={`max-w-full truncate text-[12px] ${theme(dark).muted}`}>{detail}</span> : null}
         </>
       )}
@@ -91,12 +120,17 @@ function PhaseCell({ schein, dark, onAction }) {
 function VehicleName({ schein, dark }) {
   const t = theme(dark);
   return (
-    <p className={`flex min-w-0 items-center gap-1.5 text-[14px] font-medium ${t.title}`}>
-      <span className="truncate">{schein.carName || "–"}</span>
-      {schein.fuelNeeded ? (
-        <FiDroplet title="Tank leer – auffüllen" aria-label="Tank leer" className="size-3.5 shrink-0 text-amber-500" />
+    <div className="min-w-0">
+      <p className={`flex min-w-0 items-center gap-1.5 text-[14px] font-medium ${t.title}`}>
+        <span className="truncate">{schein.carName || "–"}</span>
+        {schein.fuelNeeded ? (
+          <FiDroplet title="Tank leer – auffüllen" aria-label="Tank leer" className="size-3.5 shrink-0 text-amber-500" />
+        ) : null}
+      </p>
+      {schein.keyNumber ? (
+        <p className={`mt-0.5 text-[12px] tabular-nums ${t.muted}`}>Schlüssel Nr. {schein.keyNumber}</p>
       ) : null}
-    </p>
+    </div>
   );
 }
 
@@ -193,6 +227,7 @@ export default function VehicleList({ scheins, loading, dark, onAction, resetKey
             </div>
             <FinCopy fin={schein.finNumber} dark={dark} />
             <PhaseCell schein={schein} dark={dark} onAction={onAction} />
+            {!schein.keySold && vorbesitzerText(schein) ? <p className={`text-[12px] tabular-nums ${t.muted}`}>{vorbesitzerText(schein)}</p> : null}
           </li>
         ))}
       </ul>
@@ -203,7 +238,7 @@ export default function VehicleList({ scheins, loading, dark, onAction, resetKey
           <tr>
             <th className="px-5 py-2.5 font-medium">Fahrzeug</th>
             <th className="px-3 py-2.5 font-medium">FIN</th>
-            <th className="px-3 py-2.5 font-medium">Schlüssel</th>
+            <th className="px-3 py-2.5 font-medium">Info</th>
             <th className="px-3 py-2.5 font-medium">Phase</th>
             <th className="px-3 py-2.5 font-medium">Hinzugefügt</th>
             <th className="w-36 px-3 py-2.5" aria-label="Aktionen" />
@@ -218,9 +253,11 @@ export default function VehicleList({ scheins, loading, dark, onAction, resetKey
               <td className="px-3 py-3">
                 <FinCopy fin={schein.finNumber} dark={dark} />
               </td>
-              <td className={`px-3 py-3 text-[13px] tabular-nums ${t.text}`}>{schein.keyNumber ? `Nr. ${schein.keyNumber}` : <span className={t.faint}>–</span>}</td>
+              <td className="px-3 py-3">
+                <InfoCell schein={schein} dark={dark} onAction={onAction} />
+              </td>
               <td className="max-w-[18rem] px-3 py-3">
-                <PhaseCell schein={schein} dark={dark} onAction={onAction} />
+                <PhaseCell schein={schein} dark={dark} onAction={onAction} showInfo={false} />
               </td>
               <td className={`whitespace-nowrap px-3 py-3 text-[13px] tabular-nums ${t.muted}`}>{formatDate(schein.createdAt)}</td>
               <td className="px-3 py-3">
