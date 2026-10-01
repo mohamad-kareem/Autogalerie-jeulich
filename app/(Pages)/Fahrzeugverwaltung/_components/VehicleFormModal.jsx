@@ -28,6 +28,7 @@ function keyFormOf(schein) {
     rotKennzeichen: Boolean(schein?.rotKennzeichen),
     rotPlateNumber: schein?.rotPlateNumber || "",
     boughtAt: toDateInput(schein?.boughtAt),
+    vorbesitzer: schein?.vorbesitzer === null || schein?.vorbesitzer === undefined ? "" : String(schein.vorbesitzer),
   };
 }
 
@@ -286,6 +287,7 @@ export default function VehicleFormModal({ open, schein = null, dark, onClose, o
         rotKennzeichen: keys.rotKennzeichen,
         rotPlateNumber: keys.rotKennzeichen ? keys.rotPlateNumber : "",
         boughtAt: keys.boughtAt || null,
+        vorbesitzer: keys.vorbesitzer === "" ? null : Number(keys.vorbesitzer),
         stage,
         stageMeta: meta,
       };
@@ -333,15 +335,29 @@ export default function VehicleFormModal({ open, schein = null, dark, onClose, o
       <form id="vehicle-form" onSubmit={submit} className="space-y-6 sm:px-1">
         {/* ---------- vehicle ---------- */}
         <Section title="Fahrzeug" dark={dark}>
-          <div className="grid gap-3 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1.3fr)_minmax(0,0.9fr)]">
-            <FieldBox label="Fahrzeugname *" dark={dark}>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1.3fr)_minmax(0,0.9fr)_90px]">
+            <FieldBox label="Fahrzeugname *" dark={dark} className="col-span-2 sm:col-span-1">
               <input value={form.carName} onChange={set("carName")} required placeholder="z. B. VW Golf 7 1.6 TDI" className={fieldClass(dark)} />
             </FieldBox>
-            <FieldBox label="FIN-Nummer" dark={dark}>
+            <FieldBox label="FIN-Nummer" dark={dark} className="col-span-2 sm:col-span-1">
               <input value={form.finNumber} onChange={set("finNumber")} placeholder="WVWZZZ1KZAW000000" className={fieldClass(dark, "font-mono")} />
             </FieldBox>
             <FieldBox label="Ankaufdatum" dark={dark}>
               <input type="date" value={keys.boughtAt} onChange={(e) => setKey("boughtAt", e.target.value)} className={fieldClass(dark)} />
+            </FieldBox>
+            <FieldBox label="Vorbesitzer" dark={dark}>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={99}
+                step={1}
+                value={keys.vorbesitzer}
+                onChange={(e) => setKey("vorbesitzer", e.target.value.replace(/\D/g, "").slice(0, 2))}
+                placeholder="–"
+                aria-label="Anzahl Vorbesitzer"
+                className={fieldClass(dark, "tabular-nums")}
+              />
             </FieldBox>
           </div>
 

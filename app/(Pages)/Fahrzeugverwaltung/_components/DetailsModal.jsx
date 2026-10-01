@@ -180,6 +180,7 @@ export default function DetailsModal({ open, schein, dark, onClose, onEdit, onAc
             <InfoRow label="FIN" dark={dark} mono>{schein.finNumber || dash}</InfoRow>
             <InfoRow label="Hinzugefügt" dark={dark}>{formatDate(schein.createdAt)}</InfoRow>
             <InfoRow label="Ankauf" dark={dark}>{schein.boughtAt ? formatDate(schein.boughtAt) : dash}</InfoRow>
+            <InfoRow label="Vorbesitzer" dark={dark}>{schein.vorbesitzer ?? dash}</InfoRow>
             <InfoRow label="Tank" dark={dark}>{schein.fuelNeeded ? "Leer – auffüllen" : "In Ordnung"}</InfoRow>
             <InfoRow label="Rotkennzeichen" dark={dark}>{rot || "Nein"}</InfoRow>
           </InfoSection>

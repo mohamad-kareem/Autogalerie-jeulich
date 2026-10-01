@@ -34,6 +34,13 @@ const STAGES = ["WERKSTATT", "AUFBEREITUNG", "PLATZ", "TUEV", "SOLD"];
 function toStr(v) {
   return String(v ?? "").trim();
 }
+/** Vorbesitzer: whole number 0–99, empty = null. */
+function toVorbesitzer(v) {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 0 && n <= 99 ? n : null;
+}
+
 function toBool(v) {
   return !!v;
 }
@@ -392,6 +399,7 @@ export async function POST(req) {
       finNumber: finNumber || "",
       owner,
       boughtAt: ensureValidDateOrNull(body.boughtAt),
+      vorbesitzer: toVorbesitzer(body.vorbesitzer),
       imageUrl: body.imageUrl || null,
       publicId: body.publicId || null,
 
@@ -605,6 +613,9 @@ export async function PUT(req) {
     if (body.owner !== undefined) update.owner = toStr(body.owner);
     if (body.boughtAt !== undefined) {
       update.boughtAt = ensureValidDateOrNull(body.boughtAt);
+    }
+    if (body.vorbesitzer !== undefined) {
+      update.vorbesitzer = toVorbesitzer(body.vorbesitzer);
     }
     // Notes/tasks
     if (body.notes !== undefined) update.notes = normalizeNotes(body.notes);

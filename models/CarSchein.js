@@ -47,6 +47,8 @@ const CarScheinSchema = new mongoose.Schema(
       default: "",
     },
     boughtAt: { type: Date, default: null },
+    // number of previous owners (Vorbesitzer); null = not entered
+    vorbesitzer: { type: Number, default: null, min: 0, max: 99 },
     owner: { type: String, trim: true, default: "" },
 
     imageUrl: { type: String, default: null },
@@ -112,7 +114,11 @@ const CarScheinSchema = new mongoose.Schema(
 
 // In development a model loaded before this change stays in memory and
 // would drop the new TÜV fields; replace it.
-if (mongoose.models.CarSchein && !mongoose.models.CarSchein.schema.path("stageMeta")?.schema?.path("platz.tuevUntil")) {
+if (
+  mongoose.models.CarSchein &&
+  (!mongoose.models.CarSchein.schema.path("stageMeta")?.schema?.path("platz.tuevUntil") ||
+    !mongoose.models.CarSchein.schema.path("vorbesitzer"))
+) {
   mongoose.deleteModel("CarSchein");
 }
 
