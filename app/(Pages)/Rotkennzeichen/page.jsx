@@ -718,7 +718,9 @@ export default function CarLocationsPage() {
       return Number.isNaN(t) ? 0 : t;
     };
 
-    const arr = [...filteredRows];
+    // trips being added (not saved yet) stay at the bottom
+    const arr = filteredRows.filter((r) => r._id);
+    const unsaved = filteredRows.filter((r) => !r._id);
 
     if (sortMode === "rotbuch") {
       arr.sort((a, b) => {
@@ -739,7 +741,7 @@ export default function CarLocationsPage() {
       arr.sort((a, b) => withDateTime(a) - withDateTime(b));
     }
 
-    return arr;
+    return [...arr, ...unsaved];
   }, [filteredRows, sortMode, activePlate, carByFin]);
 
   const allSelected = useMemo(() => {
@@ -988,18 +990,24 @@ export default function CarLocationsPage() {
 
     const now = new Date();
     const y = now.getFullYear();
-    const m = Number(monthFrom);
+    const from = Number(monthFrom);
+    const to = Number(monthTo);
+    const currentMonth = now.getMonth() + 1;
 
-    const lastDayOfSelectedMonth = new Date(y, m, 0).getDate();
-    const safeDay = Math.min(now.getDate(), lastDayOfSelectedMonth);
-
-    const preset = new Date(
-      y,
-      m - 1,
-      safeDay,
-      now.getHours(),
-      now.getMinutes(),
-    );
+    // Start time for the new trip:
+    // - the shown months include today → now
+    // - an earlier month is shown → right after the last trip of that month
+    //   (or the 1st of the month at 08:00 when it has no trips yet)
+    let preset;
+    if (currentMonth >= from && currentMonth <= to) {
+      preset = now;
+    } else {
+      const lastEnd = filteredRows.reduce((latest, r) => {
+        const t = new Date(r.endDateTime || r.startDateTime).getTime();
+        return Number.isNaN(t) ? latest : Math.max(latest, t);
+      }, 0);
+      preset = lastEnd ? new Date(lastEnd) : new Date(y, to - 1, 1, 8, 0);
+    }
 
     const presetLocal = toLocalInputValue(preset);
 
