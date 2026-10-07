@@ -47,9 +47,13 @@ import { decodeImport, IMPORT_PREFIX } from "@/lib/market/bookmarklet";
 import { useSidebar } from "@/app/(components)/SidebarContext";
 import PageLoader from "@/app/(components)/helpers/PageLoader";
 
+import DeepPanel from "./DeepPanel";
+import ExpertKnowledge from "./ExpertKnowledge";
+
 /* ------------------------------------------------------------------ setup */
 
 const RECENT_KEY = "marktanalyse.recent.v2";
+const DEPTH_KEY = "marktanalyse.depth";
 const MAX_RECENT = 6;
 const REQUEST_TIMEOUT_MS = 70_000;
 
@@ -422,7 +426,7 @@ function DecisionStrip({ result, live, dark, onSave, saving, savedAt }) {
                   dark ? "text-slate-500" : "text-slate-500"
                 }`}
               >
-                Konfidenz {result.confidence} %
+                Datenqualität {result.confidence}/100
               </span>
             </div>
             <h1 className="mt-0.5 truncate text-[15px] font-bold leading-tight">
@@ -566,7 +570,7 @@ function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode })
         <tbody className={dark ? "divide-y divide-slate-800" : "divide-y divide-slate-100"}>
           <tr>
             <td className="py-1.5">
-              Realistischer Verkaufspreis
+              Verkaufspreis-Annahme
               <span className={`ml-2 text-[11px] ${dark ? "text-slate-500" : "text-slate-400"}`}>
                 Marktwert {euro(result.market.marketValue)}
               </span>
@@ -790,6 +794,13 @@ function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode })
                   }`}
                 >
                   inkl. {euro(live.targetProfit)} Marge
+                  {live.targetProfit === result.dealer?.targetProfit
+                    ? result.dealer?.targetProfitSource === "DEEP"
+                      ? " · von Tiefer Analyse angepasst"
+                      : result.dealer?.targetProfitSource === "A01"
+                        ? ` · Richtwert ${result.dealer.targetProfitBand || "A01"}`
+                        : ""
+                    : ""}
                 </span>
               ) : null}
             </td>
@@ -870,8 +881,10 @@ function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode })
           dark={dark}
         />
         <Metric
-          label="Erwarteter Gewinn"
+          label="Kalkulierter Überschuss"
           value={euro(live.expected)}
+          hint={Number.isFinite(live.expectedLow) && Number.isFinite(live.expectedHigh)
+            ? `Szenario: ${signedEuro(live.expectedLow)} bis ${signedEuro(live.expectedHigh)}` : null}
           dark={dark}
           accent={live.expected >= 0 ? "positive" : "negative"}
         />
@@ -914,7 +927,7 @@ function ComparablesTable({ result, asking, dark }) {
       </div>
 
       {rows.length ? (
-        <div className="overflow-x-auto">
+        <div className="max-h-[640px] overflow-auto">
           <table className="w-full min-w-[720px] text-xs">
             <thead>
               <tr
@@ -2067,8 +2080,7 @@ function Checklist({ items, dark }) {
 
 const BELT_ATTENTION = ["OVERDUE", "DUE_SOON", "CHECK_URGENT", "DONE_UNVERIFIED"];
 
-function BeltNote({ belt, dark, onAddCost }) {
-  const [added, setAdded] = useState(false);
+function BeltNote({ belt, dark, onAddCost, applied = 0 }) {
   if (!belt?.available || !BELT_ATTENTION.includes(belt.status)) return null;
 
   const urgent = belt.status === "OVERDUE";
@@ -2090,15 +2102,17 @@ function BeltNote({ belt, dark, onAddCost }) {
       <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
         <span className="opacity-70">Richtwert – Intervall laut Serviceheft prüfen</span>
         {estimate && onAddCost && belt.status !== "DONE_UNVERIFIED" ? (
-          added ? (
-            <span className="font-semibold">✓ in Renovierung übernommen</span>
+          applied ? (
+            <span className="font-semibold">
+              ✓ {applied.toLocaleString("de-DE")} € übernommen ·{" "}
+              <button type="button" onClick={() => onAddCost(estimate)} className="underline underline-offset-2 hover:opacity-80">
+                rückgängig
+              </button>
+            </span>
           ) : (
             <button
               type="button"
-              onClick={() => {
-                onAddCost(estimate);
-                setAdded(true);
-              }}
+              onClick={() => onAddCost(estimate)}
               className={`rounded px-2 py-1 font-semibold transition ${
                 dark ? "bg-slate-900/70 hover:bg-slate-900" : "bg-white/80 hover:bg-white"
               }`}
@@ -2112,7 +2126,7 @@ function BeltNote({ belt, dark, onAddCost }) {
   );
 }
 
-function VehiclePanel({ result, dark, onAddCost }) {
+function VehiclePanel({ result, dark, onAddCost, costApplied = 0 }) {
   const target = result.target;
   const insights = result.insights || {};
   const usage = insights.usage;
@@ -2137,7 +2151,7 @@ function VehiclePanel({ result, dark, onAddCost }) {
 
   return (
     <Panel dark={dark}>
-      <Gallery key={target.listingUrl || title} images={target.images} title={title} dark={dark} />
+      <Gallery key={`gallery-${target.listingUrl || title}`} images={target.images} title={title} dark={dark} />
 
       <Caption
         dark={dark}
@@ -2238,10 +2252,11 @@ function VehiclePanel({ result, dark, onAddCost }) {
       ) : null}
 
       <BeltNote
-        key={target.listingUrl || target.listingKey || title}
+        key={`belt-${target.listingUrl || target.listingKey || title}`}
         belt={belt}
         dark={dark}
         onAddCost={onAddCost}
+        applied={costApplied}
       />
 
       {target.damageNote ? (
@@ -2275,7 +2290,7 @@ function MarketPanel({ result, dark }) {
       <div className={dark ? "divide-y divide-slate-800" : "divide-y divide-slate-100"}>
         <Line label="Marktwert" value={euro(market.marketValue)} dark={dark} tone="accent" />
         <Line
-          label="Spanne"
+          label="Vergleichsspanne"
           value={`${euro(market.rangeFrom)} – ${euro(market.rangeTo)}`}
           dark={dark}
         />
@@ -2290,6 +2305,9 @@ function MarketPanel({ result, dark }) {
           value={`${market.comparableCount} · ${market.retailCount} Händler / ${market.privateCount} privat`}
           dark={dark}
         />
+        {Number.isFinite(market.sourceCount) ? <Line label="Portale in der Bewertung" value={market.sourceCount} dark={dark} /> : null}
+        <Line label="Geprüfte Angebote" value={result.meta.candidatesFound ?? "–"} dark={dark} />
+        {Number.isFinite(result.dealer?.assumedSaleDiscountPercent) ? <Line label="Angenommener Verkaufsabschlag" value={percent(result.dealer.assumedSaleDiscountPercent)} dark={dark} /> : null}
         <Line label="Privatmarkt" value={euro(market.privateMarketLevel)} dark={dark} />
         <Line
           label="Ø Übereinstimmung"
@@ -2297,6 +2315,9 @@ function MarketPanel({ result, dark }) {
           dark={dark}
         />
       </div>
+      <p className={`mt-3 text-[11px] leading-relaxed ${dark ? "text-slate-400" : "text-slate-500"}`}>
+        Inseratspreise, keine bestätigten Verkäufe. Die Spanne zeigt die Streuung der bereinigten Vergleiche; sie ist keine Preisgarantie. Datenqualität ist ein interner Punktwert, keine Trefferwahrscheinlichkeit.
+      </p>
     </Panel>
   );
 }
@@ -2369,7 +2390,8 @@ function NotesPanel({ result, dark }) {
 
 /** The model's or the rule engine's summary sentence, under the calculation. */
 function SummaryNote({ result, dark }) {
-  if (!result.recommendation?.summary) return null;
+  // With a Tiefe Analyse, its Fazit is the summary — no second one here.
+  if (!result.recommendation?.summary || result.deep) return null;
 
   return (
     <Panel dark={dark}>
@@ -3150,15 +3172,26 @@ const LOADING_STEPS = [
   { at: 32, text: "Empfehlung wird formuliert" },
 ];
 
-function LoadingPanel({ seconds, dark }) {
-  const step =
-    [...LOADING_STEPS].reverse().find((entry) => seconds >= entry.at) || LOADING_STEPS[0];
+const DEEP_STEPS = [
+  { at: 0, text: "KI prüft die Vergleichsfahrzeuge" },
+  { at: 8, text: "KI liest die Anzeige und sucht Risiken" },
+  { at: 16, text: "Bekannte Schwachstellen und Aufbereitung" },
+  { at: 26, text: "Expertenwissen wird angewendet, Limit neu berechnet" },
+];
+
+function LoadingPanel({ seconds, dark, deepSince = null }) {
+  // In "Tief" the first part (market search) is followed by the AI review;
+  // both are one wait for the buyer, with one result at the end.
+  const deepSeconds = deepSince === null ? null : Math.max(0, seconds - deepSince);
+  const steps = deepSeconds === null ? LOADING_STEPS : DEEP_STEPS;
+  const at = deepSeconds === null ? seconds : deepSeconds;
+  const step = [...steps].reverse().find((entry) => at >= entry.at) || steps[0];
 
   return (
     <Panel dark={dark}>
       <div className="flex flex-col items-center py-12 text-center">
         <FiLoader className="animate-spin text-4xl text-sky-600" />
-        <h2 className="mt-4 text-lg font-bold">Analyse läuft</h2>
+        <h2 className="mt-4 text-lg font-bold">{deepSince === null ? "Analyse läuft" : "Tiefe Analyse läuft"}</h2>
         <p className={`mt-1 text-sm ${dark ? "text-slate-400" : "text-slate-500"}`}>{step.text}</p>
         <p className="mt-1 text-xs tabular-nums text-slate-400">{seconds}s</p>
 
@@ -3169,7 +3202,13 @@ function LoadingPanel({ seconds, dark }) {
         >
           <div
             className="h-full rounded-full bg-sky-600 transition-all duration-700"
-            style={{ width: `${Math.min(95, 12 + seconds * 2.6)}%` }}
+            style={{
+              width: `${
+                deepSeconds === null
+                  ? Math.min(60, 12 + seconds * 2.6)
+                  : Math.min(95, 60 + deepSeconds * 1.2)
+              }%`,
+            }}
           />
         </div>
       </div>
@@ -3177,6 +3216,39 @@ function LoadingPanel({ seconds, dark }) {
   );
 }
 
+
+/* ============================================================ tiefe analyse */
+
+/** Asks the server for the deep review of an analysis. Throws a German message. */
+async function fetchDeep(base) {
+  const response = await fetch("/api/market-analysis/deep", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ result: base }),
+  });
+  const raw = await response.text();
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    throw new Error(`Der Server hat nicht korrekt geantwortet (HTTP ${response.status}).`);
+  }
+  if (!response.ok) throw new Error(data?.error || "Tiefe Analyse fehlgeschlagen.");
+  return data;
+}
+
+/** The analysis with the reviewed comparables, recalculated figures and the report. */
+function mergeDeep(base, data) {
+  return {
+    ...base,
+    comparables: data.comparables,
+    market: data.market,
+    dealer: { ...base.dealer, ...data.dealer },
+    confidence: data.confidence,
+    verdict: data.verdict,
+    deep: data.deep,
+  };
+}
 
 /* ================================================================== page */
 
@@ -3193,6 +3265,40 @@ export default function MarktanalysePage() {
   const [error, setError] = useState(null);
   const [recent, setRecent] = useState([]);
   const [lastManual, setLastManual] = useState(null);
+
+  // "Analyse" or "Expertenwissen" (the 100 questions), and how deep the
+  // analysis goes: NORMAL (fast, nearly free) or DEEP (stronger AI review).
+  const [view, setView] = useState("ANALYSE");
+  const [depth, setDepth] = useState("NORMAL");
+  const depthRef = useRef("NORMAL");
+  const [deepRunning, setDeepRunning] = useState(false);
+  const [deepError, setDeepError] = useState(null);
+  const deepRunRef = useRef(0);
+  // Second at which the "Tief" run moved from the market search to the AI
+  // review — the loading screen shows the second part from then on.
+  const [deepSince, setDeepSince] = useState(null);
+
+  // Costs taken over with one click (Tiefe Analyse: Aufbereitung, Zahnriemen).
+  // Each one counts once: a second click takes it back out — never twice in.
+  const [appliedCosts, setAppliedCosts] = useState({});
+  const appliedRef = useRef({});
+  const resetCosts = useCallback(() => {
+    appliedRef.current = {};
+    setAppliedCosts({});
+  }, []);
+  const toggleCost = useCallback((key, amount) => {
+    const current = appliedRef.current[key] || 0;
+    const delta = current ? -current : amount;
+    const next = { ...appliedRef.current };
+    if (current) delete next[key];
+    else next[key] = amount;
+    appliedRef.current = next;
+    setAppliedCosts(next);
+    setAdjust((value) => ({
+      ...value,
+      refurbishment: String(Math.max(0, (Number(value.refurbishment) || 0) + delta)),
+    }));
+  }, []);
 
   // Everything the user may change after the analysis has run. Held here, not
   // inside the ledger, so the sticky strip and the price scale see the same
@@ -3236,6 +3342,61 @@ export default function MarktanalysePage() {
     } catch {
       /* ignore unreadable history */
     }
+
+    try {
+      const storedDepth = localStorage.getItem(DEPTH_KEY);
+      if (storedDepth === "DEEP" || storedDepth === "NORMAL") {
+        setDepth(storedDepth);
+        depthRef.current = storedDepth;
+      }
+    } catch {
+      /* the default is fine */
+    }
+  }, []);
+
+  const changeDepth = useCallback((next) => {
+    setDepth(next);
+    depthRef.current = next;
+    try {
+      localStorage.setItem(DEPTH_KEY, next);
+    } catch {
+      /* a preference, not a requirement */
+    }
+  }, []);
+
+  /**
+   * Tiefe Analyse on the result on screen. The stronger AI reviews the
+   * comparison cars, reads the ad and names weak points; the server then
+   * recalculates market value and limit. Only the answer for the analysis
+   * still on screen is applied.
+   */
+  const runDeep = useCallback(async (base) => {
+    if (!base) return;
+    const run = ++deepRunRef.current;
+    setDeepRunning(true);
+    setDeepError(null);
+    try {
+      const data = await fetchDeep(base);
+      if (run !== deepRunRef.current) return;
+
+      setResult((current) =>
+        current && current.meta?.analyzedAt === base.meta?.analyzedAt
+          ? mergeDeep(current, data)
+          : current,
+      );
+      // A target profit the review argued for replaces the one in the ledger.
+      if (data.deep?.targetProfit && Number.isFinite(data.dealer?.targetProfit)) {
+        setAdjust((current) => ({ ...current, profit: data.dealer.targetProfit }));
+      }
+      toast.success("Tiefe Analyse fertig.");
+    } catch (deepFailure) {
+      if (run !== deepRunRef.current) return;
+      const message = deepFailure?.message || "Tiefe Analyse fehlgeschlagen.";
+      setDeepError(message);
+      toast.error(message);
+    } finally {
+      if (run === deepRunRef.current) setDeepRunning(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -3274,9 +3435,15 @@ export default function MarktanalysePage() {
     if (status === "authenticated") loadSaved();
   }, [status, loadSaved]);
 
+  const secondsRef = useRef(0);
+  useEffect(() => {
+    secondsRef.current = seconds;
+  }, [seconds]);
+
   useEffect(() => {
     if (!loading) {
       setSeconds(0);
+      setDeepSince(null);
       return undefined;
     }
     const interval = setInterval(() => setSeconds((value) => value + 1), 1_000);
@@ -3353,6 +3520,10 @@ export default function MarktanalysePage() {
       setLoading(true);
       setResult(null);
       setError(null);
+      deepRunRef.current += 1;
+      setDeepRunning(false);
+      setDeepError(null);
+      setDeepSince(null);
 
       try {
         const response = await fetch("/api/market-analysis", {
@@ -3369,6 +3540,8 @@ export default function MarktanalysePage() {
         });
 
         const raw = await response.text();
+        // The 70 s limit is for the market search; the AI review has its own.
+        clearTimeout(timer);
         let data;
         try {
           data = JSON.parse(raw);
@@ -3387,15 +3560,35 @@ export default function MarktanalysePage() {
           return;
         }
 
-        setResult(data);
-        setAdjust(initialAdjust(data));
+        // "Tief": the result appears only once, after the AI review —
+        // never first the normal figures and then different ones.
+        let final = data;
+        if (depthRef.current === "DEEP" && Array.isArray(data.comparables) && data.comparables.length) {
+          const run = ++deepRunRef.current;
+          setDeepSince(secondsRef.current);
+          try {
+            const deep = await fetchDeep(data);
+            if (run !== deepRunRef.current || controller.signal.aborted) return;
+            final = mergeDeep(data, deep);
+          } catch (deepFailure) {
+            if (run !== deepRunRef.current || controller.signal.aborted) return;
+            // The normal result still stands; the panel offers a retry.
+            const message = deepFailure?.message || "Tiefe Analyse fehlgeschlagen.";
+            setDeepError(message);
+            toast.error(`${message} Es wird die normale Analyse angezeigt.`);
+          }
+        }
+
+        setResult(final);
+        setAdjust(initialAdjust(final));
+        resetCosts();
         setSavedAt(null);
         setOpenedFrom(null);
         setLastManual(null);
-        rememberSearch(data);
+        rememberSearch(final);
         toast.success(
-          data.dealer?.available
-            ? `Einkaufslimit ${euro(data.dealer.maximumPurchasePrice)}`
+          final.dealer?.available
+            ? `Einkaufslimit ${euro(final.dealer.maximumPurchasePrice)}`
             : "Analyse abgeschlossen.",
         );
       } catch (requestError) {
@@ -3416,7 +3609,7 @@ export default function MarktanalysePage() {
         setLoading(false);
       }
     },
-    [rememberSearch],
+    [rememberSearch, resetCosts],
   );
 
   /**
@@ -3440,6 +3633,9 @@ export default function MarktanalysePage() {
         pickupCost: live.pickupCost,
         refurbishmentCost: live.refurbishment,
         targetProfit: live.targetProfit,
+        // Edited by hand → it is the buyer's figure now, not the A01 guideline.
+        targetProfitSource:
+          live.targetProfit === result.dealer?.targetProfit ? result.dealer?.targetProfitSource : "INPUT",
         maximumPurchasePrice: live.limit,
         expectedProfit: live.expected,
         requiredDiscount: live.discount,
@@ -3493,8 +3689,14 @@ export default function MarktanalysePage() {
       const stored = data.entry?.result;
       if (!stored) throw new Error("Zu diesem Eintrag liegt keine Analyse vor.");
 
+      deepRunRef.current += 1;
+      setDeepRunning(false);
+      setDeepError(null);
+      setDeepSince(null);
       setResult(stored);
       setAdjust(data.entry.inputs || initialAdjust(stored));
+      appliedRef.current = {};
+      setAppliedCosts({});
       setAwaiting(null);
       setUrl(
         stored.target?.listingUrl ||
@@ -3712,7 +3914,7 @@ export default function MarktanalysePage() {
         : `Angebot: ${euro(live?.askingPrice ?? result.target.price)}`,
       `EZ ${orDash(result.target.firstRegistration)} · ${km(result.target.mileageKm)}`,
       `Marktwert: ${euro(result.market.marketValue)} (${euro(result.market.rangeFrom)} – ${euro(result.market.rangeTo)})`,
-      `Realistischer Verkaufspreis: ${euro(dealer?.sellingPrice)}`,
+      `Verkaufspreis-Annahme: ${euro(dealer?.sellingPrice)}`,
       dealer?.pickup?.available
         ? `Abholkosten: ${euro(live?.pickupCost ?? dealer.pickupCost)} (${dealer.pickup.oneWayKm} km einfach)`
         : null,
@@ -3731,7 +3933,8 @@ export default function MarktanalysePage() {
           ? `Verhandlung: nur Limit-Angebot ${euro(live.negotiation.opening)}, höchstens ${euro(live.negotiation.walkAway)}`
           : `Verhandlung: Einstieg ${euro(live.negotiation.opening)} · Ziel ${euro(live.negotiation.target)} · Grenze ${euro(live.negotiation.walkAway)}`
         : null,
-      `Bewertung: ${verdictMeta(live?.verdict ?? result.verdict).label} · Konfidenz ${result.confidence} %`,
+      `Bewertung: ${verdictMeta(live?.verdict ?? result.verdict).label} · Datenqualität ${result.confidence}/100`,
+      result.deep?.decision?.headline ? `Tiefe Analyse: ${result.deep.decision.headline}` : null,
       result.target.listingUrl,
     ].filter(Boolean);
 
@@ -3744,6 +3947,10 @@ export default function MarktanalysePage() {
   };
 
   const reset = () => {
+    resetCosts();
+    deepRunRef.current += 1;
+    setDeepRunning(false);
+    setDeepError(null);
     setAwaiting(null);
     setUrl("");
     setResult(null);
@@ -3784,6 +3991,37 @@ export default function MarktanalysePage() {
             </p>
           </div>
 
+          {/* Analyse | Expertenwissen */}
+          <div
+            role="tablist"
+            className={`inline-flex rounded p-0.5 text-xs ${dark ? "bg-slate-900" : "bg-slate-200/70"}`}
+          >
+            {[
+              ["ANALYSE", "Analyse"],
+              ["EXPERT", "Expertenwissen"],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={view === id}
+                onClick={() => setView(id)}
+                className={`rounded px-2.5 py-1 font-semibold transition ${
+                  view === id
+                    ? dark
+                      ? "bg-slate-700 text-slate-100"
+                      : "bg-white text-slate-900 shadow-sm"
+                    : dark
+                      ? "text-slate-400 hover:text-slate-200"
+                      : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {view === "ANALYSE" ? (
           <form
             className="flex min-w-[280px] flex-1 items-center gap-2"
             onSubmit={(event) => {
@@ -3806,6 +4044,37 @@ export default function MarktanalysePage() {
                     : "border-slate-300 bg-white focus:ring-sky-200"
                 }`}
               />
+            </div>
+
+            {/* Normal (fast, nearly free) or Tief (stronger AI review) */}
+            <div
+              className={`inline-flex h-9 shrink-0 items-center rounded border p-0.5 text-xs ${
+                dark ? "border-slate-700 bg-slate-900" : "border-slate-300 bg-white"
+              }`}
+              title="Normal: schnell, fast kostenlos · Tief: KI prüft Vergleiche, Anzeige und Schwachstellen (ca. 5–15 Cent)"
+            >
+              {[
+                ["NORMAL", "Normal"],
+                ["DEEP", "Tief"],
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => changeDepth(id)}
+                  aria-pressed={depth === id}
+                  className={`h-full rounded px-2.5 font-semibold transition ${
+                    depth === id
+                      ? dark
+                        ? "bg-slate-700 text-slate-100"
+                        : "bg-slate-800 text-white"
+                      : dark
+                        ? "text-slate-400 hover:text-slate-200"
+                        : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
 
             <button
@@ -3844,7 +4113,11 @@ export default function MarktanalysePage() {
               </button>
             ) : null}
           </form>
+          ) : null}
         </header>
+
+        {view === "EXPERT" ? <ExpertKnowledge dark={dark} /> : (
+        <>
 
         {!url.trim() && !loading && !result && !awaiting ? (
           <p className={`-mt-2 mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] ${dark ? "text-slate-500" : "text-slate-500"}`}>
@@ -3985,7 +4258,7 @@ export default function MarktanalysePage() {
           </>
         ) : null}
 
-        {loading ? <LoadingPanel seconds={seconds} dark={dark} /> : null}
+        {loading ? <LoadingPanel seconds={seconds} dark={dark} deepSince={deepSince} /> : null}
 
         {!loading && result ? (
           <>
@@ -4018,6 +4291,20 @@ export default function MarktanalysePage() {
               </p>
             ) : null}
 
+            <div className="mb-4">
+              <DeepPanel
+                deep={result.deep || null}
+                live={live}
+                market={result.market}
+                running={deepRunning}
+                error={deepError}
+                onRun={() => runDeep(currentResult())}
+                onAddCost={(amount) => toggleCost("deep-refurb", amount)}
+                costApplied={appliedCosts["deep-refurb"] || 0}
+                dark={dark}
+              />
+            </div>
+
             {/* Decision on the left, evidence on the right. */}
             <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
               <div className="min-w-0 space-y-4">
@@ -4043,18 +4330,12 @@ export default function MarktanalysePage() {
               </div>
 
               <aside className="min-w-0 space-y-4">
-                <NotesPanel result={result} dark={dark} />
+                {result.deep ? null : <NotesPanel result={result} dark={dark} />}
                 <VehiclePanel
                   result={result}
                   dark={dark}
-                  onAddCost={(amount) =>
-                    setAdjust((current) => ({
-                      ...current,
-                      refurbishment: String(
-                        Math.max(0, Number(current.refurbishment) || 0) + amount,
-                      ),
-                    }))
-                  }
+                  onAddCost={(amount) => toggleCost("belt", amount)}
+                  costApplied={appliedCosts.belt || 0}
                 />
                 <EquipmentPanel result={result} dark={dark} />
                 <MarketPanel result={result} dark={dark} />
@@ -4086,6 +4367,8 @@ export default function MarktanalysePage() {
             </p>
           </>
         ) : null}
+        </>
+        )}
       </div>
     </main>
   );

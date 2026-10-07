@@ -6,6 +6,9 @@ import { POLICY } from "@/lib/market/config";
 import { browserStatus } from "@/lib/market/browser";
 import { loadObservations, recordObservation } from "@/lib/market/history";
 import { isProxyConfigured } from "@/lib/market/http";
+import { parseProfitBands } from "@/lib/market/profitRules";
+import { connectDB } from "@/lib/mongodb";
+import ExpertAnswer from "@/models/ExpertAnswer";
 import {
   diagnose as diagnoseMobile,
   isConfigured as mobileConfigured,
@@ -251,6 +254,19 @@ export async function POST(request) {
       serviceHistory: String(manual.serviceHistory || "UNKNOWN"),
       tuvUntil: String(manual.tuvUntil || "").slice(0, 10) || null,
     };
+  }
+
+  // The dealer's minimum profit per selling price (Expertenwissen A01), as
+  // the starting point of the calculation. Never allowed to fail the analysis.
+  if (options.targetProfit === undefined) {
+    try {
+      await connectDB();
+      const rule = await ExpertAnswer.findOne({ questionId: "A01" }, { answer: 1 }).lean();
+      const bands = parseProfitBands(rule?.answer);
+      if (bands.length) options.profitBands = bands;
+    } catch (error) {
+      console.error("market-analysis: A01 profit rules unavailable", error?.message);
+    }
   }
 
   // Earlier sightings of this ad, so the analysis can say whether the price
