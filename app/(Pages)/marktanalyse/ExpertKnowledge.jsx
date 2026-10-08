@@ -1,8 +1,11 @@
 "use client";
 
 /**
- * Expertenwissen — 100 questions for the dealer. Every answer is saved at
- * once and given to the deep analysis ("Tief") as this business's own rules.
+ * Marktwissen — the knowledge base the deep analysis ("Tief") uses.
+ *
+ * A01 is the business's own setting (minimum profit). Everything else is
+ * general market knowledge: one answer field per question, saved when the
+ * field is left.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -10,6 +13,11 @@ import { toast } from "react-hot-toast";
 import { FiCheck, FiLoader } from "react-icons/fi";
 
 import { EXPERT_CATEGORIES, EXPERT_QUESTIONS } from "@/lib/market/expertQuestions";
+
+const lineCount = (text) =>
+  String(text || "")
+    .split(/\r?\n/)
+    .filter((line) => line.trim() && !/^quellen?:/i.test(line.trim())).length;
 
 function QuestionCard({ question, saved, dark, onSave }) {
   const [text, setText] = useState(saved?.answer || "");
@@ -20,6 +28,7 @@ function QuestionCard({ question, saved, dark, onSave }) {
   }, [saved?.answer]);
 
   const dirty = text.trim() !== (saved?.answer || "").trim();
+  const setting = question.kind === "setting";
 
   const save = async () => {
     if (!dirty) return;
@@ -30,9 +39,10 @@ function QuestionCard({ question, saved, dark, onSave }) {
   };
 
   const answered = Boolean((saved?.answer || "").trim());
+  const muted = dark ? "text-slate-500" : "text-slate-400";
 
   return (
-    <li className={`py-3 ${dark ? "border-slate-800" : "border-slate-100"}`}>
+    <li className="py-3">
       <div className="flex items-start gap-2">
         <span
           className={`mt-0.5 inline-flex h-5 w-8 shrink-0 items-center justify-center rounded text-[10px] font-bold tabular-nums ${
@@ -48,23 +58,35 @@ function QuestionCard({ question, saved, dark, onSave }) {
           {question.id}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold leading-snug">{question.question}</p>
+          <p className="text-[13px] font-semibold leading-snug">
+            {question.question}
+            {setting ? <span className={`ml-2 text-[10px] font-normal uppercase tracking-wider ${muted}`}>Einstellung des Betriebs</span> : null}
+          </p>
+          {question.columns ? (
+            <p className={`mt-0.5 truncate font-mono text-[10px] ${muted}`} title={question.columns.join(" | ")}>
+              {question.columns.join(" | ")}
+            </p>
+          ) : null}
           <textarea
             value={text}
             onChange={(event) => setText(event.target.value)}
             onBlur={save}
-            rows={answered || text ? 3 : 2}
-            placeholder={question.hint || "Antwort eingeben …"}
-            className={`mt-1.5 w-full resize-y rounded border px-2.5 py-1.5 text-[13px] leading-relaxed outline-none focus:ring-2 ${
+            rows={setting ? 4 : answered || text ? 8 : 3}
+            spellCheck={false}
+            placeholder={setting ? question.hint : `Antwort einfügen … z. B.\n${question.example}`}
+            className={`mt-1.5 w-full resize-y rounded border px-2.5 py-1.5 leading-relaxed outline-none focus:ring-2 ${
+              setting ? "text-[13px]" : "font-mono text-[11px]"
+            } ${
               dark
                 ? "border-slate-700 bg-slate-950 placeholder:text-slate-600 focus:ring-sky-500/30"
                 : "border-slate-300 bg-white placeholder:text-slate-400 focus:ring-sky-200"
             }`}
           />
-          <div className={`mt-0.5 flex h-4 items-center justify-between text-[10px] ${dark ? "text-slate-500" : "text-slate-400"}`}>
+          <div className={`mt-0.5 flex h-4 items-center justify-between text-[10px] ${muted}`}>
             <span>
+              {answered && !setting ? `${lineCount(saved.answer)} Zeilen · ` : ""}
               {saved?.updatedAt
-                ? `Gespeichert ${new Date(saved.updatedAt).toLocaleDateString("de-DE")}${saved.updatedBy ? ` · ${saved.updatedBy}` : ""}`
+                ? `gespeichert ${new Date(saved.updatedAt).toLocaleDateString("de-DE")}${saved.updatedBy ? ` · ${saved.updatedBy}` : ""}`
                 : ""}
             </span>
             <span className="inline-flex items-center gap-1">
@@ -104,7 +126,7 @@ export default function ExpertKnowledge({ dark }) {
         if (!response.ok) throw new Error(data?.error);
         if (active) setAnswers(data.answers || {});
       } catch (error) {
-        toast.error(error?.message || "Antworten konnten nicht geladen werden.");
+        toast.error(error?.message || "Marktwissen konnte nicht geladen werden.");
       } finally {
         if (active) setLoading(false);
       }
@@ -148,17 +170,15 @@ export default function ExpertKnowledge({ dark }) {
     return result;
   }, [isAnswered]);
 
-  const visible = EXPERT_QUESTIONS.filter(
-    (question) => question.category === category && (!onlyOpen || !isAnswered(question.id)),
-  );
+  const inCategory = EXPERT_QUESTIONS.filter((question) => question.category === category);
+  const visible = inCategory.filter((question) => !onlyOpen || !isAnswered(question.id));
   const current = EXPERT_CATEGORIES.find((cat) => cat.id === category);
 
   const panel = `rounded-lg border ${dark ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"}`;
   const muted = dark ? "text-slate-400" : "text-slate-500";
-
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
-      {/* categories */}
+      {/* areas */}
       <aside className={`${panel} min-w-0 p-3 lg:sticky lg:top-4`}>
         <p className={`text-[11px] font-bold uppercase tracking-wider ${dark ? "text-slate-500" : "text-slate-400"}`}>Fortschritt</p>
         <div className="mt-1.5 flex items-baseline justify-between">
@@ -166,7 +186,7 @@ export default function ExpertKnowledge({ dark }) {
           <span className={`text-[11px] ${muted}`}>beantwortet</span>
         </div>
         <div className={`mt-1.5 h-1.5 overflow-hidden rounded-full ${dark ? "bg-slate-800" : "bg-slate-100"}`}>
-          <div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${total}%` }} />
+          <div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${(total / EXPERT_QUESTIONS.length) * 100}%` }} />
         </div>
 
         <nav className="mt-3 flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
@@ -201,7 +221,7 @@ export default function ExpertKnowledge({ dark }) {
         </nav>
 
         <p className={`mt-3 border-t pt-3 text-[11px] leading-relaxed ${dark ? "border-slate-800" : "border-slate-100"} ${muted}`}>
-          Die Antworten nutzt die <span className="font-semibold">Tiefe Analyse</span> als eure Regeln und Erfahrung – je genauer (Motor, km, Kosten in €), desto besser die Bewertung. Jede Antwort wird beim Verlassen des Feldes gespeichert.
+          Allgemeines Marktwissen, für jeden Händler gleich. Jede Antwort wird beim Verlassen des Feldes gespeichert. Die Tiefe Analyse nimmt daraus nur die Zeilen, die zum geprüften Auto passen.
         </p>
       </aside>
 
@@ -211,15 +231,17 @@ export default function ExpertKnowledge({ dark }) {
           <h2 className="text-sm font-bold">
             {current?.id} · {current?.title}
           </h2>
-          <label className={`flex cursor-pointer items-center gap-1.5 text-[11px] ${muted}`}>
-            <input type="checkbox" checked={onlyOpen} onChange={(event) => setOnlyOpen(event.target.checked)} className="size-3.5 accent-slate-600" />
-            Nur offene Fragen
-          </label>
+          <div className="flex items-center gap-3">
+            <label className={`flex cursor-pointer items-center gap-1.5 text-[11px] ${muted}`}>
+              <input type="checkbox" checked={onlyOpen} onChange={(event) => setOnlyOpen(event.target.checked)} className="size-3.5 accent-slate-600" />
+              Nur offene
+            </label>
+          </div>
         </div>
 
         {loading ? (
           <p className={`flex items-center gap-2 py-8 text-xs ${muted}`}>
-            <FiLoader className="animate-spin" /> Antworten werden geladen …
+            <FiLoader className="animate-spin" /> Marktwissen wird geladen …
           </p>
         ) : visible.length ? (
           <ul className={`divide-y ${dark ? "divide-slate-800" : "divide-slate-100"}`}>

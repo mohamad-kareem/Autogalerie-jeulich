@@ -17,6 +17,7 @@ import {
   FiClipboard,
   FiClock,
   FiCopy,
+  FiCpu,
   FiDatabase,
   FiEdit3,
   FiExternalLink,
@@ -405,7 +406,7 @@ function DecisionStrip({ result, live, dark, onSave, saving, savedAt }) {
       }`}
     >
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="flex min-w-[240px] flex-1 items-center gap-3">
           <Thumb
             src={target.images?.[0]}
             alt=""
@@ -470,9 +471,11 @@ function DecisionStrip({ result, live, dark, onSave, saving, savedAt }) {
                 dark={dark}
                 accent
               />
+              {/* Nachlass, or how far the price is below the limit — the
+                  profit itself is the last line of the calculation. */}
               <StripFigure
-                label={live.discount > 0 ? "Nachlass nötig" : "Gewinn"}
-                value={live.discount > 0 ? euro(live.discount) : euro(live.expected)}
+                label={live.discount > 0 ? "Nachlass nötig" : "Unter Limit"}
+                value={live.discount > 0 ? euro(live.discount) : euro(Math.max(0, live.limit - live.askingPrice))}
                 dark={dark}
                 tone={live.discount > 0 ? "negative" : "positive"}
               />
@@ -534,7 +537,61 @@ function StripFigure({ label, value, hint = null, dark, accent = false, tone = "
   );
 }
 
-/* ============================================================= calculation */
+/* ============================================================= calculation
+ *
+ * One ledger, top to bottom: selling price, minus every cost, minus the
+ * margin, equals the purchase limit. Below it the price actually paid and the
+ * profit that leaves. No figure is estimated for repairs or preparation —
+ * the list names what this car probably needs and the dealer enters his own
+ * prices, only where the car needs it.
+ */
+
+/**
+ * Work this car may need before resale — from the system (Zahnriemen, HU)
+ * and, with a Tiefe Analyse, the AI's list. Names only, never a price.
+ */
+function costSuggestions(result) {
+  const items = [];
+  const belt = result.insights?.belt;
+  const inspection = result.insights?.inspection;
+
+  if (belt?.available && ["OVERDUE", "DUE_SOON", "CHECK_URGENT"].includes(belt.status)) {
+    items.push({
+      key: "belt",
+      label: belt.status === "CHECK_URGENT" ? "Zahnriemen (falls Riemen)" : "Zahnriemenwechsel",
+      note: belt.short,
+      warn: true,
+    });
+  }
+  if (inspection?.available && ["EXPIRED", "DUE"].includes(inspection.status)) {
+    items.push({ key: "hu", label: "HU / TÜV neu", note: inspection.label, warn: true });
+  }
+
+  for (const entry of result.deep?.refurbishment || []) {
+    if (!entry?.item) continue;
+    if (items.some((item) => item.key === "belt") && /zahnriemen|steuerkette|steuertrieb/i.test(entry.item)) continue;
+    if (items.some((item) => item.key === "hu") && /\b(hu|tüv|hauptuntersuchung)\b/i.test(entry.item)) continue;
+    items.push({ key: `deep:${entry.item}`, label: entry.item, note: entry.reason || null });
+  }
+  return items;
+}
+
+/** One ledger row: label (+ small note) on the left, the amount on the right. */
+function LedgerRow({ sign, label, note, children, dark }) {
+  const muted = dark ? "text-slate-500" : "text-slate-400";
+  return (
+    <div className={`flex items-center justify-between gap-3 border-b py-1.5 ${dark ? "border-slate-800" : "border-slate-100"}`}>
+      <div className="min-w-0">
+        <span>
+          {sign ? <span className={`mr-1.5 inline-block w-2.5 ${muted}`}>{sign}</span> : null}
+          {label}
+        </span>
+        {note ? <span className={`block pl-4 text-[11px] leading-tight ${muted}`}>{note}</span> : null}
+      </div>
+      <div className="shrink-0 text-right tabular-nums">{children}</div>
+    </div>
+  );
+}
 
 function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode }) {
   const dealer = result.dealer;
@@ -542,6 +599,8 @@ function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode })
 
   const [postcode, setPostcode] = useState("");
   const [showPickup, setShowPickup] = useState(false);
+  // A tool, not the analysis: closed until the dealer opens it.
+  const [open, setOpen] = useState(false);
 
   const set = (field) => (event) => onAdjust(field, event.target.value);
 
@@ -556,345 +615,311 @@ function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode })
     );
   }
 
-  const input = `h-7 w-24 rounded border px-2 text-right text-xs tabular-nums outline-none focus:ring-2 ${
+  const muted = dark ? "text-slate-500" : "text-slate-400";
+  const soft = dark ? "text-slate-400" : "text-slate-500";
+  const rule = dark ? "border-slate-800" : "border-slate-100";
+  const field = `h-7 rounded border px-2 text-right text-xs tabular-nums outline-none focus:ring-2 ${
     dark
-      ? "border-slate-700 bg-slate-800 focus:ring-sky-500/30"
-      : "border-slate-300 bg-white focus:ring-sky-200"
+      ? "border-slate-700 bg-slate-800 placeholder:text-slate-600 focus:ring-sky-500/30"
+      : "border-slate-300 bg-white placeholder:text-slate-300 focus:ring-sky-200"
   }`;
+  const small = `h-6 w-16 rounded border px-1.5 text-right text-[11px] tabular-nums ${
+    dark ? "border-slate-700 bg-slate-800" : "border-slate-300 bg-white"
+  }`;
+
+  const suggestions = costSuggestions(result);
+  const costs = adjust.costs || {};
+  const custom = Array.isArray(adjust.customCosts) ? adjust.customCosts : [];
+  const setCost = (key, value) => onAdjust("costs", { ...costs, [key]: value });
+  const setCustom = (id, patch) =>
+    onAdjust("customCosts", custom.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)));
+  const addCustom = () =>
+    onAdjust("customCosts", [...custom, { id: `c${Date.now()}`, label: "", amount: "" }]);
+  const removeCustom = (id) => onAdjust("customCosts", custom.filter((entry) => entry.id !== id));
+
+  const marginSource =
+    live.targetProfit === dealer.targetProfit
+      ? dealer.targetProfitSource === "DEEP"
+        ? "von der Tiefen Analyse angepasst"
+        : dealer.targetProfitSource === "A01"
+          ? `Richtwert ${dealer.targetProfitBand || "A01"}`
+          : "Standard"
+      : "eigene Eingabe";
 
   return (
     <Panel dark={dark}>
-      <Caption dark={dark}>Kalkulation</Caption>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        className="-m-4 flex w-[calc(100%+2rem)] items-center justify-between gap-2 p-4 text-left"
+      >
+        <span className={`text-[11px] font-bold uppercase tracking-wider ${muted}`}>Kalkulation</span>
+        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${soft}`}>
+          {open ? "schließen" : "öffnen"}
+          {open ? <FiChevronUp /> : <FiChevronDown />}
+        </span>
+      </button>
 
-      <table className="w-full text-sm">
-        <tbody className={dark ? "divide-y divide-slate-800" : "divide-y divide-slate-100"}>
-          <tr>
-            <td className="py-1.5">
-              Verkaufspreis-Annahme
-              <span className={`ml-2 text-[11px] ${dark ? "text-slate-500" : "text-slate-400"}`}>
-                Marktwert {euro(result.market.marketValue)}
-              </span>
-            </td>
-            <td className="py-1.5 text-right font-semibold tabular-nums">
-              {euro(dealer.sellingPrice)}
-            </td>
-          </tr>
+      {open ? (
+      <div className="mt-6">
 
-          <tr>
-            <td className="py-1.5">
-              <button
-                type="button"
-                onClick={() => setShowPickup((value) => !value)}
-                className="inline-flex items-center gap-1 hover:underline"
-              >
-                Gesamte Abholkosten
-                <span className="text-[10px]">{showPickup ? <FiChevronUp /> : <FiChevronDown />}</span>
-              </button>
-              {pickup?.available ? (
-                <span className={`ml-2 text-[11px] ${dark ? "text-slate-500" : "text-slate-400"}`}>
-                  {pickup.origin} – {pickup.destination} ·{" "}
-                  {numberFormatter.format(pickup.oneWayKm)} km einfach
-                </span>
-              ) : null}
-            </td>
-            <td
-              className={`py-1.5 text-right tabular-nums ${
-                dark ? "text-slate-400" : "text-slate-500"
-              }`}
+      <div className="text-[13px]">
+        <LedgerRow dark={dark} sign=" " label="Verkaufspreis" note={`Annahme · Marktwert ${euro(result.market.marketValue)}`}>
+          <span className="font-semibold">{euro(dealer.sellingPrice)}</span>
+        </LedgerRow>
+
+        {/* pickup */}
+        <LedgerRow
+          dark={dark}
+          sign="−"
+          label={
+            <button
+              type="button"
+              onClick={() => setShowPickup((value) => !value)}
+              className="inline-flex items-center gap-1 hover:underline"
             >
-              {pickup?.available ? `− ${euro(live.pickupCost)}` : "–"}
-            </td>
-          </tr>
+              Abholung
+              <span className="text-[10px]">{showPickup ? <FiChevronUp /> : <FiChevronDown />}</span>
+            </button>
+          }
+          note={
+            pickup?.available
+              ? `${pickup.origin} – ${pickup.destination} · ${numberFormatter.format(pickup.oneWayKm)} km`
+              : null
+          }
+        >
+          <span className={soft}>{pickup?.available ? euro(live.pickupCost) : "–"}</span>
+        </LedgerRow>
 
-          {showPickup && pickup?.available ? (
-            <tr>
-              <td colSpan={2} className="pb-2">
-                <div
-                  className={`rounded px-3 py-2 text-[11px] ${
-                    dark ? "bg-slate-800/60" : "bg-slate-50"
-                  }`}
-                >
-                  <PickupLine
-                    label="Entfernung einfach"
-                    value={`${numberFormatter.format(pickup.oneWayKm)} km`}
-                  />
-
-                  <div className="my-1.5 flex items-center justify-between gap-2">
-                    <span>
-                      Anreise{" "}
-                      {pickup.inboundMode === "CAR" ? "mit dem Auto" : "mit der Bahn"}
-                      {pickup.inboundEstimated ? (
-                        <span className={dark ? "text-slate-500" : "text-slate-400"}>
-                          {" "}(geschätzt)
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <input
-                        type="number"
-                        min="0"
-                        step="15"
-                        value={adjust.inbound}
-                        onChange={set("inbound")}
-                        className={`h-6 w-16 rounded border px-1.5 text-right text-[11px] tabular-nums ${
-                          dark ? "border-slate-700 bg-slate-800" : "border-slate-300 bg-white"
-                        }`}
-                      />
-                      <span className={dark ? "text-slate-500" : "text-slate-400"}>Min.</span>
-                    </span>
-                  </div>
-
-                  <div className="my-1.5 flex items-center justify-between gap-2">
-                    <span>Zeit beim Verkäufer</span>
-                    <span className="flex items-center gap-1">
-                      <input
-                        type="number"
-                        min="0"
-                        step="15"
-                        value={adjust.onSite}
-                        onChange={set("onSite")}
-                        className={`h-6 w-16 rounded border px-1.5 text-right text-[11px] tabular-nums ${
-                          dark ? "border-slate-700 bg-slate-800" : "border-slate-300 bg-white"
-                        }`}
-                      />
-                      <span className={dark ? "text-slate-500" : "text-slate-400"}>Min.</span>
-                    </span>
-                  </div>
-
-                  <PickupLine
-                    label="Rückfahrt mit dem Fahrzeug"
-                    value={formatMinutes(pickup.returnMinutes)}
-                  />
-                  <PickupLine
-                    label="Arbeitszeit gesamt"
-                    value={formatMinutes(live.totalMinutes)}
-                  />
-                  <PickupLine
-                    label="Kosten für Abholer"
-                    value={`${euro(live.labourCost)} · ${(live.totalMinutes / 60).toFixed(1)} Std. × ${euro(pickup.hourlyRate)}`}
-                  />
-
-                  <div className="my-1.5 flex items-center justify-between gap-2">
-                    <span>Bahnticket</span>
-                    <span className="flex items-center gap-1">
-                      <input
-                        type="number"
-                        min="0"
-                        step="5"
-                        value={adjust.ticket}
-                        onChange={set("ticket")}
-                        className={`h-6 w-16 rounded border px-1.5 text-right text-[11px] tabular-nums ${
-                          dark ? "border-slate-700 bg-slate-800" : "border-slate-300 bg-white"
-                        }`}
-                      />
-                      <span className={dark ? "text-slate-500" : "text-slate-400"}>€</span>
-                    </span>
-                  </div>
-
-                  <div className="my-1.5 flex items-center justify-between gap-2">
-                    <span>
-                      Benzinkosten
-                      <span className={dark ? "text-slate-500" : "text-slate-400"}>
-                        {" "}
-                        {numberFormatter.format(pickup.fuelKm)} km ·{" "}
-                        {pickup.fuelLitresPer100Km} l/100 km
-                      </span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <input
-                        type="number"
-                        min="0"
-                        step="5"
-                        value={adjust.fuel}
-                        onChange={set("fuel")}
-                        className={`h-6 w-16 rounded border px-1.5 text-right text-[11px] tabular-nums ${
-                          dark ? "border-slate-700 bg-slate-800" : "border-slate-300 bg-white"
-                        }`}
-                      />
-                      <span className={dark ? "text-slate-500" : "text-slate-400"}>€</span>
-                    </span>
-                  </div>
-                  <PickupLine
-                    label="Gesamte Abholkosten"
-                    value={euro(live.pickupCost)}
-                    bold
-                  />
-
-                  <p
-                    className={`mt-1.5 border-t pt-1.5 text-[10px] ${
-                      dark ? "border-slate-700 text-slate-500" : "border-slate-200 text-slate-400"
-                    }`}
-                  >
-                    Anreise mit der Bahn wird aus der Fahrzeit geschätzt – die tatsächliche
-                    Verbindung oben eintragen, dann rechnet alles damit.
-                  </p>
-                </div>
-              </td>
-            </tr>
-          ) : null}
-
-          {!pickup?.available ? (
-            <tr>
-              <td colSpan={2} className="pb-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[11px] text-amber-600">
-                    {pickup?.note || "Standort unbekannt."}
-                  </span>
-                  <input
-                    value={postcode}
-                    onChange={(event) => setPostcode(event.target.value)}
-                    placeholder="PLZ"
-                    className={`h-7 w-20 rounded border px-2 text-xs ${
-                      dark ? "border-slate-700 bg-slate-800" : "border-slate-300 bg-white"
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    disabled={busy || postcode.trim().length < 4}
-                    onClick={() => onPostcode(postcode.trim())}
-                    className="h-7 rounded bg-sky-600 px-2.5 text-[11px] font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
-                  >
-                    berechnen
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ) : null}
-
-          <tr>
-            <td className="py-1.5">
-              Renovierung
-              <span className={`ml-2 text-[11px] ${dark ? "text-slate-500" : "text-slate-400"}`}>
-                optional
+        {showPickup && pickup?.available ? (
+          <div className={`my-1.5 rounded px-3 py-2 text-[11px] ${dark ? "bg-slate-800/60" : "bg-slate-50"}`}>
+            <div className="my-1 flex items-center justify-between gap-2">
+              <span>
+                Anreise {pickup.inboundMode === "CAR" ? "mit dem Auto" : "mit der Bahn"}
+                {pickup.inboundEstimated ? <span className={muted}> (geschätzt)</span> : null}
               </span>
-            </td>
-            <td className="py-1.5 text-right">
+              <span className="flex items-center gap-1">
+                <input type="number" min="0" step="15" value={adjust.inbound} onChange={set("inbound")} className={small} />
+                <span className={muted}>Min.</span>
+              </span>
+            </div>
+            <div className="my-1 flex items-center justify-between gap-2">
+              <span>Zeit beim Verkäufer</span>
+              <span className="flex items-center gap-1">
+                <input type="number" min="0" step="15" value={adjust.onSite} onChange={set("onSite")} className={small} />
+                <span className={muted}>Min.</span>
+              </span>
+            </div>
+            <PickupLine label="Rückfahrt mit dem Fahrzeug" value={formatMinutes(pickup.returnMinutes)} />
+            <PickupLine
+              label="Arbeitszeit"
+              value={`${formatMinutes(live.totalMinutes)} · ${euro(live.labourCost)} (${euro(pickup.hourlyRate)}/Std.)`}
+            />
+            <div className="my-1 flex items-center justify-between gap-2">
+              <span>Bahnticket</span>
+              <span className="flex items-center gap-1">
+                <input type="number" min="0" step="5" value={adjust.ticket} onChange={set("ticket")} className={small} />
+                <span className={muted}>€</span>
+              </span>
+            </div>
+            <div className="my-1 flex items-center justify-between gap-2">
+              <span>
+                Benzin
+                <span className={muted}>
+                  {" "}
+                  {numberFormatter.format(pickup.fuelKm)} km · {pickup.fuelLitresPer100Km} l/100 km
+                </span>
+              </span>
+              <span className="flex items-center gap-1">
+                <input type="number" min="0" step="5" value={adjust.fuel} onChange={set("fuel")} className={small} />
+                <span className={muted}>€</span>
+              </span>
+            </div>
+          </div>
+        ) : null}
+
+        {!pickup?.available ? (
+          <div className={`flex flex-wrap items-center gap-2 border-b py-1.5 ${rule}`}>
+            <span className="text-[11px] text-amber-600">{pickup?.note || "Standort unbekannt."}</span>
+            <input
+              value={postcode}
+              onChange={(event) => setPostcode(event.target.value)}
+              placeholder="PLZ"
+              className={`h-7 w-20 rounded border px-2 text-xs ${dark ? "border-slate-700 bg-slate-800" : "border-slate-300 bg-white"}`}
+            />
+            <button
+              type="button"
+              disabled={busy || postcode.trim().length < 4}
+              onClick={() => onPostcode(postcode.trim())}
+              className="h-7 rounded bg-sky-600 px-2.5 text-[11px] font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+            >
+              berechnen
+            </button>
+          </div>
+        ) : null}
+
+        {/* costs before resale — the dealer's own prices, per item */}
+        <LedgerRow dark={dark} sign="−" label="Kosten vor dem Verkauf" note={live.refurbishment ? null : "nur eintragen, was das Auto braucht"}>
+          <span className={live.refurbishment ? "font-semibold" : soft}>{euro(live.refurbishment)}</span>
+        </LedgerRow>
+        <div className={`border-b py-1 pl-4 ${rule}`}>
+          {suggestions.map((item) => (
+            <div key={item.key} className="flex items-center justify-between gap-3 py-[3px] text-xs">
+              <div className="min-w-0 truncate" title={item.note || undefined}>
+                <span className={item.warn ? `font-medium ${dark ? "text-amber-400" : "text-amber-700"}` : ""}>{item.label}</span>
+                {item.note ? <span className={`ml-1.5 text-[11px] ${muted}`}>{item.note}</span> : null}
+              </div>
+              <span className="flex shrink-0 items-center gap-1">
+                <input
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={costs[item.key] ?? ""}
+                  onChange={(event) => setCost(item.key, event.target.value)}
+                  placeholder="–"
+                  className={`${field} w-20`}
+                />
+                <span className={`w-3 text-[11px] ${muted}`}>€</span>
+              </span>
+            </div>
+          ))}
+
+          {custom.map((entry) => (
+            <div key={entry.id} className="flex items-center justify-between gap-3 py-[3px] text-xs">
+              <input
+                value={entry.label}
+                onChange={(event) => setCustom(entry.id, { label: event.target.value })}
+                placeholder="Position, z. B. Bremsen hinten"
+                className={`h-7 min-w-0 flex-1 rounded border px-2 text-xs outline-none focus:ring-2 ${
+                  dark
+                    ? "border-slate-700 bg-slate-800 placeholder:text-slate-600 focus:ring-sky-500/30"
+                    : "border-slate-300 bg-white placeholder:text-slate-400 focus:ring-sky-200"
+                }`}
+              />
+              <span className="flex shrink-0 items-center gap-1">
+                <input
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={entry.amount}
+                  onChange={(event) => setCustom(entry.id, { amount: event.target.value })}
+                  placeholder="–"
+                  className={`${field} w-20`}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeCustom(entry.id)}
+                  title="Position entfernen"
+                  className={`w-3 text-[11px] ${muted} hover:text-red-600`}
+                >
+                  <FiX />
+                </button>
+              </span>
+            </div>
+          ))}
+
+          <div className="flex items-center justify-between gap-3 py-[3px] text-xs">
+            <span className={soft}>Sonstiges / Aufbereitung</span>
+            <span className="flex shrink-0 items-center gap-1">
               <input
                 type="number"
                 min="0"
                 step="50"
-                value={adjust.refurbishment}
+                value={Number(adjust.refurbishment) ? adjust.refurbishment : ""}
                 onChange={set("refurbishment")}
-                className={input}
-                placeholder="0"
+                placeholder="–"
+                className={`${field} w-20`}
               />
-            </td>
-          </tr>
+              <span className={`w-3 text-[11px] ${muted}`}>€</span>
+            </span>
+          </div>
 
-          {/* The target profit has no row of its own — it is not something to
-              fill in before every purchase. It is stated here, because a limit
-              that quietly holds a margin back would be unreadable otherwise. */}
-          <tr className={dark ? "bg-slate-800/40" : "bg-slate-50"}>
-            <td className="py-2 text-[15px] font-bold">
-              Einkaufslimit
-              {live.targetProfit > 0 ? (
-                <span
-                  className={`ml-2 text-[11px] font-normal ${
-                    dark ? "text-slate-500" : "text-slate-400"
-                  }`}
-                >
-                  inkl. {euro(live.targetProfit)} Marge
-                  {live.targetProfit === result.dealer?.targetProfit
-                    ? result.dealer?.targetProfitSource === "DEEP"
-                      ? " · von Tiefer Analyse angepasst"
-                      : result.dealer?.targetProfitSource === "A01"
-                        ? ` · Richtwert ${result.dealer.targetProfitBand || "A01"}`
-                        : ""
-                    : ""}
-                </span>
-              ) : null}
-            </td>
-            <td className="py-2 text-right text-lg font-extrabold tabular-nums text-sky-600">
-              {euro(live.limit)}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+          <button type="button" onClick={addCustom} className="mt-0.5 text-[11px] font-semibold text-sky-600 hover:underline">
+            + Position
+          </button>
+        </div>
 
-      {/* What the seller actually wants, once you have spoken to him. Until a
-          figure is entered, the advertised price is what everything runs on. */}
-      <div
-        className={`mt-3 flex flex-wrap items-center justify-between gap-3 rounded border px-3 py-2.5 ${
-          live.negotiated !== null
-            ? dark
-              ? "border-emerald-800 bg-emerald-950/30"
-              : "border-emerald-200 bg-emerald-50"
-            : dark
-              ? "border-slate-800 bg-slate-800/40"
-              : "border-slate-200 bg-slate-50"
-        }`}
-      >
+        {/* margin — the guideline, editable */}
+        <LedgerRow dark={dark} sign="−" label="Marge" note={marginSource}>
+          <span className="flex items-center justify-end gap-1">
+            <input
+              type="number"
+              min="0"
+              step="100"
+              value={adjust.profit}
+              onChange={set("profit")}
+              className={`${field} w-20`}
+            />
+            <span className={`w-3 text-[11px] ${muted}`}>€</span>
+          </span>
+        </LedgerRow>
+
+        <div className={`flex items-center justify-between gap-3 py-2 ${dark ? "bg-slate-800/40" : "bg-slate-50"} -mx-4 px-4`}>
+          <span className="text-[15px] font-bold">
+            <span className={`mr-1.5 inline-block w-2.5 font-normal ${muted}`}>=</span>
+            Einkaufslimit
+          </span>
+          <span className="text-lg font-extrabold tabular-nums text-sky-600">{euro(live.limit)}</span>
+        </div>
+      </div>
+
+      {/* the price actually paid, and what that leaves */}
+      <div className="mt-3 grid grid-cols-2 items-start gap-3">
         <div>
-          <p className="text-xs font-semibold">Verhandelter Preis</p>
-          <p className={`text-[11px] ${dark ? "text-slate-400" : "text-slate-500"}`}>
+          <p className={`text-[11px] font-semibold uppercase tracking-wide ${muted}`}>Einkaufspreis</p>
+          <div className="mt-1 flex items-center gap-1.5">
+            <input
+              type="number"
+              min="0"
+              step="50"
+              value={adjust.negotiated}
+              onChange={set("negotiated")}
+              placeholder={Number.isFinite(live.listPrice) ? String(live.listPrice) : "Preis"}
+              className={`h-8 w-full min-w-0 max-w-28 rounded border px-2 text-right text-sm font-semibold tabular-nums outline-none focus:ring-2 ${
+                dark ? "border-slate-700 bg-slate-800 focus:ring-sky-500/30" : "border-slate-300 bg-white focus:ring-sky-200"
+              }`}
+            />
+            <span className={`text-sm ${muted}`}>€</span>
+            {live.negotiated !== null ? (
+              <button
+                type="button"
+                onClick={() => onAdjust("negotiated", "")}
+                title="Auf den Anzeigenpreis zurücksetzen"
+                className={`inline-flex h-8 w-8 items-center justify-center rounded border ${
+                  dark ? "border-slate-700 hover:bg-slate-800" : "border-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                <FiX />
+              </button>
+            ) : null}
+          </div>
+          <p className={`mt-1 text-[11px] ${soft}`}>
             {live.negotiated !== null ? (
               <>
-                Anzeigenpreis{" "}
-                <span className="line-through tabular-nums">{euro(live.listPrice)}</span> ·{" "}
-                <span className="font-semibold text-emerald-600 tabular-nums">
-                  {euro(live.savings)} gespart
-                </span>
+                Anzeige <span className="line-through tabular-nums">{euro(live.listPrice)}</span> ·{" "}
+                <span className="font-semibold text-emerald-600 tabular-nums">{euro(live.savings)} gespart</span>
               </>
             ) : (
-              <>
-                optional – was der Verkäufer jetzt aufruft. Leer lassen für{" "}
-                {euro(live.listPrice)} aus der Anzeige.
-              </>
+              "leer = Anzeigenpreis"
             )}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min="0"
-            step="50"
-            value={adjust.negotiated}
-            onChange={set("negotiated")}
-            placeholder={Number.isFinite(live.listPrice) ? String(live.listPrice) : "Preis"}
-            className={`h-8 w-28 rounded border px-2 text-right text-sm font-semibold tabular-nums outline-none focus:ring-2 ${
-              dark
-                ? "border-slate-700 bg-slate-800 focus:ring-emerald-500/30"
-                : "border-slate-300 bg-white focus:ring-emerald-200"
-            }`}
-          />
-          <span className={`text-sm ${dark ? "text-slate-500" : "text-slate-400"}`}>€</span>
-          {live.negotiated !== null ? (
-            <button
-              type="button"
-              onClick={() => onAdjust("negotiated", "")}
-              title="Auf den Anzeigenpreis zurücksetzen"
-              className={`inline-flex h-8 w-8 items-center justify-center rounded border ${
-                dark ? "border-slate-700 hover:bg-slate-800" : "border-slate-300 hover:bg-white"
-              }`}
-            >
-              <FiX />
-            </button>
+        <div className="text-right">
+          <p className={`text-[11px] font-semibold uppercase tracking-wide ${muted}`}>Gewinn</p>
+          <p className={`text-lg font-extrabold tabular-nums ${live.expected >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            {signedEuro(live.expected)}
+          </p>
+          {Number.isFinite(live.expectedLow) && Number.isFinite(live.expectedHigh) ? (
+            <p className={`text-[11px] tabular-nums ${soft}`}>
+              {signedEuro(live.expectedLow)} bis {signedEuro(live.expectedHigh)}
+            </p>
           ) : null}
         </div>
       </div>
-
-      <div className="mt-3 grid grid-cols-3 gap-3">
-        <Metric
-          label={live.negotiated !== null ? "Verhandelter Preis" : "Angebotspreis"}
-          value={euro(live.askingPrice)}
-          dark={dark}
-        />
-        <Metric
-          label="Kalkulierter Überschuss"
-          value={euro(live.expected)}
-          hint={Number.isFinite(live.expectedLow) && Number.isFinite(live.expectedHigh)
-            ? `Szenario: ${signedEuro(live.expectedLow)} bis ${signedEuro(live.expectedHigh)}` : null}
-          dark={dark}
-          accent={live.expected >= 0 ? "positive" : "negative"}
-        />
-        <Metric
-          label="Nötiger Nachlass"
-          value={live.discount > 0 ? euro(live.discount) : "keiner"}
-          dark={dark}
-          accent={live.discount > 0 ? "negative" : "positive"}
-        />
       </div>
+      ) : null}
     </Panel>
   );
 }
@@ -919,15 +944,21 @@ function ComparablesTable({ result, asking, dark }) {
 
   return (
     <Panel dark={dark} padded={false}>
-      <div className="flex items-center justify-between px-4 pt-4">
-        <Caption dark={dark}>Vergleichsfahrzeuge</Caption>
-        <span className={`text-[11px] ${dark ? "text-slate-500" : "text-slate-400"}`}>
-          {rows.length} Angebote · ab {result.meta.similarityThreshold} % Übereinstimmung
-        </span>
+      <div className="px-4 pt-4">
+        <Caption
+          dark={dark}
+          action={
+            <span className={`text-[11px] ${dark ? "text-slate-500" : "text-slate-400"}`}>
+              {rows.length} Angebote · ab {result.meta.similarityThreshold} % Übereinstimmung
+            </span>
+          }
+        >
+          Vergleichsfahrzeuge
+        </Caption>
       </div>
 
       {rows.length ? (
-        <div className="max-h-[640px] overflow-auto">
+        <div className="max-h-[560px] overflow-auto pb-2">
           <table className="w-full min-w-[720px] text-xs">
             <thead>
               <tr
@@ -1056,88 +1087,7 @@ function ComparablesTable({ result, asking, dark }) {
         </p>
       )}
 
-      <div className="px-4 pb-4">
-        <PriceScale
-          market={result.market}
-          dealer={result.dealer}
-          asking={asking}
-          dark={dark}
-        />
-      </div>
     </Panel>
-  );
-}
-
-/* ---------------------------------------------------------- price position */
-
-function PriceScale({ market, dealer, asking, dark }) {
-  const low = Number.isFinite(market.minimumPrice) ? market.minimumPrice : null;
-  const high = Number.isFinite(market.maximumPrice) ? market.maximumPrice : null;
-  if (low === null || high === null || high <= low) return null;
-
-  const extras = [asking, dealer?.maximumPurchasePrice, market.marketValue].filter(
-    Number.isFinite,
-  );
-  const min = Math.min(low, ...extras);
-  const max = Math.max(high, ...extras);
-  const span = max - min || 1;
-  const at = (value) => `${(3 + ((value - min) / span) * 94).toFixed(2)}%`;
-
-  const markers = [
-    { value: dealer?.maximumPurchasePrice, label: "Limit", color: "bg-sky-600", text: "text-sky-600" },
-    { value: market.marketValue, label: "Markt", color: "bg-emerald-600", text: "text-emerald-600" },
-    { value: asking, label: "Angebot", color: "bg-slate-900", text: dark ? "text-slate-200" : "text-slate-900" },
-  ].filter((marker) => Number.isFinite(marker.value));
-
-  return (
-    <div className="mt-4">
-      <div className="relative" style={{ height: `${18 + markers.length * 14}px` }}>
-        <div
-          className={`absolute inset-x-0 top-2 h-1.5 rounded-full ${
-            dark ? "bg-slate-800" : "bg-slate-200"
-          }`}
-        />
-        {Number.isFinite(market.rangeFrom) && Number.isFinite(market.rangeTo) ? (
-          <div
-            className="absolute top-2 h-1.5 rounded-full bg-emerald-300"
-            title="Marktspanne"
-            style={{
-              left: at(market.rangeFrom),
-              width: `${(((market.rangeTo - market.rangeFrom) / span) * 94).toFixed(2)}%`,
-            }}
-          />
-        ) : null}
-
-        {/* ticks all sit on the rail */}
-        {markers.map((marker) => (
-          <span
-            key={`tick-${marker.label}`}
-            className={`absolute top-0 h-[14px] w-[2px] -translate-x-1/2 ${marker.color}`}
-            style={{ left: at(marker.value) }}
-          />
-        ))}
-
-        {/* labels get their own row each, so close values never overlap */}
-        {markers.map((marker, index) => (
-          <span
-            key={`label-${marker.label}`}
-            className={`absolute -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold tabular-nums ${marker.text}`}
-            style={{ left: at(marker.value), top: `${16 + index * 14}px` }}
-          >
-            {marker.label} {euro(marker.value)}
-          </span>
-        ))}
-      </div>
-
-      <div
-        className={`flex justify-between text-[10px] ${
-          dark ? "text-slate-600" : "text-slate-400"
-        }`}
-      >
-        <span>{euro(min)}</span>
-        <span>{euro(max)}</span>
-      </div>
-    </div>
   );
 }
 
@@ -1380,7 +1330,6 @@ function NegotiationPanel({ result, live, dark }) {
 
   const muted = dark ? "text-slate-500" : "text-slate-400";
   const body = dark ? "text-slate-300" : "text-slate-600";
-  const agreed = live.negotiated !== null;
 
   const copyNotes = async () => {
     const title =
@@ -1414,6 +1363,22 @@ function NegotiationPanel({ result, live, dark }) {
       toast.error("Kopieren nicht möglich.");
     }
   };
+
+  // The plan in one line. Angebot, Einkaufslimit and Nachlass are in the
+  // strip at the top — not repeated here.
+  const tone =
+    plan.mode === "NO_OFFER"
+      ? dark ? "bg-red-950/40 text-red-300" : "bg-red-50 text-red-700"
+      : plan.mode === "LIMIT_OFFER" || (plan.askingWithinLimit && plan.stance === "SOFT")
+        ? dark ? "bg-amber-950/40 text-amber-300" : "bg-amber-50 text-amber-800"
+        : dark ? "bg-slate-800/60 text-slate-200" : "bg-slate-50 text-slate-700";
+
+  const Step = ({ label, value, strong = false }) => (
+    <span className="whitespace-nowrap">
+      <span className={`text-[10px] font-semibold uppercase tracking-wide ${muted}`}>{label}</span>{" "}
+      <span className={`tabular-nums ${strong ? "font-bold text-sky-600" : "font-semibold"}`}>{euro(value)}</span>
+    </span>
+  );
 
   return (
     <Panel dark={dark}>
@@ -1449,124 +1414,41 @@ function NegotiationPanel({ result, live, dark }) {
         Verhandlung
       </Caption>
 
-      {plan.mode === "NO_OFFER" ? (
-        <div className="grid grid-cols-3 gap-3">
-          <Metric label="Angebot" value="–" hint="lohnt nicht" dark={dark} />
-          <Metric
-            label="Einkaufslimit"
-            value={euro(plan.walkAway)}
-            hint="nach Kosten und Marge"
-            dark={dark}
-            accent="primary"
-          />
-          <Metric
-            label="Abstand"
-            value={percent(plan.gapPercent)}
-            hint={`${euro(live.askingPrice - plan.walkAway)} über dem Limit`}
-            dark={dark}
-            accent="negative"
-          />
-        </div>
-      ) : plan.mode === "LIMIT_OFFER" ? (
-        <div className="grid grid-cols-3 gap-3">
-          <Metric label="Angebot" value={euro(plan.opening)} hint="einmal anbieten" dark={dark} />
-          <Metric
-            label="Höchstens"
-            value={euro(plan.walkAway)}
-            hint="= Einkaufslimit"
-            dark={dark}
-            accent="primary"
-          />
-          <Metric
-            label="Abstand"
-            value={percent(plan.gapPercent)}
-            hint={`${euro(live.askingPrice - plan.walkAway)} über dem Limit`}
-            dark={dark}
-            accent="negative"
-          />
-        </div>
-      ) : (
-      <div className="grid grid-cols-3 gap-3">
-        <Metric
-          label="Einstieg"
-          value={euro(plan.opening)}
-          hint="erstes Angebot"
-          dark={dark}
-        />
-        <Metric
-          label="Ziel"
-          value={euro(plan.target)}
-          hint={
-            plan.discountToTarget > 0
-              ? `−${euro(plan.discountToTarget)} (${percent(plan.discountToTargetPercent)})`
-              : "entspricht dem Angebot"
-          }
-          dark={dark}
-          accent="primary"
-        />
-        <Metric
-          label="Schmerzgrenze"
-          value={euro(plan.walkAway)}
-          hint={plan.askingWithinLimit ? "= Angebotspreis" : "= Einkaufslimit"}
-          dark={dark}
-        />
+      <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 rounded px-3 py-2 text-xs leading-5 ${tone}`}>
+        {plan.mode === "NO_OFFER" ? (
+          <span>
+            Kein Angebot abgeben – der Verkäufer müsste {percent(plan.gapPercent)} nachlassen. Anzeige
+            speichern und den Preis beobachten.
+          </span>
+        ) : plan.mode === "LIMIT_OFFER" ? (
+          <span>
+            Einmal <span className="font-semibold tabular-nums">{euro(plan.opening)}</span> anbieten –
+            in Stufen zu verhandeln lohnt bei {percent(plan.gapPercent)} Abstand nicht. Sinkt der Preis,
+            zeigt die nächste Prüfung den Verlauf.
+          </span>
+        ) : (
+          <>
+            <Step label="Einstieg" value={plan.opening} />
+            <span className={muted}>→</span>
+            <Step label="Ziel" value={plan.target} strong />
+            <span className={muted}>→</span>
+            <Step label="Grenze" value={plan.walkAway} />
+            {plan.askingWithinLimit && plan.stance === "SOFT" ? (
+              <span className="basis-full text-[11px]">
+                Preis liegt schon im Limit und die Nachfrage ist hoch – nicht zu hart pokern.
+              </span>
+            ) : null}
+          </>
+        )}
       </div>
-      )}
 
-      {agreed ? (
-        <p
-          className={`mt-3 rounded px-2.5 py-2 text-[11px] leading-5 ${
-            live.askingPrice <= live.limit
-              ? dark
-                ? "bg-emerald-950/40 text-emerald-300"
-                : "bg-emerald-50 text-emerald-800"
-              : dark
-                ? "bg-red-950/40 text-red-300"
-                : "bg-red-50 text-red-700"
-          }`}
-        >
-          Verhandelter Preis {euro(live.askingPrice)} liegt{" "}
-          {live.askingPrice <= live.limit
-            ? `${euro(live.limit - live.askingPrice)} unter dem Einkaufslimit.`
-            : `${euro(live.askingPrice - live.limit)} über dem Einkaufslimit.`}
-        </p>
-      ) : plan.mode === "NO_OFFER" ? (
-        <p
-          className={`mt-3 rounded px-2.5 py-2 text-[11px] leading-5 ${
-            dark ? "bg-red-950/40 text-red-300" : "bg-red-50 text-red-700"
-          }`}
-        >
-          Der Verkäufer müsste {percent(plan.gapPercent)} nachlassen – dafür gibt es keinen
-          Verhandlungsspielraum. Kein Angebot abgeben, Anzeige speichern und den Preis beobachten.
-        </p>
-      ) : plan.mode === "LIMIT_OFFER" ? (
-        <p
-          className={`mt-3 rounded px-2.5 py-2 text-[11px] leading-5 ${
-            dark ? "bg-amber-950/40 text-amber-300" : "bg-amber-50 text-amber-800"
-          }`}
-        >
-          Der Verkäufer müsste {percent(plan.gapPercent)} nachlassen – in Stufen zu verhandeln
-          lohnt nicht. Einmal {euro(plan.opening)} bis höchstens {euro(plan.walkAway)} anbieten
-          und die Anzeige speichern: sinkt der Preis, zeigt die nächste Prüfung den Preisverlauf.
-        </p>
-      ) : plan.askingWithinLimit && plan.stance === "SOFT" ? (
-        <p
-          className={`mt-3 rounded px-2.5 py-2 text-[11px] leading-5 ${
-            dark ? "bg-amber-950/40 text-amber-300" : "bg-amber-50 text-amber-800"
-          }`}
-        >
-          Schon der Angebotspreis liegt im Limit und die Nachfrage ist hoch – nicht zu hart
-          pokern, sonst kauft ein anderer.
-        </p>
-      ) : null}
-
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <p className={`mb-1.5 text-[10px] font-bold uppercase tracking-wider ${muted}`}>
+          <p className={`mb-1 text-[10px] font-bold uppercase tracking-wider ${muted}`}>
             Argumente für Nachlass
           </p>
           {negotiation.arguments.length ? (
-            <ul className="space-y-1.5">
+            <ul className="space-y-1">
               {negotiation.arguments.map((entry) => (
                 <li key={entry.text} className={`flex gap-2 text-xs leading-5 ${body}`}>
                   <WeightDots weight={entry.weight} tone="bg-emerald-600" />
@@ -1580,11 +1462,11 @@ function NegotiationPanel({ result, live, dark }) {
         </div>
 
         <div>
-          <p className={`mb-1.5 text-[10px] font-bold uppercase tracking-wider ${muted}`}>
+          <p className={`mb-1 text-[10px] font-bold uppercase tracking-wider ${muted}`}>
             Spricht für den Verkäufer
           </p>
           {negotiation.counterArguments.length ? (
-            <ul className="space-y-1.5">
+            <ul className="space-y-1">
               {negotiation.counterArguments.map((entry) => (
                 <li key={entry.text} className={`flex gap-2 text-xs leading-5 ${body}`}>
                   <WeightDots weight={entry.weight} tone="bg-amber-500" />
@@ -1658,7 +1540,7 @@ function PriceMileageChart({ points, trend, targetKm, targetPrice, limit, dark }
   const colors = dark ? CHART_COLORS.dark : CHART_COLORS.light;
 
   const width = 640;
-  const height = 240;
+  const height = 220;
   const margin = { top: 14, right: 18, bottom: 28, left: 58 };
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
@@ -1910,6 +1792,23 @@ function PriceMileageChart({ points, trend, targetKm, targetPrice, limit, dark }
   );
 }
 
+/** One cell of the compact figure bar above the chart. */
+function PositionStat({ label, value, hint, tone = "", dark }) {
+  return (
+    <div className="min-w-0 px-3 py-2">
+      <p className={`truncate text-[10px] font-semibold uppercase tracking-wide ${dark ? "text-slate-500" : "text-slate-400"}`}>
+        {label}
+      </p>
+      <p className={`truncate text-[13px] font-bold tabular-nums ${tone}`}>{value}</p>
+      {hint ? (
+        <p className={`truncate text-[10px] tabular-nums ${dark ? "text-slate-500" : "text-slate-400"}`} title={hint}>
+          {hint}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function MarketPositionPanel({ result, live, dark }) {
   const insights = result.insights;
   const position = insights?.position;
@@ -1928,71 +1827,81 @@ function MarketPositionPanel({ result, live, dark }) {
   const expected = position.trend?.expectedAtTarget ?? null;
   const gap = Number.isFinite(expected) && Number.isFinite(askingPrice) ? askingPrice - expected : null;
 
+  const share = position.total ? cheaper / position.total : null;
+  const stats = [
+    expected === null ? null : {
+      key: "expected",
+      label: `Erwartet bei ${km(result.target.mileageKm)}`,
+      value: euro(expected),
+      hint: gap === null ? null : `Angebot ${signedEuro(gap)}`,
+      tone: gap === null ? "" : gap > 300 ? "text-red-600" : gap < -300 ? "text-emerald-600" : "",
+    },
+    position.trend ? {
+      key: "trend",
+      label: "Je 10.000 km",
+      value: `≈ ${euro(position.trend.per10000Km)}`,
+      hint: "Wertverlust im Markt",
+    } : null,
+    portal?.available && Number.isFinite(portal.median)
+      ? {
+          key: "portal",
+          label: `${portal.source}-Median`,
+          value: euro(portal.median),
+          hint: portal.label
+            ? `„${portal.label}“${portal.agrees === true ? " · deckt sich" : ""}`
+            : portal.agrees === true
+              ? "deckt sich mit unserem Wert"
+              : Number.isFinite(portal.agreementPercent)
+                ? `unser Wert ${signedPercent(portal.agreementPercent)}`
+                : null,
+        }
+      : portal?.available
+        ? {
+            key: "portal",
+            label: `${portal.source}-Bewertung`,
+            value: portal.label,
+            hint: "Einstufung des Portals",
+            tone: portal.tone === "HIGH" ? "text-red-600" : portal.tone === "LOW" ? "text-emerald-600" : "",
+          }
+        : null,
+    history?.changed
+      ? {
+          key: "history",
+          label: "Preisverlauf",
+          value: history.priceDrop > 0 ? `−${euro(history.priceDrop)}` : euro(result.target.price),
+          hint: `seit ${history.firstSeenLabel}: ${euro(history.firstPrice)}`,
+          tone: history.priceDrop > 0 ? "text-emerald-600" : "",
+        }
+      : null,
+  ].filter(Boolean);
+
   return (
     <Panel dark={dark}>
       <Caption
         dark={dark}
         action={
-          position.total ? (
-            <Chip dark={dark} tone={cheaper / position.total >= 0.5 ? "red" : "emerald"}>
-              {cheaper} von {position.total} günstiger
+          share === null ? null : (
+            <Chip dark={dark} tone={share > 0.6 ? "red" : share < 0.4 ? "emerald" : "slate"}>
+              {cheaper} von {position.total} günstiger ·{" "}
+              {share > 0.6 ? "Angebot eher teuer" : share < 0.4 ? "Angebot eher günstig" : "Mittelfeld"}
             </Chip>
-          ) : null
+          )
         }
       >
         Marktposition
       </Caption>
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Metric
-          label="Je 10.000 km"
-          value={position.trend ? `≈ ${euro(position.trend.per10000Km)}` : "–"}
-          hint={position.trend ? "Wertverlust im Markt" : "zu wenig Streuung"}
-          dark={dark}
-        />
-        <Metric
-          label={`Erwartet bei ${km(result.target.mileageKm)}`}
-          value={euro(expected)}
-          hint={gap === null ? null : `Angebot ${signedEuro(gap)}`}
-          dark={dark}
-          accent={gap === null ? "none" : gap > 300 ? "negative" : gap < -300 ? "positive" : "none"}
-        />
-        {portal?.available && !Number.isFinite(portal.median) ? (
-          <Metric
-            label={`${portal.source}-Bewertung`}
-            value={portal.label}
-            hint="Einstufung des Portals"
-            dark={dark}
-            accent={portal.tone === "HIGH" ? "negative" : portal.tone === "LOW" ? "positive" : "none"}
-          />
-        ) : portal?.available ? (
-          <Metric
-            label={`${portal.source}-Median`}
-            value={euro(portal.median)}
-            hint={
-              portal.label
-                ? `„${portal.label}“${portal.agrees === true ? " · deckt sich mit uns" : ""}`
-                : portal.agrees === true
-                  ? "deckt sich mit unserem Wert"
-                  : Number.isFinite(portal.agreementPercent)
-                    ? `unser Wert ${signedPercent(portal.agreementPercent)}`
-                    : null
-            }
-            dark={dark}
-          />
-        ) : null}
-        {history?.changed ? (
-          <Metric
-            label="Preisverlauf"
-            value={
-              history.priceDrop > 0 ? `−${euro(history.priceDrop)}` : euro(result.target.price)
-            }
-            hint={`seit ${history.firstSeenLabel}: ${euro(history.firstPrice)}`}
-            dark={dark}
-            accent={history.priceDrop > 0 ? "positive" : "none"}
-          />
-        ) : null}
+      {stats.length ? (
+      <div
+        className={`mb-3 grid grid-cols-2 overflow-hidden rounded border sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none ${
+          dark ? "divide-slate-800 border-slate-800 bg-slate-950/30" : "divide-slate-200 border-slate-200 bg-slate-50"
+        } sm:divide-x`}
+      >
+        {stats.map((stat) => (
+          <PositionStat key={stat.key} label={stat.label} value={stat.value} hint={stat.hint} tone={stat.tone} dark={dark} />
+        ))}
       </div>
+      ) : null}
 
       <PriceMileageChart
         points={position.points}
@@ -2002,131 +1911,41 @@ function MarketPositionPanel({ result, live, dark }) {
         limit={live?.limit ?? result.dealer?.maximumPurchasePrice}
         dark={dark}
       />
-
-      <p className={`mt-2 text-[10px] ${dark ? "text-slate-600" : "text-slate-400"}`}>
-        Angebotspreise wie im Portal. Punkte antippen für Details, klicken öffnet die Anzeige.
-      </p>
     </Panel>
-  );
-}
-
-/* ============================================================ checklist */
-
-function Checklist({ items, dark }) {
-  const [done, setDone] = useState(() => new Set());
-  if (!items?.length) return <p className="text-xs text-slate-500">Keine Angaben.</p>;
-
-  const areas = [...new Set(items.map((item) => item.area))];
-
-  return (
-    <div className="space-y-3">
-      {areas.map((area) => (
-        <div key={area}>
-          <p
-            className={`mb-1 text-[10px] font-bold uppercase tracking-wider ${
-              dark ? "text-slate-500" : "text-slate-400"
-            }`}
-          >
-            {area}
-          </p>
-          <ul className="space-y-1">
-            {items
-              .filter((item) => item.area === area)
-              .map((item) => {
-                const key = `${item.area}:${item.text}`;
-                const checked = done.has(key);
-                return (
-                  <li key={key}>
-                    <label className="flex cursor-pointer gap-2 text-xs leading-5">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() =>
-                          setDone((previous) => {
-                            const next = new Set(previous);
-                            if (next.has(key)) next.delete(key);
-                            else next.add(key);
-                            return next;
-                          })
-                        }
-                        className="mt-1 h-3.5 w-3.5 shrink-0 accent-sky-600"
-                      />
-                      <span className={checked ? "line-through opacity-50" : ""}>
-                        <span className={dark ? "text-slate-200" : "text-slate-700"}>
-                          {item.text}
-                        </span>
-                        <span className={`block text-[10px] ${dark ? "text-slate-500" : "text-slate-400"}`}>
-                          {item.why}
-                        </span>
-                      </span>
-                    </label>
-                  </li>
-                );
-              })}
-          </ul>
-        </div>
-      ))}
-    </div>
   );
 }
 
 /* ================================================================ sidebar */
 
-/* ================================================================ Zahnriemen
- *
- * Only speaks up when a change is likely due or unclear; a chain or a belt
- * with years left is one quiet line in the vehicle panel.
- */
-
+/* Zahnriemen statuses that need the dealer's attention. */
 const BELT_ATTENTION = ["OVERDUE", "DUE_SOON", "CHECK_URGENT", "DONE_UNVERIFIED"];
 
-function BeltNote({ belt, dark, onAddCost, applied = 0 }) {
-  if (!belt?.available || !BELT_ATTENTION.includes(belt.status)) return null;
-
-  const urgent = belt.status === "OVERDUE";
-  const estimate = belt.costRange
-    ? Math.round((belt.costRange[0] + belt.costRange[1]) / 2 / 50) * 50
-    : null;
-  const tone = urgent
-    ? dark
-      ? "border-red-900/60 bg-red-950/30 text-red-200"
-      : "border-red-200 bg-red-50 text-red-800"
-    : dark
-      ? "border-amber-900/60 bg-amber-950/30 text-amber-200"
-      : "border-amber-200 bg-amber-50 text-amber-800";
-
-  return (
-    <div className={`mt-3 rounded border p-2 text-[11px] leading-4 ${tone}`}>
-      <p className="font-semibold">{belt.label}</p>
-      <p className="mt-0.5 opacity-90">{belt.detail}</p>
-      <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
-        <span className="opacity-70">Richtwert – Intervall laut Serviceheft prüfen</span>
-        {estimate && onAddCost && belt.status !== "DONE_UNVERIFIED" ? (
-          applied ? (
-            <span className="font-semibold">
-              ✓ {applied.toLocaleString("de-DE")} € übernommen ·{" "}
-              <button type="button" onClick={() => onAddCost(estimate)} className="underline underline-offset-2 hover:opacity-80">
-                rückgängig
-              </button>
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onAddCost(estimate)}
-              className={`rounded px-2 py-1 font-semibold transition ${
-                dark ? "bg-slate-900/70 hover:bg-slate-900" : "bg-white/80 hover:bg-white"
-              }`}
-            >
-              + {estimate.toLocaleString("de-DE")} € in Kalkulation
-            </button>
-          )
-        ) : null}
-      </div>
-    </div>
-  );
+/** The belt in one line: what the engine has and when the change is due. */
+function beltLine(belt) {
+  const label =
+    belt.drive === "CHAIN"
+      ? "Steuertrieb"
+      : belt.drive === "WET_BELT"
+        ? "Zahnriemen (Ölbad)"
+        : "Zahnriemen";
+  const left = [
+    Number.isFinite(belt.kmLeft) && belt.kmLeft > 0 ? `${numberFormatter.format(belt.kmLeft)} km` : null,
+    Number.isFinite(belt.monthsLeft) && belt.monthsLeft > 0
+      ? belt.monthsLeft >= 24 ? `${Math.floor(belt.monthsLeft / 12)} J.` : `${belt.monthsLeft} Mon.`
+      : null,
+  ].filter(Boolean).join(" / ");
+  const value =
+    belt.drive === "CHAIN"
+      ? "Kette"
+      : belt.status === "OVERDUE"
+        ? "fällig"
+        : (belt.status === "DUE_SOON" || belt.status === "OK" || belt.status === "DONE") && left
+          ? `fällig in ${left}`
+          : belt.short;
+  return { label, value };
 }
 
-function VehiclePanel({ result, dark, onAddCost, costApplied = 0 }) {
+function VehiclePanel({ result, dark }) {
   const target = result.target;
   const insights = result.insights || {};
   const usage = insights.usage;
@@ -2202,12 +2021,14 @@ function VehiclePanel({ result, dark, onAddCost, costApplied = 0 }) {
           warn={!inspection?.available || ["EXPIRED", "DUE"].includes(inspection.status)}
         />
         {belt?.available ? (
-          <Line
-            label={belt.drive === "CHAIN" ? "Steuertrieb" : "Zahnriemen"}
-            value={belt.short}
-            dark={dark}
-            warn={BELT_ATTENTION.includes(belt.status)}
-          />
+          <div title={[belt.engine, belt.detail].filter(Boolean).join(" – ")}>
+            <Line
+              label={beltLine(belt).label}
+              value={beltLine(belt).value}
+              dark={dark}
+              warn={BELT_ATTENTION.includes(belt.status)}
+            />
+          </div>
         ) : null}
         {Number.isFinite(target.ownerCount) ? (
           <Line
@@ -2251,13 +2072,6 @@ function VehiclePanel({ result, dark, onAddCost, costApplied = 0 }) {
         </div>
       ) : null}
 
-      <BeltNote
-        key={`belt-${target.listingUrl || target.listingKey || title}`}
-        belt={belt}
-        dark={dark}
-        onAddCost={onAddCost}
-        applied={costApplied}
-      />
 
       {target.damageNote ? (
         <p className="mt-2 rounded border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-800">
@@ -2323,96 +2137,68 @@ function MarketPanel({ result, dark }) {
 }
 
 /**
- * Reasons, risks and questions as tabs rather than three tall columns —
- * the same content in a third of the height.
- *
- * This sits where the "Hinweise" box used to. Risks worth checking and the
- * questions to put to the seller are what a buyer acts on; remarks about the
- * data behind the number belong in the technical section, and are there.
+ * The report's opening for a normal analysis: the summary and the risks of
+ * this car — facts only, no how-to lists.
+ * With a Tiefe Analyse its Fazit takes this place.
  */
-function NotesPanel({ result, dark }) {
-  const [tab, setTab] = useState("risks");
+function NormalFazit({ result, dark, onRun, error }) {
+  const recommendation = result.recommendation || {};
+  const risks = recommendation.risks || [];
 
-  const tabs = [
-    { id: "risks", label: "Risiken", values: result.recommendation?.risks },
-    { id: "questions", label: "Fragen", values: result.recommendation?.questionsForSeller },
-    { id: "checklist", label: "Prüfliste", values: result.insights?.checklist },
-    { id: "reasons", label: "Bewertung", values: result.recommendation?.reasons },
-  ];
-
-  const active = tabs.find((entry) => entry.id === tab) || tabs[0];
+  const muted = dark ? "text-slate-500" : "text-slate-400";
+  const body = dark ? "text-slate-300" : "text-slate-700";
+  const rule = dark ? "border-slate-800" : "border-slate-100";
 
   return (
     <Panel dark={dark}>
-      <div
-        className={`-mx-4 -mt-4 mb-3 flex border-b px-4 ${
-          dark ? "border-slate-800" : "border-slate-200"
-        }`}
-      >
-        {tabs.map((entry) => (
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className={`text-[11px] font-bold uppercase tracking-wider ${muted}`}>
+            Fazit{" "}
+            <span className="font-normal normal-case tracking-normal">
+              · {recommendation.generatedBy === "regelbasiert" ? "regelbasiert" : "KI-Formulierung"}
+            </span>
+          </p>
+          {recommendation.headline ? (
+            <h2 className="mt-1 text-[15px] font-bold leading-snug">{recommendation.headline}</h2>
+          ) : null}
+        </div>
+        {onRun ? (
           <button
-            key={entry.id}
             type="button"
-            onClick={() => setTab(entry.id)}
-            className={`-mb-px border-b-2 px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider transition ${
-              entry.id === active.id
-                ? "border-sky-600 text-sky-600"
-                : `border-transparent ${dark ? "text-slate-500 hover:text-slate-300" : "text-slate-400 hover:text-slate-600"}`
+            onClick={onRun}
+            title={error || "KI prüft Vergleiche, Anzeige und Schwachstellen – etwa 20–40 Sekunden"}
+            className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded border px-3 text-xs font-semibold transition ${
+              dark ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-300 text-slate-700 hover:bg-slate-50"
             }`}
           >
-            {entry.label}
+            <FiCpu /> {error ? "Tiefe Analyse erneut" : "Tiefe Analyse"}
           </button>
-        ))}
+        ) : null}
       </div>
 
-      {active.id === "checklist" ? (
-        <Checklist items={active.values} dark={dark} />
-      ) : active.values?.length ? (
-        <ul className="space-y-1.5">
-          {active.values.map((value, index) => (
-            <li
-              key={index}
-              className={`flex gap-2 text-xs leading-5 ${
-                dark ? "text-slate-300" : "text-slate-600"
-              }`}
-            >
-              <span className={dark ? "text-slate-600" : "text-slate-300"}>—</span>
-              <span>{value}</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-xs text-slate-500">Keine Angaben.</p>
-      )}
+      {recommendation.summary ? (
+        <p className={`mt-1.5 max-w-4xl text-[13px] leading-relaxed ${body}`}>{recommendation.summary}</p>
+      ) : null}
+      {error ? <p className="mt-1.5 text-[11px] text-red-600">{error}</p> : null}
+
+      {risks.length ? (
+        <div className="mt-3">
+          <h3 className={`mb-1.5 border-b pb-1 text-[11px] font-bold uppercase tracking-wider ${rule} ${muted}`}>Risiken</h3>
+          <ul className="grid grid-cols-1 gap-x-6 gap-y-1 md:grid-cols-2">
+            {risks.map((value, index) => (
+              <li key={index} className={`flex gap-2 text-xs leading-5 ${body}`}>
+                <span className={`mt-[8px] size-1 shrink-0 rounded-full ${dark ? "bg-slate-500" : "bg-slate-400"}`} />
+                <span>{value}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </Panel>
   );
 }
 
-/** The model's or the rule engine's summary sentence, under the calculation. */
-function SummaryNote({ result, dark }) {
-  // With a Tiefe Analyse, its Fazit is the summary — no second one here.
-  if (!result.recommendation?.summary || result.deep) return null;
-
-  return (
-    <Panel dark={dark}>
-      <Caption
-        dark={dark}
-        action={
-          <span className={`text-[10px] ${dark ? "text-slate-600" : "text-slate-400"}`}>
-            {result.recommendation.generatedBy === "regelbasiert"
-              ? "regelbasiert"
-              : "KI-Formulierung"}
-          </span>
-        }
-      >
-        {result.recommendation.headline}
-      </Caption>
-      <p className={`text-xs leading-6 ${dark ? "text-slate-300" : "text-slate-600"}`}>
-        {result.recommendation.summary}
-      </p>
-    </Panel>
-  );
-}
 function TechnicalDetails({ result, dark }) {
   const [open, setOpen] = useState(false);
   const [diagnosis, setDiagnosis] = useState(null);
@@ -3176,7 +2962,7 @@ const DEEP_STEPS = [
   { at: 0, text: "KI prüft die Vergleichsfahrzeuge" },
   { at: 8, text: "KI liest die Anzeige und sucht Risiken" },
   { at: 16, text: "Bekannte Schwachstellen und Aufbereitung" },
-  { at: 26, text: "Expertenwissen wird angewendet, Limit neu berechnet" },
+  { at: 26, text: "Marktwissen wird angewendet, Limit neu berechnet" },
 ];
 
 function LoadingPanel({ seconds, dark, deepSince = null }) {
@@ -3266,7 +3052,7 @@ export default function MarktanalysePage() {
   const [recent, setRecent] = useState([]);
   const [lastManual, setLastManual] = useState(null);
 
-  // "Analyse" or "Expertenwissen" (the 100 questions), and how deep the
+  // "Analyse" or "Marktwissen" (the research knowledge base), and how deep the
   // analysis goes: NORMAL (fast, nearly free) or DEEP (stronger AI review).
   const [view, setView] = useState("ANALYSE");
   const [depth, setDepth] = useState("NORMAL");
@@ -3277,28 +3063,6 @@ export default function MarktanalysePage() {
   // Second at which the "Tief" run moved from the market search to the AI
   // review — the loading screen shows the second part from then on.
   const [deepSince, setDeepSince] = useState(null);
-
-  // Costs taken over with one click (Tiefe Analyse: Aufbereitung, Zahnriemen).
-  // Each one counts once: a second click takes it back out — never twice in.
-  const [appliedCosts, setAppliedCosts] = useState({});
-  const appliedRef = useRef({});
-  const resetCosts = useCallback(() => {
-    appliedRef.current = {};
-    setAppliedCosts({});
-  }, []);
-  const toggleCost = useCallback((key, amount) => {
-    const current = appliedRef.current[key] || 0;
-    const delta = current ? -current : amount;
-    const next = { ...appliedRef.current };
-    if (current) delete next[key];
-    else next[key] = amount;
-    appliedRef.current = next;
-    setAppliedCosts(next);
-    setAdjust((value) => ({
-      ...value,
-      refurbishment: String(Math.max(0, (Number(value.refurbishment) || 0) + delta)),
-    }));
-  }, []);
 
   // Everything the user may change after the analysis has run. Held here, not
   // inside the ledger, so the sticky strip and the price scale see the same
@@ -3580,8 +3344,18 @@ export default function MarktanalysePage() {
         }
 
         setResult(final);
-        setAdjust(initialAdjust(final));
-        resetCosts();
+        // A re-run for the pickup postcode keeps the cost items already typed in.
+        setAdjust((current) =>
+          extras?.pickupPostcode
+            ? {
+                ...initialAdjust(final),
+                costs: current.costs || {},
+                customCosts: current.customCosts || [],
+                refurbishment: current.refurbishment,
+                negotiated: current.negotiated,
+              }
+            : initialAdjust(final),
+        );
         setSavedAt(null);
         setOpenedFrom(null);
         setLastManual(null);
@@ -3609,7 +3383,7 @@ export default function MarktanalysePage() {
         setLoading(false);
       }
     },
-    [rememberSearch, resetCosts],
+    [rememberSearch],
   );
 
   /**
@@ -3695,8 +3469,6 @@ export default function MarktanalysePage() {
       setDeepSince(null);
       setResult(stored);
       setAdjust(data.entry.inputs || initialAdjust(stored));
-      appliedRef.current = {};
-      setAppliedCosts({});
       setAwaiting(null);
       setUrl(
         stored.target?.listingUrl ||
@@ -3947,7 +3719,6 @@ export default function MarktanalysePage() {
   };
 
   const reset = () => {
-    resetCosts();
     deepRunRef.current += 1;
     setDeepRunning(false);
     setDeepError(null);
@@ -3991,14 +3762,14 @@ export default function MarktanalysePage() {
             </p>
           </div>
 
-          {/* Analyse | Expertenwissen */}
+          {/* Analyse | Marktwissen */}
           <div
             role="tablist"
             className={`inline-flex rounded p-0.5 text-xs ${dark ? "bg-slate-900" : "bg-slate-200/70"}`}
           >
             {[
               ["ANALYSE", "Analyse"],
-              ["EXPERT", "Expertenwissen"],
+              ["EXPERT", "Marktwissen"],
             ].map(([id, label]) => (
               <button
                 key={id}
@@ -4110,6 +3881,21 @@ export default function MarktanalysePage() {
                 }`}
               >
                 <FiCopy />
+              </button>
+            ) : null}
+
+            {result && !loading ? (
+              <button
+                type="button"
+                onClick={saveResult}
+                disabled={saving}
+                title={savedAt ? "Gespeichert" : "Bewertung speichern"}
+                aria-label={savedAt ? "Gespeichert" : "Bewertung speichern"}
+                className={`inline-flex h-9 w-9 items-center justify-center rounded border disabled:opacity-60 ${
+                  dark ? "border-slate-700" : "border-slate-300"
+                } ${savedAt ? "text-emerald-600" : ""}`}
+              >
+                {saving ? <FiLoader className="animate-spin" /> : savedAt ? <FiCheckCircle /> : <FiSave />}
               </button>
             ) : null}
           </form>
@@ -4266,9 +4052,6 @@ export default function MarktanalysePage() {
               result={result}
               live={live}
               dark={dark}
-              onSave={saveResult}
-              saving={saving}
-              savedAt={savedAt}
             />
 
             {openedFrom ? (
@@ -4291,23 +4074,45 @@ export default function MarktanalysePage() {
               </p>
             ) : null}
 
+            {/* 1 · Fazit — the Tiefe Analyse when there is one, else the summary */}
             <div className="mb-4">
-              <DeepPanel
-                deep={result.deep || null}
-                live={live}
-                market={result.market}
-                running={deepRunning}
-                error={deepError}
-                onRun={() => runDeep(currentResult())}
-                onAddCost={(amount) => toggleCost("deep-refurb", amount)}
-                costApplied={appliedCosts["deep-refurb"] || 0}
-                dark={dark}
-              />
+              {result.deep || deepRunning ? (
+                <DeepPanel
+                  deep={result.deep || null}
+                  live={live}
+                  market={result.market}
+                  running={deepRunning}
+                  error={deepError}
+                  onRun={() => runDeep(currentResult())}
+                  dark={dark}
+                />
+              ) : (
+                <NormalFazit
+                  result={result}
+                  dark={dark}
+                  error={deepError}
+                  onRun={result.dealer?.available ? () => runDeep(currentResult()) : null}
+                />
+              )}
             </div>
 
-            {/* Decision on the left, evidence on the right. */}
-            <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+            {/* 2 · Market evidence on the left; the calculation (a tool, not
+                the analysis) and the car on the right. */}
+            <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
               <div className="min-w-0 space-y-4">
+                <NegotiationPanel result={result} live={live} dark={dark} />
+                <MarketPositionPanel result={result} live={live} dark={dark} />
+                <ComparablesTable
+                  result={result}
+                  asking={live?.askingPrice ?? result.target.price}
+                  dark={dark}
+                />
+              </div>
+
+              <aside className="min-w-0 space-y-4">
+                <VehiclePanel result={result} dark={dark} />
+                <EquipmentPanel result={result} dark={dark} />
+                <MarketPanel result={result} dark={dark} />
                 <Calculation
                   result={result}
                   live={live}
@@ -4319,26 +4124,6 @@ export default function MarktanalysePage() {
                   busy={loading}
                   onPostcode={(code) => analyze(url, null, null, { pickupPostcode: code })}
                 />
-                <NegotiationPanel result={result} live={live} dark={dark} />
-                <MarketPositionPanel result={result} live={live} dark={dark} />
-                <SummaryNote result={result} dark={dark} />
-                <ComparablesTable
-                  result={result}
-                  asking={live?.askingPrice ?? result.target.price}
-                  dark={dark}
-                />
-              </div>
-
-              <aside className="min-w-0 space-y-4">
-                {result.deep ? null : <NotesPanel result={result} dark={dark} />}
-                <VehiclePanel
-                  result={result}
-                  dark={dark}
-                  onAddCost={(amount) => toggleCost("belt", amount)}
-                  costApplied={appliedCosts.belt || 0}
-                />
-                <EquipmentPanel result={result} dark={dark} />
-                <MarketPanel result={result} dark={dark} />
               </aside>
             </div>
 

@@ -49,7 +49,7 @@ export async function PUT(request) {
 
   const questionId = String(body?.questionId || "");
   if (!EXPERT_QUESTION_BY_ID[questionId]) return json({ error: "Unbekannte Frage." }, 400);
-  const answer = String(body?.answer ?? "").trim().slice(0, 4000);
+  const answer = String(body?.answer ?? "").trim().slice(0, 40000);
 
   try {
     await connectDB();

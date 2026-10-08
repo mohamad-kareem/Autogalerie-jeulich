@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 const ExpertAnswerSchema = new mongoose.Schema(
   {
     questionId: { type: String, required: true, unique: true, index: true },
-    answer: { type: String, default: "", maxlength: 4000 },
+    answer: { type: String, default: "", maxlength: 40000 },
     updatedBy: { type: String, default: "" },
   },
   { timestamps: true },
