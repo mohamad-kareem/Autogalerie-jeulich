@@ -2122,7 +2122,10 @@ function MarketPanel({ result, dark }) {
         {Number.isFinite(market.sourceCount) ? <Line label="Portale in der Bewertung" value={market.sourceCount} dark={dark} /> : null}
         <Line label="Geprüfte Angebote" value={result.meta.candidatesFound ?? "–"} dark={dark} />
         {Number.isFinite(result.dealer?.assumedSaleDiscountPercent) ? <Line label="Angenommener Verkaufsabschlag" value={percent(result.dealer.assumedSaleDiscountPercent)} dark={dark} /> : null}
-        <Line label="Privatmarkt" value={euro(market.privateMarketLevel)} dark={dark} />
+        {/* Only with enough private ads — two raw asking prices are no market. */}
+        {market.privateCount >= 3 ? (
+          <Line label="Privatangebote (Median)" value={euro(market.privateMarketLevel)} dark={dark} />
+        ) : null}
         <Line
           label="Ø Übereinstimmung"
           value={market.averageSimilarity !== null ? `${market.averageSimilarity} %` : "–"}

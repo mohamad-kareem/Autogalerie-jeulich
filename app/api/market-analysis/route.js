@@ -6,7 +6,7 @@ import { POLICY } from "@/lib/market/config";
 import { browserStatus } from "@/lib/market/browser";
 import { loadObservations, recordObservation } from "@/lib/market/history";
 import { isProxyConfigured } from "@/lib/market/http";
-import { parseProfitBands } from "@/lib/market/profitRules";
+import { parseGenerations } from "@/lib/market/generations";
 import { connectDB } from "@/lib/mongodb";
 import ExpertAnswer from "@/models/ExpertAnswer";
 import {
@@ -256,17 +256,16 @@ export async function POST(request) {
     };
   }
 
-  // The dealer's minimum profit per selling price (Expertenwissen A01), as
-  // the starting point of the calculation. Never allowed to fail the analysis.
-  if (options.targetProfit === undefined) {
-    try {
-      await connectDB();
-      const rule = await ExpertAnswer.findOne({ questionId: "A01" }, { answer: 1 }).lean();
-      const bands = parseProfitBands(rule?.answer);
-      if (bands.length) options.profitBands = bands;
-    } catch (error) {
-      console.error("market-analysis: A01 profit rules unavailable", error?.message);
-    }
+  // Model generations from the Marktwissen (S01), so a comparable from an
+  // older or newer generation of the same model is not counted. Never allowed
+  // to fail the analysis.
+  try {
+    await connectDB();
+    const entry = await ExpertAnswer.findOne({ questionId: "S01" }, { answer: 1 }).lean();
+    const generations = parseGenerations(entry?.answer);
+    if (generations.length) options.generations = generations;
+  } catch (error) {
+    console.error("market-analysis: S01 generations unavailable", error?.message);
   }
 
   // Earlier sightings of this ad, so the analysis can say whether the price

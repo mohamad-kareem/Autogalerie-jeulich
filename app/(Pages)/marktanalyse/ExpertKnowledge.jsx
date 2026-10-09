@@ -3,8 +3,7 @@
 /**
  * Marktwissen — the knowledge base the deep analysis ("Tief") uses.
  *
- * A01 is the business's own setting (minimum profit). Everything else is
- * general market knowledge: one answer field per question, saved when the
+ * General market knowledge: one answer field per question, saved when the
  * field is left.
  */
 
@@ -114,7 +113,7 @@ function QuestionCard({ question, saved, dark, onSave }) {
 export default function ExpertKnowledge({ dark }) {
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
-  const [category, setCategory] = useState("A");
+  const [category, setCategory] = useState(EXPERT_CATEGORIES[0].id);
   const [onlyOpen, setOnlyOpen] = useState(false);
 
   useEffect(() => {
