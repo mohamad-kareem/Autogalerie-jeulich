@@ -429,6 +429,19 @@ function DecisionStrip({ result, live, dark, onSave, saving, savedAt }) {
               >
                 Datenqualität {result.confidence}/100
               </span>
+              {(() => {
+                // Far below market is a question, not a bargain.
+                const value = result.market?.marketValue;
+                const asking = live?.askingPrice ?? target.price;
+                const below = Number.isFinite(value) && value > 0 && Number.isFinite(asking)
+                  ? Math.round(((value - asking) / value) * 100)
+                  : null;
+                return below !== null && below >= 20 ? (
+                  <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                    {below} % unter Marktwert – Grund klären
+                  </span>
+                ) : null;
+              })()}
             </div>
             <h1 className="mt-0.5 truncate text-[15px] font-bold leading-tight">
               {title}

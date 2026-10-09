@@ -39,6 +39,13 @@ const ACTIONS = {
     dark: "border-amber-800 bg-amber-950/50 text-amber-300",
     bar: "bg-amber-500",
   },
+  PRUEFEN: {
+    label: "Erst prüfen",
+    icon: FiHelpCircle,
+    light: "border-amber-300 bg-amber-50 text-amber-800",
+    dark: "border-amber-800 bg-amber-950/50 text-amber-300",
+    bar: "bg-amber-500",
+  },
   NICHT_KAUFEN: {
     label: "Nicht kaufen",
     icon: FiXCircle,
@@ -149,7 +156,9 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
     action && deep.decision && action !== deep.decision.action
       ? action === "NICHT_KAUFEN"
         ? "Zum Angebotspreis nicht kaufen – das Fahrzeug trägt die Kosten nicht"
-        : "Erst verhandeln – das Angebot liegt über dem Einkaufslimit"
+        : action === "PRUEFEN"
+          ? "Auffällig günstig – vor dem Kauf den Grund klären"
+          : "Erst verhandeln – das Angebot liegt über dem Einkaufslimit"
       : deep.decision?.headline || null;
   const sell = deep.sellability ? SELL[deep.sellability.rating] || SELL.NORMAL : null;
   const risks = (deep.findings || []).filter((finding) => finding.type === "RISIKO");
