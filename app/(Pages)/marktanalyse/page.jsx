@@ -30,6 +30,7 @@ import {
   FiRefreshCw,
   FiSave,
   FiSearch,
+  FiSettings,
   FiTrash2,
   FiTrendingDown,
   FiTrendingUp,
@@ -50,6 +51,7 @@ import PageLoader from "@/app/(components)/helpers/PageLoader";
 
 import DeepPanel from "./DeepPanel";
 import ExpertKnowledge from "./ExpertKnowledge";
+import SettingsDialog from "./SettingsDialog";
 
 /* ------------------------------------------------------------------ setup */
 
@@ -195,6 +197,48 @@ const SOURCE_SHORT = {
 };
 
 const VERDICTS = {
+  // The AI's decision (normal or deep analysis).
+  KAUFEN: {
+    label: "Kaufen",
+    icon: FiCheckCircle,
+    dot: "bg-emerald-500",
+    strip: "border-emerald-500",
+    chip: "bg-emerald-600 text-white",
+    text: "text-emerald-700",
+  },
+  VERHANDELN: {
+    label: "Verhandeln",
+    icon: FiPercent,
+    dot: "bg-amber-500",
+    strip: "border-amber-500",
+    chip: "bg-amber-500 text-white",
+    text: "text-amber-700",
+  },
+  PRUEFEN: {
+    label: "Erst prüfen",
+    icon: FiHelpCircle,
+    dot: "bg-amber-500",
+    strip: "border-amber-500",
+    chip: "bg-amber-500 text-white",
+    text: "text-amber-700",
+  },
+  NICHT_KAUFEN: {
+    label: "Nicht kaufen",
+    icon: FiXCircle,
+    dot: "bg-red-500",
+    strip: "border-red-500",
+    chip: "bg-red-600 text-white",
+    text: "text-red-700",
+  },
+  OPEN: {
+    label: "Ohne KI-Bewertung",
+    icon: FiHelpCircle,
+    dot: "bg-slate-400",
+    strip: "border-slate-400",
+    chip: "bg-slate-600 text-white",
+    text: "text-slate-600",
+  },
+  // Older saved analyses (formula-based) still carry these.
   EXCELLENT: {
     label: "Ankaufen",
     icon: FiCheckCircle,
@@ -212,7 +256,7 @@ const VERDICTS = {
     text: "text-emerald-700",
   },
   NEGOTIABLE: {
-    label: "Nur mit Nachlass",
+    label: "Unter Zielgewinn",
     icon: FiPercent,
     dot: "bg-amber-500",
     strip: "border-amber-500",
@@ -489,6 +533,11 @@ function DecisionStrip({ result, live, dark, onSave, saving, savedAt }) {
               <StripFigure
                 label={live.discount > 0 ? "Nachlass nötig" : "Unter Limit"}
                 value={live.discount > 0 ? euro(live.discount) : euro(Math.max(0, live.limit - live.askingPrice))}
+                hint={
+                  live.discount > 0 && Number.isFinite(live.expected)
+                    ? `Gewinn beim Angebot ${euro(live.expected)} (Ziel ${euro(live.targetProfit)})`
+                    : null
+                }
                 dark={dark}
                 tone={live.discount > 0 ? "negative" : "positive"}
               />
@@ -654,8 +703,8 @@ function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode })
     live.targetProfit === dealer.targetProfit
       ? dealer.targetProfitSource === "DEEP"
         ? "von der Tiefen Analyse angepasst"
-        : dealer.targetProfitSource === "A01"
-          ? `Richtwert ${dealer.targetProfitBand || "A01"}`
+        : dealer.targetProfitSource === "SETTINGS" || dealer.targetProfitSource === "A01"
+          ? `Einstellung ${dealer.targetProfitBand || ""}`.trim()
           : "Standard"
       : "eigene Eingabe";
 
@@ -2420,18 +2469,21 @@ function SavedAnalyses({ entries, dark, busy, onOpen, onDelete, onRefresh }) {
     );
   }, [entries, query]);
 
+  const muted = dark ? "text-slate-500" : "text-slate-400";
+  // One cell padding for every column, so neighbours never touch.
+  // Number columns hug their content; the vehicle column takes the rest.
+  const cell = "w-px px-3 py-1.5";
+
   return (
     <Panel dark={dark} className="mb-4" padded={false}>
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4">
-        <span className="flex items-center gap-2 text-sm font-semibold">
-          <FiDatabase />
+      <div className={`flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5 ${dark ? "border-slate-800" : "border-slate-100"}`}>
+        <span className="flex items-center gap-2 text-[13px] font-semibold">
+          <FiDatabase className={muted} />
           Gespeicherte Bewertungen
-          <span className={`text-[11px] font-normal ${dark ? "text-slate-500" : "text-slate-400"}`}>
-            {entries.length}
-          </span>
+          <span className={`text-[11px] font-normal ${muted}`}>{entries.length}</span>
         </span>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -2457,88 +2509,62 @@ function SavedAnalyses({ entries, dark, busy, onOpen, onDelete, onRefresh }) {
       </div>
 
       {shown.length ? (
-        <div className="mt-3 max-h-80 overflow-y-auto custom-scroll">
-          <table className="w-full min-w-[640px] text-xs">
-            <thead>
-              <tr
-                className={`text-left text-[10px] uppercase tracking-wider ${
-                  dark ? "text-slate-500" : "text-slate-400"
-                }`}
-              >
-                <th className="px-4 py-2 font-semibold">Fahrzeug</th>
-                <th className="py-2 text-right font-semibold">Preis</th>
-                <th className="py-2 text-right font-semibold">Limit</th>
-                <th className="py-2 text-right font-semibold">Gewinn</th>
-                <th className="py-2 font-semibold">Bewertung</th>
-                <th className="py-2 text-right font-semibold">Gespeichert</th>
-                <th className="px-4 py-2" />
+        <div className="max-h-80 overflow-auto custom-scroll">
+          <table className="w-full min-w-[620px] text-xs">
+            <thead className={`sticky top-0 z-[1] ${dark ? "bg-slate-900" : "bg-white"}`}>
+              <tr className={`text-left text-[10px] uppercase tracking-wider ${muted}`}>
+                <th className="py-1.5 pl-4 pr-3 font-semibold">Fahrzeug</th>
+                <th className={`${cell} text-right font-semibold`}>Preis</th>
+                <th className={`${cell} text-right font-semibold`}>Limit</th>
+                <th className={`${cell} text-right font-semibold`}>Gewinn</th>
+                <th className={`${cell} font-semibold`}>Bewertung</th>
+                <th className={`${cell} text-right font-semibold`}>Datum</th>
+                <th className="w-px py-1.5 pl-2 pr-4" />
               </tr>
             </thead>
             <tbody className={dark ? "divide-y divide-slate-800" : "divide-y divide-slate-100"}>
               {shown.map((entry) => {
                 const meta = verdictMeta(entry.verdict);
                 return (
-                  <tr
-                    key={entry._id}
-                    className={dark ? "hover:bg-slate-800/50" : "hover:bg-slate-50"}
-                  >
-                    <td className="max-w-[260px] px-4 py-2">
+                  <tr key={entry._id} className={dark ? "hover:bg-slate-800/50" : "hover:bg-slate-50"}>
+                    <td className="max-w-[260px] py-1.5 pl-4 pr-3">
                       <button
                         type="button"
                         onClick={() => onOpen(entry)}
                         className="block max-w-full truncate text-left font-semibold hover:underline"
                         title={entry.title || entry.listingUrl}
                       >
-                        {entry.title ||
-                          [entry.make, entry.model].filter(Boolean).join(" ") ||
-                          "Fahrzeug"}
+                        {entry.title || [entry.make, entry.model].filter(Boolean).join(" ") || "Fahrzeug"}
                       </button>
-                      <span className={`text-[10px] ${dark ? "text-slate-500" : "text-slate-400"}`}>
-                        {[
-                          entry.marketplace,
-                          entry.firstRegistration,
-                          Number.isFinite(entry.mileageKm) ? km(entry.mileageKm) : null,
-                        ]
+                      <span className={`block truncate text-[10px] ${muted}`}>
+                        {[entry.marketplace, entry.firstRegistration, Number.isFinite(entry.mileageKm) ? km(entry.mileageKm) : null]
                           .filter(Boolean)
                           .join(" · ")}
                       </span>
                     </td>
-
-                    <td className="py-2 text-right tabular-nums">
+                    <td className={`${cell} whitespace-nowrap text-right tabular-nums`}>
                       {euro(entry.askingPrice)}
-                      {entry.negotiatedPrice ? (
-                        <span className="block text-[10px] text-emerald-600">verhandelt</span>
-                      ) : null}
+                      {entry.negotiatedPrice ? <span className="block text-[10px] text-emerald-600">verhandelt</span> : null}
                     </td>
-                    <td className="py-2 text-right font-semibold tabular-nums text-sky-600">
+                    <td className={`${cell} whitespace-nowrap text-right font-semibold tabular-nums text-sky-600`}>
                       {euro(entry.maximumPurchasePrice)}
                     </td>
                     <td
-                      className={`py-2 text-right tabular-nums ${
+                      className={`${cell} whitespace-nowrap text-right font-semibold tabular-nums ${
                         entry.expectedProfit >= 0 ? "text-emerald-600" : "text-red-600"
                       }`}
                     >
                       {signedEuro(entry.expectedProfit)}
                     </td>
-                    <td className="py-2">
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${meta.chip}`}
-                      >
+                    <td className={`${cell} whitespace-nowrap`}>
+                      <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${meta.chip}`}>
                         {meta.label}
                       </span>
                     </td>
-                    <td
-                      className={`py-2 text-right whitespace-nowrap text-[10px] ${
-                        dark ? "text-slate-500" : "text-slate-400"
-                      }`}
-                    >
-                      {new Date(entry.updatedAt).toLocaleDateString("de-DE", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "2-digit",
-                      })}
+                    <td className={`${cell} whitespace-nowrap text-right text-[11px] tabular-nums ${muted}`}>
+                      {new Date(entry.updatedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                     </td>
-                    <td className="px-4 py-2 text-right">
+                    <td className="py-1.5 pl-2 pr-4 text-right">
                       <button
                         type="button"
                         onClick={() => onDelete(entry)}
@@ -2555,10 +2581,10 @@ function SavedAnalyses({ entries, dark, busy, onOpen, onDelete, onRefresh }) {
           </table>
         </div>
       ) : (
-        <p className={`px-4 pb-4 pt-3 text-xs ${dark ? "text-slate-400" : "text-slate-500"}`}>
+        <p className={`px-4 py-3 text-xs ${dark ? "text-slate-400" : "text-slate-500"}`}>
           {entries.length
             ? "Keine Bewertung passt zur Suche."
-            : "Noch nichts gespeichert. Nach einer Analyse oben auf „Speichern“."}
+            : "Noch nichts gespeichert. Nach einer Analyse oben auf das Speichern-Symbol klicken."}
         </p>
       )}
     </Panel>
@@ -3071,6 +3097,7 @@ export default function MarktanalysePage() {
   // "Analyse" or "Marktwissen" (the research knowledge base), and how deep the
   // analysis goes: NORMAL (fast, nearly free) or DEEP (stronger AI review).
   const [view, setView] = useState("ANALYSE");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [depth, setDepth] = useState("NORMAL");
   const depthRef = useRef("NORMAL");
   const [deepRunning, setDeepRunning] = useState(false);
@@ -3132,6 +3159,20 @@ export default function MarktanalysePage() {
     } catch {
       /* the default is fine */
     }
+
+    // The company's default depth (Einstellungen) decides how each visit starts.
+    fetch("/api/market-analysis/settings")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        const preferred = data?.settings?.defaultDepth;
+        if ((preferred === "DEEP" || preferred === "NORMAL") && data?.settings?.updatedAt) {
+          setDepth(preferred);
+          depthRef.current = preferred;
+        }
+      })
+      .catch(() => {
+        /* the stored choice stays */
+      });
   }, []);
 
   const changeDepth = useCallback((next) => {
@@ -3808,6 +3849,24 @@ export default function MarktanalysePage() {
             ))}
           </div>
 
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            title="Einstellungen: Marge, Standort, Abholkosten"
+            aria-label="Einstellungen"
+            className={`inline-flex h-7 w-7 items-center justify-center rounded border text-sm ${
+              dark ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-300 text-slate-600 hover:bg-white"
+            }`}
+          >
+            <FiSettings />
+          </button>
+          <SettingsDialog
+            open={settingsOpen}
+            onClose={() => setSettingsOpen(false)}
+            onSaved={(saved) => saved?.defaultDepth && changeDepth(saved.defaultDepth)}
+            dark={dark}
+          />
+
           {view === "ANALYSE" ? (
           <form
             className="flex min-w-[280px] flex-1 items-center gap-2"
@@ -4143,16 +4202,6 @@ export default function MarktanalysePage() {
               </aside>
             </div>
 
-            <div className="mt-4">
-              <SavedAnalyses
-                entries={saved}
-                dark={dark}
-                busy={loadingSaved}
-                onOpen={openSaved}
-                onDelete={deleteSaved}
-                onRefresh={loadSaved}
-              />
-            </div>
 
             <div className="mt-4">
               <TechnicalDetails result={result} dark={dark} />

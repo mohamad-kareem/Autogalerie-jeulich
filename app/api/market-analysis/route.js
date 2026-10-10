@@ -7,8 +7,10 @@ import { browserStatus } from "@/lib/market/browser";
 import { loadObservations, recordObservation } from "@/lib/market/history";
 import { isProxyConfigured } from "@/lib/market/http";
 import { parseGenerations } from "@/lib/market/generations";
+import { bandsForCalculation, normalizeSettings } from "@/lib/market/settings";
 import { connectDB } from "@/lib/mongodb";
 import ExpertAnswer from "@/models/ExpertAnswer";
+import MarketSettings from "@/models/MarketSettings";
 import {
   diagnose as diagnoseMobile,
   isConfigured as mobileConfigured,
@@ -266,6 +268,24 @@ export async function POST(request) {
     if (generations.length) options.generations = generations;
   } catch (error) {
     console.error("market-analysis: S01 generations unavailable", error?.message);
+  }
+
+  // Company settings: margin per price class, yard location and pickup
+  // rates, sale discount. Values sent with the request still win.
+  try {
+    await connectDB();
+    const stored = await MarketSettings.findOne({ key: "default" }).lean();
+    if (stored) {
+      const settings = normalizeSettings(stored);
+      options.settings = settings;
+      const bands = bandsForCalculation(settings.profitBands);
+      if (bands.length) options.profitBands = bands;
+      options.saleDiscountPercent = settings.saleDiscountPercent;
+      if (options.pickupMode === undefined) options.pickupMode = settings.inboundMode;
+      if (options.pickupOnSiteMinutes === undefined) options.pickupOnSiteMinutes = settings.onSiteMinutes;
+    }
+  } catch (error) {
+    console.error("market-analysis: settings unavailable", error?.message);
   }
 
   // Earlier sightings of this ad, so the analysis can say whether the price

@@ -135,31 +135,12 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
     );
   }
 
-  // The recommendation must match the calculation on screen. When the buyer
-  // has changed costs or profit since, the badge follows the same rule as the
-  // server: over 25 % discount needed = not buyable, above the limit = negotiate.
-  let action = deep.decision?.action || null;
-  let actionNote = deep.decisionNote || null;
-  if (action && live && Number.isFinite(live.askingPrice) && live.askingPrice > 0) {
-    const gap = (live.askingPrice - (live.limit || 0)) / live.askingPrice;
-    if ((live.limit <= 0 || gap > 0.25) && action !== "NICHT_KAUFEN") {
-      action = "NICHT_KAUFEN";
-      actionNote = "Empfehlung an die aktuelle Kalkulation angepasst: So viel Nachlass ist nicht realistisch verhandelbar.";
-    } else if (gap > 0.05 && action === "KAUFEN") {
-      action = "VERHANDELN";
-      actionNote = "Empfehlung an die aktuelle Kalkulation angepasst: Das Angebot liegt über dem Einkaufslimit.";
-    }
-  }
+  // The decision is the AI's own — shown as it was made.
+  const action = deep.decision?.action || null;
+  const actionNote = deep.decisionNote || null;
   const decision = action ? ACTIONS[action] || ACTIONS.VERHANDELN : null;
   // When the badge had to change, the AI's headline no longer fits it.
-  const headline =
-    action && deep.decision && action !== deep.decision.action
-      ? action === "NICHT_KAUFEN"
-        ? "Zum Angebotspreis nicht kaufen – das Fahrzeug trägt die Kosten nicht"
-        : action === "PRUEFEN"
-          ? "Auffällig günstig – vor dem Kauf den Grund klären"
-          : "Erst verhandeln – das Angebot liegt über dem Einkaufslimit"
-      : deep.decision?.headline || null;
+  const headline = deep.decision?.headline || null;
   const sell = deep.sellability ? SELL[deep.sellability.rating] || SELL.NORMAL : null;
   const risks = (deep.findings || []).filter((finding) => finding.type === "RISIKO");
   const reasons = deep.decision?.reasons || [];
