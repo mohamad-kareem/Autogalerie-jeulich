@@ -475,14 +475,16 @@ function DecisionStrip({ result, live, dark, onSave, saving, savedAt }) {
               </span>
               {(() => {
                 // Far below market is a question, not a bargain.
-                const value = result.market?.marketValue;
+                // Private sellers are measured against the private level.
+                const value = result.market?.offerReference ?? result.market?.marketValue;
+                const privateLevel = result.market?.offerReferenceBasis === "PRIVATE";
                 const asking = live?.askingPrice ?? target.price;
                 const below = Number.isFinite(value) && value > 0 && Number.isFinite(asking)
                   ? Math.round(((value - asking) / value) * 100)
                   : null;
                 return below !== null && below >= 20 ? (
                   <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
-                    {below} % unter Marktwert – Grund klären
+                    {below} % unter {privateLevel ? "Privatmarkt" : "Marktwert"} – Grund klären
                   </span>
                 ) : null;
               })()}
@@ -1404,11 +1406,9 @@ function NegotiationPanel({ result, live, dark }) {
       result.target.listingUrl,
       "",
       `Angebot: ${euro(live.askingPrice)}`,
-      plan.mode === "NO_OFFER"
-        ? `Kein Angebot: Limit ${euro(plan.walkAway)}, Abstand ${percent(plan.gapPercent)} – Preis beobachten`
-        : plan.mode === "LIMIT_OFFER"
-        ? `Limit-Angebot: ${euro(plan.opening)}, höchstens ${euro(plan.walkAway)} (Abstand ${percent(plan.gapPercent)})`
-        : `Einstieg: ${euro(plan.opening)} · Ziel: ${euro(plan.target)} · Grenze: ${euro(plan.walkAway)}`,
+      plan.mode === "NO_BUY"
+        ? "Laut Analyse nicht kaufen."
+        : `Einstieg: ${euro(plan.opening)} · Ziel: ${euro(plan.target)} · Höchstens: ${euro(plan.walkAway)}`,
       "",
       "Argumente:",
       ...negotiation.arguments.map((entry) => `+ ${entry.text}`),
@@ -1429,16 +1429,20 @@ function NegotiationPanel({ result, live, dark }) {
   // The plan in one line. Angebot, Einkaufslimit and Nachlass are in the
   // strip at the top — not repeated here.
   const tone =
-    plan.mode === "NO_OFFER"
+    plan.mode === "NO_BUY"
       ? dark ? "bg-red-950/40 text-red-300" : "bg-red-50 text-red-700"
-      : plan.mode === "LIMIT_OFFER" || (plan.askingWithinLimit && plan.stance === "SOFT")
-        ? dark ? "bg-amber-950/40 text-amber-300" : "bg-amber-50 text-amber-800"
-        : dark ? "bg-slate-800/60 text-slate-200" : "bg-slate-50 text-slate-700";
+      : dark ? "bg-slate-800/60 text-slate-200" : "bg-slate-50 text-slate-700";
 
-  const Step = ({ label, value, strong = false }) => (
+  // Each price with the profit it leaves — the buyer weighs, no rule decides.
+  const Step = ({ label, value, profit, strong = false }) => (
     <span className="whitespace-nowrap">
       <span className={`text-[10px] font-semibold uppercase tracking-wide ${muted}`}>{label}</span>{" "}
       <span className={`tabular-nums ${strong ? "font-bold text-sky-600" : "font-semibold"}`}>{euro(value)}</span>
+      {Number.isFinite(profit) ? (
+        <span className={`ml-1 text-[11px] tabular-nums ${profit > 0 ? muted : "text-red-600"}`}>
+          (Gewinn {euro(profit)})
+        </span>
+      ) : null}
     </span>
   );
 
@@ -1451,11 +1455,7 @@ function NegotiationPanel({ result, live, dark }) {
             <Chip
               dark={dark}
               tone={
-                plan.mode === "NO_OFFER"
-                  ? "red"
-                  : plan.mode === "LIMIT_OFFER"
-                    ? "amber"
-                    : STANCE_TONES[plan.stance]
+                plan.mode === "NO_BUY" ? "red" : STANCE_TONES[plan.stance]
               }
             >
               {plan.stanceLabel}
@@ -1477,27 +1477,18 @@ function NegotiationPanel({ result, live, dark }) {
       </Caption>
 
       <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 rounded px-3 py-2 text-xs leading-5 ${tone}`}>
-        {plan.mode === "NO_OFFER" ? (
-          <span>
-            Kein Angebot abgeben – der Verkäufer müsste {percent(plan.gapPercent)} nachlassen. Anzeige
-            speichern und den Preis beobachten.
-          </span>
-        ) : plan.mode === "LIMIT_OFFER" ? (
-          <span>
-            Einmal <span className="font-semibold tabular-nums">{euro(plan.opening)}</span> anbieten –
-            in Stufen zu verhandeln lohnt bei {percent(plan.gapPercent)} Abstand nicht. Sinkt der Preis,
-            zeigt die nächste Prüfung den Verlauf.
-          </span>
+        {plan.mode === "NO_BUY" ? (
+          <span>Laut Analyse nicht kaufen.</span>
         ) : (
           <>
-            <Step label="Einstieg" value={plan.opening} />
+            <Step label="Einstieg" value={plan.opening} profit={plan.profit?.opening} />
             <span className={muted}>→</span>
-            <Step label="Ziel" value={plan.target} strong />
+            <Step label="Ziel" value={plan.target} profit={plan.profit?.target} strong />
             <span className={muted}>→</span>
-            <Step label="Grenze" value={plan.walkAway} />
-            {plan.askingWithinLimit && plan.stance === "SOFT" ? (
-              <span className="basis-full text-[11px]">
-                Preis liegt schon im Limit und die Nachfrage ist hoch – nicht zu hart pokern.
+            <Step label="Höchstens" value={plan.walkAway} profit={plan.profit?.walkAway} />
+            {Number.isFinite(plan.fullMarginPrice) && plan.fullMarginPrice < plan.opening ? (
+              <span className={`basis-full text-[11px] ${muted}`}>
+                Volle Zielmarge erst bei {euro(plan.fullMarginPrice)}.
               </span>
             ) : null}
           </>
@@ -1881,23 +1872,17 @@ function MarketPositionPanel({ result, live, dark }) {
   const askingPrice = live?.askingPrice ?? result.target.price;
 
   // Counted against the price on screen, so a negotiated price moves it too.
+  // Private sellers are compared at the private level (see insights.js).
+  const level = Number.isFinite(position.priceLevel) ? position.priceLevel : 1;
   const cheaper = result.comparables.filter((entry) => {
-    const reference = entry.adjustedPrice ?? entry.price;
+    const reference = (entry.adjustedPrice ?? entry.price) * level;
     return Number.isFinite(reference) && reference < askingPrice;
   }).length;
 
-  const expected = position.trend?.expectedAtTarget ?? null;
-  const gap = Number.isFinite(expected) && Number.isFinite(askingPrice) ? askingPrice - expected : null;
-
+  // No second "expected price" here: the trend runs through raw asking
+  // prices, the Marktwert through adjusted ones — two numbers for one thing.
   const share = position.total ? cheaper / position.total : null;
   const stats = [
-    expected === null ? null : {
-      key: "expected",
-      label: `Erwartet bei ${km(result.target.mileageKm)}`,
-      value: euro(expected),
-      hint: gap === null ? null : `Angebot ${signedEuro(gap)}`,
-      tone: gap === null ? "" : gap > 300 ? "text-red-600" : gap < -300 ? "text-emerald-600" : "",
-    },
     position.trend ? {
       key: "trend",
       label: "Je 10.000 km",
@@ -3756,11 +3741,9 @@ export default function MarktanalysePage() {
         ? `Ausstattung: ${result.insights.equipment.levelLabel}${result.insights.equipment.highlights.length ? ` (${result.insights.equipment.highlights.join(", ")})` : ""}`
         : null,
       live?.negotiation
-        ? live.negotiation.mode === "NO_OFFER"
-          ? `Verhandlung: kein Angebot – Abstand ${percent(live.negotiation.gapPercent)} zum Limit`
-          : live.negotiation.mode === "LIMIT_OFFER"
-          ? `Verhandlung: nur Limit-Angebot ${euro(live.negotiation.opening)}, höchstens ${euro(live.negotiation.walkAway)}`
-          : `Verhandlung: Einstieg ${euro(live.negotiation.opening)} · Ziel ${euro(live.negotiation.target)} · Grenze ${euro(live.negotiation.walkAway)}`
+        ? live.negotiation.mode === "NO_BUY"
+          ? "Verhandlung: laut Analyse nicht kaufen"
+          : `Verhandlung: Einstieg ${euro(live.negotiation.opening)} · Ziel ${euro(live.negotiation.target)} · Höchstens ${euro(live.negotiation.walkAway)}`
         : null,
       `Bewertung: ${verdictMeta(live?.verdict ?? result.verdict).label} · Datenqualität ${result.confidence}/100`,
       result.deep?.decision?.headline ? `Tiefe Analyse: ${result.deep.decision.headline}` : null,
