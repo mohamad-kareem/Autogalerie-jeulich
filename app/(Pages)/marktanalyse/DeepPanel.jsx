@@ -63,6 +63,13 @@ const ACTIONS = {
   },
 };
 
+// How big the repair behind a possible cause usually is — no prices.
+const EFFORT = {
+  KLEIN: { label: "kleiner Eingriff", tone: "text-emerald-600" },
+  MITTEL: { label: "größere Reparatur", tone: "text-amber-600" },
+  GROSS: { label: "teure Reparatur", tone: "text-red-600" },
+};
+
 const SELL = {
   SCHNELL: { label: "Schnell", tone: "text-emerald-600" },
   NORMAL: { label: "Normal", tone: "" },
@@ -244,6 +251,30 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
             <p className={muted}>Keine bekannten Schwachstellen für dieses Modell.</p>
           )}
         </Section>
+
+        {deep.causes?.length ? (
+          <div className="space-y-3 md:col-span-2">
+            {deep.causes.map((entry, index) => (
+              <Section key={index} title={`Mögliche Ursachen: ${entry.symptom}`} dark={dark}>
+                <ol className={`divide-y ${divide}`}>
+                  {entry.options.map((option, optionIndex) => {
+                    const effort = EFFORT[option.effort] || EFFORT.MITTEL;
+                    return (
+                      <li key={optionIndex} className="flex items-baseline gap-2 py-1 leading-snug first:pt-0">
+                        <span className={`w-3 shrink-0 tabular-nums ${faint}`}>{optionIndex + 1}.</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="font-semibold">{option.cause}</span>
+                          {option.reason ? <span className={muted}> – {option.reason}</span> : null}
+                        </span>
+                        <span className={`shrink-0 text-[10px] font-semibold ${effort.tone}`}>{effort.label}</span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </Section>
+            ))}
+          </div>
+        ) : null}
 
       </div>
 

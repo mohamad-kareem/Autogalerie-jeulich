@@ -7,7 +7,8 @@ import ExpertAnswer from "@/models/ExpertAnswer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// The full gpt-5 can need more than a minute for a careful review.
+export const maxDuration = 120;
 
 function json(data, status = 200) {
   return Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
@@ -44,7 +45,7 @@ export async function POST(request) {
   }
 
   try {
-    const deep = await runDeepAnalysis(result, answers, { timeoutMs: 50_000 });
+    const deep = await runDeepAnalysis(result, answers, { timeoutMs: 110_000 });
     return json(deep);
   } catch (error) {
     console.error("deep analysis failed", error);
