@@ -49,6 +49,7 @@ import { decodeImport, IMPORT_PREFIX } from "@/lib/market/bookmarklet";
 import { useSidebar } from "@/app/(components)/SidebarContext";
 import PageLoader from "@/app/(components)/helpers/PageLoader";
 
+import ContactButton from "./ContactPanel";
 import DeepPanel from "./DeepPanel";
 import ExpertKnowledge from "./ExpertKnowledge";
 import SettingsDialog from "./SettingsDialog";
@@ -429,7 +430,7 @@ function Line({ label, value, dark, tone = "neutral", warn = false }) {
  * scrolls the evidence below.
  */
 
-function DecisionStrip({ result, live, dark, onSave, saving, savedAt }) {
+function DecisionStrip({ result, live, dark, onSave, saving, savedAt, onContactSent }) {
   // The badge follows the figures currently on screen, not the ones the first
   // run produced — otherwise a negotiated price leaves a stale verdict up top.
   const meta = verdictMeta(live?.verdict ?? result.verdict);
@@ -530,21 +531,18 @@ function DecisionStrip({ result, live, dark, onSave, saving, savedAt }) {
                 dark={dark}
                 accent
               />
-              {/* Nachlass, or how far the price is below the limit — the
-                  profit itself is the last line of the calculation. */}
+              <StripFigure label="Marktwert" value={euro(result.market?.marketValue)} dark={dark} />
+              <StripFigure label="Verkaufspreis" value={euro(dealer.sellingPrice)} dark={dark} />
               <StripFigure
-                label={live.discount > 0 ? "Nachlass nötig" : "Unter Limit"}
-                value={live.discount > 0 ? euro(live.discount) : euro(Math.max(0, live.limit - live.askingPrice))}
-                hint={
-                  live.discount > 0 && Number.isFinite(live.expected)
-                    ? `Gewinn beim Angebot ${euro(live.expected)} (Ziel ${euro(live.targetProfit)})`
-                    : null
-                }
+                label="Gewinn"
+                value={Number.isFinite(live.expected) ? signedEuro(live.expected) : "–"}
                 dark={dark}
-                tone={live.discount > 0 ? "negative" : "positive"}
+                tone={Number.isFinite(live.expected) ? (live.expected > 0 ? "positive" : "negative") : "neutral"}
               />
             </>
           ) : null}
+
+          <ContactButton result={result} dark={dark} onSent={onContactSent} />
 
           {onSave ? (
             <button
@@ -586,7 +584,7 @@ function StripFigure({ label, value, hint = null, dark, accent = false, tone = "
         {label}
       </p>
       <p
-        className={`text-lg font-extrabold tabular-nums leading-tight ${
+        className={`text-[16px] font-extrabold tabular-nums leading-tight ${
           accent ? "text-sky-600" : tones[tone]
         }`}
       >
@@ -4026,6 +4024,11 @@ export default function MarktanalysePage() {
               result={result}
               live={live}
               dark={dark}
+              onContactSent={(entry) =>
+                setResult((current) =>
+                  current ? { ...current, contactLog: [...(current.contactLog || []), entry] } : current,
+                )
+              }
             />
 
             {openedFrom ? (

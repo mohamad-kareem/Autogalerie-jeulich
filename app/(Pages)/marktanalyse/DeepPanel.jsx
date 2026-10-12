@@ -386,18 +386,6 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
         </div>
       ) : null}
 
-      <p className={`border-t px-4 py-1.5 text-[10px] ${line} ${faint}`}>
-        {deep.model}
-        {Number.isFinite(deep.searches)
-          ? deep.searches > 0
-            ? ` · ${deep.searches} Websuche${deep.searches === 1 ? "" : "n"}`
-            : " · keine Websuche"
-          : ""}{" "}
-        ·{" "}
-        {deep.sellability?.reason ? `Verkauf: ${plainText(deep.sellability.reason)} · ` : ""}
-        {deep.expertNotesGiven ? `${deep.expertNotesGiven} passende Einträge aus dem Marktwissen` : "noch kein Marktwissen hinterlegt"}
-        {deep.expertUsed?.length ? ` (genutzt: ${deep.expertUsed.join(", ")})` : ""} · Zahlen rechnet das System, nicht die KI.
-      </p>
     </section>
   );
 }
