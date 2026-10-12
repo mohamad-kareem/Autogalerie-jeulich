@@ -1408,7 +1408,7 @@ function NegotiationPanel({ result, live, dark }) {
       `Angebot: ${euro(live.askingPrice)}`,
       plan.mode === "NO_BUY"
         ? "Laut Analyse nicht kaufen."
-        : `Einstieg: ${euro(plan.opening)} · Ziel: ${euro(plan.target)} · Höchstens: ${euro(plan.walkAway)}`,
+        : `Einstieg: ${euro(plan.opening)} · Ziel: ${euro(plan.target)} · Höchstens: ${euro(plan.walkAway)}${plan.mode === "LOSS" ? ` (ohne Gewinn; Verkäufer müsste ${plan.gapPercent} % nachlassen)` : ""}`,
       "",
       "Argumente:",
       ...negotiation.arguments.map((entry) => `+ ${entry.text}`),
@@ -1486,7 +1486,12 @@ function NegotiationPanel({ result, live, dark }) {
             <Step label="Ziel" value={plan.target} profit={plan.profit?.target} strong />
             <span className={muted}>→</span>
             <Step label="Höchstens" value={plan.walkAway} profit={plan.profit?.walkAway} />
-            {Number.isFinite(plan.fullMarginPrice) && plan.fullMarginPrice < plan.opening ? (
+            {plan.mode === "LOSS" ? (
+              <span className="basis-full text-[11px] text-red-600">
+                Zum Angebotspreis {euro(live.askingPrice)} bleiben {euro(-plan.loss)} – ohne Verlust erst ab{" "}
+                {euro(plan.walkAway)}, der Verkäufer müsste {plan.gapPercent} % nachlassen.
+              </span>
+            ) : Number.isFinite(plan.fullMarginPrice) && plan.fullMarginPrice < plan.opening ? (
               <span className={`basis-full text-[11px] ${muted}`}>
                 Volle Zielmarge erst bei {euro(plan.fullMarginPrice)}.
               </span>
