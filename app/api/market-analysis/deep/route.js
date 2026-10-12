@@ -1,14 +1,13 @@
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { runDeepAnalysis } from "@/lib/market/deep";
-import { connectDB } from "@/lib/mongodb";
-import ExpertAnswer from "@/models/ExpertAnswer";
+import { startDeepJob } from "@/lib/market/deep";
+import { loadExpertAnswers } from "@/lib/market/expertAnswers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// The full gpt-5 can need more than a minute for a careful review.
-export const maxDuration = 120;
+// Only starts the job at OpenAI — answers within a few seconds.
+export const maxDuration = 30;
 
 function json(data, status = 200) {
   return Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
@@ -16,8 +15,8 @@ function json(data, status = 200) {
 
 /**
  * POST /api/market-analysis/deep  body: { result }
- * The "Tief" second pass on an analysis the page already has. Costs one call
- * to the stronger AI model; numbers are recalculated in code.
+ * Starts the AI review (gpt-5 with web search) as a background job and
+ * returns { jobId } at once. The page then polls /deep/status.
  */
 export async function POST(request) {
   const session = await getServerSession(authOptions);
@@ -32,32 +31,17 @@ export async function POST(request) {
 
   const result = body?.result;
   if (!result?.target || !Array.isArray(result?.comparables) || !result?.market) {
-    return json({ error: "Zuerst eine normale Analyse durchführen." }, 400);
-  }
-
-  // The dealer's answers are a help, never a requirement.
-  let answers = [];
-  try {
-    await connectDB();
-    answers = await ExpertAnswer.find({ answer: { $ne: "" } }, { questionId: 1, answer: 1 }).lean();
-  } catch (error) {
-    console.error("deep: expert answers unavailable", error);
+    return json({ error: "Keine Analyse zum Prüfen vorhanden." }, 400);
   }
 
   try {
-    const deep = await runDeepAnalysis(result, answers, { timeoutMs: 110_000 });
-    return json(deep);
+    const answers = await loadExpertAnswers();
+    const job = await startDeepJob(result, answers);
+    return json(job);
   } catch (error) {
-    console.error("deep analysis failed", error);
-    const timeout = /timeout|timed out|abort/i.test(String(error?.message));
+    console.error("deep analysis could not start", error);
     return json(
-      {
-        error: timeout
-          ? "Die Tiefe Analyse hat zu lange gedauert. Bitte erneut versuchen."
-          : error?.status === 503
-            ? error.message
-            : "Die Tiefe Analyse ist fehlgeschlagen. Bitte erneut versuchen.",
-      },
+      { error: error?.status === 503 ? error.message : "Die KI-Analyse konnte nicht gestartet werden. Bitte erneut versuchen." },
       error?.status && error.status >= 400 && error.status < 600 ? error.status : 502,
     );
   }

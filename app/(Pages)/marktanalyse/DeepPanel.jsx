@@ -24,6 +24,19 @@ import {
 const euro = (value) =>
   Number.isFinite(value) ? `${Math.round(value).toLocaleString("de-DE")} €` : "–";
 
+/** A source as "adac.de – Title", short. */
+function sourceLabel(source) {
+  let host = "";
+  try {
+    host = new URL(source.url).hostname.replace(/^www\./, "");
+  } catch {
+    /* keep the title alone */
+  }
+  const title = source.title && source.title !== source.url ? source.title : "";
+  const text = [host, title].filter(Boolean).join(" – ");
+  return text.length > 70 ? `${text.slice(0, 67)}…` : text || source.url;
+}
+
 /** A removed comparable in one short line: what car, how old, how far, what price. */
 function removedLabel(entry) {
   const name = entry.title || [entry.make, entry.model].filter(Boolean).join(" ") || "Vergleich";
@@ -120,9 +133,9 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
         <div className="flex items-center gap-2.5">
           <FiLoader className="animate-spin text-sky-600" />
           <div>
-            <p className="text-sm font-semibold">Tiefe Analyse läuft …</p>
+            <p className="text-sm font-semibold">KI-Bewertung läuft …</p>
             <p className={`text-[11px] ${muted}`}>
-              Vergleiche prüfen, Anzeige lesen, Schwachstellen und Marktwissen – dauert etwa 20–40 Sekunden.
+              Vergleiche prüfen, im Web recherchieren, Anzeige lesen – meist 1–2 Minuten.
             </p>
           </div>
         </div>
@@ -136,16 +149,20 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
         <div className="flex items-start gap-2.5">
           <FiCpu className={`mt-0.5 ${faint}`} />
           <div>
-            <p className="text-sm font-semibold">Tiefe Analyse</p>
-            <p className={`text-[11px] ${muted}`}>
+            <p className="text-sm font-semibold">KI-Bewertung</p>
+            <p className={`text-[11px] ${error ? "text-red-600" : muted}`}>
               {error ||
-                "Prüft die Vergleiche, liest die Anzeige, nennt Schwachstellen und Aufbereitung – aus Händlersicht, mit Fazit."}
+                (onRun
+                  ? "Für diese Analyse liegt noch keine KI-Bewertung vor."
+                  : "Ohne Vergleichsfahrzeuge ist keine KI-Bewertung möglich.")}
             </p>
           </div>
         </div>
-        <button type="button" onClick={onRun} className={button}>
-          <FiCpu /> {error ? "Erneut versuchen" : "Tiefe Analyse starten"}
-        </button>
+        {onRun ? (
+          <button type="button" onClick={onRun} className={button}>
+            <FiCpu /> {error ? "Erneut versuchen" : "KI-Bewertung starten"}
+          </button>
+        ) : null}
       </section>
     );
   }
@@ -167,7 +184,7 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider ${faint}`}>
-              <FiCpu className="size-3" /> Fazit · Tiefe Analyse
+              <FiCpu className="size-3" /> Fazit · KI-Bewertung
             </p>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               {decision ? (
@@ -301,8 +318,24 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
         </div>
       ) : null}
 
+      {/* Web sources the AI cited — to check what it found. */}
+      {deep.sources?.length ? (
+        <div className={`border-t px-4 py-1.5 text-[10px] leading-relaxed ${line} ${faint}`}>
+          <span className="font-semibold">Quellen:</span>{" "}
+          {deep.sources.map((source, index) => (
+            <span key={source.url}>
+              {index ? " · " : ""}
+              <a href={source.url} target="_blank" rel="noreferrer" className="hover:underline">
+                {sourceLabel(source)}
+              </a>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
       <p className={`border-t px-4 py-1.5 text-[10px] ${line} ${faint}`}>
-        {deep.model} ·{" "}
+        {deep.model}
+        {Number.isFinite(deep.searches) && deep.searches > 0 ? ` · ${deep.searches} Websuche${deep.searches === 1 ? "" : "n"}` : ""} ·{" "}
         {deep.removalSkipped
           ? "Vergleiche unverändert (KI hätte zu viele aussortiert) · "
           : !deep.removed?.length

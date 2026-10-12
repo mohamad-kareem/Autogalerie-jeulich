@@ -317,20 +317,10 @@ export default function SettingsDialog({ open, onClose, onSaved, dark }) {
               </div>
             </Section>
 
-            <Section dark={dark} title="Verkauf & Analyse">
+            <Section dark={dark} title="Verkauf">
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field dark={dark} label="Verkaufsabschlag (Inserat → tatsächlicher Verkauf)" suffix="%">
                   <input type="number" min="0" max="30" step="0.5" value={form.saleDiscountPercent} onChange={set("saleDiscountPercent")} className={input} />
-                </Field>
-                <Field dark={dark} label="Analyse startet standardmäßig">
-                  <div className={`${segmentGroup} w-full`}>
-                    <button type="button" onClick={() => setForm((c) => ({ ...c, defaultDepth: "NORMAL" }))} className={segment(form.defaultDepth === "NORMAL")}>
-                      Normal
-                    </button>
-                    <button type="button" onClick={() => setForm((c) => ({ ...c, defaultDepth: "DEEP" }))} className={segment(form.defaultDepth === "DEEP")}>
-                      Tief
-                    </button>
-                  </div>
                 </Field>
               </div>
             </Section>

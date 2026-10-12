@@ -56,7 +56,6 @@ import SettingsDialog from "./SettingsDialog";
 /* ------------------------------------------------------------------ setup */
 
 const RECENT_KEY = "marktanalyse.recent.v2";
-const DEPTH_KEY = "marktanalyse.depth";
 const MAX_RECENT = 6;
 const REQUEST_TIMEOUT_MS = 70_000;
 
@@ -2191,69 +2190,6 @@ function MarketPanel({ result, dark }) {
   );
 }
 
-/**
- * The report's opening for a normal analysis: the summary and the risks of
- * this car — facts only, no how-to lists.
- * With a Tiefe Analyse its Fazit takes this place.
- */
-function NormalFazit({ result, dark, onRun, error }) {
-  const recommendation = result.recommendation || {};
-  const risks = recommendation.risks || [];
-
-  const muted = dark ? "text-slate-500" : "text-slate-400";
-  const body = dark ? "text-slate-300" : "text-slate-700";
-  const rule = dark ? "border-slate-800" : "border-slate-100";
-
-  return (
-    <Panel dark={dark}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className={`text-[11px] font-bold uppercase tracking-wider ${muted}`}>
-            Fazit{" "}
-            <span className="font-normal normal-case tracking-normal">
-              · {recommendation.generatedBy === "regelbasiert" ? "regelbasiert" : "KI-Formulierung"}
-            </span>
-          </p>
-          {recommendation.headline ? (
-            <h2 className="mt-1 text-[15px] font-bold leading-snug">{recommendation.headline}</h2>
-          ) : null}
-        </div>
-        {onRun ? (
-          <button
-            type="button"
-            onClick={onRun}
-            title={error || "KI prüft Vergleiche, Anzeige und Schwachstellen – etwa 20–40 Sekunden"}
-            className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded border px-3 text-xs font-semibold transition ${
-              dark ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-300 text-slate-700 hover:bg-slate-50"
-            }`}
-          >
-            <FiCpu /> {error ? "Tiefe Analyse erneut" : "Tiefe Analyse"}
-          </button>
-        ) : null}
-      </div>
-
-      {recommendation.summary ? (
-        <p className={`mt-1.5 max-w-4xl text-[13px] leading-relaxed ${body}`}>{recommendation.summary}</p>
-      ) : null}
-      {error ? <p className="mt-1.5 text-[11px] text-red-600">{error}</p> : null}
-
-      {risks.length ? (
-        <div className="mt-3">
-          <h3 className={`mb-1.5 border-b pb-1 text-[11px] font-bold uppercase tracking-wider ${rule} ${muted}`}>Risiken</h3>
-          <ul className="grid grid-cols-1 gap-x-6 gap-y-1 md:grid-cols-2">
-            {risks.map((value, index) => (
-              <li key={index} className={`flex gap-2 text-xs leading-5 ${body}`}>
-                <span className={`mt-[8px] size-1 shrink-0 rounded-full ${dark ? "bg-slate-500" : "bg-slate-400"}`} />
-                <span>{value}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-    </Panel>
-  );
-}
-
 function TechnicalDetails({ result, dark }) {
   const [open, setOpen] = useState(false);
   const [diagnosis, setDiagnosis] = useState(null);
@@ -2992,9 +2928,10 @@ const LOADING_STEPS = [
 
 const DEEP_STEPS = [
   { at: 0, text: "KI prüft die Vergleichsfahrzeuge" },
-  { at: 8, text: "KI liest die Anzeige und sucht Risiken" },
-  { at: 16, text: "Bekannte Schwachstellen und Aufbereitung" },
-  { at: 26, text: "Marktwissen wird angewendet, Limit neu berechnet" },
+  { at: 10, text: "KI recherchiert Modell, Motor und Schwachstellen im Web" },
+  { at: 35, text: "KI liest die Anzeige und sucht Risiken" },
+  { at: 60, text: "KI wägt ab und trifft die Entscheidung" },
+  { at: 100, text: "Noch einen Moment – gründliche Prüfung" },
 ];
 
 function LoadingPanel({ seconds, dark, deepSince = null }) {
@@ -3009,7 +2946,7 @@ function LoadingPanel({ seconds, dark, deepSince = null }) {
     <Panel dark={dark}>
       <div className="flex flex-col items-center py-12 text-center">
         <FiLoader className="animate-spin text-4xl text-sky-600" />
-        <h2 className="mt-4 text-lg font-bold">{deepSince === null ? "Analyse läuft" : "Tiefe Analyse läuft"}</h2>
+        <h2 className="mt-4 text-lg font-bold">{deepSince === null ? "Analyse läuft" : "KI-Bewertung läuft"}</h2>
         <p className={`mt-1 text-sm ${dark ? "text-slate-400" : "text-slate-500"}`}>{step.text}</p>
         <p className="mt-1 text-xs tabular-nums text-slate-400">{seconds}s</p>
 
@@ -3024,7 +2961,7 @@ function LoadingPanel({ seconds, dark, deepSince = null }) {
               width: `${
                 deepSeconds === null
                   ? Math.min(60, 12 + seconds * 2.6)
-                  : Math.min(95, 60 + deepSeconds * 1.2)
+                  : Math.min(96, 60 + deepSeconds * 0.4)
               }%`,
             }}
           />
@@ -3037,12 +2974,12 @@ function LoadingPanel({ seconds, dark, deepSince = null }) {
 
 /* ============================================================ tiefe analyse */
 
-/** Asks the server for the deep review of an analysis. Throws a German message. */
-async function fetchDeep(base) {
-  const response = await fetch("/api/market-analysis/deep", {
+/** POST helper for the AI review: JSON in, JSON out, German error messages. */
+async function postJson(url, body) {
+  const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ result: base }),
+    body: JSON.stringify(body),
   });
   const raw = await response.text();
   let data;
@@ -3051,8 +2988,40 @@ async function fetchDeep(base) {
   } catch {
     throw new Error(`Der Server hat nicht korrekt geantwortet (HTTP ${response.status}).`);
   }
-  if (!response.ok) throw new Error(data?.error || "Tiefe Analyse fehlgeschlagen.");
+  if (!response.ok) throw new Error(data?.error || "KI-Bewertung fehlgeschlagen.");
   return data;
+}
+
+const DEEP_POLL_MS = 4_000;
+// The AI (gpt-5 with web search) runs in the background at OpenAI; this is
+// only how long the page keeps asking before it gives up.
+const DEEP_MAX_WAIT_MS = 8 * 60_000;
+
+/**
+ * The AI review of an analysis. Starts a background job and asks every few
+ * seconds whether it is done — no request stays open long, so no hosting
+ * time limit applies. `isCurrent()` stops the polling when the user has
+ * moved on to another car. Throws a German message.
+ */
+async function fetchDeep(base, isCurrent = () => true) {
+  const { jobId } = await postJson("/api/market-analysis/deep", { result: base });
+  if (!jobId) throw new Error("Die KI-Bewertung konnte nicht gestartet werden.");
+
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < DEEP_MAX_WAIT_MS) {
+    await new Promise((resolve) => setTimeout(resolve, DEEP_POLL_MS));
+    if (!isCurrent()) throw Object.assign(new Error("abgebrochen"), { cancelled: true });
+    let data;
+    try {
+      data = await postJson("/api/market-analysis/deep/status", { jobId, result: base });
+    } catch (error) {
+      // A dropped connection during one check is not the end of the job.
+      if (error instanceof TypeError) continue;
+      throw error;
+    }
+    if (data?.status === "done") return data;
+  }
+  throw new Error("Die KI-Bewertung hat ungewöhnlich lange gedauert. Bitte erneut versuchen.");
 }
 
 /** The analysis with the reviewed comparables, recalculated figures and the report. */
@@ -3089,8 +3058,6 @@ export default function MarktanalysePage() {
   // analysis goes: NORMAL (fast, nearly free) or DEEP (stronger AI review).
   const [view, setView] = useState("ANALYSE");
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [depth, setDepth] = useState("NORMAL");
-  const depthRef = useRef("NORMAL");
   const [deepRunning, setDeepRunning] = useState(false);
   const [deepError, setDeepError] = useState(null);
   const deepRunRef = useRef(0);
@@ -3141,40 +3108,8 @@ export default function MarktanalysePage() {
       /* ignore unreadable history */
     }
 
-    try {
-      const storedDepth = localStorage.getItem(DEPTH_KEY);
-      if (storedDepth === "DEEP" || storedDepth === "NORMAL") {
-        setDepth(storedDepth);
-        depthRef.current = storedDepth;
-      }
-    } catch {
-      /* the default is fine */
-    }
-
-    // The company's default depth (Einstellungen) decides how each visit starts.
-    fetch("/api/market-analysis/settings")
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data) => {
-        const preferred = data?.settings?.defaultDepth;
-        if ((preferred === "DEEP" || preferred === "NORMAL") && data?.settings?.updatedAt) {
-          setDepth(preferred);
-          depthRef.current = preferred;
-        }
-      })
-      .catch(() => {
-        /* the stored choice stays */
-      });
   }, []);
 
-  const changeDepth = useCallback((next) => {
-    setDepth(next);
-    depthRef.current = next;
-    try {
-      localStorage.setItem(DEPTH_KEY, next);
-    } catch {
-      /* a preference, not a requirement */
-    }
-  }, []);
 
   /**
    * Tiefe Analyse on the result on screen. The stronger AI reviews the
@@ -3188,7 +3123,7 @@ export default function MarktanalysePage() {
     setDeepRunning(true);
     setDeepError(null);
     try {
-      const data = await fetchDeep(base);
+      const data = await fetchDeep(base, () => run === deepRunRef.current);
       if (run !== deepRunRef.current) return;
 
       setResult((current) =>
@@ -3200,10 +3135,10 @@ export default function MarktanalysePage() {
       if (data.deep?.targetProfit && Number.isFinite(data.dealer?.targetProfit)) {
         setAdjust((current) => ({ ...current, profit: data.dealer.targetProfit }));
       }
-      toast.success("Tiefe Analyse fertig.");
+      toast.success("KI-Bewertung fertig.");
     } catch (deepFailure) {
-      if (run !== deepRunRef.current) return;
-      const message = deepFailure?.message || "Tiefe Analyse fehlgeschlagen.";
+      if (run !== deepRunRef.current || deepFailure?.cancelled) return;
+      const message = deepFailure?.message || "KI-Bewertung fehlgeschlagen.";
       setDeepError(message);
       toast.error(message);
     } finally {
@@ -3347,6 +3282,8 @@ export default function MarktanalysePage() {
             ...(pasted ? { pastedText: pasted } : {}),
             ...(extras || {}),
             ...(pageHtml ? { pageHtml } : {}),
+            // The decision and the Fazit come from the AI review below.
+            skipModel: true,
           }),
           signal: controller.signal,
         });
@@ -3372,22 +3309,22 @@ export default function MarktanalysePage() {
           return;
         }
 
-        // "Tief": the result appears only once, after the AI review —
-        // never first the normal figures and then different ones.
+        // Every analysis ends with the AI review; the result appears once,
+        // complete — never first one set of figures and then another.
         let final = data;
-        if (depthRef.current === "DEEP" && Array.isArray(data.comparables) && data.comparables.length) {
+        if (Array.isArray(data.comparables) && data.comparables.length) {
           const run = ++deepRunRef.current;
           setDeepSince(secondsRef.current);
           try {
-            const deep = await fetchDeep(data);
+            const deep = await fetchDeep(data, () => run === deepRunRef.current && !controller.signal.aborted);
             if (run !== deepRunRef.current || controller.signal.aborted) return;
             final = mergeDeep(data, deep);
           } catch (deepFailure) {
-            if (run !== deepRunRef.current || controller.signal.aborted) return;
-            // The normal result still stands; the panel offers a retry.
-            const message = deepFailure?.message || "Tiefe Analyse fehlgeschlagen.";
+            if (run !== deepRunRef.current || controller.signal.aborted || deepFailure?.cancelled) return;
+            // The figures still stand; the panel offers a retry of the AI part only.
+            const message = deepFailure?.message || "KI-Bewertung fehlgeschlagen.";
             setDeepError(message);
-            toast.error(`${message} Es wird die normale Analyse angezeigt.`);
+            toast.error(`${message} Die Zahlen werden ohne KI-Bewertung angezeigt.`);
           }
         }
 
@@ -3752,7 +3689,7 @@ export default function MarktanalysePage() {
           : `Verhandlung: Einstieg ${euro(live.negotiation.opening)} · Ziel ${euro(live.negotiation.target)} · Höchstens ${euro(live.negotiation.walkAway)}`
         : null,
       `Bewertung: ${verdictMeta(live?.verdict ?? result.verdict).label} · Datenqualität ${result.confidence}/100`,
-      result.deep?.decision?.headline ? `Tiefe Analyse: ${result.deep.decision.headline}` : null,
+      result.deep?.decision?.headline ? `KI-Bewertung: ${result.deep.decision.headline}` : null,
       result.target.listingUrl,
     ].filter(Boolean);
 
@@ -3852,7 +3789,6 @@ export default function MarktanalysePage() {
           <SettingsDialog
             open={settingsOpen}
             onClose={() => setSettingsOpen(false)}
-            onSaved={(saved) => saved?.defaultDepth && changeDepth(saved.defaultDepth)}
             dark={dark}
           />
 
@@ -3879,37 +3815,6 @@ export default function MarktanalysePage() {
                     : "border-slate-300 bg-white focus:ring-sky-200"
                 }`}
               />
-            </div>
-
-            {/* Normal (fast, nearly free) or Tief (stronger AI review) */}
-            <div
-              className={`inline-flex h-9 shrink-0 items-center rounded border p-0.5 text-xs ${
-                dark ? "border-slate-700 bg-slate-900" : "border-slate-300 bg-white"
-              }`}
-              title="Normal: schnell, fast kostenlos · Tief: KI prüft Vergleiche, Anzeige und Schwachstellen (ca. 5–15 Cent)"
-            >
-              {[
-                ["NORMAL", "Normal"],
-                ["DEEP", "Tief"],
-              ].map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => changeDepth(id)}
-                  aria-pressed={depth === id}
-                  className={`h-full rounded px-2.5 font-semibold transition ${
-                    depth === id
-                      ? dark
-                        ? "bg-slate-700 text-slate-100"
-                        : "bg-slate-800 text-white"
-                      : dark
-                        ? "text-slate-400 hover:text-slate-200"
-                        : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
             </div>
 
             <button
@@ -4138,26 +4043,17 @@ export default function MarktanalysePage() {
               </p>
             ) : null}
 
-            {/* 1 · Fazit — the Tiefe Analyse when there is one, else the summary */}
+            {/* 1 · Fazit — the AI review (or its retry when it failed) */}
             <div className="mb-4">
-              {result.deep || deepRunning ? (
-                <DeepPanel
-                  deep={result.deep || null}
-                  live={live}
-                  market={result.market}
-                  running={deepRunning}
-                  error={deepError}
-                  onRun={() => runDeep(currentResult())}
-                  dark={dark}
-                />
-              ) : (
-                <NormalFazit
-                  result={result}
-                  dark={dark}
-                  error={deepError}
-                  onRun={result.dealer?.available ? () => runDeep(currentResult()) : null}
-                />
-              )}
+              <DeepPanel
+                deep={result.deep || null}
+                live={live}
+                market={result.market}
+                running={deepRunning}
+                error={deepError}
+                onRun={result.comparables?.length ? () => runDeep(currentResult()) : null}
+                dark={dark}
+              />
             </div>
 
             {/* 2 · Market evidence on the left; the calculation (a tool, not
