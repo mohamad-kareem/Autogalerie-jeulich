@@ -328,7 +328,7 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
               ))}
             </ul>
           ) : (
-            <p className={muted}>Keine bekannten Schwachstellen für dieses Modell.</p>
+            <p className={muted}>Keine bekannten technischen Schwachstellen für dieses Modell.</p>
           )}
         </Section>
 
