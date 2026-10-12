@@ -41,7 +41,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("deep analysis could not start", error);
     return json(
-      { error: error?.status === 503 ? error.message : "Die KI-Analyse konnte nicht gestartet werden. Bitte erneut versuchen." },
+      { error: error?.message || "Die KI-Analyse konnte nicht gestartet werden. Bitte erneut versuchen." },
       error?.status && error.status >= 400 && error.status < 600 ? error.status : 502,
     );
   }

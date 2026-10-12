@@ -16,6 +16,7 @@
 import {
   FiCheckCircle,
   FiCpu,
+  FiExternalLink,
   FiHelpCircle,
   FiLoader,
   FiXCircle,
@@ -24,25 +25,87 @@ import {
 const euro = (value) =>
   Number.isFinite(value) ? `${Math.round(value).toLocaleString("de-DE")} €` : "–";
 
-/** A source as "adac.de – Title", short. */
-function sourceLabel(source) {
+/** A source as host ("adac.de") and a short title without the site name. */
+function sourceParts(source) {
   let host = "";
   try {
-    host = new URL(source.url).hostname.replace(/^www\./, "");
+    host = new URL(source.url).hostname.replace(/^(www|assets|club)\./, "");
   } catch {
-    /* keep the title alone */
+    /* title alone */
   }
-  const title = source.title && source.title !== source.url ? source.title : "";
-  const text = [host, title].filter(Boolean).join(" – ");
-  return text.length > 70 ? `${text.slice(0, 67)}…` : text || source.url;
+  let title = source.title && source.title !== source.url ? source.title : "";
+  // "Xenon-Scheinwerfer - Funktion & Nachrüsten | HELLA" → "Xenon-Scheinwerfer - Funktion & Nachrüsten"
+  title = title
+    .replace(/\s*\|\s*[^|]{1,30}$/, "") // "… | HELLA"
+    .replace(/\s+[-–]\s+\S{1,4}$/, "") // cut-off tail "… - VO"
+    .trim();
+  return { host: host || "Quelle", title };
 }
 
-/** A removed comparable in one short line: what car, how old, how far, what price. */
-function removedLabel(entry) {
-  const name = entry.title || [entry.make, entry.model].filter(Boolean).join(" ") || "Vergleich";
-  const km = Number.isFinite(entry.mileageKm) ? `${Math.round(entry.mileageKm).toLocaleString("de-DE")} km` : null;
-  const price = Number.isFinite(entry.price) ? `${Math.round(entry.price).toLocaleString("de-DE")} €` : null;
-  return [name, entry.firstRegistration, km, price].filter(Boolean).join(", ");
+/* ---------------------------------------------------------- citations
+ * Web search leaves its sources inline: "… Wastegate-Dose.
+ * ([motor-talk.de](https://…?utm_source=openai))". Shown as a small link tag
+ * at the end of the sentence instead — also for analyses saved earlier.
+ */
+const CITATION = /\s*\(\s*\[([^\]]*)\]\((https?:[^)\s]+)\)\s*\)|\[([^\]]+)\]\((https?:[^)\s]+)\)/g;
+
+const cleanHref = (url) => String(url).replace(/([?&])utm_source=openai(&?)/, (_, sep, next) => (next ? sep : "")).replace(/[?&]$/, "");
+
+function hostOf(url, fallback = "") {
+  try {
+    return new URL(url).hostname.replace(/^(www|assets|club)\./, "");
+  } catch {
+    return fallback || "Quelle";
+  }
+}
+
+/** The text without any inline citations — for places that show plain text. */
+function plainText(value) {
+  return String(value || "")
+    .replace(CITATION, (match, _label, _url, label2) => (label2 ? label2 : ""))
+    .replace(/\s+([.,;:])/g, "$1")
+    .trim();
+}
+
+/** Text with its citations turned into small link tags. */
+function Cited({ text, dark }) {
+  const value = String(text || "");
+  const links = [];
+  const body = value
+    .replace(CITATION, (match, label, url, label2, url2) => {
+      if (url) {
+        links.push({ url: cleanHref(url), host: hostOf(url, label) });
+        return "";
+      }
+      // A plain markdown link inside the sentence keeps its words.
+      links.push({ url: cleanHref(url2), host: hostOf(url2, label2) });
+      return label2;
+    })
+    .replace(/\s+([.,;:])/g, "$1")
+    .trim();
+  const unique = links.filter((link, index) => links.findIndex((other) => other.url === link.url) === index);
+  return (
+    <>
+      {body}
+      {unique.map((link) => (
+        <a
+          key={link.url}
+          href={link.url}
+          target="_blank"
+          rel="noreferrer"
+          title={link.url}
+          className={`ml-1 inline-flex items-center gap-0.5 whitespace-nowrap rounded border px-1 align-[1px] text-[9px] font-medium leading-[14px] transition ${
+            dark
+              ? "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+              : "border-slate-200 text-slate-500 hover:border-slate-400 hover:text-slate-800"
+          }`}
+        >
+          {link.host}
+          <FiExternalLink className="size-2" />
+        </a>
+      ))}
+    </>
+  );
 }
 
 const ACTIONS = {
@@ -205,7 +268,7 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
         </div>
 
         {deep.decision?.summary ? (
-          <p className={`mt-2 max-w-4xl text-[13px] leading-relaxed ${text}`}>{deep.decision.summary}</p>
+          <p className={`mt-2 max-w-4xl text-[13px] leading-relaxed ${text}`}><Cited text={deep.decision.summary} dark={dark} /></p>
         ) : null}
 
         {actionNote ? <p className={`mt-2 text-xs font-semibold ${action === "NICHT_KAUFEN" ? "text-red-600" : "text-amber-600"}`}>{actionNote}</p> : null}
@@ -214,7 +277,7 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
           <p className={`mt-1.5 text-xs ${muted}`}>
             <span className={`font-semibold ${text}`}>Marge angepasst:</span> {euro(deep.targetProfit.from)} → {euro(deep.targetProfit.to)}
             {deep.targetProfit.limited ? <span className={faint}> (KI-Vorschlag {euro(deep.targetProfit.proposed)}, begrenzt)</span> : null}
-            {deep.targetProfit.reason ? <> – {deep.targetProfit.reason}</> : null}
+            {deep.targetProfit.reason ? <> – <Cited text={deep.targetProfit.reason} dark={dark} /></> : null}
           </p>
         ) : null}
 
@@ -224,7 +287,7 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
             {(reasons.length ? reasons : risks.map((risk) => risk.text)).slice(0, 3).map((reason) => (
               <li key={reason} className="flex gap-2">
                 <span className={`mt-[7px] size-1.5 shrink-0 rounded-full ${dark ? "bg-slate-500" : "bg-slate-400"}`} />
-                <span>{reason}</span>
+                <span><Cited text={reason} dark={dark} /></span>
               </li>
             ))}
           </ul>
@@ -240,7 +303,7 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
                 const meta = FINDING[finding.type] || FINDING.FRAGE;
                 return (
                   <li key={index} className="leading-snug">
-                    <span className={`font-semibold ${meta.tone}`}>{meta.label}:</span> {finding.text}
+                    <span className={`font-semibold ${meta.tone}`}>{meta.label}:</span> <Cited text={finding.text} dark={dark} />
                     {finding.evidence ? <span className={`block italic ${faint}`}>„{finding.evidence}“</span> : null}
                   </li>
                 );
@@ -259,8 +322,8 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
             <ul className={`divide-y ${divide}`}>
               {deep.weakPoints.map((point, index) => (
                 <li key={index} className="py-1.5 leading-snug first:pt-0">
-                  <span className="font-semibold">{point.title}</span>
-                  {point.detail ? <span className={muted}> – {point.detail}</span> : null}
+                  <span className="font-semibold">{plainText(point.title)}</span>
+                  {point.detail ? <span className={muted}> – <Cited text={point.detail} dark={dark} /></span> : null}
                 </li>
               ))}
             </ul>
@@ -280,8 +343,8 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
                       <li key={optionIndex} className="flex items-baseline gap-2 py-1 leading-snug first:pt-0">
                         <span className={`w-3 shrink-0 tabular-nums ${faint}`}>{optionIndex + 1}.</span>
                         <span className="min-w-0 flex-1">
-                          <span className="font-semibold">{option.cause}</span>
-                          {option.reason ? <span className={muted}> – {option.reason}</span> : null}
+                          <span className="font-semibold">{plainText(option.cause)}</span>
+                          {option.reason ? <span className={muted}> – <Cited text={option.reason} dark={dark} /></span> : null}
                         </span>
                         <span className={`shrink-0 text-[10px] font-semibold ${effort.tone}`}>{effort.label}</span>
                       </li>
@@ -295,53 +358,43 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
 
       </div>
 
-      {/* Removed comparables: a side note, compact, at the bottom. */}
-      {deep.removed?.length ? (
-        <div className={`border-t px-4 py-1.5 text-[10px] leading-relaxed ${line} ${faint}`}>
-          <span className="font-semibold">
-            {deep.removed.length} Vergleich{deep.removed.length === 1 ? "" : "e"} aussortiert
-          </span>{" "}
-          (Marktwert {euro(deep.before?.marketValue)} → {euro(market?.marketValue)}):{" "}
-          {deep.removed.map((entry, index) => (
-            <span key={`${entry.listingUrl}-${index}`}>
-              {index ? " · " : ""}
-              {entry.listingUrl ? (
-                <a href={entry.listingUrl} target="_blank" rel="noreferrer" className="hover:underline">
-                  {removedLabel(entry)}
-                </a>
-              ) : (
-                removedLabel(entry)
-              )}{" "}
-              – {entry.reason}
-            </span>
-          ))}
-        </div>
-      ) : null}
-
-      {/* Web sources the AI cited — to check what it found. */}
+      {/* Web sources the AI cited — small chips, to check what it found. */}
       {deep.sources?.length ? (
-        <div className={`border-t px-4 py-1.5 text-[10px] leading-relaxed ${line} ${faint}`}>
-          <span className="font-semibold">Quellen:</span>{" "}
-          {deep.sources.map((source, index) => (
-            <span key={source.url}>
-              {index ? " · " : ""}
-              <a href={source.url} target="_blank" rel="noreferrer" className="hover:underline">
-                {sourceLabel(source)}
+        <div className={`flex flex-wrap items-center gap-1.5 border-t px-4 py-2 ${line}`}>
+          <span className={`mr-0.5 text-[10px] font-semibold uppercase tracking-wider ${faint}`}>Quellen</span>
+          {deep.sources.map((source) => {
+            const { host, title } = sourceParts(source);
+            return (
+              <a
+                key={source.url}
+                href={source.url}
+                target="_blank"
+                rel="noreferrer"
+                title={source.title || source.url}
+                className={`inline-flex max-w-[260px] items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] leading-tight transition ${
+                  dark
+                    ? "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+                    : "border-slate-200 text-slate-500 hover:border-slate-400 hover:text-slate-800"
+                }`}
+              >
+                <FiExternalLink className="size-2.5 shrink-0" />
+                <span className={`shrink-0 font-semibold ${dark ? "text-slate-300" : "text-slate-700"}`}>{host}</span>
+                {title ? <span className="truncate">{title}</span> : null}
               </a>
-            </span>
-          ))}
+            );
+          })}
         </div>
       ) : null}
 
       <p className={`border-t px-4 py-1.5 text-[10px] ${line} ${faint}`}>
         {deep.model}
-        {Number.isFinite(deep.searches) && deep.searches > 0 ? ` · ${deep.searches} Websuche${deep.searches === 1 ? "" : "n"}` : ""} ·{" "}
-        {deep.removalSkipped
-          ? "Vergleiche unverändert (KI hätte zu viele aussortiert) · "
-          : !deep.removed?.length
-            ? "Vergleiche geprüft: alle passen · "
-            : ""}
-        {deep.sellability?.reason ? `Verkauf: ${deep.sellability.reason} · ` : ""}
+        {Number.isFinite(deep.searches)
+          ? deep.searches > 0
+            ? ` · ${deep.searches} Websuche${deep.searches === 1 ? "" : "n"}`
+            : " · keine Websuche"
+          : ""}{" "}
+        ·{" "}
+        {deep.sellability?.reason ? `Verkauf: ${plainText(deep.sellability.reason)} · ` : ""}
         {deep.expertNotesGiven ? `${deep.expertNotesGiven} passende Einträge aus dem Marktwissen` : "noch kein Marktwissen hinterlegt"}
         {deep.expertUsed?.length ? ` (genutzt: ${deep.expertUsed.join(", ")})` : ""} · Zahlen rechnet das System, nicht die KI.
       </p>
