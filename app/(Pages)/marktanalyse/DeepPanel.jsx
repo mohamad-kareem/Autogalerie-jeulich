@@ -24,6 +24,14 @@ import {
 const euro = (value) =>
   Number.isFinite(value) ? `${Math.round(value).toLocaleString("de-DE")} €` : "–";
 
+/** A removed comparable in one short line: what car, how old, how far, what price. */
+function removedLabel(entry) {
+  const name = entry.title || [entry.make, entry.model].filter(Boolean).join(" ") || "Vergleich";
+  const km = Number.isFinite(entry.mileageKm) ? `${Math.round(entry.mileageKm).toLocaleString("de-DE")} km` : null;
+  const price = Number.isFinite(entry.price) ? `${Math.round(entry.price).toLocaleString("de-DE")} €` : null;
+  return [name, entry.firstRegistration, km, price].filter(Boolean).join(", ");
+}
+
 const ACTIONS = {
   KAUFEN: {
     label: "Kaufen",
@@ -237,36 +245,30 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
           )}
         </Section>
 
-        {deep.removed?.length ? (
-          <div className="md:col-span-2">
-            <Section
-              title="Vergleiche aussortiert"
-              dark={dark}
-              aside={
-                <span className={`text-[10px] ${faint}`}>
-                  Marktwert {euro(deep.before?.marketValue)} → {euro(market?.marketValue)}
-                </span>
-              }
-            >
-              <ul className={`divide-y ${divide}`}>
-                {deep.removed.map((entry) => (
-                  <li key={`${entry.listingUrl}-${entry.title}`} className="flex items-baseline gap-2 py-1 first:pt-0">
-                    {entry.listingUrl ? (
-                      <a href={entry.listingUrl} target="_blank" rel="noreferrer" className="min-w-0 max-w-[45%] shrink-0 truncate font-medium hover:underline">
-                        {entry.title || "Fahrzeug"}
-                      </a>
-                    ) : (
-                      <span className="min-w-0 max-w-[45%] shrink-0 truncate font-medium">{entry.title || "Fahrzeug"}</span>
-                    )}
-                    <span className={`min-w-0 flex-1 truncate ${faint}`} title={entry.reason}>{entry.reason}</span>
-                    <span className="shrink-0 tabular-nums">{euro(entry.price)}</span>
-                  </li>
-                ))}
-              </ul>
-            </Section>
-          </div>
-        ) : null}
       </div>
+
+      {/* Removed comparables: a side note, compact, at the bottom. */}
+      {deep.removed?.length ? (
+        <div className={`border-t px-4 py-1.5 text-[10px] leading-relaxed ${line} ${faint}`}>
+          <span className="font-semibold">
+            {deep.removed.length} Vergleich{deep.removed.length === 1 ? "" : "e"} aussortiert
+          </span>{" "}
+          (Marktwert {euro(deep.before?.marketValue)} → {euro(market?.marketValue)}):{" "}
+          {deep.removed.map((entry, index) => (
+            <span key={`${entry.listingUrl}-${index}`}>
+              {index ? " · " : ""}
+              {entry.listingUrl ? (
+                <a href={entry.listingUrl} target="_blank" rel="noreferrer" className="hover:underline">
+                  {removedLabel(entry)}
+                </a>
+              ) : (
+                removedLabel(entry)
+              )}{" "}
+              – {entry.reason}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       <p className={`border-t px-4 py-1.5 text-[10px] ${line} ${faint}`}>
         {deep.model} ·{" "}
