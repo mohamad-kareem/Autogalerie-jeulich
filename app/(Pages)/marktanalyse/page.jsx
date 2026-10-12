@@ -482,7 +482,8 @@ function DecisionStrip({ result, live, dark, onSave, saving, savedAt }) {
                 const below = Number.isFinite(value) && value > 0 && Number.isFinite(asking)
                   ? Math.round(((value - asking) / value) * 100)
                   : null;
-                return below !== null && below >= 20 ? (
+                // Not for an Unfall-/Defektfahrzeug: the gap is the room for the repair.
+                return below !== null && below >= 20 && target.condition !== "DAMAGED" ? (
                   <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
                     {below} % unter {privateLevel ? "Privatmarkt" : "Marktwert"} – Grund klären
                   </span>
@@ -1929,8 +1930,11 @@ function MarketPositionPanel({ result, live, dark }) {
         action={
           share === null ? null : (
             <Chip dark={dark} tone={share > 0.6 ? "red" : share < 0.4 ? "emerald" : "slate"}>
-              {cheaper} von {position.total} günstiger ·{" "}
-              {share > 0.6 ? "Angebot eher teuer" : share < 0.4 ? "Angebot eher günstig" : "Mittelfeld"}
+              {cheaper} von {position.total} günstiger
+              {/* A defect car is cheap because of the defect — no verdict on the price. */}
+              {result.target?.condition === "DAMAGED"
+                ? null
+                : ` · ${share > 0.6 ? "Angebot eher teuer" : share < 0.4 ? "Angebot eher günstig" : "Mittelfeld"}`}
             </Chip>
           )
         }
@@ -2140,7 +2144,8 @@ function MarketPanel({ result, dark }) {
           Number.isFinite(market.differenceToAskingPercent) ? (
             <Chip dark={dark} tone={market.differenceToAsking > 0 ? "emerald" : "red"}>
               {market.differenceToAsking > 0 ? <FiTrendingDown /> : <FiTrendingUp />}
-              {percent(Math.abs(market.differenceToAskingPercent))}
+              Angebot {percent(Math.abs(market.differenceToAskingPercent))}{" "}
+              {market.differenceToAsking > 0 ? "unter" : "über"} Marktwert
             </Chip>
           ) : null
         }
@@ -3059,6 +3064,7 @@ function mergeDeep(base, data) {
     dealer: { ...base.dealer, ...data.dealer },
     confidence: data.confidence,
     verdict: data.verdict,
+    insights: data.insights || base.insights,
     deep: data.deep,
   };
 }
