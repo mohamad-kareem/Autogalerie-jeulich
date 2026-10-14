@@ -2361,7 +2361,13 @@ function TechnicalDetails({ result, dark }) {
                     {source.skipped
                       ? "nicht konfiguriert"
                       : source.ok
-                        ? `${source.found} gefunden · ${source.used} übernommen`
+                        ? Number.isFinite(source.inValuation)
+                          ? `${source.found} gefunden · ${source.inValuation} in der Bewertung${
+                              source.inValuation < source.found && source.topRejection
+                                ? ` · meist aussortiert: ${source.topRejection.reason} (${source.topRejection.count}×)`
+                                : ""
+                            }`
+                          : `${source.found} gefunden · ${source.used} übernommen`
                         : source.error || "keine Treffer"}
                   </span>
                 </div>
