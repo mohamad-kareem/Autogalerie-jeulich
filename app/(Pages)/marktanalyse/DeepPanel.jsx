@@ -58,7 +58,10 @@ const cleanHref = (url) => String(url).replace(/([?&])utm_source=openai(&?)/, (_
 
 function hostOf(url, fallback = "") {
   try {
-    return new URL(url).hostname.replace(/^(www|assets|club)\./, "");
+    const host = new URL(url).hostname.replace(/^(www|assets|club)\./, "");
+    // Google search links (Gemini research): the label is the real site.
+    if (/(^|\.)vertexaisearch\.cloud\.google\.com$/.test(host) && fallback) return fallback.replace(/^www\./, "");
+    return host;
   } catch {
     return fallback || "Quelle";
   }
@@ -328,7 +331,18 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
               {deep.weakPoints.map((point, index) => (
                 <li key={index} className="py-1.5 leading-snug first:pt-0">
                   <span className="font-semibold">{plainText(point.title)}</span>
-                  {point.detail ? <span className={muted}> – <Cited text={point.detail} dark={dark} /></span> : null}
+                  {point.detail || point.source ? (
+                    <span className={muted}>
+                      {" – "}
+                      <Cited
+                        text={`${point.detail || ""}${
+                          point.source ? ` ([${sourceParts(point.source).host}](${point.source.url}))` : ""
+                        }`}
+                        dark={dark}
+                      />
+                    </span>
+                  ) : null}
+                  {point.expertId ? <span className={faint}> · Marktwissen</span> : null}
                 </li>
               ))}
             </ul>
