@@ -34,6 +34,11 @@ function sourceParts(source) {
     /* title alone */
   }
   let title = source.title && source.title !== source.url ? source.title : "";
+  // Google search links (Gemini research) run through a redirect; their title
+  // is the real site, e.g. "motor-talk.de".
+  if (/(^|\.)vertexaisearch\.cloud\.google\.com$/.test(host)) {
+    return { host: title.replace(/^www\./, "") || "Quelle", title: "" };
+  }
   // "Xenon-Scheinwerfer - Funktion & Nachrüsten | HELLA" → "Xenon-Scheinwerfer - Funktion & Nachrüsten"
   title = title
     .replace(/\s*\|\s*[^|]{1,30}$/, "") // "… | HELLA"
@@ -357,6 +362,13 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
         ) : null}
 
       </div>
+
+      {/* Gemini was switched on but failed — GPT searched the web itself. */}
+      {deep.researchError ? (
+        <p className={`border-t px-4 py-2 text-[11px] ${line} ${dark ? "text-amber-400" : "text-amber-700"}`}>
+          <span className="font-semibold">Gemini-Recherche fehlgeschlagen:</span> {deep.researchError} – GPT hat selbst im Web gesucht.
+        </p>
+      ) : null}
 
       {/* Web sources the AI cited — small chips, to check what it found. */}
       {deep.sources?.length ? (

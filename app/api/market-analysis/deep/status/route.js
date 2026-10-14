@@ -14,7 +14,7 @@ function json(data, status = 200) {
 }
 
 /**
- * POST /api/market-analysis/deep/status  body: { jobId, result }
+ * POST /api/market-analysis/deep/status  body: { jobId, result, research? }
  * { status: "running" } while the AI works; when it is done, the full review
  * with market value and limit recalculated in code (same shape as before).
  */
@@ -37,7 +37,7 @@ export async function POST(request) {
 
   try {
     const answers = await loadExpertAnswers();
-    return json(await checkDeepJob(jobId, result, answers));
+    return json(await checkDeepJob(jobId, result, answers, body?.research || null));
   } catch (error) {
     console.error("deep analysis status failed", error);
     return json(

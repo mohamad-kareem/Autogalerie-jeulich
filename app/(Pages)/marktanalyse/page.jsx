@@ -123,6 +123,11 @@ function euro(value) {
   return Number.isFinite(value) ? euroFormatter.format(value) : "–";
 }
 
+/** The purchase limit; at 0 € no price reaches the target profit. */
+function limitText(value) {
+  return Number.isFinite(value) && value <= 0 ? "nicht rentabel" : euro(value);
+}
+
 function signedEuro(value) {
   if (!Number.isFinite(value)) return "–";
   return `${value > 0 ? "+" : ""}${euroFormatter.format(value)}`;
@@ -527,9 +532,10 @@ function DecisionStrip({ result, live, dark, onSave, saving, savedAt, onContactS
             <>
               <StripFigure
                 label="Einkaufslimit"
-                value={euro(live.limit)}
+                value={limitText(live.limit)}
                 dark={dark}
-                accent
+                accent={!(live.limit <= 0)}
+                tone={live.limit <= 0 ? "negative" : "neutral"}
               />
               <StripFigure label="Marktwert" value={euro(result.market?.marketValue)} dark={dark} />
               <StripFigure label="Verkaufspreis" value={euro(dealer.sellingPrice)} dark={dark} />
@@ -922,7 +928,9 @@ function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode })
             <span className={`mr-1.5 inline-block w-2.5 font-normal ${muted}`}>=</span>
             Einkaufslimit
           </span>
-          <span className="text-lg font-extrabold tabular-nums text-sky-600">{euro(live.limit)}</span>
+          <span className={`text-lg font-extrabold tabular-nums ${live.limit <= 0 ? "text-red-600" : "text-sky-600"}`}>
+            {limitText(live.limit)}
+          </span>
         </div>
       </div>
 
@@ -1961,7 +1969,11 @@ function MarketPositionPanel({ result, live, dark }) {
         trend={position.trend}
         targetKm={result.target.mileageKm}
         targetPrice={askingPrice}
-        limit={live?.limit ?? result.dealer?.maximumPurchasePrice}
+        limit={(() => {
+          const value = live?.limit ?? result.dealer?.maximumPurchasePrice;
+          // No limit line at 0 €: there is no price that works.
+          return Number.isFinite(value) && value > 0 ? value : null;
+        })()}
         dark={dark}
       />
     </Panel>
@@ -2193,6 +2205,57 @@ function MarketPanel({ result, dark }) {
   );
 }
 
+/** Which AI researched and which decided — to see that Gemini really ran. */
+function AiUsed({ deep, dark }) {
+  const row = `flex flex-wrap items-center justify-between gap-2 rounded-xl p-3 text-sm ${dark ? "bg-slate-800" : "bg-slate-50"}`;
+  const muted = dark ? "text-slate-400" : "text-slate-500";
+  const r = deep?.research;
+  const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+  let research = { text: "–", warn: false };
+  if (r?.status === "OK") {
+    research = { text: `Gemini${r.model ? ` (${r.model})` : ""} · ${count(r.searches, "Suche", "Suchen")} · ${count(r.sources, "Quelle", "Quellen")}` };
+  } else if (r?.status === "FAILED") {
+    research = {
+      text: `Gemini fehlgeschlagen (${r.error}) → GPT-Websuche · ${count(r.gptSearches, "Suche", "Suchen")} · ${count(r.sources, "Quelle", "Quellen")}`,
+      warn: true,
+    };
+  } else if (r?.status === "OFF") {
+    research = { text: `GPT-Websuche · ${count(r.gptSearches, "Suche", "Suchen")} · ${count(r.sources, "Quelle", "Quellen")} (Gemini nicht aktiv)` };
+  }
+
+  return (
+    <div>
+      <p className="mb-2 text-sm font-semibold">KI</p>
+      {deep ? (
+        <div className="space-y-2">
+          <div className={row}>
+            <span className="font-semibold">Webrecherche</span>
+            <span className={research.warn ? (dark ? "text-amber-400" : "text-amber-700") : muted}>{research.text}</span>
+          </div>
+          <div className={row}>
+            <span className="font-semibold">Analyse & Entscheidung</span>
+            <span className={muted}>
+              {[
+                deep.model,
+                deep.effort ? `Aufwand ${deep.effort}` : null,
+                Number.isFinite(deep.durationMs) ? `${Math.round(deep.durationMs / 1000)} s` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className={row}>
+          <span className="font-semibold">KI-Bewertung</span>
+          <span className={muted}>nicht ausgeführt</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TechnicalDetails({ result, dark }) {
   const [open, setOpen] = useState(false);
   const [diagnosis, setDiagnosis] = useState(null);
@@ -2305,6 +2368,8 @@ function TechnicalDetails({ result, dark }) {
               ))}
             </div>
           </div>
+
+          <AiUsed deep={result.deep} dark={dark} />
 
           {result.rejected?.length ? (
             <div>
@@ -2476,7 +2541,7 @@ function SavedAnalyses({ entries, dark, busy, onOpen, onDelete, onRefresh }) {
                       {entry.negotiatedPrice ? <span className="block text-[10px] text-emerald-600">verhandelt</span> : null}
                     </td>
                     <td className={`${cell} whitespace-nowrap text-right font-semibold tabular-nums text-sky-600`}>
-                      {euro(entry.maximumPurchasePrice)}
+                      {limitText(entry.maximumPurchasePrice)}
                     </td>
                     <td
                       className={`${cell} whitespace-nowrap text-right font-semibold tabular-nums ${
@@ -2663,7 +2728,7 @@ function RecentSearches({ items, dark, onSelect, onClear }) {
             >
               <span className={`h-2 w-2 rounded-full ${meta.chip.split(" ")[0]}`} />
               <span className="max-w-[220px] truncate">{item.title}</span>
-              <span className="tabular-nums text-slate-500">{euro(item.limit)}</span>
+              <span className="tabular-nums text-slate-500">{limitText(item.limit)}</span>
             </button>
           );
         })}
@@ -3007,7 +3072,7 @@ const DEEP_MAX_WAIT_MS = 8 * 60_000;
  * moved on to another car. Throws a German message.
  */
 async function fetchDeep(base, isCurrent = () => true) {
-  const { jobId } = await postJson("/api/market-analysis/deep", { result: base });
+  const { jobId, research } = await postJson("/api/market-analysis/deep", { result: base });
   if (!jobId) throw new Error("Die KI-Bewertung konnte nicht gestartet werden.");
 
   const startedAt = Date.now();
@@ -3016,7 +3081,7 @@ async function fetchDeep(base, isCurrent = () => true) {
     if (!isCurrent()) throw Object.assign(new Error("abgebrochen"), { cancelled: true });
     let data;
     try {
-      data = await postJson("/api/market-analysis/deep/status", { jobId, result: base });
+      data = await postJson("/api/market-analysis/deep/status", { jobId, result: base, research });
     } catch (error) {
       // A dropped connection during one check is not the end of the job.
       if (error instanceof TypeError) continue;
@@ -3350,7 +3415,7 @@ export default function MarktanalysePage() {
         rememberSearch(final);
         toast.success(
           final.dealer?.available
-            ? `Einkaufslimit ${euro(final.dealer.maximumPurchasePrice)}`
+            ? `Einkaufslimit ${limitText(final.dealer.maximumPurchasePrice)}`
             : "Analyse abgeschlossen.",
         );
       } catch (requestError) {
@@ -3678,7 +3743,7 @@ export default function MarktanalysePage() {
       dealer?.pickup?.available
         ? `Abholkosten: ${euro(live?.pickupCost ?? dealer.pickupCost)} (${dealer.pickup.oneWayKm} km einfach)`
         : null,
-      `Einkaufslimit: ${euro(live?.limit ?? dealer?.maximumPurchasePrice)}`,
+      `Einkaufslimit: ${limitText(live?.limit ?? dealer?.maximumPurchasePrice)}`,
       `Erwarteter Gewinn: ${signedEuro(live?.expected ?? dealer?.expectedProfit)}`,
       (live?.discount ?? dealer?.requiredDiscount) > 0
         ? `Nötiger Nachlass: ${euro(live?.discount ?? dealer.requiredDiscount)}`

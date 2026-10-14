@@ -6,8 +6,8 @@ import { loadExpertAnswers } from "@/lib/market/expertAnswers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Only starts the job at OpenAI — answers within a few seconds.
-export const maxDuration = 30;
+// Gemini research (≤25 s, when switched on) plus starting the job at OpenAI.
+export const maxDuration = 60;
 
 function json(data, status = 200) {
   return Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
@@ -15,8 +15,9 @@ function json(data, status = 200) {
 
 /**
  * POST /api/market-analysis/deep  body: { result }
- * Starts the AI review (gpt-5 with web search) as a background job and
- * returns { jobId } at once. The page then polls /deep/status.
+ * Starts the AI review as a background job and returns { jobId, research }
+ * (research: Gemini's sources when Gemini researched). The page then polls
+ * /deep/status.
  */
 export async function POST(request) {
   const session = await getServerSession(authOptions);
