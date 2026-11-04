@@ -52,6 +52,7 @@ export const authOptions = {
           email: admin.email,
           name: admin.name,
           role: admin.role,
+          sessionVersion: admin.sessionVersion || 0,
         };
       },
     }),
@@ -71,19 +72,29 @@ export const authOptions = {
         token.email = user.email;
         token.role = user.role;
         token.isAdmin = user.role === "admin";
+        token.sessionVersion = user.sessionVersion || 0;
         token.invalidUser = false;
       }
+
+      // Logged out everywhere before: stays invalid until a new login.
+      if (token?.invalidUser) return token;
 
       // Re-check user in DB on every JWT callback
       if (token?.id) {
         await connectDB();
 
         const dbUser = await Admin.findById(token.id)
-          .select("_id name email role active")
+          .select("_id name email role active sessionVersion")
           .lean();
 
         // If user was deleted or deactivated
         if (!dbUser || dbUser.active === false) {
+          token.invalidUser = true;
+          return token;
+        }
+
+        // "Auf allen Geräten abmelden" was used after this login.
+        if ((dbUser.sessionVersion || 0) !== (token.sessionVersion || 0)) {
           token.invalidUser = true;
           return token;
         }

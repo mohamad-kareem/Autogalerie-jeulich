@@ -34,7 +34,23 @@ const SettingsModal = ({
   );
 
   const [saving, setSaving] = useState(false);
+  const [confirmLogoutAll, setConfirmLogoutAll] = useState(false);
+  const [loggingOutAll, setLoggingOutAll] = useState(false);
   const fileInputRef = useRef(null);
+
+  const handleLogoutEverywhere = async () => {
+    setLoggingOutAll(true);
+    try {
+      const response = await fetch("/api/auth/logout-all", { method: "POST" });
+      if (!response.ok) throw new Error();
+      toast.success("Auf allen Geräten abgemeldet.");
+      await signOut({ callbackUrl: "/login" });
+    } catch {
+      toast.error("Abmelden auf allen Geräten fehlgeschlagen.");
+      setLoggingOutAll(false);
+      setConfirmLogoutAll(false);
+    }
+  };
 
   useEffect(() => {
     setFormData({
@@ -277,6 +293,50 @@ const SettingsModal = ({
                 Neues sicheres Passwort erstellen
               </p>
             </button>
+
+            <div className="p-4 rounded-lg border border-gray-200">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-sm text-gray-900">
+                    Auf allen Geräten abmelden
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Beendet jede Anmeldung mit diesem Konto – auf allen
+                    Computern und Handys, auch hier.
+                  </p>
+                </div>
+
+                {confirmLogoutAll ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmLogoutAll(false)}
+                      disabled={loggingOutAll}
+                      className="rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition disabled:opacity-50"
+                    >
+                      Abbrechen
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleLogoutEverywhere}
+                      disabled={loggingOutAll}
+                      className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition disabled:opacity-50"
+                    >
+                      {loggingOutAll ? "Wird abgemeldet…" : "Ja, überall abmelden"}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmLogoutAll(true)}
+                    className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition"
+                  >
+                    <FiLogOut className="h-3.5 w-3.5" />
+                    Überall abmelden
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         );
 

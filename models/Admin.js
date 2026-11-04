@@ -51,6 +51,12 @@ const adminSchema = new mongoose.Schema(
       sparse: true, // only some admins will have this
     },
     lastPunch: Date,
+    // Raised by "Auf allen Geräten abmelden": every login token carries the
+    // version it was issued with and is invalid once the numbers differ.
+    sessionVersion: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
