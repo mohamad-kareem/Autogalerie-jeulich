@@ -18,13 +18,13 @@ const DAYS = [
 const START_HOUR = 10;
 const END_HOUR = 19;
 const VISIBLE_HOURS = END_HOUR - START_HOUR;
-const HOUR_HEIGHT = 65;
-const HOUR_HEIGHT_MOBILE = 55;
+const HOUR_HEIGHT = 44;
+const HOUR_HEIGHT_MOBILE = 48;
 const MINUTES_PER_DAY = 24 * 60;
 const SNAP_MIN = 30;
 const MIN_EVENT_MIN = 60;
 
-const CREATE_EDITOR_MIN_HEIGHT = 170;
+const CREATE_EDITOR_MIN_HEIGHT = 150;
 
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
@@ -48,6 +48,26 @@ function fmtTime(min) {
   return `${hh}:${mm}`;
 }
 
+/** Dates of this week's Mon–Sat and the index of today (-1 on Sunday). */
+function currentWeek() {
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const dates = DAYS.map((_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+  const todayIndex = now.getDay() === 0 ? -1 : now.getDay() - 1;
+  // ISO calendar week
+  const thursday = new Date(monday);
+  thursday.setDate(monday.getDate() + 3);
+  const firstThursday = new Date(thursday.getFullYear(), 0, 4);
+  const week = 1 + Math.round(((thursday - firstThursday) / 86400000 - 3 + ((firstThursday.getDay() + 6) % 7)) / 7);
+  return { dates, todayIndex, week };
+}
+
 const COLOR_OPTIONS = [
   { id: "red", name: "Dringend", dot: "bg-rose-500" },
   { id: "yellow", name: "Wichtig", dot: "bg-amber-400" },
@@ -57,20 +77,23 @@ const COLOR_OPTIONS = [
 function variantClass(variant, darkMode) {
   const map = {
     red: {
-      bg: darkMode ? "bg-rose-500/10" : "bg-rose-500/12",
-      border: darkMode ? "border-rose-400/35" : "border-rose-500/30",
+      accent: "border-l-rose-500",
+      bg: darkMode ? "bg-rose-500/15" : "bg-rose-50",
+      border: darkMode ? "border-rose-400/30" : "border-rose-200",
       text: darkMode ? "text-rose-200" : "text-rose-900",
       hover: darkMode ? "hover:bg-rose-500/16" : "hover:bg-rose-500/18",
     },
     yellow: {
-      bg: darkMode ? "bg-amber-400/10" : "bg-amber-400/14",
-      border: darkMode ? "border-amber-300/35" : "border-amber-500/30",
+      accent: "border-l-amber-400",
+      bg: darkMode ? "bg-amber-400/15" : "bg-amber-50",
+      border: darkMode ? "border-amber-300/30" : "border-amber-200",
       text: darkMode ? "text-amber-100" : "text-amber-900",
       hover: darkMode ? "hover:bg-amber-400/16" : "hover:bg-amber-400/18",
     },
     green: {
-      bg: darkMode ? "bg-emerald-400/10" : "bg-emerald-400/14",
-      border: darkMode ? "border-emerald-300/35" : "border-emerald-500/30",
+      accent: "border-l-emerald-500",
+      bg: darkMode ? "bg-emerald-400/15" : "bg-emerald-50",
+      border: darkMode ? "border-emerald-300/30" : "border-emerald-200",
       text: darkMode ? "text-emerald-100" : "text-emerald-900",
       hover: darkMode ? "hover:bg-emerald-400/16" : "hover:bg-emerald-400/18",
     },
@@ -463,50 +486,76 @@ export default function WeeklyTimeSchedule({
     return events.filter((event) => event.day === activeDay);
   }, [events, activeDay]);
 
-  const shell = darkMode ? "bg-gray-900" : "bg-gray-50";
+  const shell = "";
   const gridBg = darkMode ? "bg-gray-800" : "bg-white";
-  const borderColor = darkMode ? "border-gray-700" : "border-gray-300";
-  const dayHeaderBg = darkMode ? "bg-gray-800" : "bg-gray-200";
-  const dayHeaderText = darkMode ? "text-white" : "text-gray-800";
-  const timeHeaderBg = darkMode ? "bg-gray-800" : "bg-gray-200";
-  const timeHeaderText = darkMode ? "text-gray-300" : "text-gray-700";
-  const hourText = darkMode ? "text-gray-400" : "text-gray-600";
-  const textMuted = darkMode ? "text-gray-400" : "text-gray-600";
+  const borderColor = darkMode ? "border-gray-700/70" : "border-gray-100";
+  const frameBorder = darkMode ? "border-gray-700" : "border-gray-200";
+  const dayHeaderBg = darkMode ? "bg-gray-800" : "bg-gray-50/80";
+  const dayHeaderText = darkMode ? "text-gray-200" : "text-gray-700";
+  const timeHeaderBg = darkMode ? "bg-gray-800" : "bg-gray-50/80";
+  const timeHeaderText = darkMode ? "text-gray-400" : "text-gray-500";
+  const hourText = darkMode ? "text-gray-500" : "text-gray-400";
+  const textMuted = darkMode ? "text-gray-400" : "text-gray-500";
+  const { dates: weekDates, todayIndex, week } = currentWeek();
+  const dateLabel = (d) => d.toLocaleDateString("de-DE", { day: "numeric", month: "numeric" });
+  const todayTint = darkMode ? "bg-sky-400/5" : "bg-sky-50/60";
 
   return (
     <section className={cx("w-full mt-6", shell, className)}>
-      <div className="w-full">
-        <div className="mb-3">
-          <div className="flex items-center justify-between">
+      <div
+        className={cx(
+          "w-full overflow-hidden rounded-lg border shadow-sm",
+          frameBorder,
+          gridBg,
+        )}
+      >
+        <div
+          className={cx(
+            "flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b px-3 py-2",
+            frameBorder,
+          )}
+        >
+          <div className="flex items-baseline gap-2">
             <h2
-              className={`text-lg sm:text-xl font-semibold ${
+              className={`text-sm font-semibold ${
                 darkMode ? "text-white" : "text-gray-900"
               }`}
             >
               Wochenplan
             </h2>
-            {loading && <div className={`text-xs ${textMuted}`}>Lädt…</div>}
+            <span className={`text-[11px] tabular-nums ${textMuted}`}>
+              KW {week} · {dateLabel(weekDates[0])} – {dateLabel(weekDates[weekDates.length - 1])}
+            </span>
+            {loading && <span className={`text-[11px] ${textMuted}`}>Lädt…</span>}
+          </div>
+          <div className="flex items-center gap-3">
+            {COLOR_OPTIONS.map((c) => (
+              <div key={c.id} className="flex items-center gap-1">
+                <div className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />
+                <span className={`text-[11px] ${textMuted}`}>{c.name}</span>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Mobile day selector */}
         {isMobile && (
-          <div className="mb-3 overflow-x-auto">
-            <div className="flex space-x-2 pb-2 min-w-max">
+          <div className={cx("overflow-x-auto border-b px-2 py-1.5", frameBorder)}>
+            <div className="flex gap-1 min-w-max">
               {DAYS.map((day) => (
                 <button
                   key={day.key}
                   type="button"
                   onClick={() => setActiveDay(day.key)}
                   className={cx(
-                    "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                    "px-3 py-1 rounded-md text-xs font-medium transition-colors",
                     activeDay === day.key
                       ? darkMode
-                        ? "bg-blue-600 text-white"
-                        : "bg-blue-500 text-white"
+                        ? "bg-gray-700 text-white"
+                        : "bg-gray-900 text-white"
                       : darkMode
-                        ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300",
+                        ? "text-gray-400 hover:bg-gray-700/60"
+                        : "text-gray-600 hover:bg-gray-100",
                   )}
                 >
                   {day.label}
@@ -517,39 +566,22 @@ export default function WeeklyTimeSchedule({
         )}
 
         {/* ✅ Full width container */}
-        <div
-          className={cx(
-            "w-full border overflow-hidden shadow-sm",
-            borderColor,
-            gridBg,
-          )}
-          ref={containerRef}
-        >
+        <div className={cx("w-full overflow-hidden", gridBg)} ref={containerRef}>
           {/* Desktop View */}
           {!isMobile ? (
             <div className="flex w-full">
               {/* Time column */}
-              <div className="w-16 flex-shrink-0 border-r border-gray-300 dark:border-gray-700">
-                <div
-                  className={`h-10 ${timeHeaderBg} flex items-center justify-center border-b ${borderColor}`}
-                >
-                  <span className={`text-xs font-medium ${timeHeaderText}`}>
-                    ZEIT
-                  </span>
-                </div>
+              <div className={`w-11 flex-shrink-0 border-r ${frameBorder}`}>
+                <div className={`h-9 ${timeHeaderBg} border-b ${frameBorder}`} />
 
                 <div className="relative" style={{ height: gridHeightPx }}>
-                  {visibleHours.map((hour) => (
+                  {visibleHours.slice(0, -1).map((hour) => (
                     <div
                       key={hour}
-                      className={`absolute left-0 right-0 border-t ${borderColor}`}
-                      style={{ top: (hour - START_HOUR) * hourHeight }}
+                      className={`absolute right-1.5 text-[10px] leading-none tabular-nums ${hourText}`}
+                      style={{ top: (hour - START_HOUR) * hourHeight + 3 }}
                     >
-                      <div
-                        className={`text-xs ${hourText} w-full text-center py-2`}
-                      >
-                        {hour}:00
-                      </div>
+                      {String(hour).padStart(2, "0")}:00
                     </div>
                   ))}
                 </div>
@@ -558,14 +590,33 @@ export default function WeeklyTimeSchedule({
               {/* Days */}
               <div className="flex-1 min-w-0">
                 <div className="flex">
-                  {DAYS.map((day) => (
+                  {DAYS.map((day, index) => (
                     <div
                       key={day.key}
-                      className={`flex-1 h-10 ${dayHeaderBg} border-r ${borderColor} last:border-r-0 flex items-center justify-center`}
+                      className={cx(
+                        "flex-1 h-9 border-r border-b last:border-r-0 flex items-center justify-center gap-1.5",
+                        frameBorder,
+                        index === todayIndex ? todayTint : dayHeaderBg,
+                      )}
                     >
-                      <div className={`font-medium ${dayHeaderText}`}>
+                      <span
+                        className={cx(
+                          "text-[11px] font-semibold uppercase tracking-wide",
+                          index === todayIndex ? "text-sky-600" : dayHeaderText,
+                        )}
+                      >
                         {day.label}
-                      </div>
+                      </span>
+                      <span
+                        className={cx(
+                          "text-[11px] tabular-nums",
+                          index === todayIndex
+                            ? "rounded bg-sky-600 px-1 font-semibold text-white"
+                            : textMuted,
+                        )}
+                      >
+                        {dateLabel(weekDates[index])}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -575,13 +626,31 @@ export default function WeeklyTimeSchedule({
                   style={{ height: gridHeightPx }}
                   ref={daysContainerRef}
                 >
-                  {/* hour lines */}
-                  {visibleHours.map((hour) => (
+                  {/* today */}
+                  {todayIndex >= 0 && (
                     <div
-                      key={hour}
-                      className={`absolute left-0 right-0 border-t ${borderColor}`}
-                      style={{ top: (hour - START_HOUR) * hourHeight }}
+                      className={cx("absolute top-0 bottom-0 pointer-events-none", todayTint)}
+                      style={{ left: `${todayIndex * colW}%`, width: `${colW}%` }}
                     />
+                  )}
+
+                  {/* hour lines, faint half-hour lines */}
+                  {visibleHours.map((hour) => (
+                    <React.Fragment key={hour}>
+                      <div
+                        className={`absolute left-0 right-0 border-t ${borderColor}`}
+                        style={{ top: (hour - START_HOUR) * hourHeight }}
+                      />
+                      {hour < END_HOUR && (
+                        <div
+                          className={cx(
+                            "absolute left-0 right-0 border-t border-dashed",
+                            darkMode ? "border-gray-700/40" : "border-gray-100/70",
+                          )}
+                          style={{ top: (hour - START_HOUR) * hourHeight + hourHeight / 2 }}
+                        />
+                      )}
+                    </React.Fragment>
                   ))}
 
                   {/* click columns */}
@@ -600,16 +669,16 @@ export default function WeeklyTimeSchedule({
                   {hoverSlot && !creating && !dragging && !resizing && (
                     <div
                       className={cx(
-                        "absolute z-[5] pointer-events-none border",
+                        "absolute z-[5] pointer-events-none rounded-md border border-dashed",
                         darkMode
-                          ? "border-white/20 bg-white/10"
-                          : "border-gray-400/30 bg-gray-400/10",
+                          ? "border-white/20 bg-white/5"
+                          : "border-sky-300 bg-sky-50/60",
                       )}
                       style={{
-                        left: `${
+                        left: `calc(${
                           DAYS.findIndex((d) => d.key === hoverSlot.day) * colW
-                        }%`,
-                        width: `${colW}%`,
+                        }% + 2px)`,
+                        width: `calc(${colW}% - 4px)`,
                         top: minutesToY(hoverSlot.startMin, isMobile),
                         height: Math.max(
                           minutesToY(hoverSlot.endMin, isMobile) -
@@ -648,16 +717,16 @@ export default function WeeklyTimeSchedule({
                         >
                           <div
                             className={cx(
-                              "h-full overflow-hidden border rounded",
+                              "h-full overflow-hidden border rounded-md",
                               darkMode
-                                ? "border-blue-500/50 bg-gray-800"
-                                : "border-blue-400 bg-white",
+                                ? "border-sky-500/50 bg-gray-800"
+                                : "border-sky-400 bg-white",
                             )}
                           >
                             {/* header */}
                             <div
                               className={cx(
-                                "h-9 flex items-center justify-between px-2",
+                                "h-8 flex items-center justify-between px-2",
                                 darkMode
                                   ? "border-b border-gray-700"
                                   : "border-b border-gray-200",
@@ -752,7 +821,7 @@ export default function WeeklyTimeSchedule({
                             </div>
 
                             {/* body */}
-                            <div className="flex flex-col h-[calc(100%-36px)]">
+                            <div className="flex flex-col h-[calc(100%-32px)]">
                               <div className="flex-1">
                                 <textarea
                                   ref={textareaRef}
@@ -764,7 +833,7 @@ export default function WeeklyTimeSchedule({
                                   onInput={(e) => autoGrow(e.target)}
                                   className={cx(
                                     "w-full h-full border-0 outline-none resize-none",
-                                    "text-sm leading-snug px-3 py-3",
+                                    "text-xs leading-snug px-2.5 py-2",
                                     darkMode
                                       ? "bg-gray-800 text-white placeholder-gray-400"
                                       : "bg-white text-gray-900 placeholder-gray-500",
@@ -776,7 +845,7 @@ export default function WeeklyTimeSchedule({
 
                               <div
                                 className={cx(
-                                  "h-10 flex items-center justify-end px-3",
+                                  "h-9 flex items-center justify-end px-2",
                                   darkMode
                                     ? "border-t border-gray-700"
                                     : "border-t border-gray-200",
@@ -787,9 +856,9 @@ export default function WeeklyTimeSchedule({
                                   onClick={saveNewEvent}
                                   disabled={!newTitle.trim()}
                                   className={cx(
-                                    "h-8 px-3 rounded text-sm font-medium transition-colors",
+                                    "h-7 px-3 rounded text-xs font-semibold transition-colors",
                                     newTitle.trim()
-                                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                                      ? "bg-gray-900 hover:bg-gray-800 text-white dark:bg-sky-600 dark:hover:bg-sky-500"
                                       : "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed",
                                   )}
                                 >
@@ -819,37 +888,55 @@ export default function WeeklyTimeSchedule({
                       <div
                         key={ev._id}
                         className={cx(
-                          "absolute border shadow-sm group overflow-hidden",
+                          "absolute rounded-md border border-l-[3px] group overflow-hidden",
                           v.border,
+                          v.accent,
                           v.bg,
                           dragging?.id === ev._id || resizing?.id === ev._id
-                            ? "ring-1 ring-blue-500 z-30"
-                            : "z-20 hover:shadow",
+                            ? "ring-1 ring-sky-500 shadow-md z-30"
+                            : "z-20 hover:shadow-sm",
                         )}
                         style={{
-                          left: `${dayIndex * colW}%`,
-                          width: `${colW}%`,
-                          top,
-                          height: h,
-                          minHeight: 40,
+                          left: `calc(${dayIndex * colW}% + 2px)`,
+                          width: `calc(${colW}% - 4px)`,
+                          top: top + 1,
+                          height: h - 2,
+                          minHeight: 30,
                         }}
                       >
                         <div
                           className="relative h-full cursor-move"
                           onMouseDown={(e) => startDrag(e, ev)}
                         >
-                          <div className="px-3 py-2">
-                            <div
-                              className={cx(
-                                "text-xs font-medium leading-snug",
-                                "whitespace-pre-wrap break-words",
-                                v.text,
-                              )}
-                              style={{ wordBreak: "break-word" }}
-                            >
-                              {ev.title}
+                          {ev.endMin - ev.startMin <= 60 ? (
+                            // Short slot: time inline, title on up to two lines.
+                            <div className="px-1.5 py-1">
+                              <div
+                                className={cx("text-[11px] font-medium leading-snug max-h-[2.75em] overflow-hidden break-words", v.text)}
+                              >
+                                <span className="mr-1 text-[10px] font-normal tabular-nums opacity-70">
+                                  {fmtTime(ev.startMin)}
+                                </span>
+                                {ev.title}
+                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="px-1.5 py-1">
+                              <div className={cx("text-[10px] leading-tight tabular-nums opacity-70", v.text)}>
+                                {fmtTime(ev.startMin)}–{fmtTime(ev.endMin)}
+                              </div>
+                              <div
+                                className={cx(
+                                  "text-[11px] font-medium leading-snug",
+                                  "whitespace-pre-wrap break-words",
+                                  v.text,
+                                )}
+                                style={{ wordBreak: "break-word" }}
+                              >
+                                {ev.title}
+                              </div>
+                            </div>
+                          )}
 
                           <button
                             type="button"
@@ -858,9 +945,10 @@ export default function WeeklyTimeSchedule({
                               removeEvent(ev._id);
                             }}
                             className={cx(
-                              "absolute top-1.5 right-1.5",
+                              "absolute top-0.5 right-0.5",
                               "opacity-0 group-hover:opacity-100",
                               "p-1 rounded",
+                              darkMode ? "bg-gray-800/90" : "bg-white/90",
                               "hover:bg-white/20 dark:hover:bg-black/25 transition",
                               darkMode ? "text-gray-300" : "text-gray-600",
                             )}
@@ -871,12 +959,9 @@ export default function WeeklyTimeSchedule({
                         </div>
 
                         <div
-                          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize hover:bg-black/10 dark:hover:bg-white/10 transition-colors rounded-b"
+                          className="absolute bottom-0 left-0 right-0 h-1.5 cursor-ns-resize hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
                           onMouseDown={(e) => startResize(e, ev)}
                         >
-                          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30">
-                            <MdDragIndicator className="w-3 h-3 rotate-90" />
-                          </div>
                         </div>
                       </div>
                     );
@@ -890,12 +975,18 @@ export default function WeeklyTimeSchedule({
                       nowMin >= START_HOUR * 60 && nowMin <= END_HOUR * 60;
                     if (!within) return null;
 
+                    if (todayIndex < 0) return null;
+
                     return (
                       <div
-                        className="absolute left-0 right-0 h-px bg-red-500 pointer-events-none z-10"
-                        style={{ top: minutesToY(nowMin, isMobile) }}
+                        className="absolute h-px bg-rose-500 pointer-events-none z-30"
+                        style={{
+                          top: minutesToY(nowMin, isMobile),
+                          left: `${todayIndex * colW}%`,
+                          width: `${colW}%`,
+                        }}
                       >
-                        <div className="absolute -top-0.5 left-0 w-1.5 h-1.5 bg-red-500 rounded-full" />
+                        <div className="absolute -top-[3px] -left-[3px] w-1.5 h-1.5 bg-rose-500 rounded-full" />
                       </div>
                     );
                   })()}
@@ -906,25 +997,13 @@ export default function WeeklyTimeSchedule({
             // Mobile View
             <div className="flex flex-col ">
               {/* Mobile header with time and day */}
-              <div className="flex border-b border-gray-300 dark:border-gray-700 ">
-                <div className="w-16 flex-shrink-0">
-                  <div
-                    className={`h-10 ${timeHeaderBg} flex items-center justify-center`}
-                  >
-                    <span className={`text-xs font-medium ${timeHeaderText}`}>
-                      ZEIT
-                    </span>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <div
-                    className={`h-10 ${dayHeaderBg} flex items-center justify-center`}
-                  >
-                    <div className={`font-medium ${dayHeaderText}`}>
-                      {DAYS.find((d) => d.key === activeDay)?.full}
-                    </div>
-                  </div>
-                </div>
+              <div className={`flex h-8 items-center justify-center gap-1.5 border-b ${frameBorder} ${dayHeaderBg}`}>
+                <span className={`text-xs font-semibold ${dayHeaderText}`}>
+                  {DAYS.find((d) => d.key === activeDay)?.full}
+                </span>
+                <span className={`text-[11px] tabular-nums ${textMuted}`}>
+                  {dateLabel(weekDates[DAYS.findIndex((d) => d.key === activeDay)])}
+                </span>
               </div>
 
               {/* Mobile grid */}
@@ -936,23 +1015,21 @@ export default function WeeklyTimeSchedule({
                 ref={daysContainerRef}
               >
                 {/* Time labels */}
-                <div className="absolute left-0 top-0 bottom-0 w-16">
-                  {visibleHours.map((hour) => (
+                <div className={`absolute left-0 top-0 bottom-0 w-11 border-r ${frameBorder}`}>
+                  {visibleHours.slice(0, -1).map((hour) => (
                     <div
                       key={hour}
-                      className={`absolute left-0 right-0 border-t ${borderColor} flex items-center justify-center`}
-                      style={{ top: (hour - START_HOUR) * hourHeight }}
+                      className={`absolute right-1.5 text-[10px] leading-none tabular-nums ${hourText}`}
+                      style={{ top: (hour - START_HOUR) * hourHeight + 3 }}
                     >
-                      <div className={`text-xs ${hourText} py-2`}>
-                        {hour}:00
-                      </div>
+                      {String(hour).padStart(2, "0")}:00
                     </div>
                   ))}
                 </div>
 
                 {/* Main day column */}
                 <div
-                  className="absolute left-16 right-0 top-0 bottom-0"
+                  className="absolute left-11 right-0 top-0 bottom-0"
                   onClick={(e) => handleGridClick(activeDay, e)}
                   onMouseMove={(e) => handleDayMouseMove(activeDay, e)}
                   onMouseLeave={() => setHoverSlot(null)}
@@ -1002,8 +1079,9 @@ export default function WeeklyTimeSchedule({
                       <div
                         key={ev._id}
                         className={cx(
-                          "absolute left-2 right-2 border shadow-sm group overflow-hidden rounded-md",
+                          "absolute left-1.5 right-1.5 border border-l-[3px] group overflow-hidden rounded-md",
                           v.border,
+                          v.accent,
                           v.bg,
                           dragging?.id === ev._id || resizing?.id === ev._id
                             ? "ring-1 ring-blue-500 z-30"
@@ -1011,11 +1089,11 @@ export default function WeeklyTimeSchedule({
                         )}
                         style={{
                           top,
-                          height: Math.max(h, 60),
+                          height: Math.max(h - 2, 40),
                         }}
                       >
                         <div
-                          className="relative h-full p-3"
+                          className="relative h-full px-2.5 py-1.5"
                           onMouseDown={(e) => startDrag(e, ev)}
                           onTouchStart={(e) => startDrag(e, ev)}
                         >
@@ -1023,14 +1101,14 @@ export default function WeeklyTimeSchedule({
                             <div className="flex-1">
                               <div
                                 className={cx(
-                                  "text-sm font-medium leading-snug mb-1",
+                                  "text-xs font-medium leading-snug",
                                   v.text,
                                 )}
                                 style={{ wordBreak: "break-word" }}
                               >
                                 {ev.title}
                               </div>
-                              <div className={`text-xs ${textMuted}`}>
+                              <div className={`text-[10px] tabular-nums ${textMuted}`}>
                                 {fmtTime(ev.startMin)} – {fmtTime(ev.endMin)}
                               </div>
                             </div>
@@ -1041,13 +1119,13 @@ export default function WeeklyTimeSchedule({
                                 removeEvent(ev._id);
                               }}
                               className={cx(
-                                "p-2 rounded ml-2",
+                                "p-1 rounded ml-1",
                                 "hover:bg-white/20 dark:hover:bg-black/25 transition",
                                 darkMode ? "text-gray-300" : "text-gray-600",
                               )}
                               title="Löschen"
                             >
-                              <FiTrash2 className="w-4 h-4" />
+                              <FiTrash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
 
@@ -1263,15 +1341,6 @@ export default function WeeklyTimeSchedule({
           )}
         </div>
 
-        {/* legend */}
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          {COLOR_OPTIONS.map((c) => (
-            <div key={c.id} className="flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full ${c.dot}`} />
-              <span className={`text-xs ${textMuted}`}>{c.name}</span>
-            </div>
-          ))}
-        </div>
       </div>
     </section>
   );

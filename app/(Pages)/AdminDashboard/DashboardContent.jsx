@@ -496,7 +496,7 @@ const DashboardContent = ({
                     {soldOnlyScheins.map((schein) => (
                       <div
                         key={schein._id}
-                        className={`group relative border hover:shadow-lg transition-all duration-200 ${
+                        className={`group relative flex flex-col border hover:shadow-lg transition-all duration-200 ${
                           darkMode
                             ? "bg-gray-800 border-gray-600 hover:border-gray-500"
                             : "bg-white border-gray-300 hover:border-gray-400 hover:shadow-sm"
@@ -537,7 +537,9 @@ const DashboardContent = ({
                           </p>
                         </div>
 
-                        <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
+                        {/* flex-1: cards without buyer data stay as tall as
+                            their neighbours, content centred, footer at the bottom */}
+                        <div className="flex flex-1 flex-col justify-center p-2 sm:p-3 space-y-1.5 sm:space-y-2">
                           <div className="flex justify-center items-center text-[14px] sm:text-base">
                             <span
                               className={
