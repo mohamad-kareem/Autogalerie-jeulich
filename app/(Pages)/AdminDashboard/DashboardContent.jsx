@@ -4,8 +4,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
-  FiCheckSquare,
-  FiSquare,
   FiDroplet,
   FiMenu,
   FiX,
@@ -13,7 +11,11 @@ import {
   FiClock,
   FiTool,
 } from "react-icons/fi";
+import { Check, CheckCircle2, KeyRound, ListTodo, Loader2, MapPin, Phone, Truck } from "lucide-react";
+import { ErrorNote, Modal } from "@/app/(components)/sales/ui";
 import { useSidebar } from "@/app/(components)/SidebarContext";
+import { alertDialog, confirmDialog } from "@/app/(components)/ConfirmHost";
+import { mapsHref, telHref } from "@/lib/sales";
 import { FaCarSide } from "react-icons/fa";
 import DashboardNotesPanel from "@/app/(components)/helpers/DashboardNotesPanel";
 import WeeklyTimeSchedule from "@/app/(components)/helpers/WeeklyTimeSchedule";
@@ -156,6 +158,37 @@ const TuvLogo = ({ size = 28, className = "" }) => (
   </div>
 );
 
+/** One task in the "Aufgaben zur Übergabe" window – ticking saves at once. */
+function TaskCard({ title, done, busy, disabled, onToggle }) {
+  const text = title.includes(": ") ? title.split(": ").slice(1).join(": ") : title;
+  return (
+    <div
+      className={`flex items-start gap-1 rounded-lg border border-line transition ${
+        done ? "bg-canvas/60" : "bg-white hover:border-slate-300 hover:bg-slate-50"
+      }`}
+    >
+      <label className={`flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3 px-3 py-2.5 ${busy || disabled ? "cursor-wait" : ""}`}>
+        <input type="checkbox" checked={done} disabled={busy || disabled} onChange={onToggle} className="peer sr-only" />
+        <span
+          aria-hidden="true"
+          className={`grid h-5 w-5 shrink-0 place-items-center rounded-[5px] border transition peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500 peer-focus-visible:ring-offset-2 ${
+            done
+              ? "border-[#2f353c] bg-gradient-to-b from-[#59616c] to-[#3e454e] text-white"
+              : "border-[#a3aab3] bg-gradient-to-b from-white to-[#eef0f2] text-muted"
+          }`}
+        >
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : done ? <Check className="h-3.5 w-3.5" strokeWidth={2.75} /> : null}
+        </span>
+        <span className={`min-w-0 break-words text-[13px] font-medium leading-snug ${done ? "text-muted line-through" : "text-ink"}`}>
+          {text}
+        </span>
+      </label>
+    </div>
+  );
+}
+
+const STEEL_BADGE = "bg-gradient-to-b from-white to-[#eef0f2] text-[#3e454e] ring-1 ring-inset ring-[#a3aab3]/35";
+
 const DashboardContent = ({
   user,
   unreadCount,
@@ -171,18 +204,17 @@ const DashboardContent = ({
   const [showWerkstattModal, setShowWerkstattModal] = useState(false);
 
   const [showTasksModal, setShowTasksModal] = useState(false);
-  const [selectedScheinTasks, setSelectedScheinTasks] = useState(null);
-  const [taskCheckboxes, setTaskCheckboxes] = useState({});
-  const [savingTasks, setSavingTasks] = useState(false);
+  const [selectedScheinTasks, setSelectedScheinTasks] = useState(null); // id of the car
+  const [savingTask, setSavingTask] = useState("");
+  const [taskError, setTaskError] = useState("");
+  const [handingOver, setHandingOver] = useState("");
 
   const { openSidebar } = useSidebar();
 
   // Initialize dark mode
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches;
+    const savedTheme = "light" /* portal: always light */;
+    const systemPrefersDark = false;
 
     const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
     setDarkMode(isDark);
@@ -214,63 +246,40 @@ const DashboardContent = ({
     fetchAppointments();
   }, []);
 
-  // Open tasks modal
+  // Open the tasks window
   const openTasksModal = (schein) => {
-    setSelectedScheinTasks(schein);
-
-    const initialCheckboxes = {};
-    if (Array.isArray(schein.notes)) {
-      schein.notes.forEach((note, index) => {
-        const isCompleted = schein.completedTasks?.includes(note) || false;
-        initialCheckboxes[index] = isCompleted;
-      });
-    }
-    setTaskCheckboxes(initialCheckboxes);
+    setSelectedScheinTasks(schein._id);
+    setTaskError("");
     setShowTasksModal(true);
   };
 
-  const handleTaskCheckboxChange = (index) => {
-    setTaskCheckboxes((prev) => ({ ...prev, [index]: !prev[index] }));
-  };
+  const closeTasksModal = () => setShowTasksModal(false);
 
-  const handleSaveTasks = async () => {
-    if (!selectedScheinTasks?._id) return;
-
-    setSavingTasks(true);
+  /** Ticks or unticks one task and saves it right away. */
+  const toggleTask = async (schein, title) => {
+    if (savingTask) return;
+    setSavingTask(title);
+    setTaskError("");
     try {
-      const completedTasks = [];
-      if (Array.isArray(selectedScheinTasks.notes)) {
-        selectedScheinTasks.notes.forEach((note, index) => {
-          if (taskCheckboxes[index] === true) completedTasks.push(note);
-        });
-      }
-
-      const res = await fetch("/api/carschein", {
-        method: "PUT",
+      const res = await fetch(`/api/fahrzeugakte/${schein._id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: selectedScheinTasks._id,
-          completedTasks,
-        }),
+        body: JSON.stringify({ action: "toggleTask", title }),
       });
-
-      if (!res.ok) throw new Error("Failed to save tasks");
-      const updatedSchein = await res.json();
-
+      if (!res.ok) throw new Error();
       setVisibleScheins((prev) =>
-        prev.map((s) =>
-          s._id === updatedSchein._id
-            ? { ...s, completedTasks: updatedSchein.completedTasks }
-            : s,
-        ),
+        prev.map((s) => {
+          if (s._id !== schein._id) return s;
+          const done = new Set(s.completedTasks || []);
+          if (done.has(title)) done.delete(title);
+          else done.add(title);
+          return { ...s, completedTasks: [...done] };
+        }),
       );
-
-      setShowTasksModal(false);
-    } catch (err) {
-      console.error("Fehler beim Speichern der Aufgaben:", err);
-      alert("Fehler beim Speichern der Aufgaben");
+    } catch {
+      setTaskError("Die Aufgabe konnte nicht gespeichert werden.");
     } finally {
-      setSavingTasks(false);
+      setSavingTask("");
     }
   };
 
@@ -287,7 +296,10 @@ const DashboardContent = ({
   const soldOnlyScheins = useMemo(
     () =>
       (visibleScheins || []).filter(
-        (schein) => schein.keySold === true && schein.dashboardHidden !== true,
+        (schein) =>
+          schein.keySold === true &&
+          schein.dashboardHidden !== true &&
+          !schein.handedOverAt,
       ),
     [visibleScheins],
   );
@@ -324,29 +336,41 @@ const DashboardContent = ({
     return new Date(dateValue).toLocaleDateString("de-DE");
   };
 
-  const handleDismissSchein = async (id) => {
-    setVisibleScheins((prev) => prev.filter((s) => s._id !== id));
-
+  const handOver = async (schein) => {
+    const open = getActiveTasksCount(schein);
+    const name = schein.carName || "Fahrzeug";
+    const buyer = schein.soldContactId?.customerName;
+    const ok = await confirmDialog(
+      open
+        ? { title: "Noch offene Aufgaben", message: `${name}: noch ${open} offene Aufgabe(n). Trotzdem übergeben?`, confirmLabel: "Trotzdem übergeben" }
+        : { title: "Fahrzeug übergeben", message: `${name} an ${buyer || "den Käufer"} übergeben?`, confirmLabel: "Übergeben" },
+    );
+    if (!ok) return;
+    setHandingOver(schein._id);
     try {
-      await fetch("/api/carschein", {
-        method: "PUT",
+      const res = await fetch(`/api/fahrzeugakte/${schein._id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, dashboardHidden: true }),
+        body: JSON.stringify({ action: "handover" }),
       });
-
-      onDismissSchein?.(id);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Übergabe fehlgeschlagen.");
+      setVisibleScheins((prev) => prev.filter((s) => s._id !== schein._id));
+      onDismissSchein?.(schein._id);
     } catch (err) {
-      console.error("Fehler beim Ausblenden auf dem Dashboard:", err);
+      alertDialog(err.message || "Übergabe fehlgeschlagen.");
+    } finally {
+      setHandingOver("");
     }
   };
 
   // Conditional classes based on dark mode
-  const mainBgClass = darkMode ? "bg-gray-900" : "bg-slate-50";
+  const mainBgClass = darkMode ? "bg-gray-900" : "bg-transparent";
   const textClass = darkMode ? "text-gray-100" : "text-slate-900";
 
   // Compact top buttons (mobile), keep desktop unchanged
   const topPillBase =
-    "inline-flex items-center gap-2 rounded-md font-medium shadow-sm transition-colors whitespace-nowrap";
+    "inline-flex items-center gap-2 rounded-[4px] font-semibold shadow-[0_1px_0_rgba(255,255,255,0.6)_inset] transition-colors whitespace-nowrap";
   const topPillPad = "px-2.5 py-1.5 sm:px-3 sm:py-2";
   const topPillText = "text-[11px] sm:text-xs";
 
@@ -358,22 +382,23 @@ const DashboardContent = ({
         <div className="flex flex-1 flex-col">
           {/* Top bar */}
           <header
-            className={`sticky top-0 z-30 flex h-16 items-center justify-between border-b px-3 sm:px-6 lg:px-4 backdrop-blur transition-colors duration-300 ${
-              darkMode
-                ? "border-gray-700 bg-gray-800/90"
-                : "border-slate-200 bg-white/90"
-            }`}
+            className="ind-plate sticky top-14 z-30 flex min-h-14 lg:top-0 items-center justify-between rounded-none border-x-0 border-t-0 px-3 py-2 sm:px-4"
           >
             <div className="flex items-center gap-2 sm:gap-3 w-full">
               <button
                 onClick={openSidebar}
-                className="md:hidden p-2 rounded-md hover:bg-gray-700/40 transition-colors"
+                className="ind-icon-btn md:hidden"
                 aria-label="Menü öffnen"
               >
-                <FiMenu
-                  className={`h-5 w-5 ${darkMode ? "text-white" : "text-gray-700"}`}
-                />
+                <FiMenu className="h-4 w-4" />
               </button>
+
+              <div className="mr-2 shrink-0">
+                <h1 className="ind-title">Übersicht</h1>
+                <p className="text-[11.5px] text-muted">
+                  {new Date().toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" })}
+                </p>
+              </div>
 
               <div className="flex items-center gap-2 flex-nowrap w-full overflow-x-auto sm:overflow-visible">
                 {/* Fuel alert button */}
@@ -492,192 +517,74 @@ const DashboardContent = ({
               <main className="space-y-4 sm:space-y-6">
                 {/* Sold cards */}
                 {soldOnlyScheins.length > 0 ? (
-                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
-                    {soldOnlyScheins.map((schein) => (
-                      <div
-                        key={schein._id}
-                        className={`group relative flex flex-col border hover:shadow-lg transition-all duration-200 ${
-                          darkMode
-                            ? "bg-gray-800 border-gray-600 hover:border-gray-500"
-                            : "bg-white border-gray-300 hover:border-gray-400 hover:shadow-sm"
-                        }`}
-                      >
-                        <div className="h-1 bg-slate-500" />
-
-                        <div
-                          className={`p-2 sm:p-3 border-b ${darkMode ? "border-gray-700" : "border-gray-100"}`}
-                        >
-                          <div className="flex justify-between items-start">
-                            <h3
-                              className={`text-sm sm:text-base font-semibold break-words leading-tight min-h-[1rem] sm:min-h-[1.5rem] line-clamp-2 ${
-                                darkMode ? "text-white" : "text-gray-900"
-                              }`}
-                            >
-                              {schein.carName || "Unbekannt"}
-                            </h3>
-
-                            <button
-                              onClick={() => handleDismissSchein(schein._id)}
-                              title="Entfernen"
-                              aria-label="Entfernen"
-                              className={`ml-1 sm:ml-2 flex-shrink-0 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 ${
-                                darkMode
-                                  ? "bg-gray-700/40 hover:bg-yellow-600/30 text-gray-300 hover:text-yellow-300"
-                                  : "bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-yellow-600"
-                              } hover:scale-110`}
-                            >
-                              <FiX className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            </button>
-                          </div>
-
-                          <p
-                            className={`text-[11px] sm:text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}
-                          >
-                            Verkauft am {formatSoldDate(schein)}
-                          </p>
-                        </div>
-
-                        {/* flex-1: cards without buyer data stay as tall as
-                            their neighbours, content centred, footer at the bottom */}
-                        <div className="flex flex-1 flex-col justify-center p-2 sm:p-3 space-y-1.5 sm:space-y-2">
-                          <div className="flex justify-center items-center text-[14px] sm:text-base">
-                            <span
-                              className={
-                                darkMode ? "text-gray-400" : "text-gray-600"
-                              }
-                            >
-                              Schlüssel:
-                            </span>
-                            <span
-                              className={`font-medium ml-1 sm:ml-2 truncate max-w-[30px] sm:max-w-[80px] ${
-                                darkMode ? "text-white" : "text-gray-900"
-                              }`}
-                            >
-                              {schein.keyNumber || "–"}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-center items-center text-[14px] sm:text-base">
-                            <span
-                              className={
-                                darkMode ? "text-gray-400" : "text-gray-600"
-                              }
-                            >
-                              FIN:
-                            </span>
-                            <span
-                              className={`font-medium ml-1 sm:mr-14 sm:max-w-[80px] ${darkMode ? "text-white" : "text-gray-900"}`}
-                            >
-                              {schein.finNumber || "–"}
-                            </span>
-                          </div>
-                          {/* Telefon */}
-                          {schein.soldContactId?.phone && (
-                            <div className="flex justify-center items-center text-[14px] sm:text-base">
+                  <section>
+                    <h2 className="mb-2 text-[13px] font-semibold text-ink">Verkauft – wartet auf Abholung</h2>
+                    <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+                      {soldOnlyScheins.map((schein) => {
+                        const open = getActiveTasksCount(schein);
+                        const ready = open === 0;
+                        const buyer = schein.soldContactId || {};
+                        const address = [buyer.street, [buyer.postalCode, buyer.city].filter(Boolean).join(" ")]
+                          .filter(Boolean)
+                          .join(", ");
+                        const busy = handingOver === schein._id;
+                        return (
+                          <article key={schein._id} className="card flex h-full flex-col overflow-hidden">
+                            <div className="flex-1 space-y-2 px-3.5 pb-3 pt-3">
+                              <div className="flex items-start justify-between gap-2">
+                                <Link href={`/Fahrzeugverwaltung?id=${schein._id}`} className="min-w-0">
+                                  <h3 className="truncate text-[13.5px] font-semibold text-ink hover:text-brand-700">
+                                    {schein.carName || "Unbekannt"}
+                                  </h3>
+                                  <p className="text-[11.5px] text-muted">verkauft {formatSoldDate(schein)}</p>
+                                </Link>
+                                <span
+                                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[13px] font-semibold ring-1 ring-inset ${
+                                    schein.keyNumber ? STEEL_BADGE : "bg-canvas text-muted ring-line"
+                                  }`}
+                                  title="Schlüsselnummer"
+                                >
+                                  <KeyRound className="h-3.5 w-3.5" /> {schein.keyNumber || "–"}
+                                </span>
+                              </div>
+                              <p className="truncate font-mono text-[11.5px] text-muted">{schein.finNumber || "ohne FIN"}</p>
+                              <div className="space-y-1 text-[12.5px]">
+                                {buyer.customerName ? <p className="truncate font-medium text-ink">{buyer.customerName}</p> : null}
+                                {buyer.phone ? (
+                                  <a href={telHref(buyer.phone)} className="flex items-center gap-1.5 text-brand-700 hover:underline">
+                                    <Phone className="h-3.5 w-3.5" /> {buyer.phone}
+                                  </a>
+                                ) : null}
+                                {address ? (
+                                  <a href={mapsHref([address])} target="_blank" rel="noreferrer" className="flex items-start gap-1.5 text-body hover:text-brand-700">
+                                    <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" /> <span className="line-clamp-2">{address}</span>
+                                  </a>
+                                ) : null}
+                              </div>
+                            </div>
+                            <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-line bg-canvas/40 px-3 py-2">
                               <span
-                                className={
-                                  darkMode ? "text-gray-400" : "text-gray-600"
-                                }
-                              >
-                                Tel:
-                              </span>
-
-                              <a
-                                href={`tel:${schein.soldContactId.phone}`}
-                                title={schein.soldContactId.phone}
-                                className={`font-medium ml-1 sm:ml-2 truncate max-w-[130px] transition-colors ${
-                                  darkMode
-                                    ? "text-blue-300 hover:text-blue-200"
-                                    : "text-blue-700 hover:text-blue-900"
+                                className={`mr-auto inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                                  ready ? "bg-emerald-100 text-emerald-900" : STEEL_BADGE
                                 }`}
                               >
-                                {schein.soldContactId.phone}
-                              </a>
+                                {ready ? <CheckCircle2 className="h-3 w-3" /> : <ListTodo className="h-3 w-3" />}
+                                {ready ? "Bereit zur Abholung" : `${open} offene`}
+                              </span>
+                              <span className="ml-auto flex gap-1.5">
+                                <button type="button" onClick={() => openTasksModal(schein)} className="btn btn-secondary btn-sm">
+                                  Aufgaben
+                                </button>
+                                <button type="button" onClick={() => handOver(schein)} disabled={busy} className="btn btn-primary btn-sm">
+                                  {busy ? <Loader2 className="animate-spin" /> : <Truck />} Übergeben
+                                </button>
+                              </span>
                             </div>
-                          )}
-
-                          {/* Complete address / Google Maps */}
-                          {(() => {
-                            const fullAddress = [
-                              schein.soldContactId?.street,
-                              schein.soldContactId?.postalCode,
-                              schein.soldContactId?.city,
-                            ]
-                              .filter(Boolean)
-                              .join(", ");
-
-                            if (!fullAddress) return null;
-
-                            return (
-                              <div className="flex justify-center items-center text-[14px] sm:text-base">
-                                <span
-                                  className={
-                                    darkMode ? "text-gray-400" : "text-gray-600"
-                                  }
-                                >
-                                  Adresse:
-                                </span>
-
-                                <a
-                                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                                    fullAddress,
-                                  )}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  title={fullAddress}
-                                  className={`font-medium ml-1 sm:ml-2 truncate max-w-[190px] transition-colors ${
-                                    darkMode
-                                      ? "text-blue-300 hover:text-blue-200"
-                                      : "text-blue-700 hover:text-blue-900"
-                                  }`}
-                                >
-                                  {fullAddress}
-                                </a>
-                              </div>
-                            );
-                          })()}
-                        </div>
-
-                        <div
-                          className={`px-2 sm:px-3 py-1.5 sm:py-2 border-t flex justify-between items-center ${
-                            darkMode
-                              ? "border-gray-700 bg-gray-750"
-                              : "border-gray-100 bg-gray-50"
-                          }`}
-                        >
-                          <span
-                            className={`text-[12px] sm:text-xs font-medium ${
-                              getActiveTasksCount(schein) === 0
-                                ? darkMode
-                                  ? "text-yellow-300"
-                                  : "text-yellow-600"
-                                : darkMode
-                                  ? "text-gray-400"
-                                  : "text-gray-600"
-                            }`}
-                          >
-                            {(() => {
-                              const active = getActiveTasksCount(schein);
-                              return active === 0
-                                ? "Bereit zur Abholung"
-                                : `${active} aktive Aufgaben`;
-                            })()}
-                          </span>
-
-                          <button
-                            onClick={() => openTasksModal(schein)}
-                            className={`text-[12px] sm:text-xs font-medium transition-colors ${
-                              darkMode
-                                ? "text-slate-400 hover:text-slate-300"
-                                : "text-slate-600 hover:text-slate-700"
-                            }`}
-                          >
-                            Einzelheiten
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </section>
                 ) : (
                   <div className="flex flex-col items-center py-8 sm:py-12 text-center">
                     <div
@@ -779,139 +686,51 @@ const DashboardContent = ({
       </div>
 
       {/* Tasks Modal */}
-      {showTasksModal && selectedScheinTasks && (
-        <>
-          <div
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowTasksModal(false)}
-          />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div
-              className={`w-full max-w-lg rounded-xl shadow-2xl ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div
-                className={`flex items-center justify-between border-b px-5 py-4 ${darkMode ? "border-gray-700" : "border-gray-200"}`}
-              >
-                <div>
-                  <h3
-                    className={`text-base font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
-                  >
-                    {selectedScheinTasks.carName || "Unbekanntes Fahrzeug"}
-                  </h3>
-                  <p
-                    className={`text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}
-                  >
-                    Aufgaben verwalten
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowTasksModal(false)}
-                  className={`p-2 rounded-full ${darkMode ? "text-gray-400 hover:bg-gray-700 hover:text-gray-300" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"}`}
-                >
-                  <FiX size={20} />
-                </button>
+      {(() => {
+        const schein = (visibleScheins || []).find((x) => x._id === selectedScheinTasks);
+        const notes = Array.isArray(schein?.notes) ? schein.notes : [];
+        const done = new Set(schein?.completedTasks || []);
+        return (
+          <Modal
+            open={showTasksModal && Boolean(schein)}
+            onClose={closeTasksModal}
+            title={
+              <span className="block min-w-0">
+                <span className="block leading-tight">Aufgaben zur Übergabe</span>
+                {schein ? (
+                  <span className="mt-0.5 block break-words text-[12px] font-normal leading-snug text-muted">
+                    {schein.carName || "Unbekanntes Fahrzeug"}
+                  </span>
+                ) : null}
+              </span>
+            }
+          >
+            {notes.length ? (
+              <div className="space-y-3">
+                {taskError ? <ErrorNote>{taskError}</ErrorNote> : null}
+                <ul className="space-y-2">
+                  {notes.map((title, index) => (
+                    <li key={`${index}:${title}`}>
+                      <TaskCard
+                        title={title}
+                        done={done.has(title)}
+                        busy={savingTask === title}
+                        disabled={Boolean(savingTask)}
+                        onToggle={() => toggleTask(schein, title)}
+                      />
+                    </li>
+                  ))}
+                </ul>
               </div>
-
-              <div className="px-5 py-4 max-h-[65vh] overflow-y-auto custom-scroll">
-                {Array.isArray(selectedScheinTasks.notes) &&
-                selectedScheinTasks.notes.length > 0 ? (
-                  <div className="space-y-3">
-                    {selectedScheinTasks.notes.map((note, index) => (
-                      <div
-                        key={index}
-                        className={`flex items-start gap-3 p-3 rounded-lg ${darkMode ? "hover:bg-gray-700/50" : "hover:bg-gray-50"}`}
-                      >
-                        <button
-                          onClick={() => handleTaskCheckboxChange(index)}
-                          className={`mt-0.5 flex-shrink-0 rounded ${
-                            taskCheckboxes[index]
-                              ? "text-blue-600"
-                              : darkMode
-                                ? "text-gray-500"
-                                : "text-gray-400"
-                          }`}
-                        >
-                          {taskCheckboxes[index] ? (
-                            <FiCheckSquare size={20} />
-                          ) : (
-                            <FiSquare size={20} />
-                          )}
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className={`text-sm leading-relaxed ${
-                              taskCheckboxes[index]
-                                ? darkMode
-                                  ? "text-gray-400 line-through"
-                                  : "text-gray-900 line-through"
-                                : darkMode
-                                  ? "text-gray-200"
-                                  : "text-gray-900"
-                            }`}
-                          >
-                            {note}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-10 text-center">
-                    <div
-                      className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${darkMode ? "bg-gray-700" : "bg-gray-100"}`}
-                    >
-                      <FiFileText className="h-6 w-6 text-gray-400" />
-                    </div>
-                    <p
-                      className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}
-                    >
-                      Keine Aufgaben für dieses Fahrzeug vorhanden.
-                    </p>
-                  </div>
-                )}
+            ) : (
+              <div className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-line-strong bg-canvas/40 px-3 py-4 text-center">
+                <ListTodo aria-hidden="true" className="h-5 w-5 text-muted" />
+                <p className="text-[13px] text-muted">Keine Aufgaben für dieses Fahrzeug.</p>
               </div>
-
-              <div
-                className={`flex items-center justify-between border-t px-5 py-4 ${darkMode ? "border-gray-700" : "border-gray-200"}`}
-              >
-                <div>
-                  <p
-                    className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
-                  >
-                    {Object.values(taskCheckboxes).filter(Boolean).length} von{" "}
-                    {selectedScheinTasks.notes?.length || 0} Aufgaben erledigt
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowTasksModal(false)}
-                    disabled={savingTasks}
-                    className={`px-4 py-2 text-sm rounded-md border ${
-                      darkMode
-                        ? "border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600"
-                        : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
-                    } ${savingTasks ? "opacity-50 cursor-not-allowed" : ""}`}
-                  >
-                    Abbrechen
-                  </button>
-                  <button
-                    onClick={handleSaveTasks}
-                    disabled={savingTasks}
-                    className={`px-4 py-2 text-sm rounded-md ${
-                      savingTasks
-                        ? "bg-gray-400 text-white cursor-not-allowed"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
-                    }`}
-                  >
-                    {savingTasks ? "Speichern..." : "Speichern"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+            )}
+          </Modal>
+        );
+      })()}
 
       {/* Professional TÜV Modal */}
       {showTuevModal && tuevScheins.length > 0 && (

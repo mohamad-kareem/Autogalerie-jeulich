@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { analyzeListing, AnalysisError } from "@/lib/market/analyze";
-import { POLICY } from "@/lib/market/config";
+import { isSourceEnabled, POLICY } from "@/lib/market/config";
 import { browserStatus } from "@/lib/market/browser";
 import { loadObservations, recordObservation } from "@/lib/market/history";
 import { isProxyConfigured } from "@/lib/market/http";
@@ -13,9 +13,13 @@ import ExpertAnswer from "@/models/ExpertAnswer";
 import MarketSettings from "@/models/MarketSettings";
 import {
   diagnose as diagnoseMobile,
+  flightListing,
   isConfigured as mobileConfigured,
 } from "@/lib/market/sources/mobilede";
+import { resolveFromPage, resolveTarget } from "@/lib/market/sources";
+import { buildMobileSearchUrl, readMobileSearchResults } from "@/lib/market/sources/mobileSearch";
 import {
+  detectMarketplace,
   mayRedirectToListing,
   validateListingUrl,
 } from "@/lib/market/sources/urls";
@@ -23,6 +27,10 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
+
+// Reuse the public ad when preparation and analysis reach the same worker.
+const preparedTargets = new Map();
+const PREPARED_TARGET_TTL_MS = 60_000;
 
 function json(data, status = 200) {
   return Response.json(data, {
@@ -83,10 +91,12 @@ export async function GET(request) {
   const checks = await Promise.all(
     Object.entries(SOURCES).map(async ([id, source]) => {
       const startedAt = Date.now();
+      const enabledForAnalysis = isSourceEnabled(id);
       try {
         const result = await source.searchComparables(probeTarget, { limit: 5 });
         return {
           source: id,
+          enabledForAnalysis,
           reachable: Boolean(result.ok),
           listings: result.vehicles?.length || 0,
           blocked: Boolean(result.blocked),
@@ -97,6 +107,7 @@ export async function GET(request) {
       } catch (error) {
         return {
           source: id,
+          enabledForAnalysis,
           reachable: false,
           listings: 0,
           blocked: false,
@@ -171,6 +182,36 @@ export async function POST(request) {
       ? null
       : String(body.url).trim();
 
+  const pageHtml = typeof body?.pageHtml === "string" && body.pageHtml.length > 500
+    ? body.pageHtml.slice(0, 4_000_000)
+    : null;
+  if (new URL(request.url).searchParams.get("prepareMobileSearch") === "1") {
+    if (!listingUrl || !isSourceEnabled("MOBILE_DE")) return json({ searchUrl: null });
+
+    const portalId = detectMarketplace(listingUrl)?.id;
+    const importedMobile = pageHtml && portalId === "MOBILE_DE";
+    if (!importedMobile && !["AUTOSCOUT24", "KLEINANZEIGEN"].includes(portalId)) {
+      return json({ searchUrl: null });
+    }
+    try {
+      const resolved = importedMobile
+        ? resolveFromPage(listingUrl, pageHtml)
+        : await withDeadline(resolveTarget(listingUrl), 20_000);
+      if (!resolved.ok) return json({ searchUrl: null });
+
+      if (!importedMobile) {
+        if (preparedTargets.size >= 32) preparedTargets.delete(preparedTargets.keys().next().value);
+        preparedTargets.set(listingUrl, { resolved, expiresAt: Date.now() + PREPARED_TARGET_TTL_MS });
+      }
+      const searchUrl = importedMobile
+        ? buildMobileSearchUrl(resolved.vehicle, body.url, flightListing(pageHtml))
+        : buildMobileSearchUrl(resolved.vehicle);
+      return json({ searchUrl });
+    } catch {
+      return json({ searchUrl: null });
+    }
+  }
+
   const options = {};
 
   // Target profit the buyer wants left over.
@@ -224,10 +265,17 @@ export async function POST(request) {
   }
   if (body?.skipModel === true) options.skipModel = true;
 
-  // The ad page itself, sent by the buyer's browser through the one-click
-  // import button. Capped well above a real ad page (about 0,5–1,5 MB).
-  if (typeof body?.pageHtml === "string" && body.pageHtml.length > 500) {
-    options.pageHtml = body.pageHtml.slice(0, 4_000_000);
+  // The ad page captured by the browser extension (typically 0,5–1,5 MB).
+  if (pageHtml) options.pageHtml = pageHtml;
+  if (listingUrl && body?.mobileSearch) {
+    options.mobileSearch = readMobileSearchResults(body.mobileSearch);
+  }
+  if (!pageHtml && listingUrl) {
+    const prepared = preparedTargets.get(listingUrl);
+    if (prepared) {
+      preparedTargets.delete(listingUrl);
+      if (prepared.expiresAt > Date.now()) options.resolvedTarget = prepared.resolved;
+    }
   }
 
   // Ad text copied from the portal page — the reliable route when a portal

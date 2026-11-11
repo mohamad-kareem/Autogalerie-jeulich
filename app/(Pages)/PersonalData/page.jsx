@@ -44,7 +44,7 @@ const initialFormData = {
 };
 
 export default function AdminDashboard() {
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState("contacts");
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -85,8 +85,7 @@ export default function AdminDashboard() {
   }, [activeTab]);
 
   useEffect(() => {
-    const saved = localStorage.getItem("darkMode");
-    const savedMode = saved === null ? true : saved === "true";
+    const savedMode = false; /* portal: always light */
     setDarkMode(savedMode);
     document.documentElement.classList.toggle("dark", savedMode);
   }, []);
@@ -225,47 +224,30 @@ export default function AdminDashboard() {
   return (
     <div
       className={`min-h-screen transition-colors duration-300  ${
-        darkMode ? "dark bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-900"
+        darkMode ? "dark bg-gray-900 text-gray-100" : "text-gray-900"
       }`}
     >
-      <div className="container mx-auto  py-4 sm:py-8">
+      <div className="container mx-auto px-2 py-4">
         {/* Mobile Header */}
         {isMobile && (
-          <div className=" flex items-center justify-between mb-4">
+          <div className="ind-plate mx-2 mb-4 flex items-center gap-3 px-4 py-3">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
+              className="ind-icon-btn"
             >
               {mobileMenuOpen ? <FiX size={24} /> : <FiChevronDown size={24} />}
             </button>
-            <h1 className="text-md font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              personenbezogenen Daten
-            </h1>
-            <button
-              onClick={toggleDarkMode}
-              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 "
-            >
-              {darkMode ? (
-                <FiSun size={20} className="mt-8" />
-              ) : (
-                <FiMoon size={20} className="mt-8" />
-              )}
-            </button>
+            <h1 className="ind-title">Personenbezogene Daten</h1>
           </div>
         )}
 
         {/* Desktop Header */}
         {!isMobile && (
-          <header className="flex justify-between  items-center mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              personenbezogenen Daten
-            </h1>
-            <button
-              onClick={toggleDarkMode}
-              className="p-2 mt-5    rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            >
-              {darkMode ? <FiSun size={18} /> : <FiMoon size={18} />}
-            </button>
+          <header className="ind-plate mb-5 flex items-center gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <h1 className="ind-title">Personenbezogene Daten</h1>
+              <p className="text-[12px] text-muted">Mitarbeiter- und Kundendaten</p>
+            </div>
           </header>
         )}
 

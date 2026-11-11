@@ -1990,17 +1990,10 @@ export default function VehicleInspection3DPage() {
 
   return (
     <div
-      className="min-h-screen bg-[#f0f0f0] text-[#1a1a1a]"
-      style={{
-        fontFamily:
-          "-apple-system,BlinkMacSystemFont,'Segoe UI','SF Pro Text',system-ui,sans-serif",
-      }}
+      className="min-h-screen text-[#1a1a1a]"
     >
       {/* ── Title bar ── */}
-      <div
-        className="bg-[#e8e8e8] border-b border-[#c8c8c8]"
-        style={{ boxShadow: "0 1px 0 rgba(255,255,255,0.6) inset" }}
-      >
+      <div className="ind-plate rounded-none border-x-0 border-t-0">
         <div className="mx-auto max-w-[1720px] px-4 sm:px-6">
           <div className="flex min-h-11 items-center justify-between gap-2 py-2 sm:gap-4">
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -2011,12 +2004,12 @@ export default function VehicleInspection3DPage() {
               >
                 <FiMenu size={15} />
               </button>
-              <div className="flex items-center gap-1.5 text-[13px] font-medium text-[#1a1a1a]">
-                <FiTarget size={14} className="text-[#555]" />
-                <span className="hidden sm:inline">
-                  Werkstatt-Inspektion 3D
-                </span>
-                <span className="sm:hidden">Werkstatt</span>
+              <div className="flex items-center gap-2">
+                <FiTarget size={15} className="text-[#3e454e]" />
+                <h1 className="ind-title">
+                  <span className="hidden sm:inline">Lackieren · Werkstatt-Inspektion 3D</span>
+                  <span className="sm:hidden">Lackieren</span>
+                </h1>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
@@ -3453,7 +3446,7 @@ function SysPrimaryButton({ onClick, disabled, icon, label }) {
     <button
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex h-7 items-center gap-1.5 cursor-pointer rounded border border-[#1a1a1a] bg-[#1a1a1a] px-2.5 text-[11px] font-medium text-white hover:bg-[#333] disabled:opacity-40 transition"
+      className="inline-flex h-7 items-center gap-1.5 cursor-pointer rounded-[3px] border border-[#2f353c] bg-gradient-to-b from-[#59616c] to-[#3e454e] px-2.5 text-[11px] font-semibold text-white hover:from-[#4b535d] hover:to-[#343a42] disabled:opacity-40 transition"
       style={{
         boxShadow:
           "0 1px 2px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.08)",

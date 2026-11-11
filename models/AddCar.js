@@ -70,6 +70,19 @@ const carSchema = new mongoose.Schema(
       phone: { type: String, required: true },
     },
 
+    // Ankauf (staff portal) – handling of the offer. Older offers have none of these:
+    // they count as "Neu" and as already read.
+    tradeStatus: {
+      type: String,
+      enum: ["new", "checking", "offer", "bought", "declined"],
+      default: "new",
+    },
+    read: { type: Boolean, default: false },
+    offerPrice: { type: Number, default: null },
+    note: { type: String, default: "", maxlength: 3000 },
+    handledBy: { type: String, default: "" },
+    handledAt: { type: Date, default: null },
+
     // Metadata
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     slug: { type: String, unique: true },
@@ -89,6 +102,11 @@ carSchema.pre("save", function (next) {
   this.slug = `${baseSlug}-${Math.random().toString(36).substring(2, 7)}`;
   next();
 });
+
+// dev: drop a model compiled before the Ankauf fields existed
+if (mongoose.models.ManualCar && !mongoose.models.ManualCar.schema.path("tradeStatus")) {
+  mongoose.deleteModel("ManualCar");
+}
 
 export default mongoose.models.ManualCar ??
   mongoose.model("ManualCar", carSchema);

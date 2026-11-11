@@ -22,7 +22,6 @@ import {
   FiFilter,
   FiTrash2,
   FiClock,
-  FiArrowLeft,
   FiChevronLeft,
   FiChevronRight,
   FiPlusCircle,
@@ -59,10 +58,8 @@ export default function Zeiterfassungsverwaltung() {
   const { openSidebar } = useSidebar();
   // Initialize dark mode
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
+    const savedTheme = "light" /* portal: always light */;
+    const systemPrefersDark = false;
 
     const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
     setDarkMode(isDark);
@@ -599,24 +596,18 @@ export default function Zeiterfassungsverwaltung() {
       className={`min-h-screen transition-colors duration-300 ${bgGradient} ${textPrimary}`}
     >
       {/* Header */}
-      <div className="z-40 px-4 sm:px-6 py-2">
-        <div className="flex ">
-          <div className="flex items-center gap-3 mr-3">
-            {/* Mobile hamburger */}
-            <button
-              onClick={openSidebar}
-              className={`md:hidden p-2 rounded-lg transition-colors duration-300 ${
-                darkMode
-                  ? "bg-slate-800 hover:bg-slate-700 text-white"
-                  : "bg-slate-200 hover:bg-slate-300 text-slate-700"
-              }`}
-              aria-label="Menü öffnen"
-            >
-              <FiMenu className="h-4 w-4" />
-            </button>
-            <h1 className="text-lg sm:text-xl font-bold">
-              Zeiterfassungsübersicht
-            </h1>
+      <div className="mx-auto w-full max-w-[95vw] px-1 pt-3 sm:px-6 xl:max-w-[1300px] 2xl:max-w-[1600px]">
+        <div className="ind-plate flex items-center gap-3 px-4 py-3">
+          <button
+            onClick={openSidebar}
+            className="ind-icon-btn md:hidden"
+            aria-label="Menü öffnen"
+          >
+            <FiMenu className="h-4 w-4" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="ind-title">Zeiterfassung</h1>
+            <p className="text-[12px] text-muted">Arbeitszeiten, Stempelungen und Berichte</p>
           </div>
         </div>
       </div>
@@ -625,7 +616,7 @@ export default function Zeiterfassungsverwaltung() {
       <main className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1600px] mx-auto px-1 sm:px-6 py-2 ">
         {/* Control Panel */}
         <div
-          className={`${cardBg} rounded-xl overflow-hidden mb-4 transition-colors duration-300`}
+          className={`${cardBg} card overflow-hidden mb-4 transition-colors duration-300`}
         >
           {/* Top Navigation */}
           <div

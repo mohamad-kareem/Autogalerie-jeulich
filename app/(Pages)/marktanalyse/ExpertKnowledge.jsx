@@ -73,13 +73,7 @@ function QuestionCard({ question, saved, dark, onSave }) {
             rows={setting ? 4 : answered || text ? 8 : 3}
             spellCheck={false}
             placeholder={setting ? question.hint : `Antwort einfügen … z. B.\n${question.example}`}
-            className={`mt-1.5 w-full resize-y rounded border px-2.5 py-1.5 leading-relaxed outline-none focus:ring-2 ${
-              setting ? "text-[13px]" : "font-mono text-[11px]"
-            } ${
-              dark
-                ? "border-slate-700 bg-slate-950 placeholder:text-slate-600 focus:ring-sky-500/30"
-                : "border-slate-300 bg-white placeholder:text-slate-400 focus:ring-sky-200"
-            }`}
+            className={`ind-input mt-1.5 w-full resize-y px-2.5 py-1.5 leading-relaxed ${setting ? "" : "font-mono"}`}
           />
           <div className={`mt-0.5 flex h-4 items-center justify-between text-[10px] ${muted}`}>
             <span>
@@ -173,7 +167,7 @@ export default function ExpertKnowledge({ dark }) {
   const visible = inCategory.filter((question) => !onlyOpen || !isAnswered(question.id));
   const current = EXPERT_CATEGORIES.find((cat) => cat.id === category);
 
-  const panel = `rounded-lg border ${dark ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"}`;
+  const panel = "card";
   const muted = dark ? "text-slate-400" : "text-slate-500";
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
@@ -259,7 +253,7 @@ export default function ExpertKnowledge({ dark }) {
             onClick={() => setCategory(EXPERT_CATEGORIES[EXPERT_CATEGORIES.findIndex((cat) => cat.id === category) - 1].id)}
             className={`text-xs font-semibold disabled:opacity-30 ${muted} hover:underline`}
           >
-            ← Zurück
+            Zurück
           </button>
           <button
             type="button"

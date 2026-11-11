@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Autogalerie Jülich – Marktanalyse",
+  "version": "1.0.5",
+  "description": "mobile.de-Links für Marktanalyse und Ankaufbestätigung im eigenen Browser einlesen.",
+  "minimum_chrome_version": "109",
+  "permissions": ["scripting", "storage"],
+  "host_permissions": ["https://mobile.de/*", "https://*.mobile.de/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://xn--autogaleriejlich-uzb.de/*",
+        "https://www.xn--autogaleriejlich-uzb.de/*",
+        "https://autogalerie-juelich.de/*",
+        "https://www.autogalerie-juelich.de/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "js": ["bridge.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

@@ -1,28 +1,14 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import {
-  FiX,
-  FiCamera,
-  FiSun,
-  FiMoon,
-  FiUser,
-  FiShield,
-  FiLogOut,
-} from "react-icons/fi";
+import { FiX, FiCamera, FiLogOut, FiKey, FiLock } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { signOut } from "next-auth/react";
 
-const SettingsModal = ({
-  user,
-  darkMode,
-  onClose,
-  onToggleDarkMode,
-  onSave,
-}) => {
+/** Einstellungen – profile and security in one steel panel (portal design). */
+const SettingsModal = ({ user, onClose, onSave }) => {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("profile");
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -123,296 +109,117 @@ const SettingsModal = ({
     router.push("/forgotpassword");
   };
 
-  const handleDarkModeToggle = () => {
-    onToggleDarkMode();
-    window.location.reload();
-  };
+  useEffect(() => {
+    const onKey = (event) => event.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
-  const tabs = [
-    { id: "profile", label: "Profil", icon: <FiUser className="h-4 w-4" /> },
-    {
-      id: "appearance",
-      label: "Aussehen",
-      icon: darkMode ? (
-        <FiMoon className="h-4 w-4" />
-      ) : (
-        <FiSun className="h-4 w-4" />
-      ),
-    },
-    {
-      id: "security",
-      label: "Sicherheit",
-      icon: <FiShield className="h-4 w-4" />,
-    },
-  ];
+  const initials =
+    String(formData.name || user?.name || "")
+      .split(/\s+/)
+      .map((p) => p[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "?";
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case "profile":
-        return (
-          <div className="space-y-5">
-            {/* Profile Header */}
-            <div className="flex flex-col items-center">
-              <div className="relative mb-3">
-                <div className="rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 p-1">
-                  <img
-                    src={previewImage || "/default-avatar.png"}
-                    alt={user?.name || "Profilbild"}
-                    className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover bg-white"
-                  />
-                </div>
+  return (
+    <div
+      className="dash-shell fixed inset-0 z-[70] flex items-center justify-center bg-[#0b0f14]/45 px-3 backdrop-blur-[2px] sm:px-4"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-[4px] border border-[#b9bfc7] bg-white shadow-[0_18px_50px_-12px_rgba(11,15,20,0.45)]">
+        <div className="ind-plate flex items-center gap-3 rounded-none border-x-0 border-t-0 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="ind-title">Einstellungen</h2>
+            <p className="text-[12px] text-muted">Profil und Sicherheit</p>
+          </div>
+          <button type="button" onClick={onClose} className="ind-icon-btn" aria-label="Schließen">
+            <FiX className="h-4 w-4" />
+          </button>
+        </div>
 
+        <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+          {/* Persönliche Daten */}
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#3e454e]">Persönliche Daten</p>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                {formData.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={previewImage} alt="" className="h-14 w-14 rounded-[4px] border border-[#b9bfc7] object-cover" />
+                ) : (
+                  <span className="flex h-14 w-14 items-center justify-center rounded-[4px] border border-[#262b31] bg-gradient-to-b from-[#4b535d] to-[#343a42] text-base font-bold text-white">
+                    {initials}
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={triggerFileInput}
-                  className="absolute bottom-1 right-1 rounded-full bg-gray-900 p-2 text-white shadow-lg hover:bg-black transition"
+                  className="absolute -bottom-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-[3px] border border-[#2f353c] bg-gradient-to-b from-[#59616c] to-[#3e454e] text-white"
                   aria-label="Profilbild ändern"
+                  title="Profilbild ändern"
                 >
-                  <FiCamera className="h-4 w-4" />
+                  <FiCamera className="h-3 w-3" />
                 </button>
-
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleImageChange}
-                  accept="image/*"
-                  className="hidden"
-                />
+                <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
               </div>
-
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                {formData.name || "Benutzer"}
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-500 truncate max-w-[220px] sm:max-w-none">
-                {user?.email}
-              </p>
-            </div>
-
-            {/* Profile Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Vollständiger Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ihr Name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  E-Mail
-                </label>
-                <input
-                  type="email"
-                  value={user?.email || ""}
-                  readOnly
-                  className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-500 cursor-not-allowed"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition disabled:opacity-50"
-              >
-                {saving ? "Speichern..." : "Speichern"}
-              </button>
-            </form>
-          </div>
-        );
-
-      case "appearance":
-        return (
-          <div className="space-y-5">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-              Theme
-            </h3>
-
-            <div
-              className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-gray-100 transition cursor-pointer"
-              onClick={handleDarkModeToggle}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`p-2 rounded-lg ${
-                    darkMode ? "bg-gray-900" : "bg-blue-100"
-                  }`}
-                >
-                  {darkMode ? (
-                    <FiMoon className="h-5 w-5 text-yellow-400" />
-                  ) : (
-                    <FiSun className="h-5 w-5 text-blue-600" />
-                  )}
-                </div>
-                <div>
-                  <p className="font-semibold text-sm text-gray-900">
-                    {darkMode ? "Dunkelmodus" : "Hellmodus"}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Wechseln Sie das Design
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  darkMode ? "bg-blue-600" : "bg-gray-300"
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    darkMode ? "translate-x-6" : "translate-x-1"
-                  }`}
-                />
+              <div className="min-w-0">
+                <p className="truncate text-[14px] font-semibold text-ink">{formData.name || "Benutzer"}</p>
+                <p className="truncate text-[12px] text-muted">{user?.email}</p>
               </div>
             </div>
-          </div>
-        );
-
-      case "security":
-        return (
-          <div className="space-y-5">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-              Sicherheit
-            </h3>
-
-            <button
-              onClick={handleChangePassword}
-              className="w-full text-left p-4 rounded-lg border border-gray-200 hover:bg-gray-100 transition"
-            >
-              <p className="font-semibold text-sm text-gray-900">
-                Passwort zurücksetzen
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Neues sicheres Passwort erstellen
-              </p>
+            <div>
+              <label htmlFor="pe-name" className="label">
+                Name
+              </label>
+              <input id="pe-name" type="text" name="name" value={formData.name} onChange={handleChange} className="field" placeholder="Ihr Name" />
+            </div>
+            <div>
+              <span className="label">E-Mail-Adresse (Login)</span>
+              <div className="flex h-[2.125rem] items-center gap-2 rounded-[4px] border border-line bg-canvas px-2.5 text-[13px] text-muted">
+                <FiLock className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{user?.email || "–"}</span>
+              </div>
+            </div>
+            <button type="submit" disabled={saving} className="btn btn-primary btn-sm">
+              {saving ? "Speichern …" : "Speichern"}
             </button>
+          </form>
 
-            <div className="p-4 rounded-lg border border-gray-200">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-sm text-gray-900">
-                    Auf allen Geräten abmelden
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Beendet jede Anmeldung mit diesem Konto – auf allen
-                    Computern und Handys, auch hier.
-                  </p>
-                </div>
-
-                {confirmLogoutAll ? (
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setConfirmLogoutAll(false)}
-                      disabled={loggingOutAll}
-                      className="rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition disabled:opacity-50"
-                    >
-                      Abbrechen
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleLogoutEverywhere}
-                      disabled={loggingOutAll}
-                      className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition disabled:opacity-50"
-                    >
-                      {loggingOutAll ? "Wird abgemeldet…" : "Ja, überall abmelden"}
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setConfirmLogoutAll(true)}
-                    className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition"
-                  >
-                    <FiLogOut className="h-3.5 w-3.5" />
-                    Überall abmelden
+          {/* Sicherheit */}
+          <div className="space-y-2 border-t border-[#e3e6ea] pt-4">
+            <p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#3e454e]">Sicherheit</p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={handleChangePassword} className="btn btn-secondary btn-sm">
+                <FiKey /> Passwort zurücksetzen
+              </button>
+              {confirmLogoutAll ? (
+                <>
+                  <button type="button" onClick={() => setConfirmLogoutAll(false)} disabled={loggingOutAll} className="btn btn-secondary btn-sm">
+                    Abbrechen
                   </button>
-                )}
-              </div>
+                  <button type="button" onClick={handleLogoutEverywhere} disabled={loggingOutAll} className="ind-btn ind-btn-danger btn-sm">
+                    {loggingOutAll ? "Wird abgemeldet …" : "Ja, überall abmelden"}
+                  </button>
+                </>
+              ) : (
+                <button type="button" onClick={() => setConfirmLogoutAll(true)} className="btn btn-secondary btn-sm text-rose-700">
+                  <FiLogOut /> Auf allen Geräten abmelden
+                </button>
+              )}
             </div>
           </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-3 sm:px-4">
-      <div className="w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden rounded-2xl bg-white shadow-2xl">
-        {/* LEFT MENU */}
-        <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-gray-200 bg-gray-50 p-4 sm:p-6">
-          <div className="mb-4 sm:mb-6">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-              Einstellungen
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-              Kontoeinstellungen verwalten
-            </p>
-          </div>
-
-          <nav className="space-y-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-3 w-full p-3 rounded-lg text-sm font-semibold transition ${
-                  activeTab === tab.id
-                    ? "bg-blue-50 text-blue-700 border border-blue-100"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-
-            {/* LOGOUT */}
-            <div className="pt-3 mt-3 border-t border-gray-200">
-              <button
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="flex items-center gap-3 w-full p-3 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 transition"
-              >
-                <FiLogOut className="h-4 w-4" />
-                Abmelden
-              </button>
-            </div>
-          </nav>
         </div>
 
-        {/* RIGHT CONTENT */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
-          <div className="flex items-start justify-between gap-3 mb-6">
-            <div className="min-w-0">
-              <h3 className="text-lg sm:text-2xl font-bold text-gray-900">
-                {tabs.find((t) => t.id === activeTab)?.label}
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                {activeTab === "profile" &&
-                  "Bearbeiten Sie Ihr Profil und persönliche Informationen"}
-                {activeTab === "appearance" && "Passen Sie das Design an"}
-                {activeTab === "security" && "Verwalten Sie Sicherheit"}
-              </p>
-            </div>
-
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
-              aria-label="Schließen"
-            >
-              <FiX className="h-5 w-5 text-gray-500" />
-            </button>
-          </div>
-
-          <div className="max-w-2xl">{renderTabContent()}</div>
+        <div className="flex items-center justify-between border-t border-[#dfe2e6] bg-[#f7f8f9] px-4 py-2.5">
+          <button type="button" onClick={() => signOut({ callbackUrl: "/login" })} className="btn btn-secondary btn-sm">
+            <FiLogOut /> Abmelden
+          </button>
+          <button type="button" onClick={onClose} className="btn btn-secondary btn-sm">
+            Schließen
+          </button>
         </div>
       </div>
     </div>

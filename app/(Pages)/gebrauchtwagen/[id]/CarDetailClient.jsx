@@ -12,7 +12,6 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import {
-  ArrowLeft,
   Calendar,
   CarFront,
   Check,
@@ -384,7 +383,7 @@ export default function CarDetailClient({ car: initialCar }) {
         {/* top bar */}
         <nav className="mb-4 flex items-center justify-between gap-3">
           <Link href="/gebrauchtwagen" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-600 transition hover:text-[#146c2e]">
-            <ArrowLeft className="size-4" /> Alle Fahrzeuge
+            Alle Fahrzeuge
           </Link>
           <button
             type="button"

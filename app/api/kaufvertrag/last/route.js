@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Kaufvertrag from "@/models/Kaufvertrag";
-import { generateNextNumber } from "@/app/utils/invoiceHelpers";
-import { getLastValidContract } from "@/app/utils/getLastValidContract"; // ✅ import helper
+import { nextNumber as computeNext } from "@/lib/kaufvertragServer";
 
 export async function GET(req) {
   try {
@@ -17,15 +16,7 @@ export async function GET(req) {
       );
     }
 
-    // ✅ use helper instead of createdAt
-    const lastValidContract = await getLastValidContract(issuer);
-
-    const baseNumber =
-      lastValidContract?.originalInvoiceNumber ||
-      lastValidContract?.invoiceNumber ||
-      null;
-
-    const nextNumber = generateNextNumber(baseNumber, issuer);
+    const nextNumber = await computeNext(issuer);
 
     return NextResponse.json({ nextNumber });
   } catch (err) {

@@ -153,9 +153,9 @@ export default function LagerbestandPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <div className="mx-auto max-w-screen-2xl px-3 py-4 sm:px-6 sm:py-6">
-        <header className="mb-5 flex items-center gap-3">
+        <header className="ind-plate mb-4 flex items-center gap-3 px-4 py-3">
           <button type="button" onClick={openSidebar} aria-label="Menü öffnen" className="grid size-9 place-items-center rounded-md border border-slate-200 bg-white text-slate-600 md:hidden"><FiPackage size={17} /></button>
-          <div className="min-w-0 flex-1"><h1 className="text-xl font-semibold">Lagerbestand</h1><p className="mt-0.5 text-[13px] text-slate-500">Artikel, Mengen und Lagerorte verwalten</p></div>
+          <div className="min-w-0 flex-1"><h1 className="ind-title">Lagerbestand</h1><p className="mt-0.5 text-[12.5px] text-muted">Artikel, Mengen und Lagerorte verwalten</p></div>
           <button type="button" onClick={() => setDialog({})} className="inline-flex h-9 items-center gap-2 rounded-md bg-emerald-700 px-3 text-[13px] font-semibold text-white hover:bg-emerald-800"><FiPlus size={16} /><span className="hidden sm:inline">Artikel hinzufügen</span><span className="sm:hidden">Hinzufügen</span></button>
         </header>
 

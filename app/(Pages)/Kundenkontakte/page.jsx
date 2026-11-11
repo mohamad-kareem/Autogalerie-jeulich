@@ -13,7 +13,6 @@ import {
   FiSave,
   FiPlus,
   FiX,
-  FiArrowLeft,
   FiChevronDown,
   FiChevronUp,
   FiChevronLeft,
@@ -56,10 +55,8 @@ export default function ContactCustomersPage() {
 
   // Initialize dark mode
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches;
+    const savedTheme = "light" /* portal: always light */;
+    const systemPrefersDark = false;
     const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
     setDarkMode(isDark);
 
@@ -309,7 +306,7 @@ export default function ContactCustomersPage() {
           animate={{ y: 0, opacity: 1 }}
           className="mb-2 sm:mb-3 lg:mb-4"
         >
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="ind-plate flex flex-wrap items-center gap-3 px-4 py-3">
             {/* Mobile hamburger */}
             <button
               onClick={openSidebar}
@@ -322,11 +319,10 @@ export default function ContactCustomersPage() {
             >
               <FiMenu className="h-4 w-4" />
             </button>
-            <h1
-              className={`text-base sm:text-lg lg:text-2xl font-bold transition-colors duration-300 ${textPrimary}`}
-            >
-              Kundenkontakte
-            </h1>
+            <div className="min-w-0 flex-1">
+              <h1 className="ind-title">Kundenkontakte</h1>
+              <p className="text-[12px] text-muted">Kunden, Interessenten und Kontakte</p>
+            </div>
           </div>
         </motion.header>
 
@@ -343,11 +339,7 @@ export default function ContactCustomersPage() {
               {/* Add button available to all users */}
               <button
                 onClick={startAdd}
-                className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] sm:text-xs md:text-sm font-medium shadow-sm transition cursor-pointer ${
-                  darkMode
-                    ? "bg-slate-700 hover:bg-slate-600 text-white"
-                    : "bg-slate-400 hover:bg-slate-500 text-white"
-                }`}
+                className="ind-btn ind-btn-dark btn-sm shrink-0"
               >
                 <FiPlus className="text-xs sm:text-sm" /> Neu
               </button>

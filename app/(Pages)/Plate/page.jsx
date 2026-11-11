@@ -79,12 +79,12 @@ const PlateTrackingPage = () => {
   });
 
   useEffect(() => {
-    const savedMode = localStorage.getItem("darkMode");
+    const savedMode = null; /* portal: always light */
     if (savedMode !== null) {
       setDarkMode(savedMode === "true");
     } else if (
       window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches
+      false
     ) {
       setDarkMode(true);
     }
@@ -96,7 +96,6 @@ const PlateTrackingPage = () => {
     } else {
       document.documentElement.classList.remove("dark");
     }
-    localStorage.setItem("darkMode", darkMode);
   }, [darkMode]);
 
   // Fetch plates and usage data
@@ -349,7 +348,7 @@ const PlateTrackingPage = () => {
     return (
       <div
         className={`flex justify-center items-center min-h-screen ${
-          darkMode ? "bg-gray-900" : "bg-blue-50"
+          darkMode ? "bg-gray-900" : "bg-transparent"
         }`}
       >
         <div
@@ -369,40 +368,11 @@ const PlateTrackingPage = () => {
     >
       <div className=" w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto">
         {/* Header with dark mode toggle */}
-        <div className="mb-6 sm:mb-8 flex justify-between items-center">
-          <div>
-            <h1
-              className={`text-xl sm:text-3xl font-bold ${
-                darkMode ? "text-white" : "text-blue-900"
-              }`}
-            >
-              Nummernschildverfolgung
-            </h1>
-            <p
-              className={`${
-                darkMode ? "text-gray-300" : "text-blue-800"
-              } mt-1 sm:mt-2 text-xs sm:text-base`}
-            >
-              Verfolge und verwalte Nummernschilder
-            </p>
+        <div className="ind-plate mb-5 flex items-center gap-3 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="ind-title">Nummernschildverfolgung</h1>
+            <p className="text-[12px] text-muted">Verfolge und verwalte Nummernschilder</p>
           </div>
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className={`p-2 sm:p-2.5 rounded-full text-sm sm:text-base mt-10  ${
-              darkMode
-                ? "bg-blue-800 text-yellow-300 hover:bg-blue-700"
-                : "bg-blue-100 text-blue-800 hover:bg-blue-200"
-            } transition-colors`}
-            title={
-              darkMode ? "Zum Lichtmodus wechseln" : "	Zum Dunkelmodus wechseln"
-            }
-          >
-            {darkMode ? (
-              <FiSun size={14} className="sm:size-5" />
-            ) : (
-              <FiMoon size={14} className="sm:size-5" />
-            )}
-          </button>
         </div>
 
         {/* Tabs - Responsive with scroll on small screens */}

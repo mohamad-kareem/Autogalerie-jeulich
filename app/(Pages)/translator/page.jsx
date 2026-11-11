@@ -138,15 +138,17 @@ export default function TranslatorPage() {
   // RENDER PAGE
   // ======================
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8">
-      <h1 className="text-2xl font-bold">
-        📞 AI Buyer Assistant – Real-Time Translator
+    <div className="max-w-6xl mx-auto p-4 space-y-5">
+      <div className="ind-plate px-4 py-3">
+      <h1 className="ind-title">
+        AI Buyer Assistant – Real-Time Translator
       </h1>
 
-      <p className="text-gray-600">
+      <p className="text-[12px] text-muted">
         You write in English → AI translates to German → you read it. Seller
         speaks German → AI translates to English → AI answers in German.
       </p>
+      </div>
 
       <div className="flex flex-col md:flex-row gap-6">
         {/* LEFT: YOU (English input & translations) */}

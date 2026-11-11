@@ -59,9 +59,25 @@ const ContactSubmissionSchema = new mongoose.Schema(
         ref: "Admin",
       },
     ],
+
+    // Anfragen (staff portal): status, internal note, who handled it.
+    // Older messages have no status – they count as "Neu" until someone opened them, then "Erledigt".
+    status: {
+      type: String,
+      enum: ["new", "in_progress", "done", "archived"],
+      default: "new",
+    },
+    note: { type: String, default: "", trim: true, maxlength: 2000 },
+    handledBy: { type: String, default: "", trim: true },
+    handledAt: { type: Date, default: null },
   },
   { timestamps: true },
 );
+
+// dev: drop a model compiled before the new fields existed
+if (mongoose.models.ContactSubmission && !mongoose.models.ContactSubmission.schema.path("status")) {
+  mongoose.deleteModel("ContactSubmission");
+}
 
 const ContactSubmission =
   mongoose.models.ContactSubmission ||

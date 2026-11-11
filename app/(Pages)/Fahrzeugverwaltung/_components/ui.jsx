@@ -33,22 +33,23 @@ export function theme(dark) {
         skeleton: "bg-slate-800",
       }
     : {
-        page: "bg-slate-50 text-slate-900",
-        card: "border-slate-200 bg-white",
-        soft: "border-slate-200 bg-slate-50",
-        divider: "border-slate-200",
-        rowHover: "hover:bg-slate-50",
-        title: "text-slate-900",
+        // portal design: steel and silver, like the Autocenter portal
+        page: "text-slate-900",
+        card: "border-[#dfe2e6] bg-white",
+        soft: "border-[#e3e6ea] bg-[#f7f8f9]",
+        divider: "border-[#e3e6ea]",
+        rowHover: "hover:bg-[#f3f5f7]",
+        title: "text-[#1f252c]",
         text: "text-slate-700",
         muted: "text-slate-500",
         faint: "text-slate-400",
         input:
-          "border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:ring-slate-500/15",
-        secondary: "border-slate-300 bg-white text-slate-700 hover:bg-slate-50",
-        primary: "bg-emerald-600 text-white hover:bg-emerald-700",
-        ghost: "text-slate-500 hover:bg-slate-100 hover:text-slate-900",
-        chip: "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
-        chipActive: "border-emerald-600 bg-emerald-50 text-emerald-800",
+          "border-[#cfd4da] bg-white text-slate-900 placeholder:text-slate-400 focus:border-[#59616c] focus:ring-[#59616c]/15",
+        secondary: "border-[#b9bfc7] bg-gradient-to-b from-white to-[#eef0f2] text-[#2a3037] hover:from-[#fbfbfc] hover:to-[#e3e6ea]",
+        primary: "border border-[#2f353c] bg-gradient-to-b from-[#59616c] to-[#3e454e] text-white hover:from-[#4b535d] hover:to-[#343a42]",
+        ghost: "text-slate-500 hover:bg-[#eceef1] hover:text-slate-900",
+        chip: "border-[#cfd4da] bg-white text-slate-600 hover:border-[#a3aab3]",
+        chipActive: "border-[#3e454e] bg-[#3e454e] text-white",
         skeleton: "bg-slate-200",
       };
 }

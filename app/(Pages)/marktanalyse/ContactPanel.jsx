@@ -55,13 +55,9 @@ export default function ContactButton({ result, dark, onSent }) {
 
   const muted = dark ? "text-slate-400" : "text-slate-500";
   const faint = dark ? "text-slate-500" : "text-slate-400";
-  const panel = `rounded-lg border ${dark ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"}`;
-  const button = `inline-flex h-8 items-center gap-1.5 rounded border px-3 text-xs font-semibold transition disabled:opacity-60 ${
-    dark ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-300 text-slate-700 hover:bg-slate-50"
-  }`;
-  const input = `w-full rounded border px-2.5 py-1.5 text-sm outline-none focus:border-sky-500 ${
-    dark ? "border-slate-700 bg-slate-950 text-slate-100" : "border-slate-300 bg-white text-slate-900"
-  }`;
+  const panel = "card";
+  const button = "btn btn-sm btn-secondary";
+  const input = "ind-input w-full px-2.5 py-1.5";
 
   const startEmail = async () => {
     setMenu(false);
@@ -171,13 +167,11 @@ export default function ContactButton({ result, dark, onSent }) {
             aria-modal="true"
             aria-label="E-Mail an den Verkäufer"
             onMouseDown={(event) => event.stopPropagation()}
-            className={`w-full max-w-xl overflow-hidden rounded-lg border shadow-xl ${
-              dark ? "border-slate-800 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-900"
-            }`}
+            className="card w-full max-w-xl overflow-hidden text-ink"
           >
-            <header className={`flex items-center justify-between border-b px-4 py-2.5 ${dark ? "border-slate-800" : "border-slate-200"}`}>
+            <header className="ind-toolbar flex items-center justify-between px-4 py-2.5">
               <h2 className="text-sm font-bold">E-Mail an den Verkäufer</h2>
-              <button type="button" onClick={() => setOpen(false)} disabled={sending} className={muted} aria-label="Schließen">
+              <button type="button" onClick={() => setOpen(false)} disabled={sending} className="ind-icon-btn" aria-label="Schließen">
                 <FiX />
               </button>
             </header>
@@ -222,7 +216,7 @@ export default function ContactButton({ result, dark, onSent }) {
                 type="button"
                 onClick={send}
                 disabled={drafting || sending || draft.subject.trim().length < 3 || draft.body.trim().length < 10}
-                className="inline-flex h-8 items-center gap-1.5 rounded bg-sky-600 px-3 text-xs font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60"
+                className="btn btn-sm btn-primary"
               >
                 {sending ? <FiLoader className="animate-spin" /> : <FiSend />} Senden
               </button>

@@ -102,6 +102,15 @@ const CarScheinSchema = new mongoose.Schema(
 
     reclamations: { type: [ReclamationSchema], default: [] },
 
+    /* ── Fahrzeugakte (Händlerportal) – optional, filled from the ad when empty ── */
+    firstRegistration: { type: String, default: "" },
+    mileage: { type: Number, default: null },
+    price: { type: Number, default: null },
+    /** day the car was handed over to the buyer */
+    handedOverAt: { type: Date, default: null },
+    /** free note about the car */
+    infoNote: { type: String, default: "" },
+
     stage: {
       type: String,
       enum: ["WERKSTATT", "AUFBEREITUNG", "PLATZ", "TUEV", "SOLD"],
@@ -117,7 +126,8 @@ const CarScheinSchema = new mongoose.Schema(
 if (
   mongoose.models.CarSchein &&
   (!mongoose.models.CarSchein.schema.path("stageMeta")?.schema?.path("platz.tuevUntil") ||
-    !mongoose.models.CarSchein.schema.path("vorbesitzer"))
+    !mongoose.models.CarSchein.schema.path("vorbesitzer") ||
+    !mongoose.models.CarSchein.schema.path("handedOverAt"))
 ) {
   mongoose.deleteModel("CarSchein");
 }

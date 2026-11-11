@@ -21,6 +21,7 @@ import {
   FiLoader,
   FiXCircle,
 } from "react-icons/fi";
+import { guardPurchaseDecision, purchasePriceNote } from "@/lib/market/decision";
 
 const euro = (value) =>
   Number.isFinite(value) ? `${Math.round(value).toLocaleString("de-DE")} €` : "–";
@@ -34,11 +35,6 @@ function sourceParts(source) {
     /* title alone */
   }
   let title = source.title && source.title !== source.url ? source.title : "";
-  // Google search links (Gemini research) run through a redirect; their title
-  // is the real site, e.g. "motor-talk.de".
-  if (/(^|\.)vertexaisearch\.cloud\.google\.com$/.test(host)) {
-    return { host: title.replace(/^www\./, "") || "Quelle", title: "" };
-  }
   // "Xenon-Scheinwerfer - Funktion & Nachrüsten | HELLA" → "Xenon-Scheinwerfer - Funktion & Nachrüsten"
   title = title
     .replace(/\s*\|\s*[^|]{1,30}$/, "") // "… | HELLA"
@@ -59,8 +55,6 @@ const cleanHref = (url) => String(url).replace(/([?&])utm_source=openai(&?)/, (_
 function hostOf(url, fallback = "") {
   try {
     const host = new URL(url).hostname.replace(/^(www|assets|club)\./, "");
-    // Google search links (Gemini research): the label is the real site.
-    if (/(^|\.)vertexaisearch\.cloud\.google\.com$/.test(host) && fallback) return fallback.replace(/^www\./, "");
     return host;
   } catch {
     return fallback || "Quelle";
@@ -188,15 +182,13 @@ function Section({ title, aside, dark, children }) {
  * @param {() => void} props.onRun     starts (or repeats) the deep analysis
  */
 export default function DeepPanel({ deep, live, market, running, error, onRun, dark }) {
-  const panel = `rounded-lg border ${dark ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"}`;
+  const panel = "card";
   const muted = dark ? "text-slate-400" : "text-slate-500";
   const faint = dark ? "text-slate-500" : "text-slate-400";
   const text = dark ? "text-slate-200" : "text-slate-800";
   const line = dark ? "border-slate-800" : "border-slate-100";
   const divide = dark ? "divide-slate-800" : "divide-slate-100";
-  const button = `inline-flex h-8 items-center gap-1.5 rounded border px-3 text-xs font-semibold transition disabled:opacity-60 ${
-    dark ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-  }`;
+  const button = "btn btn-sm btn-secondary";
 
   if (running) {
     return (
@@ -206,7 +198,7 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
           <div>
             <p className="text-sm font-semibold">KI-Bewertung läuft …</p>
             <p className={`text-[11px] ${muted}`}>
-              Vergleiche prüfen, im Web recherchieren, Anzeige lesen – meist 1–2 Minuten.
+              Die KI prüft die Vergleiche und recherchiert zum Fahrzeug. Die Marktdaten sind bereits verfügbar.
             </p>
           </div>
         </div>
@@ -238,15 +230,17 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
     );
   }
 
-  // The decision is the AI's own — shown as it was made.
-  const action = deep.decision?.action || null;
-  const actionNote = deep.decisionNote || null;
-  const decision = action ? ACTIONS[action] || ACTIONS.VERHANDELN : null;
-  // When the badge had to change, the AI's headline no longer fits it.
-  const headline = deep.decision?.headline || null;
+  const { action, note } = live
+    ? { action: live.verdict, note: live.decisionNote }
+    : guardPurchaseDecision(deep.decision?.action, null, null);
+  const actionNote = note || deep.decisionNote;
+  const priceNote = purchasePriceNote(live?.limit, live?.askingPrice);
+  const decision = ACTIONS[action];
+  const review = note ? null : deep.decision;
+  const headline = review?.headline;
   const sell = deep.sellability ? SELL[deep.sellability.rating] || SELL.NORMAL : null;
   const risks = (deep.findings || []).filter((finding) => finding.type === "RISIKO");
-  const reasons = deep.decision?.reasons || [];
+  const reasons = review?.reasons || [];
 
   return (
     <section className={`${panel} overflow-hidden`}>
@@ -275,11 +269,21 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
           </div>
         </div>
 
-        {deep.decision?.summary ? (
-          <p className={`mt-2 max-w-4xl text-[13px] leading-relaxed ${text}`}><Cited text={deep.decision.summary} dark={dark} /></p>
+        {priceNote && priceNote !== actionNote ? (
+          <p className={`mt-2 text-xs font-semibold ${text}`}>{priceNote}</p>
         ) : null}
 
-        {actionNote ? <p className={`mt-2 text-xs font-semibold ${action === "NICHT_KAUFEN" ? "text-red-600" : "text-amber-600"}`}>{actionNote}</p> : null}
+        {review?.summary ? (
+          <p className={`mt-2 max-w-4xl text-[13px] leading-relaxed ${text}`}><Cited text={review.summary} dark={dark} /></p>
+        ) : null}
+
+        {actionNote ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <p className="text-xs font-semibold text-amber-600">{actionNote}</p>
+            {onRun ? <button type="button" onClick={onRun} className={button}><FiCpu /> KI neu bewerten</button> : null}
+            {error ? <p className="text-xs text-red-600">{error}</p> : null}
+          </div>
+        ) : null}
 
         {deep.targetProfit ? (
           <p className={`mt-1.5 text-xs ${muted}`}>
@@ -347,7 +351,7 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
               ))}
             </ul>
           ) : (
-            <p className={muted}>Keine bekannten technischen Schwachstellen für dieses Modell.</p>
+            <p className={muted}>In dieser Analyse wurden keine technischen Schwachstellen durch Quellen belegt.</p>
           )}
         </Section>
 
@@ -376,13 +380,6 @@ export default function DeepPanel({ deep, live, market, running, error, onRun, d
         ) : null}
 
       </div>
-
-      {/* Gemini was switched on but failed — GPT searched the web itself. */}
-      {deep.researchError ? (
-        <p className={`border-t px-4 py-2 text-[11px] ${line} ${dark ? "text-amber-400" : "text-amber-700"}`}>
-          <span className="font-semibold">Gemini-Recherche fehlgeschlagen:</span> {deep.researchError} – GPT hat selbst im Web gesucht.
-        </p>
-      ) : null}
 
       {/* Web sources the AI cited — small chips, to check what it found. */}
       {deep.sources?.length ? (

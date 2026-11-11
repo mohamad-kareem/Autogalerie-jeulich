@@ -301,19 +301,13 @@ const CashBookPage = () => {
         darkMode ? "bg-gradient-to-br from-gray-900 to-gray-800" : "bg-gray-50"
       }`}
     >
-      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto  py-8">
+      <div className="w-full max-w-[95vw] xl:max-w-[1300px] 2xl:max-w-[1850px] mx-auto px-1 py-4 sm:px-4">
         {/* Header */}
-        <header className="mb-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <header className="ind-plate mb-5 px-4 py-3">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
             <div>
-              <h1
-                className={`text-3xl font-bold ${
-                  darkMode ? "text-lime-400" : "text-gray-900"
-                }`}
-              >
-                Cash Book
-              </h1>
-              <div className="mt-2 flex items-center gap-3 text-sm">
+              <h1 className="ind-title">Kassenbuch</h1>
+              <div className="mt-0.5 flex items-center gap-2 text-[12px] text-muted">
                 <span className={darkMode ? "text-gray-300" : "text-gray-600"}>
                   {new Date(
                     state.filterYear,
@@ -337,22 +331,6 @@ const CashBookPage = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <button
-                onClick={toggleDarkMode}
-                className={`p-2 rounded-full ${
-                  darkMode
-                    ? "bg-gray-800 text-lime-400"
-                    : "bg-gray-200 text-gray-700"
-                }`}
-              >
-                {darkMode ? (
-                  <FiSun className="h-5 w-5" />
-                ) : (
-                  <FiMoon className="h-5 w-5" />
-                )}
-              </button>
-            </div>
           </div>
         </header>
 
@@ -557,7 +535,7 @@ const CashBookPage = () => {
                       className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm ${
                         darkMode
                           ? "bg-lime-600 hover:bg-lime-500 text-white"
-                          : "bg-lime-600 hover:bg-lime-700 text-white"
+                          : "border border-[#2f353c] bg-gradient-to-b from-[#59616c] to-[#3e454e] text-white hover:from-[#4b535d] hover:to-[#343a42]"
                       }`}
                     >
                       <FiPlus className="h-4 w-4" />

@@ -151,22 +151,10 @@ export default function SettingsDialog({ open, onClose, onSaved, dark }) {
     }
   };
 
-  const input = `h-8 w-full min-w-0 rounded border px-2 text-[13px] tabular-nums outline-none focus:ring-2 ${
-    dark
-      ? "border-slate-700 bg-slate-950 placeholder:text-slate-600 focus:ring-sky-500/30"
-      : "border-slate-300 bg-white placeholder:text-slate-400 focus:ring-sky-200"
-  }`;
+  const input = "ind-input h-8 w-full min-w-0 px-2 tabular-nums";
   const segment = (active) =>
-    `h-8 flex-1 rounded px-2.5 text-xs font-semibold transition ${
-      active
-        ? dark
-          ? "bg-slate-700 text-slate-100"
-          : "bg-white text-slate-900 shadow-sm"
-        : dark
-          ? "text-slate-400 hover:text-slate-200"
-          : "text-slate-500 hover:text-slate-800"
-    }`;
-  const segmentGroup = `flex rounded p-0.5 ${dark ? "bg-slate-800" : "bg-slate-100"}`;
+    `ind-seg-btn ind-seg-sm flex-1 justify-center ${active ? "ind-seg-on" : ""}`;
+  const segmentGroup = "ind-seg flex overflow-hidden";
   const muted = dark ? "text-slate-500" : "text-slate-400";
 
   return (
@@ -176,16 +164,14 @@ export default function SettingsDialog({ open, onClose, onSaved, dark }) {
         aria-modal="true"
         aria-label="Einstellungen"
         onMouseDown={(event) => event.stopPropagation()}
-        className={`w-full max-w-2xl overflow-hidden rounded-lg border shadow-xl ${
-          dark ? "border-slate-800 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-900"
-        }`}
+        className="card w-full max-w-2xl overflow-hidden text-ink"
       >
-        <header className={`flex items-center justify-between border-b px-5 py-3 ${dark ? "border-slate-800" : "border-slate-200"}`}>
+        <header className="ind-toolbar flex items-center justify-between px-5 py-3">
           <div>
             <h2 className="text-sm font-bold">Einstellungen</h2>
             <p className={`text-[11px] ${muted}`}>Startwerte für jede Analyse – im Einzelfall in der Kalkulation änderbar.</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Schließen" className={`rounded p-1.5 ${dark ? "hover:bg-slate-800" : "hover:bg-slate-100"}`}>
+          <button type="button" onClick={onClose} aria-label="Schließen" className="ind-icon-btn">
             <FiX />
           </button>
         </header>
@@ -335,7 +321,7 @@ export default function SettingsDialog({ open, onClose, onSaved, dark }) {
                 <button
                   type="button"
                   onClick={onClose}
-                  className={`h-8 rounded border px-3 text-xs font-semibold ${dark ? "border-slate-700 hover:bg-slate-800" : "border-slate-300 hover:bg-white"}`}
+                  className="btn btn-sm btn-secondary"
                 >
                   Abbrechen
                 </button>
@@ -343,7 +329,7 @@ export default function SettingsDialog({ open, onClose, onSaved, dark }) {
                   type="button"
                   onClick={save}
                   disabled={saving}
-                  className="inline-flex h-8 items-center gap-1.5 rounded bg-slate-900 px-4 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-60"
+                  className="btn btn-sm btn-primary"
                 >
                   {saving ? <FiLoader className="animate-spin" /> : null} Speichern
                 </button>

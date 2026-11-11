@@ -14,9 +14,9 @@ import { useEffect, useState } from "react";
 function prefersDark() {
   try {
     if (document.documentElement.classList.contains("dark")) return true;
-    const saved = localStorage.getItem("theme");
+    const saved = "light" /* portal: always light */;
     if (saved) return saved === "dark";
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return false;
   } catch {
     return false;
   }

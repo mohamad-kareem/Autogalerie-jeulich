@@ -482,10 +482,8 @@ export default function CarLocationsPage() {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches;
+    const saved = "light" /* portal: always light */;
+    const prefersDark = false;
 
     const isDark = saved === "dark" || (!saved && prefersDark);
 
@@ -1813,19 +1811,19 @@ export default function CarLocationsPage() {
           showRotbuch && !isMobile ? "pr-[380px] lg:pr-[420px]" : ""
         }`}
       >
-        <header className="mb-3 sm:mb-4 lg:mb-5 flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex items-center gap-3">
+        <header className="ind-plate mb-4 flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center">
+          <div className="flex min-w-0 items-center gap-3 sm:mr-auto">
             <button
               onClick={openSidebar}
-              className={`md:hidden p-2 rounded-lg transition-colors duration-300 ${
-                darkMode
-                  ? "bg-slate-800 hover:bg-slate-700 text-white"
-                  : "bg-slate-200 hover:bg-slate-300 text-slate-700"
-              }`}
+              className="ind-icon-btn md:hidden"
               aria-label="Menü öffnen"
             >
               <FiMenu className="h-4 w-4" />
             </button>
+            <div className="min-w-0">
+              <h1 className="ind-title">Rote Kennzeichen</h1>
+              <p className="text-[12px] text-muted">Fahrten, Kennzeichen und Rotbuch</p>
+            </div>
           </div>
 
           <div className="flex items-center flex-wrap gap-2">

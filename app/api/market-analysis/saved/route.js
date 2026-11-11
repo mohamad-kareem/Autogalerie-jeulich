@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/mongodb";
+import { decisionBasis, guardPurchaseDecision } from "@/lib/market/decision";
+import { marketEvidenceNote, withMarketEvidence } from "@/lib/market/evidence";
 import MarketAnalysis from "@/models/MarketAnalysis";
 
 export const runtime = "nodejs";
@@ -30,6 +32,10 @@ const LIST_FIELDS = [
   "analyzedAt",
   "createdAt",
   "updatedAt",
+  "result.deep.decision",
+  "result.deep.decisionBasis",
+  "result.dealer.targetProfit",
+  "result.market.comparableCount",
 ].join(" ");
 
 function unauthorised() {
@@ -69,7 +75,18 @@ export async function GET(request) {
       .limit(limit)
       .lean();
 
-    return NextResponse.json({ entries }, { status: 200 });
+    const checkedEntries = entries.map(({ result, ...entry }) => {
+      if (marketEvidenceNote(result?.market)) {
+        return { ...entry, verdict: "PRUEFEN", confidence: Math.min(entry.confidence ?? 10, 10), marketValue: null, maximumPurchasePrice: null, expectedProfit: null };
+      }
+      const { action } = guardPurchaseDecision(entry.verdict, entry.maximumPurchasePrice, entry.askingPrice, {
+        review: result?.deep?.decision,
+        reviewedBasis: result?.deep?.decisionBasis,
+        currentBasis: decisionBasis({ ...entry, targetProfit: result?.dealer?.targetProfit }),
+      });
+      return { ...entry, verdict: action };
+    });
+    return NextResponse.json({ entries: checkedEntries }, { status: 200 });
   } catch (error) {
     console.error("market-analysis/saved: list failed", error);
     return NextResponse.json(
@@ -101,7 +118,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Ungültige Anfrage." }, { status: 400 });
   }
 
-  const result = body?.result;
+  const result = withMarketEvidence(body?.result);
   // Ads analysed from pasted text have no link; their stable key stands in.
   const listingUrl = String(
     result?.target?.listingUrl || body?.listingUrl || result?.target?.listingKey || "",
@@ -167,6 +184,7 @@ export async function POST(request) {
 }
 
 function numberOrNull(value) {
+  if (value == null || value === "") return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }

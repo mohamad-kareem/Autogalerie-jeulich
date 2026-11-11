@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/mongodb";
+import { withMarketEvidence } from "@/lib/market/evidence";
 import MarketAnalysis from "@/models/MarketAnalysis";
 
 export const runtime = "nodejs";
@@ -23,7 +24,7 @@ async function guard(params) {
   return { id };
 }
 
-/** GET — one saved evaluation, complete, exactly as it was computed. */
+/** GET — one saved evaluation, with current evidence checks applied. */
 export async function GET(request, { params }) {
   const { id, error } = await guard(params);
   if (error) return error;
@@ -36,7 +37,17 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "Analyse nicht gefunden." }, { status: 404 });
     }
 
-    return NextResponse.json({ entry }, { status: 200 });
+    const result = withMarketEvidence(entry.result);
+    const checked = result === entry.result ? entry : {
+      ...entry,
+      result,
+      verdict: result.verdict,
+      confidence: result.confidence,
+      marketValue: result.market.marketValue,
+      maximumPurchasePrice: result.dealer?.maximumPurchasePrice ?? null,
+      expectedProfit: result.dealer?.expectedProfit ?? null,
+    };
+    return NextResponse.json({ entry: checked }, { status: 200 });
   } catch (err) {
     console.error("market-analysis/saved/[id]: load failed", err);
     return NextResponse.json(

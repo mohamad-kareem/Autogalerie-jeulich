@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { FiCamera, FiX, FiFilter } from "react-icons/fi";
-import { ArrowLeft } from "lucide-react";
 import WaitingLounge from "@/app/(components)/helpers/WaitingLounge";
 
 const carBrands = [
@@ -109,10 +108,10 @@ export default function KeysPage() {
   // ---------------------------
   useEffect(() => {
     const savedTheme =
-      typeof window !== "undefined" ? localStorage.getItem("theme") : null;
+      typeof window !== "undefined" ? "light" /* portal: always light */ : null;
     const systemPrefersDark =
       typeof window !== "undefined" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches;
+      false;
 
     const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
     setDarkMode(isDark);
@@ -805,19 +804,26 @@ export default function KeysPage() {
       )}
     >
       <div className="mx-auto w-full max-w-[1200px] lg:max-w-[1400px]">
+        <header className="ind-plate mb-4 flex items-center gap-3 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="ind-title">Schlüssel</h1>
+            <p className="text-[12px] text-muted">Schlüsselbrett und Fahrzeugzuordnung</p>
+          </div>
+        </header>
+
         {/* Brand filter */}
         <section className="mb-5 sm:mb-6">
-          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-3 sm:gap-4 md:gap-5 lg:gap-6 mt-5">
+          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
             {carBrands.map((brand) => (
               <button
                 key={brand.name}
                 onClick={() => handleFilterBrand(brand.name)}
                 className={cx(
-                  "flex flex-col items-center justify-center rounded-xl border px-2 py-2.5 sm:px-2.5 sm:py-3 md:px-3 md:py-3 lg:px-4 lg:py-2 transition-all duration-150",
+                  "flex flex-col items-center justify-center rounded-[4px] border px-2 py-2.5 sm:px-2.5 sm:py-3 md:px-3 md:py-3 lg:px-4 lg:py-2 transition-all duration-150",
                   filterBrand === brand.name
                     ? darkMode
                       ? "border-sky-500 bg-sky-900/40 shadow-md shadow-sky-900/40"
-                      : "border-sky-500 bg-sky-100 shadow-md"
+                      : "border-[#3e454e] bg-[#e9ecef] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]"
                     : darkMode
                       ? "border-slate-700 bg-slate-800 hover:border-blue-400 hover:shadow-sm"
                       : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm",
@@ -865,7 +871,6 @@ export default function KeysPage() {
             )}
             aria-label="Zum Dashboard"
           >
-            <ArrowLeft className="h-4 w-4 mr-1" />
             Dashboard
           </Link>
 

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Neue Angebote — the newest cars on AutoScout24, Kleinanzeigen and mobile.de,
+ * Fahrzeug-Radar (route /neue-angebote) — the newest cars on AutoScout24, Kleinanzeigen and mobile.de,
  * as they become discoverable in portal search results.
  *
  * While this page is open and online it asks the server every 3–120 seconds for the
@@ -24,26 +24,28 @@ import { toast } from "react-hot-toast";
 import {
   FiBell,
   FiBellOff,
-  FiChevronDown,
-  FiChevronUp,
+  FiAlertTriangle,
+  FiCheck,
+  FiEdit2,
   FiExternalLink,
   FiEyeOff,
-  FiFilter,
   FiLoader,
   FiMail,
   FiMapPin,
-  FiMenu,
   FiPause,
   FiPhone,
   FiPlay,
   FiRefreshCw,
+  FiRotateCcw,
+  FiSearch,
+  FiSliders,
   FiTrash2,
   FiVolume2,
   FiVolumeX,
+  FiX,
   FiZap,
 } from "react-icons/fi";
 
-import { useSidebar } from "@/app/(components)/SidebarContext";
 import {
   BODIES,
   DEFAULT_FILTERS,
@@ -63,6 +65,9 @@ import { createChime, notifyArrivals } from "@/lib/feed/alerts";
 import { nextCheckDelay } from "@/lib/feed/polling";
 import { KA_CYCLE_MS, KA_DEFAULT_LANDING_MS, nextKaCheck, observeKa } from "@/lib/feed/kaCycle";
 import PageLoader from "@/app/(components)/helpers/PageLoader";
+
+// The name shown in the page title, the browser tab and the test message.
+const PAGE_NAME = "Fahrzeug-Radar";
 
 const FILTER_STORE = "neueAngebote.filters.v1";
 const SETTINGS_STORE = "neueAngebote.settings.v1";
@@ -178,18 +183,25 @@ const playAlertSound = () => chime().then((played) => {
 
 /* ------------------------------------------------------------------- UI bits */
 
+/** Small caps heading with a hairline, one per filter column. */
+function ColumnTitle({ children }) {
+  return (
+    <div className="mb-3 flex items-center gap-2.5">
+      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#5d6671]">{children}</span>
+      <span className="h-px flex-1 bg-line" />
+    </div>
+  );
+}
+
 /**
  * A labelled field. `group` for several controls (chips, two inputs): a
  * <label> may only name one control, so those become a named group instead.
  */
-/**
- * A labelled field. `group` for several controls (chips, two inputs): a
- * <label> may only name one control, so those become a named group instead.
- */
-function Field({ label, children, dark, group = false, className = "" }) {
+function Field({ label, aside, children, group = false, className = "" }) {
   const caption = (
-    <span className={`mb-1.5 block text-[10.5px] font-semibold uppercase tracking-wider ${dark ? "text-slate-500" : "text-slate-400"}`}>
+    <span className="mb-1.5 flex items-baseline justify-between gap-2 text-[12px] font-medium text-ink">
       {label}
+      {aside ? <span className="text-[11px] font-normal text-muted">{aside}</span> : null}
     </span>
   );
   if (group) {
@@ -208,123 +220,189 @@ function Field({ label, children, dark, group = false, className = "" }) {
   );
 }
 
-const boxClass = (dark) =>
-  `rounded-md border transition focus-within:ring-2 ${
-    dark
-      ? "border-slate-700 bg-slate-900 focus-within:border-slate-500 focus-within:ring-slate-500/20"
-      : "border-slate-300 bg-white focus-within:border-slate-400 focus-within:ring-slate-900/5"
-  }`;
-
-/** From–to in one box: "von | bis  €". */
-function RangeInputs({ from, to, onFrom, onTo, dark, suffix, label = "" }) {
-  const input = `h-8 w-full min-w-0 bg-transparent px-2.5 text-[13px] tabular-nums outline-none ${
-    dark ? "placeholder:text-slate-600" : "placeholder:text-slate-400"
-  }`;
+/** One row of the "Eckdaten" column: name and unit on the left, von – bis on the right. */
+function RangeRow({ label, unit, from, to, onFrom, onTo, placeholders = ["von", "bis"] }) {
   return (
-    <div className={`flex items-center ${boxClass(dark)}`}>
-      <input inputMode="numeric" aria-label={`${label} von`} value={from} onChange={(e) => onFrom(e.target.value)} placeholder="von" className={input} />
-      <span className={`h-4 w-px shrink-0 ${dark ? "bg-slate-700" : "bg-slate-200"}`} />
-      <input inputMode="numeric" aria-label={`${label} bis`} value={to} onChange={(e) => onTo(e.target.value)} placeholder="bis" className={input} />
-      {suffix ? <span className={`hidden shrink-0 pr-2.5 text-[11px] sm:inline ${dark ? "text-slate-500" : "text-slate-400"}`}>{suffix}</span> : null}
+    <div role="group" aria-label={label} className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-3">
+      <span className="text-[12px] font-medium leading-tight text-ink">
+        {label}
+        <span className="block text-[11px] font-normal text-muted">{unit}</span>
+      </span>
+      <div className="flex items-center gap-1.5">
+        <input
+          inputMode="numeric"
+          aria-label={`${label} von`}
+          value={from}
+          onChange={(e) => onFrom(e.target.value)}
+          placeholder={placeholders[0]}
+          className="field h-8 min-w-0 flex-1 tabular-nums"
+        />
+        <span className="shrink-0 text-[12px] text-muted">–</span>
+        <input
+          inputMode="numeric"
+          aria-label={`${label} bis`}
+          value={to}
+          onChange={(e) => onTo(e.target.value)}
+          placeholder={placeholders[1]}
+          className="field h-8 min-w-0 flex-1 tabular-nums"
+        />
+      </div>
     </div>
   );
 }
 
-function Toggle({ active, onClick, children, dark }) {
+/** A choice chip: hairline when off, dark steel with a tick when on. */
+function Chip({ active, onClick, children }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`h-7 rounded-md border px-2.5 text-[12px] font-medium transition ${
+      className={`inline-flex h-7 items-center gap-1.5 rounded-[3px] border px-2.5 text-[12px] font-medium transition-colors ${
         active
-          ? dark
-            ? "border-slate-200 bg-slate-100 text-slate-900"
-            : "border-slate-900 bg-slate-900 text-white"
-          : dark
-            ? "border-slate-700 text-slate-300 hover:border-slate-500"
-            : "border-slate-200 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-900"
+          ? "border-[#2f353c] bg-[#3e454e] text-white"
+          : "border-[#cfd4da] bg-white text-body hover:border-[#8d959f] hover:text-ink"
       }`}
     >
+      {active ? <FiCheck className="size-3 shrink-0" /> : null}
       {children}
     </button>
   );
 }
 
-function FilterPanel({ draft, setDraft, dark, onApply, running }) {
+/** Exclusive options as one joined steel switch, full width. */
+function Choice({ value, onChange, options, label }) {
+  return (
+    <div role="radiogroup" aria-label={label} className="ind-seg flex w-full overflow-hidden">
+      {options.map((option) => (
+        <button
+          key={option.id}
+          type="button"
+          role="radio"
+          aria-checked={value === option.id}
+          onClick={() => onChange(option.id)}
+          className={`ind-seg-btn ind-seg-sm flex-1 justify-center ${value === option.id ? "ind-seg-on" : ""}`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** How many filters narrow the search (portals and the damage switch not counted). */
+function activeFilterCount(f) {
+  const has = (value) => String(value ?? "").trim() !== "";
+  return [
+    has(f.priceMin) || has(f.priceMax),
+    has(f.kmMin) || has(f.kmMax),
+    has(f.yearMin) || has(f.yearMax),
+    has(f.powerMin) || has(f.powerMax),
+    has(f.make),
+    f.gearbox && f.gearbox !== "ANY",
+    (f.fuels || []).length > 0,
+    (f.bodies || []).length > 0,
+    f.seller && f.seller !== "ALL",
+    Number(f.radius) > 0 && String(f.zip || "").length === 5,
+  ].filter(Boolean).length;
+}
+
+function FilterPanel({ draft, setDraft, onApply, onCancel }) {
   const set = (field) => (value) => setDraft((current) => ({ ...current, [field]: value }));
   const toggleIn = (field, id) =>
     setDraft((current) => {
       const list = current[field] || [];
       return { ...current, [field]: list.includes(id) ? list.filter((entry) => entry !== id) : [...list, id] };
     });
-  const control = `h-8 w-full bg-transparent px-2.5 text-[13px] outline-none ${dark ? "text-slate-100" : "text-slate-800"}`;
-  const muted = dark ? "text-slate-400" : "text-slate-500";
+  const count = activeFilterCount(draft);
+  const kaSearches = draft.sources.includes("KLEINANZEIGEN") ? kleinanzeigenSearchCount(draft) : 1;
 
   return (
     <form
+      className="flex min-h-0 flex-1 flex-col"
       onSubmit={(event) => {
         event.preventDefault();
         onApply();
       }}
     >
-      <div className="grid grid-cols-2 gap-x-3 gap-y-3.5 px-4 pt-4 sm:gap-x-4 lg:grid-cols-4">
-        <Field label="Preis" dark={dark} group>
-          <RangeInputs dark={dark} label="Preis" from={draft.priceMin} to={draft.priceMax} onFrom={set("priceMin")} onTo={set("priceMax")} suffix="€" />
-        </Field>
-        <Field label="Kilometerstand" dark={dark} group>
-          <RangeInputs dark={dark} label="Kilometerstand" from={draft.kmMin} to={draft.kmMax} onFrom={set("kmMin")} onTo={set("kmMax")} suffix="km" />
-        </Field>
-        <Field label="Erstzulassung" dark={dark} group>
-          <RangeInputs dark={dark} label="Erstzulassung" from={draft.yearMin} to={draft.yearMax} onFrom={set("yearMin")} onTo={set("yearMax")} suffix="Jahr" />
-        </Field>
-        <Field label="Leistung" dark={dark} group>
-          <RangeInputs dark={dark} label="Leistung" from={draft.powerMin} to={draft.powerMax} onFrom={set("powerMin")} onTo={set("powerMax")} suffix="PS" />
-        </Field>
+      <div className="scroll-slim grid min-h-0 flex-1 divide-y divide-line overflow-y-auto lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+        {/* 1 – the car */}
+        <div className="space-y-4 p-4">
+          <ColumnTitle>Fahrzeug</ColumnTitle>
+          <Field label="Marke">
+            <div className="relative">
+              <FiSearch className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" />
+              <input
+                value={draft.make}
+                onChange={(e) => set("make")(e.target.value)}
+                placeholder="Alle Marken"
+                className="field h-8 pl-8"
+              />
+            </div>
+          </Field>
+          <Field label="Getriebe" group>
+            <Choice label="Getriebe" value={draft.gearbox} onChange={set("gearbox")} options={GEARBOXES} />
+          </Field>
+          <Field label="Kraftstoff" aside={draft.fuels.length ? null : "alle"} group>
+            <div className="flex flex-wrap gap-1.5">
+              {FUELS.map((fuel) => (
+                <Chip key={fuel.id} active={draft.fuels.includes(fuel.id)} onClick={() => toggleIn("fuels", fuel.id)}>
+                  {fuel.label}
+                </Chip>
+              ))}
+            </div>
+          </Field>
+          <Field label="Fahrzeugtyp" aside={draft.bodies.length ? null : "alle"} group>
+            <div className="flex flex-wrap gap-1.5">
+              {BODIES.map((body) => (
+                <Chip key={body.id} active={draft.bodies.includes(body.id)} onClick={() => toggleIn("bodies", body.id)}>
+                  {body.label}
+                </Chip>
+              ))}
+            </div>
+          </Field>
+        </div>
 
-        <Field label="Marke" dark={dark}>
-          <div className={boxClass(dark)}>
-            <input value={draft.make} onChange={(e) => set("make")(e.target.value)} placeholder="Alle Marken" className={control} />
+        {/* 2 – the numbers */}
+        <div className="p-4">
+          <ColumnTitle>Eckdaten</ColumnTitle>
+          <div className="space-y-2.5">
+            <RangeRow label="Preis" unit="Euro" from={draft.priceMin} to={draft.priceMax} onFrom={set("priceMin")} onTo={set("priceMax")} />
+            <RangeRow label="Kilometer" unit="km" from={draft.kmMin} to={draft.kmMax} onFrom={set("kmMin")} onTo={set("kmMax")} />
+            <RangeRow label="Erstzulassung" unit="Jahr" from={draft.yearMin} to={draft.yearMax} onFrom={set("yearMin")} onTo={set("yearMax")} />
+            <RangeRow label="Leistung" unit="PS" from={draft.powerMin} to={draft.powerMax} onFrom={set("powerMin")} onTo={set("powerMax")} />
           </div>
-        </Field>
-        <Field label="Getriebe" dark={dark}>
-          <div className={boxClass(dark)}>
-            <select value={draft.gearbox} onChange={(e) => set("gearbox")(e.target.value)} className={control}>
-              {GEARBOXES.map((entry) => (
-                <option key={entry.id} value={entry.id}>{entry.id === "ANY" ? "Alle" : entry.label}</option>
-              ))}
-            </select>
-          </div>
-        </Field>
-        <Field label="Anbieter" dark={dark}>
-          <div className={boxClass(dark)}>
-            <select value={draft.seller} onChange={(e) => set("seller")(e.target.value)} className={control}>
-              {SELLERS.map((entry) => (
-                <option key={entry.id} value={entry.id}>{entry.id === "ALL" ? "Privat und Händler" : entry.label}</option>
-              ))}
-            </select>
-          </div>
-        </Field>
-        <Field label="Standort" dark={dark} group className="col-span-2 sm:col-span-1">
-          <div className={`flex items-center ${boxClass(dark)}`}>
-            <select
-              aria-label="Suchgebiet"
-              value={Number(draft.radius) || 0}
-              onChange={(e) => set("radius")(Number(e.target.value))}
-              className={
-                Number(draft.radius)
-                  ? `h-8 w-[7.5rem] shrink-0 bg-transparent px-2.5 text-[13px] outline-none ${dark ? "text-slate-100" : "text-slate-800"}`
-                  : control
-              }
+          <div className="mt-4 border-t border-line pt-3.5">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={draft.hideDamaged}
+              onClick={() => set("hideDamaged")(!draft.hideDamaged)}
+              className={`ind-toggle ${draft.hideDamaged ? "ind-toggle-on" : ""}`}
             >
-              <option value={0}>Ganz Deutschland</option>
-              {RADII.map((radius) => (
-                <option key={radius} value={radius}>{radius} km um</option>
-              ))}
-            </select>
-            {Number(draft.radius) ? (
-              <>
-                <span className={`h-4 w-px shrink-0 ${dark ? "bg-slate-700" : "bg-slate-200"}`} />
+              <span className="ind-toggle-box" />
+              Unfall- und Defektfahrzeuge ausblenden
+            </button>
+          </div>
+        </div>
+
+        {/* 3 – where to look */}
+        <div className="space-y-4 p-4">
+          <ColumnTitle>Suchgebiet & Quellen</ColumnTitle>
+          <Field label="Standort" group>
+            <div className="flex items-center gap-1.5">
+              <select
+                aria-label="Suchgebiet"
+                value={Number(draft.radius) || 0}
+                onChange={(e) => set("radius")(Number(e.target.value))}
+                className={`field h-8 ${Number(draft.radius) ? "w-[8.5rem] shrink-0" : ""}`}
+              >
+                <option value={0}>Ganz Deutschland</option>
+                {RADII.map((radius) => (
+                  <option key={radius} value={radius}>{radius} km um</option>
+                ))}
+              </select>
+              {Number(draft.radius) ? (
                 <input
                   inputMode="numeric"
                   maxLength={5}
@@ -332,82 +410,113 @@ function FilterPanel({ draft, setDraft, dark, onApply, running }) {
                   onChange={(e) => set("zip")(e.target.value.replace(/\D/g, ""))}
                   placeholder="PLZ"
                   aria-label="Postleitzahl"
-                  className={`${control} min-w-0 flex-1 tabular-nums`}
+                  className="field h-8 min-w-0 flex-1 tabular-nums"
                 />
-              </>
+              ) : null}
+            </div>
+            {Number(draft.radius) && draft.zip.length < 5 ? (
+              <p className="mt-1 text-[11px] text-amber-700">PLZ eingeben – sonst ganz Deutschland.</p>
             ) : null}
-          </div>
-          {Number(draft.radius) && draft.zip.length < 5 ? (
-            <p className="mt-1 text-[11px] text-amber-600">PLZ eingeben – sonst ganz Deutschland.</p>
-          ) : null}
-        </Field>
-
-        <Field label="Kraftstoff" dark={dark} group className="col-span-2">
-          <div className="flex flex-wrap gap-1.5">
-            {FUELS.map((fuel) => (
-              <Toggle key={fuel.id} dark={dark} active={draft.fuels.includes(fuel.id)} onClick={() => toggleIn("fuels", fuel.id)}>
-                {fuel.label}
-              </Toggle>
-            ))}
-          </div>
-        </Field>
-        <Field label="Fahrzeugtyp" dark={dark} group className="col-span-2">
-          <div className="flex flex-wrap gap-1.5">
-            {BODIES.map((body) => (
-              <Toggle key={body.id} dark={dark} active={draft.bodies.includes(body.id)} onClick={() => toggleIn("bodies", body.id)}>
-                {body.label}
-              </Toggle>
-            ))}
-          </div>
-        </Field>
+          </Field>
+          <Field label="Anbieter" group>
+            <Choice label="Anbieter" value={draft.seller} onChange={set("seller")} options={SELLERS} />
+          </Field>
+          <Field label="Portale" group>
+            <div className="overflow-hidden rounded-[4px] border border-[#cfd4da]">
+              {SOURCES.map((source) => {
+                const on = draft.sources.includes(source.id);
+                return (
+                  <button
+                    key={source.id}
+                    type="button"
+                    role="checkbox"
+                    aria-checked={on}
+                    onClick={() => toggleIn("sources", source.id)}
+                    className={`flex h-8 w-full items-center gap-2.5 border-b border-line px-2.5 text-left text-[12.5px] last:border-b-0 ${
+                      on ? "bg-white font-medium text-ink" : "bg-[#f6f7f9] text-muted"
+                    } hover:bg-[#eef0f3]`}
+                  >
+                    <span className="ind-lamp" style={{ "--lamp": on ? "#22a35a" : "#b7bdc5" }} />
+                    <span className="flex-1">{source.label}</span>
+                    <span className="text-[11px] font-normal text-muted">{on ? "aktiv" : "aus"}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+        </div>
       </div>
 
-      {draft.sources.includes("KLEINANZEIGEN") && kleinanzeigenSearchCount(draft) > 1 ? (
-        <p className={`mx-4 mt-3 text-[11.5px] ${dark ? "text-amber-300" : "text-amber-700"}`}>
-          Kleinanzeigen braucht für diese Auswahl {kleinanzeigenSearchCount(draft)} Suchen pro Prüfung. Am schnellsten und
-          sichersten: eine Kraftstoffart und einen Fahrzeugtyp wählen – oder keinen.
-        </p>
-      ) : null}
-
-      <div
-        className={`mt-4 flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 ${
-          dark ? "border-slate-800" : "border-slate-100"
-        }`}
-      >
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div role="group" aria-label="Portale" className="flex flex-wrap items-center gap-1.5">
-            <span className={`mr-1 text-[10.5px] font-semibold uppercase tracking-wider ${dark ? "text-slate-500" : "text-slate-400"}`}>Portale</span>
-            {SOURCES.map((source) => (
-              <Toggle key={source.id} dark={dark} active={draft.sources.includes(source.id)} onClick={() => toggleIn("sources", source.id)}>
-                {source.label}
-              </Toggle>
-            ))}
-          </div>
-          <label className={`flex items-center gap-2 text-[12px] ${muted}`}>
-            <input type="checkbox" className="size-3.5 accent-slate-900" checked={draft.hideDamaged} onChange={(e) => set("hideDamaged")(e.target.checked)} />
-            Unfall- und Defektfahrzeuge ausblenden
-          </label>
+      {/* footer: what is set, and the two actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#c9ced5] bg-[#f6f7f9] px-4 py-2.5">
+        <div className="min-w-0 text-[12px] text-muted">
+          {count ? (
+            <span>
+              <span className="font-semibold text-ink">{count}</span> Filter gesetzt
+            </span>
+          ) : (
+            <span>Keine Einschränkung – alle Fahrzeuge</span>
+          )}
+          {kaSearches > 1 ? (
+            <span className="mt-0.5 flex items-center gap-1.5 text-amber-700">
+              <FiAlertTriangle className="size-3.5 shrink-0" />
+              Kleinanzeigen braucht {kaSearches} Suchen pro Prüfung – schneller mit einer Kraftstoffart und einem Fahrzeugtyp.
+            </span>
+          ) : null}
         </div>
-
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setDraft({ ...DEFAULT_FILTERS })}
-            className={`h-8 rounded-md px-3 text-[12px] font-medium ${dark ? "text-slate-400 hover:bg-slate-800 hover:text-slate-200" : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"}`}
-          >
-            Zurücksetzen
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => setDraft({ ...DEFAULT_FILTERS })} className="btn btn-secondary">
+            <FiRotateCcw /> Zurücksetzen
           </button>
-          <button
-            type="submit"
-            className={`inline-flex h-8 items-center gap-1.5 rounded-md px-3.5 text-[12px] font-semibold ${
-              dark ? "bg-slate-100 text-slate-900 hover:bg-white" : "bg-slate-900 text-white hover:bg-slate-700"
-            }`}
-          >
-            {running ? "Übernehmen" : <><FiPlay className="size-3" /> Live-Suche starten</>}
+          <button type="button" onClick={onCancel} className="btn btn-secondary">
+            Abbrechen
+          </button>
+          <button type="submit" className="btn btn-primary">
+            <FiCheck /> Übernehmen
           </button>
         </div>
       </div>
     </form>
+  );
+}
+
+/**
+ * The filter as its own window over the page. Escape, the ✕, "Abbrechen" or a
+ * click beside it close it without changing the running search.
+ */
+function FilterWindow({ open, onClose, ...panel }) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (event) => event.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = overflow;
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center sm:p-6">
+      <button type="button" aria-label="Schließen" onClick={onClose} className="absolute inset-0 cursor-default bg-navy-950/40" />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Suchfilter"
+        className="animate-pop-in relative flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-t-[6px] border border-[#a9b0b9] bg-white shadow-float sm:max-h-[86dvh] sm:rounded-[4px]"
+      >
+        <div className="ind-toolbar flex shrink-0 items-center gap-3 px-4 py-2.5">
+          <FiSliders className="size-4 shrink-0 text-[#5d6671]" />
+          <h2 className="flex-1 text-[14px] font-semibold text-ink">Suchfilter</h2>
+          <button type="button" onClick={onClose} className="ind-icon-btn" aria-label="Schließen" title="Schließen (Esc)">
+            <FiX className="size-4" />
+          </button>
+        </div>
+        <FilterPanel {...panel} onCancel={onClose} />
+      </div>
+    </div>
   );
 }
 
@@ -421,18 +530,18 @@ const CONDITION_SHORT = {
 };
 
 /** Small, quiet fact boxes. Colour only where it means something. */
-function factClass(tone, dark) {
-  if (tone === "bad") return dark ? "bg-red-500/10 text-red-300 ring-red-500/20" : "bg-red-50 text-red-700 ring-red-200";
-  if (tone === "warn") return dark ? "bg-amber-500/10 text-amber-300 ring-amber-500/20" : "bg-amber-50 text-amber-800 ring-amber-200";
-  if (tone === "unknown") return dark ? "bg-slate-800/60 text-slate-500 ring-slate-700" : "bg-slate-50 text-slate-400 ring-slate-200";
-  return dark ? "bg-slate-800 text-slate-200 ring-slate-700" : "bg-white text-slate-700 ring-slate-200";
-}
+const FACT_TONE = {
+  bad: "bg-rose-50 text-rose-700 ring-rose-600/15",
+  warn: "bg-amber-50 text-amber-800 ring-amber-600/15",
+  unknown: "bg-white text-muted ring-black/[0.08]",
+  neutral: "bg-slate-100 text-slate-700 ring-black/[0.08]",
+};
 
-const TONE_DOT = { good: "bg-emerald-500", warn: "bg-amber-500", bad: "bg-red-500", neutral: "bg-slate-400", unknown: "bg-slate-300" };
+const TONE_DOT = { good: "bg-emerald-500", warn: "bg-amber-500", bad: "bg-rose-500", neutral: "bg-slate-400", unknown: "bg-slate-300" };
 
-function FactBox({ tone = "neutral", dark, children, dot = true }) {
+function FactBox({ tone = "neutral", children, dot = true }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded px-2 py-[3px] text-[11.5px] font-medium ring-1 ring-inset ${factClass(tone, dark)}`}>
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-[3px] px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${FACT_TONE[tone] || FACT_TONE.neutral}`}>
       {dot ? <span className={`size-1.5 rounded-full ${TONE_DOT[tone] || TONE_DOT.neutral}`} /> : null}
       {children}
     </span>
@@ -444,26 +553,21 @@ function FactBox({ tone = "neutral", dark, children, dot = true }) {
  * whatever in the ad text should stop a buyer, and what speaks for the car.
  * Read from the ad page once the car has arrived, or on request.
  */
-function CardFacts({ item, dark, onLoad }) {
+function CardFacts({ item, onLoad }) {
   const d = item.details;
-  const muted = dark ? "text-slate-400" : "text-slate-500";
 
   if (!d) {
     if (item.detailsState === "loading") {
       return (
         <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Details werden geladen">
           {[64, 72, 56, 80].map((width) => (
-            <span key={width} style={{ width }} className={`h-[22px] animate-pulse rounded ${dark ? "bg-slate-800" : "bg-slate-100"}`} />
+            <span key={width} style={{ width }} className="h-[22px] animate-pulse rounded-[3px] bg-slate-100" />
           ))}
         </div>
       );
     }
     return (
-      <button
-        type="button"
-        onClick={() => onLoad(item)}
-        className="mt-3 self-start text-[12px] font-medium text-sky-700 hover:underline"
-      >
+      <button type="button" onClick={() => onLoad(item)} className="link mt-3 self-start text-[12px]">
         {item.detailsState === "error" ? "Details nicht lesbar – erneut versuchen" : "HU, Unfall und Halter laden"}
       </button>
     );
@@ -475,21 +579,21 @@ function CardFacts({ item, dark, onLoad }) {
   return (
     <div className="mt-3 flex flex-col gap-1.5">
       <div className="flex flex-wrap gap-1.5">
-        <FactBox dark={dark} tone={d.hu.tone}>{huText}</FactBox>
-        <FactBox dark={dark} tone={d.condition.tone}>{CONDITION_SHORT[d.condition.label] || d.condition.label}</FactBox>
-        <FactBox dark={dark} tone={d.owners?.tone || "unknown"}>{d.owners ? d.owners.label : "Halter ?"}</FactBox>
+        <FactBox tone={d.hu.tone}>{huText}</FactBox>
+        <FactBox tone={d.condition.tone}>{CONDITION_SHORT[d.condition.label] || d.condition.label}</FactBox>
+        <FactBox tone={d.owners?.tone || "unknown"}>{d.owners ? d.owners.label : "Halter ?"}</FactBox>
         {d.usage ? (
-          <FactBox dark={dark} tone={d.usage.level === "VERY_HIGH" ? "warn" : "neutral"} dot={false}>
+          <FactBox tone={d.usage.level === "VERY_HIGH" ? "warn" : "neutral"} dot={false}>
             {d.usage.label.replace("/Jahr", " / Jahr")}
           </FactBox>
         ) : null}
         {d.redFlags.map((flag) => (
-          <FactBox key={flag} dark={dark} tone="bad">{flag}</FactBox>
+          <FactBox key={flag} tone="bad">{flag}</FactBox>
         ))}
       </div>
       {plus.length || d.equipment.length ? (
-        <p className={`text-[12px] leading-5 ${muted}`}>
-          {plus.length ? <span className={dark ? "text-slate-300" : "text-slate-600"}>{plus.join(" · ")}</span> : null}
+        <p className="text-[12px] leading-5 text-muted">
+          {plus.length ? <span className="text-body">{plus.join(" · ")}</span> : null}
           {plus.length && d.equipment.length ? <span className="mx-2 opacity-50">|</span> : null}
           {d.equipment.length ? d.equipment.join(", ") : null}
         </p>
@@ -499,13 +603,11 @@ function CardFacts({ item, dark, onLoad }) {
 }
 
 /** The seller's phone and e-mail, when he published them in the ad. */
-function SellerContact({ contact, dark }) {
+function SellerContact({ contact }) {
   if (!contact || (!contact.phones?.length && !contact.email)) return null;
-  const link = `inline-flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[12.5px] font-medium transition ${
-    dark ? "text-emerald-300 hover:bg-emerald-500/10" : "text-emerald-700 hover:bg-emerald-50"
-  }`;
+  const link = "link inline-flex min-w-0 items-center gap-1.5 text-[12.5px]";
   return (
-    <div className="-ml-1.5 mt-1 flex flex-wrap items-center gap-x-1 gap-y-0.5">
+    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
       {(contact.phones || []).map((phone) => (
         <a key={phone} href={`tel:${phone.replace(/[^\d+]/g, "")}`} className={`${link} tabular-nums`} title="Anrufen">
           <FiPhone className="size-3.5 shrink-0" />
@@ -522,12 +624,10 @@ function SellerContact({ contact, dark }) {
   );
 }
 
-const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadDetails, latest = false }) {
+const ListingCard = memo(function ListingCard({ item, now, onHide, onLoadDetails, latest = false }) {
   const source = SOURCES.find((entry) => entry.id === item.source);
   const sellerType =
     item.details?.sellerType && item.details.sellerType !== "UNKNOWN" ? item.details.sellerType : item.sellerType;
-  const muted = dark ? "text-slate-400" : "text-slate-500";
-  const strong = dark ? "text-slate-100" : "text-slate-900";
 
   // First registration and kilometres lead; the rest follows quieter.
   const lead = [
@@ -554,44 +654,38 @@ const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadD
     ? item.rating.tone === "good"
       ? "text-emerald-700"
       : item.rating.tone === "bad"
-        ? "text-red-600"
-        : muted
+        ? "text-rose-700"
+        : "text-muted"
     : "";
 
   return (
     <article
-      className={`group relative grid grid-cols-[104px_minmax(0,1fr)] gap-x-4 gap-y-3 rounded-lg border p-3.5 transition sm:grid-cols-[168px_minmax(0,1fr)_150px] sm:gap-x-5 sm:gap-y-0 sm:p-4 ${
-        dark ? "bg-slate-900" : "bg-white"
-      } ${
+      className={`group relative grid grid-cols-[104px_minmax(0,1fr)] gap-x-4 gap-y-3 rounded-[4px] border bg-white p-3.5 transition-colors sm:grid-cols-[168px_minmax(0,1fr)_150px] sm:gap-x-5 sm:gap-y-0 sm:p-4 ${
         latest
-          ? dark ? "border-slate-600 shadow-[0_1px_0_rgba(0,0,0,0.3)]" : "border-slate-300 shadow-[0_1px_3px_rgba(15,23,42,0.08)]"
-          : dark ? "border-slate-800" : "border-slate-200"
-      } ${dark ? "hover:border-slate-600" : "hover:border-slate-300"}`}
+          ? "border-[#7d8690] shadow-[0_1px_3px_rgba(20,26,33,0.14)]"
+          : "border-[#b4bbc4] shadow-[0_1px_2px_rgba(20,26,33,0.06)] hover:border-[#8d959f]"
+      }`}
     >
       {/* photo */}
       <a
         href={item.url}
         target="_blank"
         rel="noopener noreferrer"
-        className={`relative block aspect-[4/3] self-start overflow-hidden rounded-md sm:row-span-2 ${dark ? "bg-slate-800" : "bg-slate-100"}`}
+        className="relative block aspect-[4/3] self-start overflow-hidden rounded-[3px] bg-canvas sm:row-span-2"
       >
         {item.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.image} alt="" loading="lazy" referrerPolicy="no-referrer" className="size-full object-cover" />
         ) : (
-          <div className={`flex size-full items-center justify-center text-[11px] ${muted}`}>kein Bild</div>
+          <div className="flex size-full items-center justify-center text-[11px] text-muted">kein Bild</div>
         )}
       </a>
 
       {/* the car */}
       <div className="min-w-0">
-        <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 pr-6 text-[11px] ${muted}`}>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pr-6 text-[11px] text-muted">
           {item.isNew ? (
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset ${
-                dark ? "text-emerald-300 ring-emerald-500/30" : "text-emerald-700 ring-emerald-600/25"
-              }`}
-            >
+            <span className="inline-flex items-center gap-1 rounded-[3px] bg-emerald-50 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-emerald-700 ring-1 ring-inset ring-emerald-600/15">
               <span className={`size-1 rounded-full bg-emerald-500 ${latest ? "animate-pulse" : ""}`} />
               {"Neu gefunden"}
             </span>
@@ -601,7 +695,7 @@ const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadD
           <span title="Portal-Zeit: Zeitangabe im Suchergebnis, ursprüngliche Veröffentlichung nicht verifiziert. Gefunden: erstmals von dieser Suche erkannt.">{when}</span>
         </div>
 
-        <h3 className={`mt-1 line-clamp-2 text-[15px] font-semibold leading-snug sm:line-clamp-1 ${strong}`}>
+        <h3 className="mt-1 line-clamp-2 text-[15px] font-semibold leading-snug text-ink sm:line-clamp-1">
           <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
             {item.title}
           </a>
@@ -609,15 +703,15 @@ const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadD
 
         <div className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
           {lead.map((entry, index) => (
-            <span key={index} className={`text-[14px] font-semibold tabular-nums ${strong}`}>
-              {entry.label ? <span className={`mr-1 text-[11px] font-medium ${muted}`}>{entry.label}</span> : null}
+            <span key={index} className="text-[14px] font-semibold tabular-nums text-ink">
+              {entry.label ? <span className="mr-1 text-[11px] font-medium text-muted">{entry.label}</span> : null}
               {entry.value}
             </span>
           ))}
-          {rest.length ? <span className={`text-[13px] ${muted}`}>{rest.join(" · ")}</span> : null}
+          {rest.length ? <span className="text-[13px] text-muted">{rest.join(" · ")}</span> : null}
         </div>
 
-        <p className={`mt-1 flex min-w-0 items-center gap-1 text-[12px] ${muted}`}>
+        <p className="mt-1 flex min-w-0 items-center gap-1 text-[12px] text-muted">
           {item.location ? (
             <>
               <FiMapPin className="shrink-0" />
@@ -631,21 +725,21 @@ const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadD
           {seller ? <span className="shrink-0">{seller}</span> : null}
         </p>
 
-        <SellerContact contact={item.details?.contact} dark={dark} />
+        <SellerContact contact={item.details?.contact} />
       </div>
 
       {/* facts: full width on a phone, under the car on a wider screen */}
       <div className="col-span-2 -mt-1 flex min-w-0 flex-col sm:col-span-1 sm:col-start-2 sm:mt-0">
-        <CardFacts item={item} dark={dark} onLoad={onLoadDetails} />
+        <CardFacts item={item} onLoad={onLoadDetails} />
       </div>
 
       {/* price and actions */}
       <div className="col-span-2 flex items-end justify-between gap-3 sm:col-span-1 sm:col-start-3 sm:row-span-2 sm:row-start-1 sm:flex-col sm:items-end sm:justify-between">
         <div className="shrink-0 sm:text-right">
-          <div className={`whitespace-nowrap text-[19px] font-bold tabular-nums leading-tight ${strong}`}>{euro(item.price)}</div>
+          <div className="whitespace-nowrap text-[19px] font-bold tabular-nums leading-tight text-ink">{euro(item.price)}</div>
           <div className="mt-0.5 text-[11px]">
-            {item.priceNote ? <span className={muted}>{item.priceNote}</span> : null}
-            {item.priceNote && item.rating ? <span className={`mx-1 ${muted}`}>·</span> : null}
+            {item.priceNote ? <span className="text-muted">{item.priceNote}</span> : null}
+            {item.priceNote && item.rating ? <span className="mx-1 text-muted">·</span> : null}
             {item.rating ? <span className={`font-medium ${ratingColor}`}>{item.rating.label}</span> : null}
           </div>
         </div>
@@ -656,21 +750,12 @@ const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadD
             target="_blank"
             rel="noopener noreferrer"
             title="Ankaufs-Check in neuem Tab"
-            className={`inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md px-2 text-[12px] font-medium ${
-              dark ? "text-slate-300 hover:bg-slate-800" : "text-slate-600 hover:bg-slate-100"
-            }`}
+            className="btn btn-sm btn-secondary"
           >
-            <FiZap className="size-3" /> Check
+            <FiZap /> Check
           </a>
-          <a
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md px-2.5 text-[12px] font-semibold ${
-              dark ? "bg-slate-100 text-slate-900 hover:bg-white" : "bg-slate-900 text-white hover:bg-slate-700"
-            }`}
-          >
-            Öffnen <FiExternalLink className="size-3" />
+          <a href={item.url} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-primary">
+            Öffnen <FiExternalLink />
           </a>
         </div>
       </div>
@@ -680,9 +765,7 @@ const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadD
         onClick={() => onHide(item.key)}
         title="Ausblenden"
         aria-label="Ausblenden"
-        className={`absolute right-2 top-2 rounded p-1 transition sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 ${
-          dark ? "text-slate-500 hover:bg-slate-800 hover:text-slate-200" : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-        }`}
+        className="absolute right-2 top-2 rounded-[3px] p-1 text-muted transition hover:bg-canvas hover:text-ink focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
       >
         <FiEyeOff className="size-3.5" />
       </button>
@@ -691,22 +774,18 @@ const ListingCard = memo(function ListingCard({ item, dark, now, onHide, onLoadD
 });
 
 /** A section heading with its cars below, spaced as separate cards. */
-function FeedSection({ title, count, meta, dark, live = false, children }) {
+function FeedSection({ title, count, meta, live = false, children }) {
   return (
-    <section className="mb-7">
-      <header className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2 px-0.5">
-        <h2 className={`flex items-center gap-2 text-[13px] font-semibold ${dark ? "text-slate-100" : "text-slate-800"}`}>
+    <section className="mb-6">
+      <header className="mb-2 flex flex-wrap items-baseline justify-between gap-2 px-0.5">
+        <h2 className="flex items-center gap-2 text-[13px] font-semibold text-ink">
           {live ? <span className="size-1.5 translate-y-[-1px] animate-pulse rounded-full bg-emerald-500" /> : null}
           {title}
-          {Number.isFinite(count) ? (
-            <span className={`rounded-full px-1.5 text-[11px] font-medium ${dark ? "bg-slate-800 text-slate-300" : "bg-slate-200/70 text-slate-600"}`}>
-              {count}
-            </span>
-          ) : null}
+          {Number.isFinite(count) ? <span className="ind-count tabular-nums">{count}</span> : null}
         </h2>
-        {meta ? <span className={`text-[11px] ${dark ? "text-slate-500" : "text-slate-500"}`}>{meta}</span> : null}
+        {meta ? <span className="text-[11px] text-muted">{meta}</span> : null}
       </header>
-      <div className={live ? "space-y-3" : "space-y-2.5"}>{children}</div>
+      <div className="space-y-2.5">{children}</div>
     </section>
   );
 }
@@ -716,12 +795,10 @@ function FeedSection({ title, count, meta, dark, live = false, children }) {
 export default function NeueAngebotePage() {
   const { status } = useSession();
   const router = useRouter();
-  const { openSidebar } = useSidebar();
 
-  const [dark, setDark] = useState(false);
   const [draft, setDraft] = useState(() => ({ ...DEFAULT_FILTERS }));
   const [applied, setApplied] = useState(null);
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
 
   const [running, setRunning] = useState(false);
   const [pageOnline, setPageOnline] = useState(true);
@@ -794,8 +871,6 @@ export default function NeueAngebotePage() {
 
   /* restore settings */
   useEffect(() => {
-    const theme = localStorage.getItem("theme");
-    setDark(theme === "dark" || (!theme && window.matchMedia("(prefers-color-scheme: dark)").matches));
     const savedFilters = readJson(FILTER_STORE, null);
     if (savedFilters) {
       setDraft({ ...DEFAULT_FILTERS, ...savedFilters });
@@ -835,7 +910,7 @@ export default function NeueAngebotePage() {
 
   /* unread count in the tab title, cleared when the tab is looked at */
   useEffect(() => {
-    const base = "Neue Angebote";
+    const base = PAGE_NAME;
     document.title = unread > 0 ? `(${unread}) ${base}` : base;
     const clear = () => {
       if (document.visibilityState === "visible") setUnread(0);
@@ -1194,7 +1269,7 @@ export default function NeueAngebotePage() {
   }, [running, pageOnline, applied, intervalSec, checkSource, persist]);
 
   /* start with a filter: load that filter's memory, or begin a new baseline */
-  const apply = () => {
+  const apply = ({ start = running } = {}) => {
     flushSaves();
     cancelSearch();
     lastStartRef.current = {};
@@ -1229,11 +1304,39 @@ export default function NeueAngebotePage() {
     setHidden([]);
     setSources([]);
     setApplied(normalized);
-    setRunning(true);
+    startedRef.current = start;
+    setRunning(start);
+    draftAtOpenRef.current = null;
     setShowFilters(false);
     setUnread(0);
-    if (sound) void playAlertSound();
+    if (start && sound) void playAlertSound();
   };
+
+  /** The one start/pause button on the page. Without a filter it starts with the current fields. */
+  const toggleSearch = () => {
+    if (!applied) {
+      apply({ start: true });
+      return;
+    }
+    if (!running && sound) void playAlertSound();
+    if (!running) startedRef.current = true;
+    setRunning(!running);
+  };
+
+  // The filter window edits a copy: closing it without "Übernehmen" puts the
+  // fields back the way they were.
+  const draftAtOpenRef = useRef(null);
+  // Started at least once with this filter: "pausiert" instead of "nicht gestartet".
+  const startedRef = useRef(false);
+  const openFilters = () => {
+    draftAtOpenRef.current = draft;
+    setShowFilters(true);
+  };
+  const closeFilters = useCallback(() => {
+    if (draftAtOpenRef.current) setDraft(draftAtOpenRef.current);
+    draftAtOpenRef.current = null;
+    setShowFilters(false);
+  }, []);
 
   const resetFeed = () => {
     if (!key) return;
@@ -1286,16 +1389,10 @@ export default function NeueAngebotePage() {
   const earlier = fresh.filter((item) => !inLatest(item));
   const hide = useCallback((itemKey) => setHidden((list) => [...list, itemKey]), []);
 
-
   if (status === "loading") {
     return <PageLoader />;
   }
 
-  const muted = dark ? "text-slate-400" : "text-slate-500";
-  const panel = dark ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white";
-  const toolButton = `inline-flex h-7 items-center justify-center px-2 text-[12px] transition disabled:opacity-50 ${
-    dark ? "hover:bg-slate-800" : "hover:bg-slate-50"
-  }`;
   const sourceDot = (source) =>
     source.paused ? "bg-amber-500" : source.ok ? "bg-emerald-500" : source.skipped ? "bg-slate-400" : "bg-amber-500";
   const renderRows = (list, { isLatest = false } = {}) =>
@@ -1303,7 +1400,6 @@ export default function NeueAngebotePage() {
       <ListingCard
         key={item.key}
         item={item}
-        dark={dark}
         now={Math.floor(now / 60_000) * 60_000}
         latest={isLatest}
         onHide={hide}
@@ -1312,111 +1408,94 @@ export default function NeueAngebotePage() {
     ));
 
   return (
-    <main className={`min-h-screen ${dark ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"}`}>
-      <div className="mx-auto max-w-[1200px] px-3 py-5 sm:px-6">
-        {/* header */}
-        <header className="mb-5 flex flex-wrap items-start gap-3">
-          <button
-            type="button"
-            onClick={openSidebar}
-            className={`rounded-md p-2 md:hidden ${dark ? "bg-slate-900" : "bg-white shadow-sm"}`}
-            aria-label="Menü öffnen"
+    <div className="px-4 py-6 sm:px-6">
+      <div className="mx-auto max-w-[1400px]">
+        {/* filter summary (the filter itself opens as a window), with the live controls */}
+        <section className="ind-panel mb-4">
+          <div
+            className="ind-toolbar flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 sm:flex-nowrap"
           >
-            <FiMenu />
-          </button>
-          <div className="mr-auto min-w-0">
-            <h1 className="text-lg font-semibold tracking-tight">Neue Angebote</h1>
-            <p className={`mt-0.5 text-[12px] ${muted}`}>
-              Neue und passende Fahrzeuge in Deutschland · AutoScout24, Kleinanzeigen und mobile.de
-            </p>
-          </div>
-
-        </header>
-
-        {/* filters, with the live controls inside */}
-        <section className={`mb-4 rounded-lg border ${panel}`}>
-          <button
-            type="button"
-            onClick={() => setShowFilters((value) => !value)}
-            className="flex w-full items-center gap-3 px-4 py-2.5 text-left"
-            aria-expanded={showFilters}
-          >
-            <FiFilter className={muted} />
-            <span className="text-[13px] font-semibold">Suchfilter</span>
-            {!showFilters && applied ? (
-              <span className={`min-w-0 flex-1 truncate text-[12px] ${muted}`}>{describeFilters(applied)}</span>
+            <FiSliders className="size-4 shrink-0 text-[#5d6671]" />
+            <span className="shrink-0 text-[13px] font-semibold text-ink">Suchfilter</span>
+            {applied ? (
+              <button
+                type="button"
+                onClick={openFilters}
+                title="Filter bearbeiten"
+                className="order-last flex h-[22px] w-full min-w-0 flex-wrap gap-1 overflow-hidden text-left sm:order-none sm:w-auto sm:flex-1"
+              >
+                {describeFilters(applied).split(" · ").map((part) => (
+                  <span key={part} className="inline-flex h-[22px] items-center whitespace-nowrap rounded-[3px] border border-[#c9ced5] bg-white px-1.5 text-[11px] font-medium text-body">
+                    {part}
+                  </span>
+                ))}
+              </button>
             ) : (
-              <span className="flex-1" />
+              <span className="min-w-0 flex-1 truncate text-[12px] text-muted">Noch kein Filter gesetzt</span>
             )}
-            <span className={`shrink-0 text-[12px] font-medium ${showFilters ? muted : "text-sky-700"}`}>
-              {showFilters ? "Schließen" : "Bearbeiten"}
-            </span>
-            {showFilters ? <FiChevronUp className={muted} /> : <FiChevronDown className="text-sky-700" />}
-          </button>
-          {showFilters || applied ? (
-            <div className={`border-t ${dark ? "border-slate-800" : "border-slate-100"}`}>
-              {applied ? (
-                <div
-                  className={`flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2 ${
-                    dark ? "border-slate-800 bg-slate-950/30" : "border-slate-100 bg-slate-50/70"
-                  }`}
-                >
-                  <span className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${dark ? "text-slate-300" : "text-slate-600"}`}>
+            <button type="button" onClick={openFilters} className="btn btn-sm btn-secondary ml-auto shrink-0">
+              <FiEdit2 /> {applied ? "Filter bearbeiten" : "Filter festlegen"}
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-white px-4 py-2">
+                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-body">
                     <span className={`size-1.5 rounded-full ${running ? "bg-emerald-500" : "bg-slate-400"}`} />
-                    {running ? (pageOnline ? "Live-Suche läuft" : "Suche wartet – offline") : "Live-Suche pausiert"}
+                    {running ? (pageOnline ? "Live-Suche läuft" : "Suche wartet – offline") : startedRef.current ? "Live-Suche pausiert" : "Live-Suche nicht gestartet"}
                   </span>
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <div className={`flex items-center divide-x overflow-hidden rounded-md border ${dark ? "divide-slate-700 border-slate-700 bg-slate-900" : "divide-slate-200 border-slate-300 bg-white"}`}>
-                      <select
-                        value={intervalSec}
-                        onChange={(e) => setIntervalSec(Number(e.target.value))}
-                        title="Prüfintervall für alle Portale. Bei Verbindungsfehlern oder Portal-Sperren wird automatisch gewartet."
-                        aria-label="Prüfintervall"
-                        className={`h-7 bg-transparent px-2 text-[12px] outline-none ${dark ? "text-slate-100" : ""}`}
-                      >
-                        {INTERVALS.map((seconds) => (
-                          <option key={seconds} value={seconds}>{seconds === 3 ? "Live · alle 3 s" : `alle ${seconds} s`}</option>
-                        ))}
-                      </select>
-                      <button type="button" onClick={checkAll} disabled={checking} title="Jetzt prüfen" aria-label="Jetzt prüfen" className={toolButton}>
+                    <select
+                      value={intervalSec}
+                      onChange={(e) => setIntervalSec(Number(e.target.value))}
+                      title="Prüfintervall für alle Portale. Bei Verbindungsfehlern oder Portal-Sperren wird automatisch gewartet."
+                      aria-label="Prüfintervall"
+                      className="field h-7 w-auto text-[12px]"
+                    >
+                      {INTERVALS.map((seconds) => (
+                        <option key={seconds} value={seconds}>{seconds === 3 ? "Live · alle 3 s" : `alle ${seconds} s`}</option>
+                      ))}
+                    </select>
+                    <div className="ind-actions">
+                      <button type="button" onClick={checkAll} disabled={checking || !applied} title="Jetzt prüfen" aria-label="Jetzt prüfen" className="ind-act disabled:opacity-50">
                         <FiRefreshCw className={checking ? "animate-spin" : ""} />
                       </button>
-                      <button type="button" onClick={() => { if (!sound) void playAlertSound(); setSound(!sound); }} title={sound ? "Ton aus" : "Ton an"} aria-label={sound ? "Ton aus" : "Ton an"} className={toolButton}>
-                        {sound ? <FiVolume2 /> : <FiVolumeX className={muted} />}
+                      <button type="button" onClick={() => { if (!sound) void playAlertSound(); setSound(!sound); }} title={sound ? "Ton aus" : "Ton an"} aria-label={sound ? "Ton aus" : "Ton an"} className="ind-act">
+                        {sound ? <FiVolume2 /> : <FiVolumeX className="opacity-50" />}
                       </button>
-                      <button type="button" className={toolButton} title="Ton und aktivierte Desktop-Meldung testen" onClick={() => {
+                      <button type="button" className="ind-act" style={{ width: "auto", padding: "0 8px", fontSize: 12, fontWeight: 600 }} title="Ton und aktivierte Desktop-Meldung testen" onClick={() => {
                         void playAlertSound();
                         if (notify) {
                           try {
                             if (typeof Notification === "undefined" || Notification.permission !== "granted") throw new Error("Permission unavailable");
-                            new Notification("Neue Angebote · Test", { body: "Desktop-Benachrichtigungen sind aktiviert.", tag: "neue-angebote-test", silent: true });
+                            new Notification(`${PAGE_NAME} · Test`, { body: "Desktop-Benachrichtigungen sind aktiviert.", tag: "neue-angebote-test", silent: true });
                           } catch { toast.error("Desktop-Meldung blockiert. Bitte Browser- und Windows-Einstellungen prüfen."); }
                         }
                       }}>Test</button>
-                      <button type="button" onClick={askNotifications} title="Desktop-Benachrichtigung" aria-label="Desktop-Benachrichtigung" className={`${toolButton} ${notify ? "text-emerald-600" : ""}`}>
-                        {notify ? <FiBell /> : <FiBellOff className={muted} />}
+                      <button type="button" onClick={askNotifications} title="Desktop-Benachrichtigung" aria-label="Desktop-Benachrichtigung" aria-pressed={notify} className={`ind-act ${notify ? "ind-act-on" : ""}`}>
+                        {notify ? <FiBell /> : <FiBellOff className="opacity-50" />}
                       </button>
                     </div>
                     <button
                       type="button"
-                      onClick={() => { if (!running && sound) void playAlertSound(); setRunning(!running); }}
-                      className={`inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium ${
-                        dark ? "border-slate-700 bg-slate-900 hover:bg-slate-800" : "border-slate-300 bg-white hover:bg-slate-50"
-                      }`}
+                      onClick={toggleSearch}
+                      className={`btn btn-sm ${running ? "btn-secondary" : "btn-primary"}`}
                     >
-                      {running ? <><FiPause className="size-3" /> Pausieren</> : <><FiPlay className="size-3" /> Fortsetzen</>}
+                      {running ? <><FiPause /> Pausieren</> : <><FiPlay /> Live-Suche starten</>}
                     </button>
                   </div>
-                </div>
-              ) : null}
-              {showFilters ? <FilterPanel draft={draft} setDraft={setDraft} dark={dark} onApply={apply} running={running} /> : null}
-            </div>
-          ) : null}
+          </div>
         </section>
+
+        <FilterWindow
+          open={showFilters}
+          onClose={closeFilters}
+          draft={draft}
+          setDraft={setDraft}
+          onApply={() => apply()}
+        />
 
         {/* status line: portals, last check */}
         {applied && sources.length ? (
-          <div className={`mb-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] ${muted}`}>
+          <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-muted">
             {sources.map((source) => (
               <span
                 key={source.id}
@@ -1428,7 +1507,7 @@ export default function NeueAngebotePage() {
                 {source.ok && !source.paused ? (
                   <span>{source.count} geprüft · {source.discovered || 0} neu{Number.isFinite(source.total) ? ` · ${source.total.toLocaleString("de-DE")} insgesamt` : ""} · {Number.isFinite(source.durationMs) ? `${(source.durationMs / 1000).toFixed(1)} s` : ""}</span>
                 ) : (
-                  <span className={source.skipped ? "" : "text-amber-600"}>
+                  <span className={source.skipped ? "" : "text-amber-700"}>
                     {source.paused ? "pausiert" : /freigeschaltet|nicht eingerichtet/.test(source.error || "") ? "kein Zugang" : "nicht erreichbar"}
                   </span>
                 )}
@@ -1438,7 +1517,7 @@ export default function NeueAngebotePage() {
             {running ? <span>{sources.filter((source) => !source.skipped).map((source) =>
               `${source.label}: ${nextChecks[source.id] > now ? `in ${Math.ceil((nextChecks[source.id] - now) / 1000)} s` : "prüft …"}`).join(" · ")}</span> : null}
             {Object.entries(failures).some(([, count]) => count >= 3) ? (
-              <span className="w-full text-amber-600">
+              <span className="w-full text-amber-700">
                 {Object.entries(failures)
                   .filter(([, count]) => count >= 3)
                   .map(([id]) => SOURCES.find((entry) => entry.id === id)?.label || id)
@@ -1451,22 +1530,22 @@ export default function NeueAngebotePage() {
 
         {/* the feed */}
         {!applied ? (
-          <div className={`rounded-lg border px-6 py-12 text-center ${panel}`}>
-            <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-full bg-sky-600/10">
-              <FiZap className="text-lg text-sky-600" />
-            </div>
-            <p className="text-[15px] font-semibold">Filter setzen und Live-Suche starten</p>
-            <p className={`mx-auto mt-1.5 max-w-md text-[13px] leading-6 ${muted}`}>
+          <div className="card px-6 py-12 text-center">
+            <FiZap className="mx-auto size-8 text-line-strong" />
+            <p className="mt-3 text-sm font-medium text-ink">Filter festlegen, dann Live-Suche starten</p>
+            <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-muted">
               Solange diese Seite offen ist, werden die Portale im Live-Modus alle 3 Sekunden geprüft.
               Entdeckte Fahrzeuge erscheinen direkt nach der Portalantwort – mit Ton und auf Wunsch als Desktop-Benachrichtigung.
             </p>
+            <button type="button" onClick={openFilters} className="btn btn-secondary mt-4">
+              <FiSliders /> Filter festlegen
+            </button>
           </div>
         ) : (
           <>
             {fresh.length ? (
               <>
                 <FeedSection
-                  dark={dark}
                   live
                   title="Neu entdeckt"
                   count={latest.length}
@@ -1476,32 +1555,27 @@ export default function NeueAngebotePage() {
                 </FeedSection>
 
                 {earlier.length ? (
-                  <FeedSection
-                    dark={dark}
-                    title="Davor reingekommen"
-                    count={earlier.length}
-                    meta="seit dem Start"
-                  >
+                  <FeedSection title="Davor reingekommen" count={earlier.length} meta="seit dem Start">
                     {renderRows(earlier)}
                   </FeedSection>
                 ) : null}
               </>
             ) : (
-              <div className={`mb-5 flex items-center justify-center gap-2.5 rounded-lg border border-dashed px-6 py-8 text-[13px] ${dark ? "border-slate-700" : "border-slate-300"} ${muted}`}>
+              <div className="mb-5 flex items-center justify-center gap-2.5 rounded-[4px] border border-dashed border-line-strong px-6 py-8 text-[13px] text-muted">
                 {checking && !lastCheck ? (
                   <><FiLoader className="animate-spin" /> Erste Prüfung läuft …</>
                 ) : (
-                  <><span className={`size-2 rounded-full ${running ? "animate-pulse bg-emerald-500" : "bg-slate-400"}`} /> {running ? "Warte auf neue Anzeigen – Treffer erscheinen direkt nach der Portalantwort." : "Live-Suche pausiert."}</>
+                  <><span className={`size-2 rounded-full ${running ? "animate-pulse bg-emerald-500" : "bg-slate-400"}`} /> {running ? "Warte auf neue Anzeigen – Treffer erscheinen direkt nach der Portalantwort." : startedRef.current ? "Live-Suche pausiert." : "Filter übernommen – zum Starten oben „Live-Suche starten“ drücken."}</>
                 )}
               </div>
             )}
 
-            <div className={`mt-2 flex flex-wrap items-center justify-between gap-2 text-[12px] ${muted}`}>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[12px] text-muted">
               <span>
                 Live-Prüfung alle {intervalSec} s · Neue Treffer erscheinen direkt nach der Portalantwort.
               </span>
               {feed.length ? (
-                <button type="button" onClick={resetFeed} className="inline-flex items-center gap-1 hover:text-red-600">
+                <button type="button" onClick={resetFeed} className="inline-flex items-center gap-1 hover:text-rose-700">
                   <FiTrash2 /> Liste leeren
                 </button>
               ) : null}
@@ -1509,6 +1583,6 @@ export default function NeueAngebotePage() {
           </>
         )}
       </div>
-    </main>
+    </div>
   );
 }

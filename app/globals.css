@@ -84,3 +84,1084 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* ==========================================================
+   Händlerportal – industrial design (same as Autocenter Jülich)
+   Only used inside the staff area (.dash-shell); the public
+   website keeps its own look.
+   ========================================================== */
+@theme {
+  --color-navy-950: #060f1d;
+  --color-navy-900: #0b1b33;
+  --color-navy-800: #112645;
+  --color-brand-50: #eef4ff;
+  --color-brand-100: #dbe7ff;
+  --color-brand-200: #bcd3ff;
+  --color-brand-500: #2f6bff;
+  --color-brand-600: #1b56e8;
+  --color-brand-700: #1545bd;
+  --color-brand-800: #133a96;
+  --color-accent-300: #9be0fa;
+  --color-accent-400: #6ccff6;
+  --color-accent-500: #36b8ea;
+  --color-ink: #0f1a2b;
+  --color-body: #334155;
+  --color-muted: #64748b;
+  --color-line: #e2e8f0;
+  --color-line-strong: #cbd5e1;
+  --color-canvas: #f3f5f9;
+  --shadow-card: 0 1px 2px rgba(15, 26, 43, 0.05);
+  --shadow-float: 0 12px 32px -8px rgba(6, 15, 29, 0.3);
+  --animate-pop-in: pop-in 0.22s ease-out both;
+  @keyframes pop-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+}
+/* portal building blocks – :where() keeps them overridable by utilities */
+  /* Compact, marketplace-style building blocks */
+  :where(.container-ac) {
+    width: 100%;
+    max-width: 76rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+
+  :where(.card) {
+    background: #fff;
+    border: 1px solid var(--color-line);
+    border-radius: 0.5rem;
+  }
+
+  :where(.btn) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 2.125rem;
+    padding: 0 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+  :where(.btn:disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  :where(.btn-sm) {
+    height: 1.75rem;
+    padding: 0 0.625rem;
+    gap: 0.3125rem;
+    font-size: 0.75rem;
+  }
+  :where(.btn-lg) {
+    height: 2.5rem;
+    padding: 0 1.125rem;
+    font-size: 0.875rem;
+  }
+  /* keep icons in proportion to the smaller buttons */
+  :where(.btn svg) {
+    width: 0.875rem;
+    height: 0.875rem;
+    flex-shrink: 0;
+  }
+  :where(.btn-sm svg) {
+    width: 0.8125rem;
+    height: 0.8125rem;
+  }
+
+  :where(.btn-primary) {
+    background: var(--color-brand-600);
+    color: #fff;
+  }
+  :where(.btn-primary:hover:not(:disabled)) {
+    background: var(--color-brand-700);
+  }
+
+  :where(.btn-secondary) {
+    background: #fff;
+    color: var(--color-ink);
+    border: 1px solid var(--color-line-strong);
+  }
+  :where(.btn-secondary:hover:not(:disabled)) {
+    border-color: var(--color-brand-500);
+    color: var(--color-brand-700);
+  }
+
+  :where(.btn-ghost-light) {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  :where(.btn-ghost-light:hover:not(:disabled)) {
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  :where(.field) {
+    width: 100%;
+    height: 2.125rem;
+    background: #fff;
+    border: 1px solid var(--color-line-strong);
+    border-radius: 0.375rem;
+    padding: 0 0.625rem;
+    font-size: 0.8125rem;
+    color: var(--color-ink);
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+  :where(textarea.field) {
+    height: auto;
+    padding: 0.5rem 0.625rem;
+    line-height: 1.5;
+  }
+  :where(.field::placeholder) {
+    color: #94a3b8;
+  }
+  :where(.field:focus) {
+    outline: none;
+    border-color: var(--color-brand-500);
+    box-shadow: 0 0 0 2px rgba(47, 107, 255, 0.15);
+  }
+
+  :where(select.field) {
+    appearance: none;
+    padding-right: 2rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.625rem center;
+  }
+
+  :where(.label) {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+
+  /* Classy serif headlines (Cormorant Garamond) */
+  :where(.font-display) {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: 0;
+    font-variant-numeric: lining-nums;
+  }
+
+  :where(.section-title) {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.12;
+    letter-spacing: 0;
+    font-variant-numeric: lining-nums;
+    color: var(--color-ink);
+  }
+  @media (min-width: 640px) {
+  :where(.section-title) {
+      font-size: 2.5rem;
+    }
+  }
+
+  :where(.eyebrow) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-brand-600);
+  }
+  :where(.eyebrow::before) {
+    content: "";
+    width: 1.5rem;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.6;
+  }
+
+  :where(.chip) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.2rem;
+  }
+
+  :where(.link) {
+    color: var(--color-brand-600);
+    font-weight: 500;
+  }
+  :where(.link:hover) {
+    text-decoration: underline;
+  }
+
+@layer utilities {
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .scroll-slim { scrollbar-width: thin; scrollbar-color: #c3c9d0 transparent; }
+  .scroll-slim::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scroll-slim::-webkit-scrollbar-thumb { background: #c3c9d0; border-radius: 3px; }
+}
+
+/* ==========================================================
+   "System" colours (trial: Kaufverträge) – same design.
+   Crisp white frame (sidebar + top bar), a darker grey desk,
+   white sheets, calm monochrome menu icons.
+   Unlayered on purpose so it wins over Tailwind utilities.
+   ========================================================== */
+.theme-system {
+  --color-canvas: #eef1f5;
+  --color-line: #e1e5eb;
+  --color-line-strong: #c9d0da;
+}
+.dash-shell:has(.theme-system) {
+  background-color: #e8ebf0;
+}
+.dash-shell:has(.theme-system) header {
+  background-color: #ffffff;
+  border-color: #dde2e8;
+}
+.theme-system .card {
+  border-color: #d9dee5;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+.theme-system .sys-band {
+  background-color: #ffffff;
+}
+.theme-system .sys-thead th {
+  background-color: #f6f7f9;
+  color: #6b7686;
+  border-top: 1px solid #e6e9ee;
+  border-bottom: 1px solid #e1e5eb;
+}
+.theme-system .sys-row:hover {
+  background-color: #f6f8fb;
+}
+
+/* Confirmation panel that drops down from the top (ConfirmHost) */
+.confirm-drop {
+  animation: confirm-drop-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.confirm-drop-out {
+  animation: confirm-drop-out 0.16s ease-in both;
+}
+@keyframes confirm-drop-in {
+  from {
+    transform: translateY(-105%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes confirm-drop-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-105%);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confirm-drop,
+  .confirm-drop-out {
+    animation: none;
+  }
+}
+
+/* ==========================================================
+   Sidebar – industrial / classic: brushed silver panel,
+   full-width bevelled buttons, dark steel brand plate.
+   ========================================================== */
+.sb {
+  background-color: #dfe2e6;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #e9ebee 0%, #d6dadf 100%);
+  border-right: 1px solid #a7aeb7;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.55);
+  color: #262c33;
+}
+.sb-collapse {
+  color: #5d6671;
+  border-radius: 5px;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.sb-collapse:hover {
+  color: #3e454e;
+  background-color: rgba(62, 69, 78, 0.07);
+}
+.sb-collapse-on-dark,
+.sb-collapse-on-dark:hover {
+  color: #e6e9ed;
+}
+.sb-collapse-on-dark:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+/* group titles: engraved bar across the full width */
+.sb-group {
+  padding: 5px 16px 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #5d6671;
+  background: linear-gradient(180deg, #c6cbd2 0%, #bcc2ca 100%);
+  border-top: 1px solid #a9b0b9;
+  border-bottom: 1px solid #a9b0b9;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.sb-group-mini {
+  height: 7px;
+  padding: 0;
+}
+
+/* buttons: full width, bevelled silver */
+.sb-link {
+  color: #2a3037;
+  font-weight: 500;
+  background: linear-gradient(180deg, #f2f3f5 0%, #e1e4e8 100%);
+  border-bottom: 1px solid #b9bfc7;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.sb-link:hover {
+  background: linear-gradient(180deg, #fbfbfc 0%, #eaedf0 100%);
+  color: #11161b;
+}
+.sb-link:active {
+  background: linear-gradient(180deg, #d9dde2 0%, #e6e9ec 100%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.sb-icon {
+  color: #5a636e;
+}
+/* open sidebar: names without icons, a bit larger */
+.sb-text {
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #262c33;
+}
+.sb-link.sb-text.sb-active {
+  color: #ffffff;
+}
+.sb-link.sb-active {
+  color: #ffffff;
+  font-weight: 600;
+  background: linear-gradient(180deg, #59616c 0%, #3e454e 100%);
+  border-bottom-color: #2f353c;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 3px 0 0 var(--color-accent-400);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+.sb-link.sb-active .sb-icon {
+  color: #e6e9ed;
+}
+.sb-badge {
+  min-width: 20px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  color: #ffffff;
+  background: linear-gradient(180deg, #c0392b 0%, #a12d22 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.sb-dot {
+  border-radius: 9999px;
+  background: #c0392b;
+}
+
+/* account plate at the bottom */
+.sb-foot {
+  background: linear-gradient(180deg, #cdd2d8 0%, #c2c8cf 100%);
+  border-top: 1px solid #a3aab3;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.sb-avatar {
+  border-radius: 3px;
+  background: linear-gradient(180deg, #4b535d 0%, #343a42 100%);
+  border: 1px solid #262b31;
+}
+.sb-logout {
+  color: #4f5863;
+  border: 1px solid #a3aab3;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #eef0f2 0%, #d8dce1 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+.sb-logout:hover {
+  color: #a12d22;
+}
+.sb .scroll-slim::-webkit-scrollbar-thumb {
+  background-color: #a7aeb7;
+}
+
+/* ==========================================================
+   Industrial page style (trial: Fahrzeugverwaltung) –
+   matches the silver sidebar: plates, bevelled buttons,
+   engraved table head, square tags with indicator lamps.
+   ========================================================== */
+.ind-plate {
+  border: 1px solid #a9b0b9;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #e3e6ea 0%, #cfd4da 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 2px rgba(20, 26, 33, 0.08);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.ind-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2a3037;
+  border: 1px solid #a3aab3;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #f6f7f8 0%, #dde1e5 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 1px rgba(20, 26, 33, 0.08);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: background 0.12s ease;
+}
+.ind-btn:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #e6e9ec 100%);
+}
+.ind-btn:active {
+  background: linear-gradient(180deg, #d6dadf 0%, #e4e7ea 100%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.ind-btn:disabled {
+  opacity: 0.6;
+}
+.ind-btn-dark {
+  color: #ffffff;
+  border-color: #2f353c;
+  background: linear-gradient(180deg, #59616c 0%, #3e454e 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 1px 1px rgba(20, 26, 33, 0.15);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+.ind-btn-dark:hover {
+  background: linear-gradient(180deg, #636b77 0%, #464d57 100%);
+}
+.ind-btn-dark:active {
+  background: linear-gradient(180deg, #3a4048 0%, #4a515a 100%);
+}
+
+.ind-panel {
+  overflow: hidden;
+  border: 1px solid #b4bbc4;
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(20, 26, 33, 0.06);
+}
+.ind-toolbar {
+  background: linear-gradient(180deg, #eef0f2 0%, #e2e5e9 100%);
+  border-bottom: 1px solid #b9bfc7;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* joined segment switch */
+.ind-seg {
+  border: 1px solid #a3aab3;
+  border-radius: 4px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.ind-seg-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #3a414a;
+  background: linear-gradient(180deg, #f6f7f8 0%, #dfe2e6 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.ind-seg-btn + .ind-seg-btn {
+  border-left: 1px solid #b3b9c1;
+}
+.ind-seg-btn:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #e8ebee 100%);
+}
+.ind-seg-on,
+.ind-seg-on:hover {
+  color: #ffffff;
+  background: linear-gradient(180deg, #59616c 0%, #3e454e 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -2px 0 var(--color-accent-400);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+.ind-count {
+  min-width: 18px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  color: #4a525c;
+  background: #c9ced5;
+  text-shadow: none;
+}
+.ind-seg-on .ind-count {
+  color: #1f252c;
+  background: #e6e9ed;
+}
+
+.ind-input {
+  font-size: 13px;
+  color: #1f252c;
+  border: 1px solid #a3aab3;
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow: inset 0 1px 2px rgba(20, 26, 33, 0.12);
+  outline: none;
+}
+.ind-input:focus {
+  border-color: #59616c;
+  box-shadow: inset 0 1px 2px rgba(20, 26, 33, 0.12), 0 0 0 2px rgba(62, 69, 78, 0.12);
+}
+
+/* engraved table head + rows */
+.ind-thead th {
+  padding-top: 7px;
+  padding-bottom: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #5d6671;
+  background: linear-gradient(180deg, #d3d8de 0%, #c6cbd2 100%);
+  border-bottom: 1px solid #a9b0b9;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.ind-row {
+  border-bottom: 1px solid #dde1e6;
+  transition: background 0.1s ease;
+}
+.ind-row:nth-child(even) {
+  background: #fafbfc;
+}
+.ind-row:hover {
+  background: #eef0f3;
+}
+.ind-row-sel,
+.ind-row-sel:hover {
+  background: #e4e8ec;
+  box-shadow: inset 3px 0 0 #3e454e;
+}
+
+/* square tag with indicator lamp */
+.ind-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #343a42;
+  border: 1px solid #bfc5cc;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #fbfbfc 0%, #eceef1 100%);
+}
+.ind-lamp {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--lamp);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18), 0 0 4px var(--lamp);
+}
+
+.ind-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: #5a636e;
+  border: 1px solid #b9bfc7;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #f8f9fa 0%, #e3e6ea 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.ind-copy:hover {
+  color: #1f252c;
+}
+.ind-copy-ok,
+.ind-copy-ok:hover {
+  color: #ffffff;
+  border-color: #23824f;
+  background: linear-gradient(180deg, #34a868 0%, #23824f 100%);
+}
+.ind-btn {
+  white-space: nowrap;
+}
+/* status pills inside the industrial table: square like the tags */
+.ind-panel td .rounded-full {
+  border-radius: 3px;
+}
+.ind-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  color: #3e454e;
+  border: 1px solid #a3aab3;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #f6f7f8 0%, #dde1e5 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.ind-icon-btn:hover {
+  color: #11161b;
+  background: linear-gradient(180deg, #ffffff 0%, #e6e9ec 100%);
+}
+.ind-icon-btn:active {
+  background: linear-gradient(180deg, #d6dadf 0%, #e4e7ea 100%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.ind-icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+/* FIN chip – light: hairline border, no bevel */
+.ind-vin {
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid #e1e4e8;
+  border-radius: 3px;
+  background: #fbfbfc;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.ind-vin:hover {
+  border-color: #b9bfc7;
+  background: #ffffff;
+}
+.ind-vin-text {
+  display: inline-flex;
+  gap: 5px;
+  padding: 2px 7px;
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: #4a525c;
+}
+.ind-vin-icon {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
+  color: #9aa2ac;
+  border-left: 1px solid #e8eaed;
+}
+.ind-vin:hover .ind-vin-icon {
+  color: #3e454e;
+}
+.ind-vin-ok,
+.ind-vin-ok:hover {
+  border-color: #8fd0ad;
+}
+.ind-vin-ok .ind-vin-icon,
+.ind-vin-ok:hover .ind-vin-icon {
+  color: #23824f;
+  border-left-color: #cdebd9;
+  background: #eaf7f0;
+}
+/* bigger FIN chip (vehicle drawer) */
+.ind-vin-lg .ind-vin-text {
+  gap: 7px;
+  padding: 4px 10px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: #1f252c;
+}
+.ind-vin-lg .ind-vin-icon {
+  padding: 0 8px;
+}
+.ind-vin-none {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-style: italic;
+  color: #8a929c;
+  border: 1px dashed #c3c8cf;
+  border-radius: 3px;
+}
+
+/* ==========================================================
+   Industrial theme for the whole Händlerportal – restyles the
+   shared building blocks (cards, buttons, fields, table heads)
+   inside the dashboard only. Public website stays untouched.
+   ========================================================== */
+.ind-title {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  color: #1f252c;
+}
+.ind-plate .text-muted {
+  color: #5d6671;
+}
+.ind-stickybar {
+  background: linear-gradient(180deg, #e9ebee 0%, #d9dde2 100%);
+  border-bottom: 1px solid #a9b0b9;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 2px rgba(20, 26, 33, 0.06);
+}
+.ind-seg-sm {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.dash-shell .card {
+  border: 1px solid #b4bbc4;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(20, 26, 33, 0.06);
+}
+
+.dash-shell .btn {
+  border-radius: 4px;
+  font-weight: 600;
+}
+.dash-shell .btn-secondary {
+  color: #2a3037;
+  border: 1px solid #a3aab3;
+  background: linear-gradient(180deg, #f6f7f8 0%, #dde1e5 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 1px rgba(20, 26, 33, 0.08);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.dash-shell .btn-secondary:hover:not(:disabled) {
+  color: #11161b;
+  border-color: #8d959f;
+  background: linear-gradient(180deg, #ffffff 0%, #e6e9ec 100%);
+}
+.dash-shell .btn-secondary:active:not(:disabled) {
+  background: linear-gradient(180deg, #d6dadf 0%, #e4e7ea 100%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+/* "link" text buttons (e.g. "ändern"): the reset lets buttons inherit the grey text –
+   keep them blue like in Autocenter */
+.dash-shell .link {
+  color: var(--color-brand-600);
+}
+.dash-shell .btn-primary {
+  color: #ffffff;
+  border: 1px solid #2f353c;
+  background: linear-gradient(180deg, #59616c 0%, #3e454e 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 1px 1px rgba(20, 26, 33, 0.15);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+.dash-shell .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #636b77 0%, #464d57 100%);
+}
+.dash-shell .btn-primary:active:not(:disabled) {
+  background: linear-gradient(180deg, #3a4048 0%, #4a515a 100%);
+}
+
+.dash-shell .field {
+  border-color: #cfd4da;
+  border-radius: 4px;
+  background-color: #ffffff;
+  box-shadow: inset 0 1px 1px rgba(20, 26, 33, 0.04);
+}
+.dash-shell .field:focus {
+  border-color: #59616c;
+  box-shadow: inset 0 1px 2px rgba(20, 26, 33, 0.12), 0 0 0 2px rgba(62, 69, 78, 0.12);
+  outline: none;
+}
+
+/* every table head in the portal: engraved silver bar */
+.dash-shell main table thead th {
+  background: linear-gradient(180deg, #d3d8de 0%, #c6cbd2 100%);
+  color: #5d6671;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  border-bottom: 1px solid #a9b0b9;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+/* week plan: day header row as engraved bar */
+.ind-dayhead {
+  background: linear-gradient(180deg, #d3d8de 0%, #c6cbd2 100%);
+  border-bottom: 1px solid #a9b0b9;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+/* joined icon buttons for row actions (Rote Kennzeichen) */
+.ind-actions {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid #a3aab3;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(20, 26, 33, 0.12);
+}
+.ind-act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 26px;
+  color: #3e454e;
+  background: linear-gradient(180deg, #f8f9fa 0%, #dfe2e6 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.ind-act + .ind-act {
+  border-left: 1px solid #b9bfc7;
+}
+.ind-act:hover {
+  color: #11161b;
+  background: linear-gradient(180deg, #ffffff 0%, #e8ebee 100%);
+}
+.ind-act:active {
+  background: linear-gradient(180deg, #d6dadf 0%, #e4e7ea 100%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.ind-act-on,
+.ind-act-on:hover {
+  color: #5a3d00;
+  background: linear-gradient(180deg, #f8dc7c 0%, #e8b83a 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.ind-act-danger {
+  color: #b0362a;
+}
+.ind-act-danger:hover {
+  color: #ffffff;
+  background: linear-gradient(180deg, #d0493b 0%, #a8302a 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.ind-act-solo {
+  width: 24px;
+  height: 22px;
+  color: #8a5a00;
+  border: 1px solid #d9b45a;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #fff6d8 0%, #f6e3a6 100%);
+}
+.ind-act-solo:hover {
+  color: #5a3d00;
+  background: linear-gradient(180deg, #fff9e6 0%, #f8e7b4 100%);
+}
+/* softer, squarer corners for boxes inside the portal */
+.dash-shell main .rounded-xl,
+.dash-shell main .rounded-2xl {
+  border-radius: 5px;
+}
+.dash-shell main .chip {
+  border-radius: 3px;
+}
+.ind-btn-danger {
+  color: #ffffff;
+  border-color: #8f2a22;
+  background: linear-gradient(180deg, #d0493b 0%, #a8302a 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 1px rgba(20, 26, 33, 0.15);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+.ind-btn-danger:hover {
+  background: linear-gradient(180deg, #d95546 0%, #b2362f 100%);
+}
+/* no blue browser focus rings inside the portal – calm steel instead */
+.dash-shell input:focus-visible,
+.dash-shell select:focus-visible,
+.dash-shell textarea:focus-visible {
+  outline: none;
+}
+.dash-shell button:focus-visible,
+.dash-shell a:focus-visible {
+  outline: 2px solid rgba(62, 69, 78, 0.35);
+  outline-offset: 1px;
+}
+.dash-shell input[type="checkbox"],
+.dash-shell input[type="radio"] {
+  accent-color: #3e454e;
+}
+/* date/time fields: focused segment in steel instead of system blue */
+.dash-shell input::-webkit-datetime-edit-day-field:focus,
+.dash-shell input::-webkit-datetime-edit-month-field:focus,
+.dash-shell input::-webkit-datetime-edit-year-field:focus,
+.dash-shell input::-webkit-datetime-edit-hour-field:focus,
+.dash-shell input::-webkit-datetime-edit-minute-field:focus,
+.dash-shell input::-webkit-datetime-edit-ampm-field:focus {
+  background-color: #3e454e;
+  color: #ffffff;
+  border-radius: 2px;
+}
+.dash-shell ::selection {
+  background-color: #c6cbd2;
+  color: #11161b;
+}
+
+/* ==========================================================
+   Autogalerie portal pages – existing pages in the industrial
+   look without changing how they work (theme only).
+   Everything is scoped to .dash-shell (staff area).
+   ========================================================== */
+.dash-shell {
+  color: #334155;
+  font-size: 14px;
+}
+.dash-shell button:not(:disabled),
+.dash-shell [role="button"],
+.dash-shell select:not(:disabled),
+.dash-shell label[for],
+.dash-shell summary {
+  cursor: pointer;
+}
+/* pages bring their own full-height background – the desk shows through */
+.dash-shell main .min-h-screen {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+/* square, calm corners everywhere (round dots/avatars stay round) */
+.dash-shell main .rounded-md,
+.dash-shell main .rounded-lg,
+.dash-shell main .rounded-3xl,
+.dash-shell .fixed .rounded-xl,
+.dash-shell .fixed .rounded-2xl,
+.dash-shell .fixed .rounded-3xl {
+  border-radius: 4px;
+}
+.dash-shell main .rounded-t-xl,
+.dash-shell main .rounded-t-2xl {
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+}
+/* flat cards: a hairline and a whisper of shadow instead of floating boxes */
+.dash-shell main .shadow-sm,
+.dash-shell main .shadow,
+.dash-shell main .shadow-md {
+  box-shadow: 0 1px 2px rgba(20, 26, 33, 0.06) !important;
+}
+.dash-shell main .border-slate-200,
+.dash-shell main .border-gray-200 {
+  border-color: #dfe2e6;
+}
+/* primary actions in dark steel (instead of the many accent colours) */
+.dash-shell main :is(button, a):is(.bg-blue-600, .bg-blue-700, .bg-indigo-600, .bg-sky-600, .bg-emerald-600, .bg-emerald-700, .bg-green-600, .bg-teal-600, .bg-slate-900, .bg-gray-900, .bg-black, .bg-\[\#0F4C81\], .bg-\[\#0f4c81\]):not(.rounded-full) {
+  background: linear-gradient(180deg, #59616c 0%, #3e454e 100%) !important;
+  border: 1px solid #2f353c !important;
+  color: #fff !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+.dash-shell main :is(button, a):is(.bg-blue-600, .bg-blue-700, .bg-indigo-600, .bg-sky-600, .bg-emerald-600, .bg-emerald-700, .bg-green-600, .bg-teal-600, .bg-slate-900, .bg-gray-900, .bg-black, .bg-\[\#0F4C81\], .bg-\[\#0f4c81\]):not(.rounded-full):hover:not(:disabled) {
+  background: linear-gradient(180deg, #4b535d 0%, #343a42 100%) !important;
+}
+/* secondary (white, bordered) buttons: bevelled silver */
+.dash-shell main button.border.bg-white:not(.rounded-full):not(:disabled):hover {
+  background: linear-gradient(180deg, #fbfbfc 0%, #eceef1 100%);
+}
+/* form fields: thin steel border, steel focus instead of blue rings */
+.dash-shell main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]), select, textarea):focus {
+  border-color: #59616c !important;
+  box-shadow: 0 0 0 2px rgba(89, 97, 108, 0.16) !important;
+  outline: none !important;
+}
+.dash-shell main :is(input, select, textarea):is(.focus\:ring-2, .focus\:ring-blue-500, .focus\:ring-emerald-500):focus {
+  --tw-ring-color: rgba(89, 97, 108, 0.2);
+}
+/* page titles */
+.dash-shell main h1 {
+  letter-spacing: -0.01em;
+}
+/* the menu lives in the top bar (phones/tablets) and in the sidebar – the pages' own
+   menu buttons from before are not needed any more */
+.dash-shell main button[aria-label="Menü öffnen"] {
+  display: none !important;
+}
+/* steel buttons are unlayered – keep "only on phones" buttons hidden on larger screens */
+@media (min-width: 48rem) {
+  .dash-shell .md\:hidden {
+    display: none !important;
+  }
+}
+@media (min-width: 40rem) {
+  .dash-shell .sm\:hidden {
+    display: none !important;
+  }
+}
+
+/* ── from Autocenter: groups and steel on/off switch ── */
+.ind-group {
+  margin-inline: 0;
+  padding: 0;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #c9ced5;
+  border-radius: 4px;
+  background: #ffffff;
+}
+.ind-group-title {
+  float: left; /* puts the legend inside the box as a header bar */
+  width: 100%;
+  padding: 5px 12px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #5d6671;
+  background: linear-gradient(180deg, #eef0f2 0%, #e2e5e9 100%);
+  border-bottom: 1px solid #c9ced5;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.ind-group-title + div {
+  clear: both;
+}
+/* small on/off switch styled like a steel button */
+.ind-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 10px 0 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #3e454e;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid #a3aab3;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #f6f7f8 0%, #dfe2e6 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.ind-toggle-box {
+  width: 14px;
+  height: 14px;
+  border: 1px solid #8d959f;
+  border-radius: 3px;
+  background: #ffffff;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.ind-toggle-on {
+  color: #5a3d00;
+  border-color: #c99a2e;
+  background: linear-gradient(180deg, #fbe39a 0%, #eec459 100%);
+}
+.ind-toggle-on .ind-toggle-box {
+  border-color: #8a5a00;
+  background: #8a5a00 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5'/%3E%3C/svg%3E") center / 11px no-repeat;
+}

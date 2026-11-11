@@ -51,9 +51,35 @@ const KaufvertragSchema = new mongoose.Schema(
       type: String,
       default: "Kaufvertrag",
     }, // ✅ ← Add this
+
+    /* ── Händlerportal (Autocenter workflow) – all optional, old contracts keep working ── */
+    paid: { type: Boolean, default: undefined },
+    paidAt: { type: String, default: "" },
+    archivedAt: { type: Date, default: null },
+    archivedBy: { type: String, default: "" },
+    cancelledAt: { type: Date, default: null },
+    cancelledBy: { type: String, default: "" },
+    cancelReason: { type: String, default: "" },
+    createdBy: { type: String, default: "" },
+    log: {
+      type: [
+        {
+          at: { type: Date, default: Date.now },
+          by: { type: String, default: "" },
+          action: { type: String, default: "" },
+          _id: false,
+        },
+      ],
+      default: undefined,
+    },
   },
   { timestamps: true }
 );
+
+// Dev hot reload: recompile the model when new fields were added.
+if (mongoose.models.Kaufvertrag && !mongoose.models.Kaufvertrag.schema.path("cancelReason")) {
+  mongoose.deleteModel("Kaufvertrag");
+}
 
 export default mongoose.models.Kaufvertrag ||
   mongoose.model("Kaufvertrag", KaufvertragSchema);

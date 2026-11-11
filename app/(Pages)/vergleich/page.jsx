@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  ChevronLeft,
   X,
   Check,
   CarFront,
@@ -212,7 +211,6 @@ const ComparePage = () => {
             href="/gebrauchtwagen"
             className={`${baseBtn} mt-6 bg-[#146c2e] text-white hover:bg-[#0f5724]`}
           >
-            <ChevronLeft className="h-4 w-4" />
             Zurück zur Fahrzeugliste
           </Link>
         </motion.div>
@@ -229,7 +227,6 @@ const ComparePage = () => {
             href="/gebrauchtwagen"
             className="inline-flex w-fit items-center gap-2 text-[13px] font-semibold text-[#5f695f] transition hover:text-[#146c2e]"
           >
-            <ChevronLeft className="h-4 w-4" />
             Zurück
           </Link>
 

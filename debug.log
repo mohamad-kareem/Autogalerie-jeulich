@@ -1,0 +1,62 @@
+[1110/222436.404:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1110/222436.785:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/022518.693:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/022518.799:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/022518.849:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/025556.199:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/025556.302:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/025556.338:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/025642.499:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/025642.554:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/025642.588:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/025647.519:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/025657.530:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/025733.057:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/025733.146:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/025733.208:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/030603.749:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/030603.815:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/030603.839:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/033038.894:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/033038.945:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/033038.965:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/033136.176:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/033136.208:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/033136.233:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/033852.916:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/033853.013:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/033853.050:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/033911.863:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/033911.877:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/033911.883:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/034941.851:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/034941.901:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/034941.917:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/035011.963:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/035011.968:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/035011.979:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/035226.221:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/035226.282:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/035226.303:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/035324.817:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/035324.840:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/035324.868:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/035412.877:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/035412.896:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/035412.925:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/035413.702:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1111/035413.702:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1111/035413.702:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1111/035413.702:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1111/035413.702:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1111/035413.702:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1111/035413.702:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1111/035413.702:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1111/035413.702:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1111/035413.702:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[1111/035715.693:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/035715.721:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/035715.743:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.
+[1111/035908.925:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[1111/035908.935:ERROR:ui\gl\angle_platform_impl.cc:47] vulkan_icd.cpp:158 (angle::vk::ScopedVkLoaderEnvironment::ScopedVkLoaderEnvironment): Error setting CWD for Vulkan layers init.
+[1111/035908.960:WARNING:ui\gl\angle_platform_impl.cc:52] vulkan_icd.cpp:388 (angle::vk::ChoosePhysicalDevice): Preferred device ICD not found. Using default physicalDevice instead.

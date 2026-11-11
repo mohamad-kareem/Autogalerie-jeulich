@@ -1,4 +1,5 @@
 "use client";
+import { FiPrinter } from "react-icons/fi";
 
 import { useState, useRef, useCallback } from "react";
 
@@ -121,22 +122,17 @@ body{font-family:Arial,sans-serif;background:#fff;color:#000;-webkit-print-color
     <div
       style={{
         minHeight: "100vh",
-        background: "#f0f0ee",
         paddingBottom: "4rem",
       }}
     >
       {/* TOPBAR */}
-      <div
-        style={{
-          background: "#fff",
-          borderBottom: "1px solid #ddd",
-        }}
-      >
+      <div className="mx-auto max-w-[1280px] px-3 pt-4 sm:px-6">
+      <div className="ind-plate">
         <div
           style={{
             maxWidth: "1280px",
             margin: "0 auto",
-            padding: "16px 32px",
+            padding: "12px 16px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -144,16 +140,8 @@ body{font-family:Arial,sans-serif;background:#fff;color:#000;-webkit-print-color
           }}
         >
           <div>
-            <h1
-              style={{
-                fontSize: "18px",
-                fontWeight: 700,
-                color: "#111",
-                margin: 0,
-              }}
-            >
-              Preisschild erstellen
-            </h1>
+            <h1 className="ind-title">Preisschild erstellen</h1>
+            <p className="text-[12px] text-muted">Preisschild für Fahrzeuge gestalten und drucken</p>
           </div>
 
           <div
@@ -166,47 +154,27 @@ body{font-family:Arial,sans-serif;background:#fff;color:#000;-webkit-print-color
           >
             <button
               onClick={() => setF(EMPTY)}
-              style={{
-                height: "34px",
-                minWidth: "120px",
-                padding: "0 14px",
-                borderRadius: "6px",
-                border: "1px solid #ccc",
-                background: "#fff",
-                fontSize: "12px",
-                color: "#444",
-                cursor: "pointer",
-              }}
+              className="btn btn-secondary btn-sm"
             >
               Zurücksetzen
             </button>
 
             <button
               onClick={handlePrint}
-              style={{
-                height: "34px",
-                minWidth: "120px",
-                padding: "0 18px",
-                borderRadius: "6px",
-                border: "none",
-                background: "#146c2e",
-                fontSize: "12px",
-                fontWeight: 700,
-                color: "#fff",
-                cursor: "pointer",
-              }}
+              className="ind-btn ind-btn-dark btn-sm"
             >
-              🖨 Drucken
+              <FiPrinter /> Drucken
             </button>
           </div>
         </div>
+      </div>
       </div>
 
       <div
         style={{
           maxWidth: "1280px",
           margin: "0 auto",
-          padding: "28px 32px",
+          padding: "16px 24px",
           display: "grid",
           gridTemplateColumns: "360px 1fr",
           gap: "28px",

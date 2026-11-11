@@ -5,19 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "react-hot-toast";
 import { setDeviceId, getDeviceId } from "@/app/utils/device";
-import {
-  FiLogIn,
-  FiLogOut,
-  FiUser,
-  FiClock,
-  FiCalendar,
-  FiSmartphone,
-  FiShield,
-  FiMapPin,
-  FiHelpCircle,
-  FiMenu,
-} from "react-icons/fi";
-import { motion } from "framer-motion";
+import { FiLogIn, FiLogOut, FiSmartphone, FiShield, FiMapPin, FiMenu, FiLoader } from "react-icons/fi";
 import * as turf from "@turf/turf";
 import { useSidebar } from "@/app/(components)/SidebarContext";
 const dealershipCoords = turf.polygon([
@@ -166,267 +154,112 @@ export default function ZeiterfassungPage() {
 
   if (status !== "authenticated") {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-950 to-slate-950">
-        <div className="animate-pulse text-gray-400">
-          Authentifizierung läuft...
-        </div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-pulse text-[13px] text-muted">Anmeldung wird geprüft …</div>
       </div>
     );
   }
 
+  const isIn = statusZeiterfassung === "eingestempelt";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-slate-950 text-white p-4 md:p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Kopfbereich */}
-        <motion.header
-          initial={{ y: -15, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="mb-8"
-        >
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              {/* Mobile hamburger */}
-              <button
-                onClick={openSidebar}
-                className="md:hidden p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-colors duration-300"
-                aria-label="Menü öffnen"
-              >
-                <FiMenu className="h-4 w-4" />
-              </button>
-
-              <h1 className="text-xl font-bold text-gray-200">
-                Zeiterfassungssystem
-              </h1>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 bg-gray-800/60 backdrop-blur-md px-3 py-2 rounded-lg border border-gray-800">
-                <FiUser className="text-slate-400" />
-                <span className="font-medium text-gray-200">
-                  {session.user.name}
-                </span>
-              </div>
-
-              <div
-                className={`px-3 py-2 rounded-lg font-medium border ${
-                  statusZeiterfassung === "eingestempelt"
-                    ? "bg-green-900/40 text-green-300 border-green-800/50"
-                    : "bg-gray-800/60 text-gray-300 border-gray-800"
-                }`}
-              >
-                {statusZeiterfassung === "eingestempelt"
-                  ? "Im Dienst"
-                  : "Außer Dienst"}
-              </div>
+    <div className="min-h-screen px-3 py-4 sm:px-6 sm:py-6">
+      <div className="mx-auto max-w-3xl space-y-4">
+        <header className="ind-plate flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={openSidebar} className="ind-icon-btn md:hidden" aria-label="Menü öffnen">
+              <FiMenu className="h-4 w-4" />
+            </button>
+            <div>
+              <h1 className="ind-title">Stempeluhr</h1>
+              <p className="text-[12.5px] text-muted">Ein- und Ausstempeln für Ihren Arbeitstag.</p>
             </div>
           </div>
-        </motion.header>
+          <p className="text-[13px] text-muted">
+            Angemeldet als <span className="font-semibold text-ink">{session.user.name}</span>
+          </p>
+        </header>
 
-        {/* Hauptinhalt */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Stempelungsfunktionen */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Stempelkarte */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-              className="bg-gray-900/60 backdrop-blur-md p-6 rounded-xl border border-gray-800"
+        <div className="card p-5 sm:p-8">
+          <LiveClock />
+
+          <div className="mt-8 flex justify-center">
+            <span
+              className={`chip px-4 py-2 text-sm ${
+                isIn ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "bg-slate-100 text-slate-700 ring-1 ring-slate-200"
+              }`}
             >
-              <h2 className="text-lg font-semibold mb-4 text-gray-200">
-                Stempelaktionen
-              </h2>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={() => handleStempelung("Einstempeln")}
-                  disabled={
-                    statusZeiterfassung === "eingestempelt" || wirdGeladen
-                  }
-                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors border ${
-                    statusZeiterfassung === "eingestempelt" || wirdGeladen
-                      ? "bg-gray-800/40 text-gray-500 cursor-not-allowed border-gray-800"
-                      : "bg-slate-700 hover:bg-slate-900 text-white border-slate-500"
-                  }`}
-                >
-                  <FiLogIn />
-                  Einstempeln
-                </button>
-
-                <button
-                  onClick={() => handleStempelung("Ausstempeln")}
-                  disabled={
-                    statusZeiterfassung !== "eingestempelt" || wirdGeladen
-                  }
-                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors border ${
-                    statusZeiterfassung !== "eingestempelt" || wirdGeladen
-                      ? "bg-gray-800/40 text-gray-500 cursor-not-allowed border-gray-800"
-                      : "bg-slate-800 hover:bg-slate-900 text-white border-slate-700"
-                  }`}
-                >
-                  <FiLogOut />
-                  Ausstempeln
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Statuskarte */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="bg-gray-900/60 backdrop-blur-md p-6 rounded-xl border border-gray-800"
-            >
-              <h2 className="text-lg font-semibold mb-4 text-gray-200">
-                Aktueller Status
-              </h2>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-gray-800/40 rounded-lg border border-gray-800">
-                  <div className="flex items-center gap-3 text-gray-300">
-                    <FiClock className="text-slate-400" />
-                    <span>Stempelstatus</span>
-                  </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium border ${
-                      statusZeiterfassung === "eingestempelt"
-                        ? "bg-green-900/40 text-green-300 border-green-800/50"
-                        : "bg-gray-800/60 text-gray-300 border-gray-800"
-                    }`}
-                  >
-                    {statusZeiterfassung === "eingestempelt"
-                      ? "Eingestempelt"
-                      : "Ausgestempelt"}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-gray-800/40 rounded-lg border border-gray-800">
-                  <div className="flex items-center gap-3 text-gray-300">
-                    <FiSmartphone className="text-slate-400" />
-                    <span>Gerätestatus</span>
-                  </div>
-                  <span className="text-sm font-medium text-gray-300">
-                    {gerätRegistriert ? "Registriert" : "Nicht registriert"}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
+              <span className={`h-2 w-2 rounded-full ${isIn ? "bg-emerald-500" : "bg-slate-400"}`} />
+              {isIn ? "Eingestempelt" : "Ausgestempelt"}
+            </span>
           </div>
 
-          {/* Seitenleiste */}
-          <div className="space-y-6">
-            {zeigeGerätePanel ? (
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="bg-gray-900/60 backdrop-blur-md p-6 rounded-xl border border-slate-800/50"
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold flex items-center gap-2 text-gray-200">
-                    <FiSmartphone className="text-slate-400" />
-                    Geräteregistrierung
-                  </h2>
-                  <button
-                    onClick={() => setZeigeGerätePanel(false)}
-                    className="text-gray-400 hover:text-gray-200 transition-colors"
-                  >
-                    ✕
-                  </button>
-                </div>
+          <button
+            type="button"
+            onClick={() => handleStempelung(isIn ? "Ausstempeln" : "Einstempeln")}
+            disabled={wirdGeladen}
+            className={`btn btn-lg mx-auto mt-6 flex w-full max-w-sm !rounded-[4px] text-white ${
+              isIn ? "!border-rose-800 !bg-rose-600 hover:!bg-rose-700" : "!border-emerald-800 !bg-emerald-600 hover:!bg-emerald-700"
+            }`}
+          >
+            {wirdGeladen ? <FiLoader className="h-5 w-5 animate-spin" /> : isIn ? <FiLogOut className="h-5 w-5" /> : <FiLogIn className="h-5 w-5" />}
+            {wirdGeladen ? "Standort wird geprüft …" : isIn ? "Jetzt ausstempeln" : "Jetzt einstempeln"}
+          </button>
+          <p className="mx-auto mt-3 flex max-w-sm items-center justify-center gap-1.5 text-center text-[12px] text-muted">
+            <FiMapPin className="h-3.5 w-3.5" /> Stempeln ist nur im Autohaus möglich (Standort wird geprüft).
+          </p>
 
-                <div className="space-y-4">
-                  <div className="bg-slate-900/20 p-4 rounded-lg border border-slate-800/30">
-                    <div className="flex items-start gap-3">
-                      <FiShield className="text-slate-400 mt-1 flex-shrink-0" />
-                      <div>
-                        <h3 className="font-medium text-gray-200">
-                          Sicherheit
-                        </h3>
-                        <p className="text-sm text-gray-400 mt-1">
-                          Ihre Gerätekennung wird sicher gespeichert und nur mit
-                          Ihrem Konto verknüpft.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-800/40 p-4 rounded-lg border border-gray-800">
-                    <div className="flex items-start gap-3">
-                      <FiMapPin className="text-slate-400 mt-1 flex-shrink-0" />
-                      <div>
-                        <h3 className="font-medium text-gray-200">Standort</h3>
-                        <p className="text-sm text-gray-400 mt-1">
-                          Die Standortüberprüfung bleibt auch mit registriertem
-                          Gerät aktiv.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleGerätRegistrierung}
-                    disabled={wirdGeladen}
-                    className={`w-full py-3 rounded-lg font-medium text-white transition-colors border ${
-                      wirdGeladen
-                        ? "bg-slate-800/40 text-slate-300 border-slate-700 cursor-not-allowed"
-                        : "bg-slate-700 hover:bg-slate-900 border-slate-500"
-                    }`}
-                  >
-                    {wirdGeladen ? "Wird registriert..." : "Gerät registrieren"}
-                  </button>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="bg-gray-900/60 backdrop-blur-md p-6 rounded-xl border border-gray-800"
-              >
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-200">
-                  <FiSmartphone className="text-slate-400" />
-                  Schnellstempelung
-                </h2>
-
-                <p className="text-gray-400 mb-4">
-                  Registrieren Sie dieses Gerät für schnellere Stempelungen ohne
-                  erneute Anmeldung.
-                </p>
-
-                <button
-                  onClick={() => setZeigeGerätePanel(true)}
-                  className="w-full py-3 bg-slate-700 hover:bg-slate-900 text-white rounded-lg font-medium border border-slate-500 transition-colors"
-                >
-                  {gerätRegistriert ? "Gerät verwalten" : "Gerät registrieren"}
-                </button>
-              </motion.div>
-            )}
-
-            {/* Hilfe-Karte */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="bg-gray-900/60 backdrop-blur-md p-6 rounded-xl border border-gray-800"
-            >
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-200">
-                <FiHelpCircle className="text-slate-400" />
-                Hinweis
-              </h2>
-              <p className="text-gray-400 mb-3">
-                Die Standortüberprüfung stellt sicher, dass Stempelungen nur im
-                Autohaus möglich sind.
+          <div className="mt-8 grid gap-3 border-t border-[#e3e6ea] pt-6 sm:grid-cols-2">
+            <div className="rounded-[4px] bg-[#f3f5f7] p-4">
+              <p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-muted">Gerät</p>
+              <p className="mt-1.5 flex items-center gap-2 text-[15px] font-semibold text-ink">
+                <FiSmartphone className="h-4 w-4 text-slate-500" />
+                {gerätRegistriert ? "Registriert" : "Nicht registriert"}
               </p>
-            </motion.div>
+            </div>
+            <div className="rounded-[4px] bg-[#f3f5f7] p-4">
+              <p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-muted">Schnellstempelung</p>
+              <button type="button" onClick={() => setZeigeGerätePanel((v) => !v)} className="btn btn-secondary btn-sm mt-1.5">
+                {gerätRegistriert ? "Gerät verwalten" : "Gerät registrieren"}
+              </button>
+            </div>
           </div>
+
+          {zeigeGerätePanel ? (
+            <div className="mt-3 rounded-[4px] border border-[#dfe2e6] p-4">
+              <p className="flex items-start gap-2 text-[13px] text-body">
+                <FiShield className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                Die Gerätekennung wird sicher gespeichert und nur mit Ihrem Konto verknüpft. Die Standortprüfung bleibt auch mit registriertem Gerät aktiv.
+              </p>
+              <div className="mt-3 flex gap-2">
+                <button type="button" onClick={handleGerätRegistrierung} disabled={wirdGeladen} className="btn btn-primary btn-sm">
+                  {wirdGeladen ? "Wird registriert …" : "Dieses Gerät registrieren"}
+                </button>
+                <button type="button" onClick={() => setZeigeGerätePanel(false)} className="btn btn-secondary btn-sm">
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Background Glow */}
-      <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-60 h-60 bg-slate-500/10 blur-3xl rounded-full" />
-        <div className="absolute bottom-0 right-1/3 w-60 h-60 bg-purple-500/10 blur-3xl rounded-full" />
-      </div>
+/** big live clock like the Autocenter Stempeluhr */
+function LiveClock() {
+  const [now, setNow] = useState(null);
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    tick();
+    const t = setInterval(tick, 1000);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div className="text-center">
+      <p className="font-mono text-4xl font-bold tracking-tight text-ink tabular-nums sm:text-5xl">{now ? now.toLocaleTimeString("de-DE") : "--:--:--"}</p>
+      <p className="mt-2 text-muted">{now ? now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : " "}</p>
     </div>
   );
 }

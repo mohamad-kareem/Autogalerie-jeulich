@@ -14,11 +14,10 @@ const ADMIN_PATHS = [
   "/Zeiterfassungsverwaltung",
   "/excel",
   "/Reg",
+  "/einstellungen",
   "/kaufvertrag",
   "/Auto-scheins",
-  "/Autoteil",
   "/aufgabenboard",
-  "/ai-chats",
   "/Toni-Werkstatt",
   "/Fahrzeugverwaltung",
   "/Fotostudio",
@@ -27,6 +26,11 @@ const ADMIN_PATHS = [
   "/Kundenkontakte",
   "/marktanalyse",
   "/neue-angebote",
+  "/Lagerbestand",
+  "/translator",
+  "/Plate",
+  "/punch-qr",
+  "/show-qr",
 ];
 
 export default function LayoutWrapper({ children }) {

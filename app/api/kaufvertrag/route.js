@@ -8,8 +8,7 @@ import { revalidatePath } from "next/cache";
 import mongoose from "mongoose";
 import ContactCustomer from "@/models/ContactCustomer";
 
-import { generateNextNumber } from "@/app/utils/invoiceHelpers";
-import { getLastValidContract } from "@/app/utils/getLastValidContract";
+import { nextNumber, staffUser } from "@/lib/kaufvertragServer";
 
 /** Never lets the contract fail: the contract matters more than the label. */
 async function markWebsiteCarSold({ vin, carId }) {
@@ -37,15 +36,8 @@ export async function POST(req) {
     await connectDB();
     const data = await req.json();
 
-    /* 1️⃣ Get last valid contract for correct numbering */
-    const lastValidContract = await getLastValidContract(data.issuer);
-
-    const baseNumber =
-      lastValidContract?.originalInvoiceNumber ||
-      lastValidContract?.invoiceNumber;
-
-    /* 2️⃣ Generate new invoice number */
-    const invoiceNumber = generateNextNumber(baseNumber, data.issuer);
+    /* 1️⃣ + 2️⃣ Next invoice number (last valid contract, or the number set by hand) */
+    const invoiceNumber = await nextNumber(data.issuer || "karim");
 
     /* 3️⃣ Ensure invoice number is unique */
     const exists = await Kaufvertrag.findOne({ invoiceNumber });
@@ -57,9 +49,13 @@ export async function POST(req) {
     }
 
     /* 4️⃣ Create Kaufvertrag */
+    const user = await staffUser();
     const contract = await Kaufvertrag.create({
       ...data,
+      issuer: data.issuer || "karim",
       invoiceNumber,
+      paid: data.paid === true,
+      createdBy: user?.name || "",
     });
 
     /* 5️⃣ Save ContactCustomer (independent from Kaufvertrag) */

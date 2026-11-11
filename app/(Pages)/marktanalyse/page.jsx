@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 
@@ -43,9 +44,10 @@ import {
   recalculate,
   toNumber,
 } from "@/lib/market/live";
-// The bookmark button is no longer offered on the page, but a bookmark set up
-// earlier still delivers its ad here, so the receiving end stays.
-import { decodeImport, IMPORT_PREFIX } from "@/lib/market/bookmarklet";
+import { detectMarketExtension, importMobileComparables, importMobileListing } from "@/lib/market/extension";
+import { POLICY } from "@/lib/market/config";
+import { guardPurchaseDecision } from "@/lib/market/decision";
+import { withMarketEvidence } from "@/lib/market/evidence";
 import { useSidebar } from "@/app/(components)/SidebarContext";
 import PageLoader from "@/app/(components)/helpers/PageLoader";
 
@@ -67,10 +69,9 @@ const SUPPORTED = [
 ];
 
 /**
- * mobile.de refuses our server every time, so a mobile.de link does not wait
- * for that refusal: it goes straight to the fast path (copy the ad, or the
- * one-click button). Set NEXT_PUBLIC_MOBILEDE_DIRECT=1 to try the server again,
- * for example once mobile.de grants API access.
+ * Try the browser extension first, with pasted ad text as a fallback.
+ * NEXT_PUBLIC_MOBILEDE_DIRECT=1 enables the server
+ * fallback for deployments with direct mobile.de access.
  */
 const MOBILE_DIRECT = process.env.NEXT_PUBLIC_MOBILEDE_DIRECT === "1";
 
@@ -207,7 +208,6 @@ const VERDICTS = {
     label: "Kaufen",
     icon: FiCheckCircle,
     dot: "bg-emerald-500",
-    strip: "border-emerald-500",
     chip: "bg-emerald-600 text-white",
     text: "text-emerald-700",
   },
@@ -215,7 +215,6 @@ const VERDICTS = {
     label: "Verhandeln",
     icon: FiPercent,
     dot: "bg-amber-500",
-    strip: "border-amber-500",
     chip: "bg-amber-500 text-white",
     text: "text-amber-700",
   },
@@ -223,7 +222,6 @@ const VERDICTS = {
     label: "Erst prüfen",
     icon: FiHelpCircle,
     dot: "bg-amber-500",
-    strip: "border-amber-500",
     chip: "bg-amber-500 text-white",
     text: "text-amber-700",
   },
@@ -231,7 +229,6 @@ const VERDICTS = {
     label: "Nicht kaufen",
     icon: FiXCircle,
     dot: "bg-red-500",
-    strip: "border-red-500",
     chip: "bg-red-600 text-white",
     text: "text-red-700",
   },
@@ -239,7 +236,6 @@ const VERDICTS = {
     label: "Ohne KI-Bewertung",
     icon: FiHelpCircle,
     dot: "bg-slate-400",
-    strip: "border-slate-400",
     chip: "bg-slate-600 text-white",
     text: "text-slate-600",
   },
@@ -248,7 +244,6 @@ const VERDICTS = {
     label: "Ankaufen",
     icon: FiCheckCircle,
     dot: "bg-emerald-500",
-    strip: "border-emerald-500",
     chip: "bg-emerald-600 text-white",
     text: "text-emerald-700",
   },
@@ -256,7 +251,6 @@ const VERDICTS = {
     label: "Lohnt sich",
     icon: FiTrendingUp,
     dot: "bg-emerald-500",
-    strip: "border-emerald-500",
     chip: "bg-emerald-600 text-white",
     text: "text-emerald-700",
   },
@@ -264,7 +258,6 @@ const VERDICTS = {
     label: "Unter Zielgewinn",
     icon: FiPercent,
     dot: "bg-amber-500",
-    strip: "border-amber-500",
     chip: "bg-amber-500 text-white",
     text: "text-amber-700",
   },
@@ -272,7 +265,6 @@ const VERDICTS = {
     label: "Zu teuer",
     icon: FiXCircle,
     dot: "bg-red-500",
-    strip: "border-red-500",
     chip: "bg-red-600 text-white",
     text: "text-red-700",
   },
@@ -280,7 +272,6 @@ const VERDICTS = {
     label: "Zu wenig Daten",
     icon: FiHelpCircle,
     dot: "bg-slate-400",
-    strip: "border-slate-400",
     chip: "bg-slate-600 text-white",
     text: "text-slate-600",
   },
@@ -297,12 +288,10 @@ function verdictMeta(verdict) {
  * pile of cards.
  */
 
-function Panel({ children, dark, className = "", padded = true }) {
+function Panel({ children, className = "", padded = true }) {
   return (
     <section
-      className={`rounded-lg border ${padded ? "p-4" : ""} ${
-        dark ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"
-      } ${className}`}
+      className={`card ${padded ? "p-4" : ""} ${className}`}
     >
       {children}
     </section>
@@ -435,7 +424,7 @@ function Line({ label, value, dark, tone = "neutral", warn = false }) {
  * scrolls the evidence below.
  */
 
-function DecisionStrip({ result, live, dark, onSave, saving, savedAt, onContactSent }) {
+function DecisionStrip({ result, live, dark, onSave, saving, savedAt, onContactSent, containerRef }) {
   // The badge follows the figures currently on screen, not the ones the first
   // run produced — otherwise a negotiated price leaves a stale verdict up top.
   const meta = verdictMeta(live?.verdict ?? result.verdict);
@@ -450,9 +439,8 @@ function DecisionStrip({ result, live, dark, onSave, saving, savedAt, onContactS
 
   return (
     <div
-      className={`sticky top-0 z-20 -mx-3 mb-4 border-b-2 px-3 py-3 backdrop-blur sm:-mx-5 sm:px-5 ${meta.strip} ${
-        dark ? "bg-slate-950/90" : "bg-slate-50/90"
-      }`}
+      ref={containerRef}
+      className="ind-stickybar sticky top-14 z-20 -mx-3 mb-4 px-3 py-3 sm:-mx-5 sm:px-5 lg:top-0"
     >
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <div className="flex min-w-[240px] flex-1 items-center gap-3">
@@ -674,7 +662,7 @@ function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode })
 
   if (!dealer?.available || !live) {
     return (
-      <Panel dark={dark}>
+      <Panel>
         <Caption dark={dark}>Kalkulation</Caption>
         <p className={`text-xs ${dark ? "text-slate-400" : "text-slate-600"}`}>
           Ohne belastbaren Marktwert ist keine Kalkulation möglich.
@@ -686,14 +674,8 @@ function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode })
   const muted = dark ? "text-slate-500" : "text-slate-400";
   const soft = dark ? "text-slate-400" : "text-slate-500";
   const rule = dark ? "border-slate-800" : "border-slate-100";
-  const field = `h-7 rounded border px-2 text-right text-xs tabular-nums outline-none focus:ring-2 ${
-    dark
-      ? "border-slate-700 bg-slate-800 placeholder:text-slate-600 focus:ring-sky-500/30"
-      : "border-slate-300 bg-white placeholder:text-slate-300 focus:ring-sky-200"
-  }`;
-  const small = `h-6 w-16 rounded border px-1.5 text-right text-[11px] tabular-nums ${
-    dark ? "border-slate-700 bg-slate-800" : "border-slate-300 bg-white"
-  }`;
+  const field = "ind-input h-7 px-2 text-right tabular-nums";
+  const small = "ind-input h-6 w-16 px-1.5 text-right tabular-nums";
 
   const suggestions = costSuggestions(result);
   const costs = adjust.costs || {};
@@ -715,7 +697,7 @@ function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode })
       : "eigene Eingabe";
 
   return (
-    <Panel dark={dark}>
+    <Panel>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -814,13 +796,13 @@ function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode })
               value={postcode}
               onChange={(event) => setPostcode(event.target.value)}
               placeholder="PLZ"
-              className={`h-7 w-20 rounded border px-2 text-xs ${dark ? "border-slate-700 bg-slate-800" : "border-slate-300 bg-white"}`}
+              className="ind-input h-7 w-20 px-2"
             />
             <button
               type="button"
               disabled={busy || postcode.trim().length < 4}
               onClick={() => onPostcode(postcode.trim())}
-              className="h-7 rounded bg-sky-600 px-2.5 text-[11px] font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+              className="btn btn-sm btn-primary"
             >
               berechnen
             </button>
@@ -915,7 +897,9 @@ function Calculation({ result, live, adjust, onAdjust, dark, busy, onPostcode })
               type="number"
               min="0"
               step="100"
-              value={adjust.profit}
+              value={adjust.profit ?? ""}
+              placeholder={String(live.targetProfit)}
+              aria-label="Marge in Euro"
               onChange={set("profit")}
               className={`${field} w-20`}
             />
@@ -1010,21 +994,37 @@ function PickupLine({ label, value, bold = false }) {
  */
 
 function ComparablesTable({ result, asking, dark }) {
-  const rows = result.comparables;
+  const used = result.comparables;
+  const hasListingDetails = Array.isArray(result.comparisonListings);
+  const rows = [...(result.comparisonListings ?? used)].sort((a, b) =>
+    (b.similarityScore ?? 0) - (a.similarityScore ?? 0),
+  );
+  const listingKey = (entry) => entry.listingUrl || `${entry.source}:${entry.listingId}`;
+  const usedKeys = new Set(used.map(listingKey));
+  const removed = new Map(result.deep?.removed?.map((entry) => [listingKey(entry), entry.reason]));
+  const outliers = new Set(result.market?.outliers?.map(listingKey));
+  const hasMarketValue = Number.isFinite(result.market?.marketValue);
 
   return (
-    <Panel dark={dark} padded={false}>
+    <Panel padded={false}>
       <div className="px-4 pt-4">
         <Caption
           dark={dark}
           action={
             <span className={`text-[11px] ${dark ? "text-slate-500" : "text-slate-400"}`}>
-              {rows.length} Angebote · ab {result.meta.similarityThreshold} % Übereinstimmung
+              {rows.length} Angebote · {used.length} {hasMarketValue ? "im Marktwert" : "für Bewertung geeignet"}
             </span>
           }
         >
           Vergleichsfahrzeuge
         </Caption>
+        {hasListingDetails && rows.length > 0 && used.length < POLICY.minComparablesForRegularConfidence ? (
+          <p className="mb-2 text-xs text-amber-700">
+            {hasMarketValue
+              ? "Geringe Datenqualität: Der Marktwert stützt sich auf wenige eng vergleichbare Angebote."
+              : `Für einen Marktwert sind mindestens ${POLICY.minComparablesForValuation} eng vergleichbare Angebote nötig.`}
+          </p>
+        ) : null}
       </div>
 
       {rows.length ? (
@@ -1044,11 +1044,15 @@ function ComparablesTable({ result, asking, dark }) {
                 <th className="py-2 text-right font-semibold">Preis</th>
                 <th className="py-2 text-right font-semibold">Bereinigt</th>
                 <th className="py-2 text-right font-semibold">vs. Angebot</th>
-                <th className="px-4 py-2 text-right font-semibold">Match</th>
+                <th aria-sort="descending" className="px-4 py-2 text-right font-semibold">Match</th>
               </tr>
             </thead>
             <tbody className={dark ? "divide-y divide-slate-800" : "divide-y divide-slate-100"}>
               {rows.map((vehicle, index) => {
+                const key = listingKey(vehicle);
+                const countsForValue = usedKeys.has(key);
+                const reviewPrice = vehicle.priceReview || outliers.has(key);
+                const removalReason = removed.get(key);
                 const reference = Number.isFinite(vehicle.adjustedPrice)
                   ? vehicle.adjustedPrice
                   : vehicle.price;
@@ -1081,6 +1085,14 @@ function ComparablesTable({ result, asking, dark }) {
                             {vehicle.title ||
                               [vehicle.make, vehicle.model].filter(Boolean).join(" ")}
                           </span>
+                          {hasListingDetails ? (
+                            <span className={`block text-[10px] ${reviewPrice || removalReason ? "text-amber-700" : "text-slate-500"}`}>
+                              {countsForValue
+                                ? hasMarketValue ? "Im Marktwert" : "Enger Vergleich"
+                                : removalReason ? `KI-Prüfung: ${removalReason}` : "Nur Vergleich"}
+                              {reviewPrice ? " · Preis auffällig, Zustand und Historie prüfen" : ""}
+                            </span>
+                          ) : null}
                           <span
                             className={`block truncate text-[10px] ${
                               dark ? "text-slate-500" : "text-slate-400"
@@ -1263,7 +1275,7 @@ function EquipmentPanel({ result, dark }) {
   const hiddenCount = equipment.groups.length - groups.length;
 
   return (
-    <Panel dark={dark}>
+    <Panel>
       <Caption
         dark={dark}
         action={
@@ -1400,6 +1412,10 @@ function NegotiationPanel({ result, live, dark }) {
 
   const muted = dark ? "text-slate-500" : "text-slate-400";
   const body = dark ? "text-slate-300" : "text-slate-600";
+  const noOffer = plan.mode === "NO_BUY"
+    ? "Laut Analyse nicht kaufen."
+    : plan.mode === "NO_LIMIT" ? "Die Kalkulation ergibt kein positives Einkaufslimit." : null;
+  const gap = plan.walkAway === null ? 0 : live.askingPrice - plan.walkAway;
 
   const copyNotes = async () => {
     const title =
@@ -1412,9 +1428,8 @@ function NegotiationPanel({ result, live, dark }) {
       result.target.listingUrl,
       "",
       `Angebot: ${euro(live.askingPrice)}`,
-      plan.mode === "NO_BUY"
-        ? "Laut Analyse nicht kaufen."
-        : `Einstieg: ${euro(plan.opening)} · Ziel: ${euro(plan.target)} · Höchstens: ${euro(plan.walkAway)}${plan.mode === "LOSS" ? ` (ohne Gewinn; Verkäufer müsste ${plan.gapPercent} % nachlassen)` : ""}`,
+      noOffer || `Einstieg: ${euro(plan.opening)} · Ziel: ${euro(plan.target)} · Höchstens: ${euro(plan.walkAway)}`,
+      gap > 0 ? `Für den Ankauf sind ${euro(gap)} Nachlass bis zum Einkaufslimit nötig.` : null,
       "",
       "Argumente:",
       ...negotiation.arguments.map((entry) => `+ ${entry.text}`),
@@ -1453,7 +1468,7 @@ function NegotiationPanel({ result, live, dark }) {
   );
 
   return (
-    <Panel dark={dark}>
+    <Panel>
       <Caption
         dark={dark}
         action={
@@ -1483,8 +1498,8 @@ function NegotiationPanel({ result, live, dark }) {
       </Caption>
 
       <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 rounded px-3 py-2 text-xs leading-5 ${tone}`}>
-        {plan.mode === "NO_BUY" ? (
-          <span>Laut Analyse nicht kaufen.</span>
+        {noOffer ? (
+          <span>{noOffer}</span>
         ) : (
           <>
             <Step label="Einstieg" value={plan.opening} profit={plan.profit?.opening} />
@@ -1492,14 +1507,9 @@ function NegotiationPanel({ result, live, dark }) {
             <Step label="Ziel" value={plan.target} profit={plan.profit?.target} strong />
             <span className={muted}>→</span>
             <Step label="Höchstens" value={plan.walkAway} profit={plan.profit?.walkAway} />
-            {plan.mode === "LOSS" ? (
-              <span className="basis-full text-[11px] text-red-600">
-                Zum Angebotspreis {euro(live.askingPrice)} bleiben {euro(-plan.loss)} – ohne Verlust erst ab{" "}
-                {euro(plan.walkAway)}, der Verkäufer müsste {plan.gapPercent} % nachlassen.
-              </span>
-            ) : Number.isFinite(plan.fullMarginPrice) && plan.fullMarginPrice < plan.opening ? (
+            {gap > 0 ? (
               <span className={`basis-full text-[11px] ${muted}`}>
-                Volle Zielmarge erst bei {euro(plan.fullMarginPrice)}.
+                Für den Ankauf sind {euro(gap)} Nachlass bis zum Einkaufslimit nötig.
               </span>
             ) : null}
           </>
@@ -1564,8 +1574,8 @@ const CHART_COLORS = {
     target: "#eb6834",
     trend: "#1baf7a",
     reference: "#64748b",
-    grid: "#f1f5f9",
-    axis: "#94a3b8",
+    grid: "#e5e9ee",
+    axis: "#5d6671",
     surface: "#ffffff",
   },
   dark: {
@@ -1894,7 +1904,7 @@ function MarketPositionPanel({ result, live, dark }) {
   // prices, the Marktwert through adjusted ones — two numbers for one thing.
   const share = position.total ? cheaper / position.total : null;
   const stats = [
-    position.trend ? {
+    !result.market.valuationNote && position.trend ? {
       key: "trend",
       label: "Je 10.000 km",
       value: `≈ ${euro(position.trend.per10000Km)}`,
@@ -1934,15 +1944,15 @@ function MarketPositionPanel({ result, live, dark }) {
   ].filter(Boolean);
 
   return (
-    <Panel dark={dark}>
+    <Panel>
       <Caption
         dark={dark}
         action={
           share === null ? null : (
-            <Chip dark={dark} tone={share > 0.6 ? "red" : share < 0.4 ? "emerald" : "slate"}>
+            <Chip dark={dark} tone={result.market.valuationNote ? "slate" : share > 0.6 ? "red" : share < 0.4 ? "emerald" : "slate"}>
               {cheaper} von {position.total} günstiger
               {/* A defect car is cheap because of the defect — no verdict on the price. */}
-              {result.target?.condition === "DAMAGED"
+              {result.market.valuationNote || result.target?.condition === "DAMAGED"
                 ? null
                 : ` · ${share > 0.6 ? "Angebot eher teuer" : share < 0.4 ? "Angebot eher günstig" : "Mittelfeld"}`}
             </Chip>
@@ -1966,7 +1976,7 @@ function MarketPositionPanel({ result, live, dark }) {
 
       <PriceMileageChart
         points={position.points}
-        trend={position.trend}
+        trend={result.market.valuationNote ? null : position.trend}
         targetKm={result.target.mileageKm}
         targetPrice={askingPrice}
         limit={(() => {
@@ -2034,7 +2044,7 @@ function VehiclePanel({ result, dark }) {
     target.title || [target.make, target.model].filter(Boolean).join(" ") || "Fahrzeug";
 
   return (
-    <Panel dark={dark}>
+    <Panel>
       <Gallery key={`gallery-${target.listingUrl || title}`} images={target.images} title={title} dark={dark} />
 
       <Caption
@@ -2151,7 +2161,7 @@ function MarketPanel({ result, dark }) {
   const market = result.market;
 
   return (
-    <Panel dark={dark}>
+    <Panel>
       <Caption
         dark={dark}
         action={
@@ -2168,17 +2178,17 @@ function MarketPanel({ result, dark }) {
       </Caption>
 
       <div className={dark ? "divide-y divide-slate-800" : "divide-y divide-slate-100"}>
-        <Line label="Marktwert" value={euro(market.marketValue)} dark={dark} tone="accent" />
+        <Line label="Marktwert" value={market.valuationNote ? "Nicht belastbar" : euro(market.marketValue)} dark={dark} tone="accent" />
         <Line
           label="Vergleichsspanne"
-          value={`${euro(market.rangeFrom)} – ${euro(market.rangeTo)}`}
+          value={Number.isFinite(market.rangeFrom) ? `${euro(market.rangeFrom)} – ${euro(market.rangeTo)}` : "–"}
           dark={dark}
         />
         <Line
           label="Differenz zum Angebot"
           value={signedEuro(market.differenceToAsking)}
           dark={dark}
-          tone={market.differenceToAsking >= 0 ? "positive" : "negative"}
+          tone={Number.isFinite(market.differenceToAsking) ? (market.differenceToAsking >= 0 ? "positive" : "negative") : "neutral"}
         />
         <Line
           label="Vergleiche"
@@ -2198,6 +2208,7 @@ function MarketPanel({ result, dark }) {
           dark={dark}
         />
       </div>
+      {market.valuationNote ? <p className="mt-3 text-xs font-semibold text-amber-700" role="status">{market.valuationNote}</p> : null}
       <p className={`mt-3 text-[11px] leading-relaxed ${dark ? "text-slate-400" : "text-slate-500"}`}>
         Inseratspreise, keine bestätigten Verkäufe. Die Spanne zeigt die Streuung der bereinigten Vergleiche; sie ist keine Preisgarantie. Datenqualität ist ein interner Punktwert, keine Trefferwahrscheinlichkeit.
       </p>
@@ -2205,24 +2216,10 @@ function MarketPanel({ result, dark }) {
   );
 }
 
-/** Which AI researched and which decided — to see that Gemini really ran. */
 function AiUsed({ deep, dark }) {
   const row = `flex flex-wrap items-center justify-between gap-2 rounded-xl p-3 text-sm ${dark ? "bg-slate-800" : "bg-slate-50"}`;
   const muted = dark ? "text-slate-400" : "text-slate-500";
-  const r = deep?.research;
   const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-
-  let research = { text: "–", warn: false };
-  if (r?.status === "OK") {
-    research = { text: `Gemini${r.model ? ` (${r.model})` : ""} · ${count(r.searches, "Suche", "Suchen")} · ${count(r.sources, "Quelle", "Quellen")}` };
-  } else if (r?.status === "FAILED") {
-    research = {
-      text: `Gemini fehlgeschlagen (${r.error}) → GPT-Websuche · ${count(r.gptSearches, "Suche", "Suchen")} · ${count(r.sources, "Quelle", "Quellen")}`,
-      warn: true,
-    };
-  } else if (r?.status === "OFF") {
-    research = { text: `GPT-Websuche · ${count(r.gptSearches, "Suche", "Suchen")} · ${count(r.sources, "Quelle", "Quellen")} (Gemini nicht aktiv)` };
-  }
 
   return (
     <div>
@@ -2231,7 +2228,9 @@ function AiUsed({ deep, dark }) {
         <div className="space-y-2">
           <div className={row}>
             <span className="font-semibold">Webrecherche</span>
-            <span className={research.warn ? (dark ? "text-amber-400" : "text-amber-700") : muted}>{research.text}</span>
+            <span className={muted}>
+              {count(deep.searches || 0, "Suche", "Suchen")} · {count(deep.sources?.length || 0, "Quelle", "Quellen")}
+            </span>
           </div>
           <div className={row}>
             <span className="font-semibold">Analyse & Entscheidung</span>
@@ -2274,7 +2273,7 @@ function TechnicalDetails({ result, dark }) {
   };
 
   return (
-    <Panel dark={dark}>
+    <Panel>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -2390,6 +2389,13 @@ function TechnicalDetails({ result, dark }) {
                   >
                     <p className="font-semibold">{entry.title || "Angebot"}</p>
                     <p className="mt-0.5 text-xs text-slate-500">{entry.reason}</p>
+                    {entry.source ? (
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {SOURCE_LABELS[entry.source] || entry.source}
+                        {Number.isFinite(entry.similarityScore) ? ` · ${entry.similarityScore} % Übereinstimmung` : ""}
+                        {Number.isFinite(entry.adjustedPrice) ? ` · ${euro(entry.adjustedPrice)} bereinigt` : ""}
+                      </p>
+                    ) : null}
                     {entry.listingUrl ? (
                       <a
                         href={entry.listingUrl}
@@ -2475,7 +2481,7 @@ function SavedAnalyses({ entries, dark, busy, onOpen, onDelete, onRefresh }) {
   const cell = "w-px px-3 py-1.5";
 
   return (
-    <Panel dark={dark} className="mb-4" padded={false}>
+    <Panel className="mb-4" padded={false}>
       <div className={`flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5 ${dark ? "border-slate-800" : "border-slate-100"}`}>
         <span className="flex items-center gap-2 text-[13px] font-semibold">
           <FiDatabase className={muted} />
@@ -2524,7 +2530,7 @@ function SavedAnalyses({ entries, dark, busy, onOpen, onDelete, onRefresh }) {
             </thead>
             <tbody className={dark ? "divide-y divide-slate-800" : "divide-y divide-slate-100"}>
               {shown.map((entry) => {
-                const meta = verdictMeta(entry.verdict);
+                const meta = verdictMeta(guardPurchaseDecision(entry.verdict, entry.maximumPurchasePrice, entry.askingPrice).action);
                 return (
                   <tr key={entry._id} className={dark ? "hover:bg-slate-800/50" : "hover:bg-slate-50"}>
                     <td className="max-w-[260px] py-1.5 pl-4 pr-3">
@@ -2614,17 +2620,17 @@ function Key({ children, dark }) {
   );
 }
 
-function MobileAssist({ url, dark, clipboardState, onAllowClipboard, onText, onCancel }) {
+function MobileAssist({ url, dark, clipboardState, extensionConnected, extensionError, onRetry, onAllowClipboard, onText, onCancel }) {
   const [draft, setDraft] = useState("");
   const muted = dark ? "text-slate-400" : "text-slate-500";
   const arrow = <FiChevronRight className={dark ? "text-slate-600" : "text-slate-300"} />;
 
   return (
-    <Panel dark={dark} className="mb-4 ring-2 ring-sky-500/50">
+    <Panel className="mb-4">
       <div className="flex items-center justify-between gap-3">
         <p className="flex items-center gap-2 text-sm font-semibold">
           <FiLoader className="animate-spin text-sky-600" />
-          mobile.de-Anzeige kopieren
+          Anzeige importieren
         </p>
         <button
           type="button"
@@ -2638,7 +2644,19 @@ function MobileAssist({ url, dark, clipboardState, onAllowClipboard, onText, onC
         </button>
       </div>
 
-      {/* The whole job in one line. */}
+      <div className="mt-3">
+        {extensionError ? <p className="mb-2 text-xs text-amber-600">{extensionError}</p> : null}
+        {extensionConnected ? (
+          <button type="button" onClick={onRetry} className="text-xs font-semibold text-sky-600 hover:underline">
+            Mit Erweiterung erneut versuchen
+          </button>
+        ) : (
+          <Link href="/einstellungen#browser-erweiterung" className="text-xs font-semibold text-sky-600 hover:underline">
+            mobile.de-Erweiterung in den Einstellungen einrichten
+          </Link>
+        )}
+      </div>
+
       <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
         <a
           href={url}
@@ -2705,7 +2723,7 @@ function RecentSearches({ items, dark, onSelect, onClear }) {
   if (!items.length) return null;
 
   return (
-    <Panel dark={dark} className="mb-5">
+    <Panel className="mb-5">
       <div className="mb-2 flex items-center justify-between">
         <span className="flex items-center gap-2 text-sm font-semibold">
           <FiClock />
@@ -2722,7 +2740,7 @@ function RecentSearches({ items, dark, onSelect, onClear }) {
 
       <div className="flex flex-wrap gap-2">
         {items.map((item) => {
-          const meta = verdictMeta(item.verdict);
+          const meta = verdictMeta(guardPurchaseDecision(item.verdict, item.limit, item.askingPrice).action);
           return (
             <button
               key={item.url}
@@ -2755,7 +2773,7 @@ function PasteListing({ dark, busy, onSubmit }) {
   const enough = text.trim().length >= 80;
 
   return (
-    <Panel dark={dark} className="mt-4">
+    <Panel className="mt-4">
       <SectionHead
         icon={FiClipboard}
         title="Anzeigentext einfügen"
@@ -2794,7 +2812,7 @@ function PasteListing({ dark, busy, onSubmit }) {
           type="button"
           disabled={busy || !enough}
           onClick={() => onSubmit(text)}
-          className="inline-flex h-11 items-center gap-2 rounded-xl bg-sky-600 px-6 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="btn btn-primary"
         >
           {busy ? <FiLoader className="animate-spin" /> : <FiSearch />}
           Text auswerten und analysieren
@@ -2873,7 +2891,7 @@ function ManualEntryForm({ partial, dark, busy, onSubmit }) {
   }`;
 
   return (
-    <Panel dark={dark} className="mt-4">
+    <Panel className="mt-4">
       <SectionHead
         icon={FiEdit3}
         title="Fahrzeugdaten selbst eintragen"
@@ -2972,7 +2990,7 @@ function ManualEntryForm({ partial, dark, busy, onSubmit }) {
               title: [form.make, form.model, form.variant].filter(Boolean).join(" "),
             })
           }
-          className="inline-flex h-11 items-center gap-2 rounded-xl bg-sky-600 px-6 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="btn btn-primary"
         >
           {busy ? <FiLoader className="animate-spin" /> : <FiSearch />}
           Mit diesen Daten analysieren
@@ -3000,27 +3018,14 @@ const LOADING_STEPS = [
   { at: 32, text: "Empfehlung wird formuliert" },
 ];
 
-const DEEP_STEPS = [
-  { at: 0, text: "KI prüft die Vergleichsfahrzeuge" },
-  { at: 10, text: "KI recherchiert Modell, Motor und Schwachstellen im Web" },
-  { at: 35, text: "KI liest die Anzeige und sucht Risiken" },
-  { at: 60, text: "KI wägt ab und trifft die Entscheidung" },
-  { at: 100, text: "Noch einen Moment – gründliche Prüfung" },
-];
-
-function LoadingPanel({ seconds, dark, deepSince = null }) {
-  // In "Tief" the first part (market search) is followed by the AI review;
-  // both are one wait for the buyer, with one result at the end.
-  const deepSeconds = deepSince === null ? null : Math.max(0, seconds - deepSince);
-  const steps = deepSeconds === null ? LOADING_STEPS : DEEP_STEPS;
-  const at = deepSeconds === null ? seconds : deepSeconds;
-  const step = [...steps].reverse().find((entry) => at >= entry.at) || steps[0];
+function LoadingPanel({ seconds, dark }) {
+  const step = [...LOADING_STEPS].reverse().find((entry) => seconds >= entry.at) || LOADING_STEPS[0];
 
   return (
-    <Panel dark={dark}>
+    <Panel>
       <div className="flex flex-col items-center py-12 text-center">
         <FiLoader className="animate-spin text-4xl text-sky-600" />
-        <h2 className="mt-4 text-lg font-bold">{deepSince === null ? "Analyse läuft" : "KI-Bewertung läuft"}</h2>
+        <h2 className="mt-4 text-lg font-bold">Analyse läuft</h2>
         <p className={`mt-1 text-sm ${dark ? "text-slate-400" : "text-slate-500"}`}>{step.text}</p>
         <p className="mt-1 text-xs tabular-nums text-slate-400">{seconds}s</p>
 
@@ -3030,13 +3035,9 @@ function LoadingPanel({ seconds, dark, deepSince = null }) {
           }`}
         >
           <div
-            className="h-full rounded-full bg-sky-600 transition-all duration-700"
+            className="h-full rounded-full bg-slate-600 transition-all duration-700"
             style={{
-              width: `${
-                deepSeconds === null
-                  ? Math.min(60, 12 + seconds * 2.6)
-                  : Math.min(96, 60 + deepSeconds * 0.4)
-              }%`,
+              width: `${Math.min(96, 12 + seconds * 2.6)}%`,
             }}
           />
         </div>
@@ -3049,11 +3050,12 @@ function LoadingPanel({ seconds, dark, deepSince = null }) {
 /* ============================================================ tiefe analyse */
 
 /** POST helper for the AI review: JSON in, JSON out, German error messages. */
-async function postJson(url, body) {
+async function postJson(url, body, signal) {
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    signal,
   });
   const raw = await response.text();
   let data;
@@ -3078,18 +3080,20 @@ const DEEP_MAX_WAIT_MS = 8 * 60_000;
  * moved on to another car. Throws a German message.
  */
 async function fetchDeep(base, isCurrent = () => true) {
-  const { jobId, research } = await postJson("/api/market-analysis/deep", { result: base });
+  const signal = AbortSignal.timeout(DEEP_MAX_WAIT_MS);
+  const { jobId } = await postJson("/api/market-analysis/deep", { result: base }, signal);
   if (!jobId) throw new Error("Die KI-Bewertung konnte nicht gestartet werden.");
 
-  const startedAt = Date.now();
-  while (Date.now() - startedAt < DEEP_MAX_WAIT_MS) {
+  while (!signal.aborted) {
     await new Promise((resolve) => setTimeout(resolve, DEEP_POLL_MS));
     if (!isCurrent()) throw Object.assign(new Error("abgebrochen"), { cancelled: true });
+    if (signal.aborted) break;
     let data;
     try {
-      data = await postJson("/api/market-analysis/deep/status", { jobId, result: base, research });
+      data = await postJson("/api/market-analysis/deep/status", { jobId, result: base }, signal);
     } catch (error) {
       // A dropped connection during one check is not the end of the job.
+      if (signal.aborted) break;
       if (error instanceof TypeError) continue;
       throw error;
     }
@@ -3103,6 +3107,14 @@ function mergeDeep(base, data) {
   return {
     ...base,
     comparables: data.comparables,
+    meta: {
+      ...base.meta,
+      candidatesAccepted: data.comparables.length,
+      sources: (base.meta?.sources ?? []).map((source) => ({
+        ...source,
+        inValuation: data.market.sourceCounts?.[source.source] ?? 0,
+      })),
+    },
     market: data.market,
     dealer: { ...base.dealer, ...data.dealer },
     confidence: data.confidence,
@@ -3119,11 +3131,12 @@ export default function MarktanalysePage() {
   const router = useRouter();
   const { openSidebar } = useSidebar();
 
-  const [dark, setDark] = useState(false);
+  const dark = false;
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [seconds, setSeconds] = useState(0);
-  const [result, setResult] = useState(null);
+  const [rawResult, setResult] = useState(null);
+  const result = useMemo(() => withMarketEvidence(rawResult), [rawResult]);
   const [error, setError] = useState(null);
   const [recent, setRecent] = useState([]);
   const [lastManual, setLastManual] = useState(null);
@@ -3135,9 +3148,6 @@ export default function MarktanalysePage() {
   const [deepRunning, setDeepRunning] = useState(false);
   const [deepError, setDeepError] = useState(null);
   const deepRunRef = useRef(0);
-  // Second at which the "Tief" run moved from the market search to the AI
-  // review — the loading screen shows the second part from then on.
-  const [deepSince, setDeepSince] = useState(null);
 
   // Everything the user may change after the analysis has run. Held here, not
   // inside the ledger, so the sticky strip and the price scale see the same
@@ -3156,14 +3166,38 @@ export default function MarktanalysePage() {
   // directly (an imported page or pasted text), so a re-run — a postcode for
   // the pickup, "Erneut" — reuses it instead of asking mobile.de again.
   const sourceRef = useRef(null);
-  const pendingImportRef = useRef(null);
-  const importStartedRef = useRef(false);
 
   // A mobile.de link waiting for its ad text, and whether the browser lets the
   // page read the clipboard (then the text is picked up without Ctrl+V).
   const [awaiting, setAwaiting] = useState(null);
   const [clipboardState, setClipboardState] = useState("unknown");
   const seenClipboardRef = useRef("");
+  const [extensionConnected, setExtensionConnected] = useState(false);
+  const [browserImport, setBrowserImport] = useState(null);
+  const browserImportRef = useRef(null);
+  const busy = loading || Boolean(browserImport);
+
+  const cancelBrowserImport = useCallback(() => {
+    browserImportRef.current?.abort();
+    browserImportRef.current = null;
+    setBrowserImport(null);
+  }, []);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    let active = true;
+    const check = async () => {
+      const connected = await detectMarketExtension();
+      if (active) setExtensionConnected(connected);
+    };
+    check();
+    window.addEventListener("focus", check);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", check);
+      browserImportRef.current?.abort();
+    };
+  }, [status]);
 
   const live = useMemo(
     () => (result ? recalculate(result, adjust) : null),
@@ -3171,10 +3205,6 @@ export default function MarktanalysePage() {
   );
 
   useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    setDark(saved === "dark" || (!saved && prefersDark));
-
     try {
       const stored = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
       if (Array.isArray(stored)) setRecent(stored);
@@ -3205,32 +3235,18 @@ export default function MarktanalysePage() {
           ? mergeDeep(current, data)
           : current,
       );
-      // A target profit the review argued for replaces the one in the ledger.
-      if (data.deep?.targetProfit && Number.isFinite(data.dealer?.targetProfit)) {
-        setAdjust((current) => ({ ...current, profit: data.dealer.targetProfit }));
-      }
       toast.success("KI-Bewertung fertig.");
+      return data;
     } catch (deepFailure) {
       if (run !== deepRunRef.current || deepFailure?.cancelled) return;
-      const message = deepFailure?.message || "KI-Bewertung fehlgeschlagen.";
+      const message = deepFailure?.name === "TimeoutError"
+        ? "Die KI-Bewertung hat zu lange gedauert. Bitte erneut versuchen."
+        : deepFailure?.message || "KI-Bewertung fehlgeschlagen.";
       setDeepError(message);
       toast.error(message);
     } finally {
       if (run === deepRunRef.current) setDeepRunning(false);
     }
-  }, []);
-
-  useEffect(() => {
-    // An ad sent by the bookmark arrives in the address fragment. It is taken
-    // out of the address at once — and parked, in case a sign-in comes first.
-    if (!window.location.hash.startsWith(IMPORT_PREFIX)) return;
-    pendingImportRef.current = window.location.hash;
-    try {
-      sessionStorage.setItem("marktanalyse.import", window.location.hash);
-    } catch {
-      /* the ref still holds it for this visit */
-    }
-    window.history.replaceState(null, "", window.location.pathname + window.location.search);
   }, []);
 
   useEffect(() => {
@@ -3256,15 +3272,10 @@ export default function MarktanalysePage() {
     if (status === "authenticated") loadSaved();
   }, [status, loadSaved]);
 
-  const secondsRef = useRef(0);
-  useEffect(() => {
-    secondsRef.current = seconds;
-  }, [seconds]);
 
   useEffect(() => {
     if (!loading) {
       setSeconds(0);
-      setDeepSince(null);
       return undefined;
     }
     const interval = setInterval(() => setSeconds((value) => value + 1), 1_000);
@@ -3286,6 +3297,7 @@ export default function MarktanalysePage() {
         "Fahrzeug",
       verdict: data.verdict,
       limit: data.dealer?.maximumPurchasePrice ?? null,
+      askingPrice: data.dealer?.askingPrice ?? data.target.price,
       at: data.meta.analyzedAt,
     };
 
@@ -3305,6 +3317,7 @@ export default function MarktanalysePage() {
 
   const analyze = useCallback(
     async (targetUrl, manualVehicle = null, pastedText = null, extras = null) => {
+      cancelBrowserImport();
       const check = detectPortal(targetUrl);
       // Pasted ad text carries everything; the link is then optional.
       if (check.status !== "supported" && !pastedText) {
@@ -3322,13 +3335,15 @@ export default function MarktanalysePage() {
 
       const cleanUrl = check.status === "supported" ? String(targetUrl).trim() : "";
       let pageHtml = extras?.pageHtml || null;
+      let mobileSearch = extras?.mobileSearch || null;
       let pasted = pastedText;
 
       if (pageHtml || pasted) {
-        sourceRef.current = { url: cleanUrl, pageHtml, pastedText: pasted };
+        sourceRef.current = { url: cleanUrl, pageHtml, pastedText: pasted, mobileSearch };
       } else if (!manualVehicle && sourceRef.current?.url === cleanUrl) {
         pageHtml = sourceRef.current.pageHtml;
         pasted = sourceRef.current.pastedText;
+        mobileSearch = sourceRef.current.mobileSearch;
       } else if (sourceRef.current?.url !== cleanUrl) {
         sourceRef.current = null;
       }
@@ -3336,7 +3351,7 @@ export default function MarktanalysePage() {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
-      const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      let timer;
 
       setLoading(true);
       setResult(null);
@@ -3344,9 +3359,14 @@ export default function MarktanalysePage() {
       deepRunRef.current += 1;
       setDeepRunning(false);
       setDeepError(null);
-      setDeepSince(null);
 
       try {
+        if (!mobileSearch && !manualVehicle && !pasted && check.status === "supported" &&
+          check.label !== "mobile.de" && await detectMarketExtension() && !controller.signal.aborted) {
+          mobileSearch = await importMobileComparables({ url: cleanUrl }, { signal: controller.signal });
+        }
+        if (controller.signal.aborted) return;
+        timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
         const response = await fetch("/api/market-analysis", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -3356,6 +3376,7 @@ export default function MarktanalysePage() {
             ...(pasted ? { pastedText: pasted } : {}),
             ...(extras || {}),
             ...(pageHtml ? { pageHtml } : {}),
+            ...(mobileSearch ? { mobileSearch } : {}),
             // The decision and the Fazit come from the AI review below.
             skipModel: true,
           }),
@@ -3383,45 +3404,34 @@ export default function MarktanalysePage() {
           return;
         }
 
-        // Every analysis ends with the AI review; the result appears once,
-        // complete — never first one set of figures and then another.
-        let final = data;
-        if (Array.isArray(data.comparables) && data.comparables.length) {
-          const run = ++deepRunRef.current;
-          setDeepSince(secondsRef.current);
-          try {
-            const deep = await fetchDeep(data, () => run === deepRunRef.current && !controller.signal.aborted);
-            if (run !== deepRunRef.current || controller.signal.aborted) return;
-            final = mergeDeep(data, deep);
-          } catch (deepFailure) {
-            if (run !== deepRunRef.current || controller.signal.aborted || deepFailure?.cancelled) return;
-            // The figures still stand; the panel offers a retry of the AI part only.
-            const message = deepFailure?.message || "KI-Bewertung fehlgeschlagen.";
-            setDeepError(message);
-            toast.error(`${message} Die Zahlen werden ohne KI-Bewertung angezeigt.`);
-          }
-        }
-
-        setResult(final);
+        if (controller.signal.aborted || abortRef.current !== controller) return;
+        setResult(data);
         // A re-run for the pickup postcode keeps the cost items already typed in.
         setAdjust((current) =>
           extras?.pickupPostcode
             ? {
-                ...initialAdjust(final),
+                ...initialAdjust(data),
                 costs: current.costs || {},
                 customCosts: current.customCosts || [],
                 refurbishment: current.refurbishment,
                 negotiated: current.negotiated,
               }
-            : initialAdjust(final),
+            : initialAdjust(data),
         );
         setSavedAt(null);
         setOpenedFrom(null);
         setLastManual(null);
-        rememberSearch(final);
+        rememberSearch(data);
+        if (data.comparables?.length) {
+          void runDeep(data).then((review) => {
+            if (review && abortRef.current === controller && !controller.signal.aborted) {
+              rememberSearch(mergeDeep(data, review));
+            }
+          });
+        }
         toast.success(
-          final.dealer?.available
-            ? `Einkaufslimit ${limitText(final.dealer.maximumPurchasePrice)}`
+          data.dealer?.available
+            ? `Einkaufslimit ${limitText(data.dealer.maximumPurchasePrice)}`
             : "Analyse abgeschlossen.",
         );
       } catch (requestError) {
@@ -3439,10 +3449,10 @@ export default function MarktanalysePage() {
         toast.error(message);
       } finally {
         clearTimeout(timer);
-        setLoading(false);
+        if (abortRef.current === controller) setLoading(false);
       }
     },
-    [rememberSearch],
+    [cancelBrowserImport, rememberSearch, runDeep],
   );
 
   /**
@@ -3452,10 +3462,20 @@ export default function MarktanalysePage() {
    */
   const currentResult = useCallback(() => {
     if (!result) return null;
-    if (!live) return result;
+    const decision = live
+      ? { action: live.verdict, note: live.decisionNote }
+      : guardPurchaseDecision(result.deep?.decision?.action || result.verdict, null, null);
+    const checked = decision.note
+      ? {
+          ...result,
+          verdict: decision.action,
+          deep: result.deep ? { ...result.deep, decision: { action: decision.action }, decisionNote: decision.note } : null,
+        }
+      : result;
+    if (!live) return checked;
 
     return {
-      ...result,
+      ...checked,
       verdict: live.verdict,
       dealer: {
         ...result.dealer,
@@ -3472,6 +3492,7 @@ export default function MarktanalysePage() {
         maximumPurchasePrice: live.limit,
         expectedProfit: live.expected,
         requiredDiscount: live.discount,
+        requiredDiscountPercent: live.askingPrice > 0 ? Math.max(0, (live.askingPrice - live.limit) / live.askingPrice * 100) : 0,
         pickup: result.dealer?.pickup
           ? {
               ...result.dealer.pickup,
@@ -3525,7 +3546,6 @@ export default function MarktanalysePage() {
       deepRunRef.current += 1;
       setDeepRunning(false);
       setDeepError(null);
-      setDeepSince(null);
       setResult(stored);
       setAdjust(data.entry.inputs || initialAdjust(stored));
       setAwaiting(null);
@@ -3562,12 +3582,8 @@ export default function MarktanalysePage() {
     [loadSaved],
   );
 
-  /**
-   * Entering a link. mobile.de is not asked at all — it refuses every time —
-   * and the fast path opens instead. Everything else is analysed directly.
-   */
   const submit = useCallback(
-    (raw) => {
+    async (raw) => {
       const link = String(raw || "").trim();
       if (!link) {
         toast.error("Bitte einen Fahrzeug-Link eingeben oder den Anzeigentext einfügen.");
@@ -3576,17 +3592,57 @@ export default function MarktanalysePage() {
 
       const portal = detectPortal(link);
       const known = sourceRef.current?.url === link;
-      if (portal.status === "supported" && portal.label === "mobile.de" && !MOBILE_DIRECT && !known) {
+      if (portal.status === "supported" && portal.label === "mobile.de" && !known) {
+        cancelBrowserImport();
         abortRef.current?.abort();
+        deepRunRef.current += 1;
+        setDeepRunning(false);
         setResult(null);
         setError(null);
-        setAwaiting({ url: link });
+        setAwaiting(null);
+
+        const controller = new AbortController();
+        browserImportRef.current = controller;
+        setBrowserImport({ status: "LOADING" });
+        const connected = await detectMarketExtension();
+        if (controller.signal.aborted) return;
+        setExtensionConnected(connected);
+        try {
+          if (connected) {
+            const page = await importMobileListing(link, {
+              signal: controller.signal,
+              onStatus: (status, showTab) => setBrowserImport({ status, showTab }),
+            });
+            if (controller.signal.aborted) return;
+            let mobileSearch = null;
+            if (page.comparisonSearch) {
+              setBrowserImport({ status: "SEARCHING" });
+              mobileSearch = await importMobileComparables(page, { signal: controller.signal, originalUrl: link });
+              if (controller.signal.aborted) return;
+            }
+            setUrl(page.url);
+            analyze(page.url, null, null, { pageHtml: page.html, mobileSearch });
+          } else if (MOBILE_DIRECT) {
+            analyze(link);
+          } else {
+            setAwaiting({ url: link });
+          }
+        } catch (failure) {
+          if (!controller.signal.aborted) {
+            setAwaiting({ url: link, extensionError: failure.message });
+          }
+        } finally {
+          if (browserImportRef.current === controller) {
+            browserImportRef.current = null;
+            setBrowserImport(null);
+          }
+        }
         return;
       }
 
       analyze(link);
     },
-    [analyze],
+    [analyze, cancelBrowserImport],
   );
 
   /** A copied ad arrived — by Ctrl+V, the clipboard, or the text box. */
@@ -3669,7 +3725,7 @@ export default function MarktanalysePage() {
   // the analysis. Pasting into a price or note field stays a normal paste.
   useEffect(() => {
     const onPaste = (event) => {
-      if (loading) return;
+      if (busy) return;
       const field = event.target?.closest?.("input, textarea, select, [contenteditable='true']");
       if (field && !field.dataset?.adPaste) return;
 
@@ -3690,33 +3746,7 @@ export default function MarktanalysePage() {
 
     document.addEventListener("paste", onPaste);
     return () => document.removeEventListener("paste", onPaste);
-  }, [loading, startFromText, submit]);
-
-  useEffect(() => {
-    if (status !== "authenticated" || importStartedRef.current) return;
-
-    let fragment = pendingImportRef.current;
-    try {
-      fragment = fragment || sessionStorage.getItem("marktanalyse.import");
-      sessionStorage.removeItem("marktanalyse.import");
-    } catch {
-      /* nothing parked */
-    }
-    if (!fragment) return;
-
-    importStartedRef.current = true;
-    (async () => {
-      try {
-        const { url: importedUrl, html } = await decodeImport(fragment);
-        setUrl(importedUrl);
-        toast.success("Anzeige aus dem Browser übernommen.");
-        analyze(importedUrl, null, null, { pageHtml: html });
-      } catch (importError) {
-        setError({ message: importError.message });
-        toast.error(importError.message);
-      }
-    })();
-  }, [status, analyze]);
+  }, [busy, startFromText, submit]);
 
   // "Analysieren" in the new-listings feed opens this page with ?url=… — the
   // check starts on its own, once, and the address is cleaned up.
@@ -3736,7 +3766,8 @@ export default function MarktanalysePage() {
 
   const copySummary = async () => {
     if (!result) return;
-    const dealer = result.dealer;
+    const checked = currentResult();
+    const dealer = checked.dealer;
 
     const lines = [
       result.target.title || [result.target.make, result.target.model].filter(Boolean).join(" "),
@@ -3758,12 +3789,12 @@ export default function MarktanalysePage() {
         ? `Ausstattung: ${result.insights.equipment.levelLabel}${result.insights.equipment.highlights.length ? ` (${result.insights.equipment.highlights.join(", ")})` : ""}`
         : null,
       live?.negotiation
-        ? live.negotiation.mode === "NO_BUY"
-          ? "Verhandlung: laut Analyse nicht kaufen"
-          : `Verhandlung: Einstieg ${euro(live.negotiation.opening)} · Ziel ${euro(live.negotiation.target)} · Höchstens ${euro(live.negotiation.walkAway)}`
+        ? live.negotiation.mode === "STEPS"
+          ? `Verhandlung: Einstieg ${euro(live.negotiation.opening)} · Ziel ${euro(live.negotiation.target)} · Höchstens ${euro(live.negotiation.walkAway)}`
+          : live.negotiation.stanceLabel
         : null,
-      `Bewertung: ${verdictMeta(live?.verdict ?? result.verdict).label} · Datenqualität ${result.confidence}/100`,
-      result.deep?.decision?.headline ? `KI-Bewertung: ${result.deep.decision.headline}` : null,
+      `Bewertung: ${verdictMeta(checked.verdict).label} · Datenqualität ${result.confidence}/100`,
+      checked.deep?.decisionNote || checked.deep?.decision?.headline,
       result.target.listingUrl,
     ].filter(Boolean);
 
@@ -3776,6 +3807,7 @@ export default function MarktanalysePage() {
   };
 
   const reset = () => {
+    cancelBrowserImport();
     deepRunRef.current += 1;
     setDeepRunning(false);
     setDeepError(null);
@@ -3793,28 +3825,22 @@ export default function MarktanalysePage() {
   }
 
   return (
-    <main
-      className={`min-h-screen ${
-        dark ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
-      }`}
-    >
+    <main className="min-h-screen bg-canvas text-ink">
       <div className="mx-auto max-w-[1400px] px-3 py-4 sm:px-5">
         {/* toolbar: title and the one input, on a single row */}
-        <header className="mb-4 flex flex-wrap items-center gap-3">
+        <header className="ind-plate mb-4 flex flex-wrap items-center gap-3 px-4 py-3">
           <button
             type="button"
             onClick={openSidebar}
-            className={`rounded p-2 md:hidden ${
-              dark ? "bg-slate-900" : "bg-white shadow-sm"
-            }`}
+            className="ind-icon-btn md:hidden"
             aria-label="Menü öffnen"
           >
             <FiMenu />
           </button>
 
           <div className="mr-2">
-            <h1 className="text-base font-bold leading-tight">Ankaufs-Check</h1>
-            <p className={`text-[11px] ${dark ? "text-slate-500" : "text-slate-500"}`}>
+            <h1 className="ind-title">Ankaufs-Check</h1>
+            <p className="mt-0.5 text-xs text-muted">
               Marktwert und Einkaufslimit aus einem Fahrzeug-Link
             </p>
           </div>
@@ -3822,7 +3848,7 @@ export default function MarktanalysePage() {
           {/* Analyse | Marktwissen */}
           <div
             role="tablist"
-            className={`inline-flex rounded p-0.5 text-xs ${dark ? "bg-slate-900" : "bg-slate-200/70"}`}
+            className="ind-seg inline-flex overflow-hidden"
           >
             {[
               ["ANALYSE", "Analyse"],
@@ -3834,15 +3860,7 @@ export default function MarktanalysePage() {
                 role="tab"
                 aria-selected={view === id}
                 onClick={() => setView(id)}
-                className={`rounded px-2.5 py-1 font-semibold transition ${
-                  view === id
-                    ? dark
-                      ? "bg-slate-700 text-slate-100"
-                      : "bg-white text-slate-900 shadow-sm"
-                    : dark
-                      ? "text-slate-400 hover:text-slate-200"
-                      : "text-slate-500 hover:text-slate-800"
-                }`}
+                className={`ind-seg-btn ind-seg-sm ${view === id ? "ind-seg-on" : ""}`}
               >
                 {label}
               </button>
@@ -3854,9 +3872,7 @@ export default function MarktanalysePage() {
             onClick={() => setSettingsOpen(true)}
             title="Einstellungen: Marge, Standort, Abholkosten"
             aria-label="Einstellungen"
-            className={`inline-flex h-7 w-7 items-center justify-center rounded border text-sm ${
-              dark ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-300 text-slate-600 hover:bg-white"
-            }`}
+            className="ind-icon-btn"
           >
             <FiSettings />
           </button>
@@ -3868,47 +3884,41 @@ export default function MarktanalysePage() {
 
           {view === "ANALYSE" ? (
           <form
-            className="flex min-w-[280px] flex-1 items-center gap-2"
+            className="flex min-w-0 basis-full items-center gap-2 sm:min-w-[280px] sm:flex-1"
             onSubmit={(event) => {
               event.preventDefault();
               submit(url);
             }}
           >
-            <div className="relative flex-1">
+            <div className="relative min-w-0 flex-1">
               <FiLink className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="url"
                 data-ad-paste="true"
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
-                disabled={loading}
+                disabled={busy}
                 placeholder="Link einfügen – oder den kopierten Anzeigentext (Strg+V)"
-                className={`h-9 w-full rounded border pl-8 pr-3 text-sm outline-none focus:ring-2 ${
-                  dark
-                    ? "border-slate-700 bg-slate-900 focus:ring-sky-500/30"
-                    : "border-slate-300 bg-white focus:ring-sky-200"
-                }`}
+                className="ind-input h-[34px] w-full pl-8 pr-3"
               />
             </div>
 
             <button
               type="submit"
-              disabled={loading}
-              className="inline-flex h-9 items-center gap-2 rounded bg-sky-600 px-4 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={busy}
+              className="ind-btn ind-btn-dark disabled:cursor-not-allowed"
             >
-              {loading ? <FiLoader className="animate-spin" /> : <FiSearch />}
-              {loading ? "Prüft…" : "Prüfen"}
+              {busy ? <FiLoader className="animate-spin" /> : <FiSearch />}
+              {busy ? "Prüft…" : "Prüfen"}
             </button>
 
             {result || error ? (
               <button
                 type="button"
                 onClick={reset}
-                disabled={loading}
+                disabled={busy}
                 aria-label="Zurücksetzen"
-                className={`inline-flex h-9 w-9 items-center justify-center rounded border ${
-                  dark ? "border-slate-700" : "border-slate-300"
-                }`}
+                className="ind-icon-btn"
               >
                 <FiRefreshCw />
               </button>
@@ -3919,26 +3929,22 @@ export default function MarktanalysePage() {
                 type="button"
                 onClick={copySummary}
                 title="Zusammenfassung kopieren"
-                className={`inline-flex h-9 w-9 items-center justify-center rounded border ${
-                  dark ? "border-slate-700" : "border-slate-300"
-                }`}
+                className="ind-icon-btn"
               >
                 <FiCopy />
               </button>
             ) : null}
 
-            {result && !loading ? (
+            {result && !busy ? (
               <button
                 type="button"
                 onClick={saveResult}
                 disabled={saving}
                 title={savedAt ? "Gespeichert" : "Bewertung speichern"}
                 aria-label={savedAt ? "Gespeichert" : "Bewertung speichern"}
-                className={`inline-flex h-9 w-9 items-center justify-center rounded border disabled:opacity-60 ${
-                  dark ? "border-slate-700" : "border-slate-300"
-                } ${savedAt ? "text-emerald-600" : ""}`}
+                className="ind-icon-btn"
               >
-                {saving ? <FiLoader className="animate-spin" /> : savedAt ? <FiCheckCircle /> : <FiSave />}
+                {saving ? <FiLoader className="animate-spin" /> : savedAt ? <FiCheckCircle className="text-emerald-600" /> : <FiSave />}
               </button>
             ) : null}
           </form>
@@ -3948,21 +3954,13 @@ export default function MarktanalysePage() {
         {view === "EXPERT" ? <ExpertKnowledge dark={dark} /> : (
         <>
 
-        {!url.trim() && !loading && !result && !awaiting ? (
-          <p className={`-mt-2 mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] ${dark ? "text-slate-500" : "text-slate-500"}`}>
-            <span>Link einfügen</span>
-            <span className={dark ? "text-slate-700" : "text-slate-300"}>·</span>
-            <span className="inline-flex flex-wrap items-center gap-1">
-              bei mobile.de die ganze Seite:
-              <Key dark={dark}>Strg+A</Key>
-              <Key dark={dark}>Strg+C</Key>
-              auf der Anzeige, dann hier
-              <Key dark={dark}>Strg+V</Key>
-            </span>
-          </p>
+        {!busy && !result && !awaiting ? (
+          <div className="-mt-2 mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <p className={`text-xs ${dark ? "text-slate-400" : "text-slate-500"}`}>Fahrzeug-Link einfügen und prüfen.</p>
+          </div>
         ) : null}
 
-        {url.trim() && !loading && portal.status !== "supported" ? (
+        {url.trim() && !busy && portal.status !== "supported" ? (
           <p className="mb-3 text-[11px] text-amber-600">
             {portal.status === "unsupported"
               ? `${portal.host} wird nicht unterstützt.`
@@ -3970,18 +3968,42 @@ export default function MarktanalysePage() {
           </p>
         ) : null}
 
-        {awaiting && !loading ? (
+        {browserImport ? (
+          <Panel className="mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div role="status" className="flex items-center gap-2 text-sm">
+                <FiLoader className="shrink-0 animate-spin text-sky-600" />
+                {browserImport.status === "WAITING"
+                  ? "Bitte die Anzeige im geöffneten Tab prüfen oder bestätigen. Danach läuft die Analyse weiter."
+                  : browserImport.status === "SEARCHING"
+                    ? "Vergleichsfahrzeuge werden gesucht …"
+                    : "Fahrzeugdaten werden geladen …"}
+              </div>
+              <div className="flex items-center gap-3 text-xs font-semibold">
+                {browserImport.status === "WAITING" ? (
+                  <button type="button" onClick={browserImport.showTab} className="text-sky-600 hover:underline">Zum Anzeigen-Tab</button>
+                ) : null}
+                <button type="button" onClick={cancelBrowserImport} className="text-slate-500 hover:underline">Abbrechen</button>
+              </div>
+            </div>
+          </Panel>
+        ) : null}
+
+        {awaiting && !busy ? (
           <MobileAssist
             url={awaiting.url}
             dark={dark}
             clipboardState={clipboardState}
+            extensionConnected={extensionConnected}
+            extensionError={awaiting.extensionError}
+            onRetry={() => submit(awaiting.url)}
             onAllowClipboard={allowClipboard}
             onText={startFromText}
             onCancel={() => setAwaiting(null)}
           />
         ) : null}
 
-        {!loading && !result && !awaiting ? (
+        {!busy && !result && !awaiting ? (
           <SavedAnalyses
             entries={saved}
             dark={dark}
@@ -3992,7 +4014,7 @@ export default function MarktanalysePage() {
           />
         ) : null}
 
-        {!loading && !result && !error ? (
+        {!busy && !result && !error ? (
           <RecentSearches
             items={recent}
             dark={dark}
@@ -4087,12 +4109,12 @@ export default function MarktanalysePage() {
           </>
         ) : null}
 
-        {loading ? <LoadingPanel seconds={seconds} dark={dark} deepSince={deepSince} /> : null}
+        {loading ? <LoadingPanel seconds={seconds} dark={dark} /> : null}
 
-        {!loading && result ? (
+        {!busy && result ? (
           <>
             <DecisionStrip
-              result={result}
+              result={currentResult()}
               live={live}
               dark={dark}
               onContactSent={(entry) =>
@@ -4122,23 +4144,17 @@ export default function MarktanalysePage() {
               </p>
             ) : null}
 
-            {/* 1 · Fazit — the AI review (or its retry when it failed) */}
-            <div className="mb-4">
-              <DeepPanel
-                deep={result.deep || null}
-                live={live}
-                market={result.market}
-                running={deepRunning}
-                error={deepError}
-                onRun={result.comparables?.length ? () => runDeep(currentResult()) : null}
-                dark={dark}
-              />
-            </div>
-
-            {/* 2 · Market evidence on the left; the calculation (a tool, not
-                the analysis) and the car on the right. */}
             <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
               <div className="min-w-0 space-y-4">
+                <DeepPanel
+                  deep={result.deep || null}
+                  live={live}
+                  market={result.market}
+                  running={deepRunning}
+                  error={deepError}
+                  onRun={result.comparables?.length ? () => runDeep(currentResult()) : null}
+                  dark={dark}
+                />
                 <NegotiationPanel result={result} live={live} dark={dark} />
                 <MarketPositionPanel result={result} live={live} dark={dark} />
                 <ComparablesTable
@@ -4148,7 +4164,10 @@ export default function MarktanalysePage() {
                 />
               </div>
 
-              <aside className="min-w-0 space-y-4">
+              <aside
+                aria-label="Fahrzeug und Kalkulation"
+                className="min-w-0 space-y-4"
+              >
                 <VehiclePanel result={result} dark={dark} />
                 <EquipmentPanel result={result} dark={dark} />
                 <MarketPanel result={result} dark={dark} />

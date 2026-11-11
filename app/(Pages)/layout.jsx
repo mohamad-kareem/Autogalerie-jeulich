@@ -5,13 +5,13 @@ import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/app/(components)/Sidebar";
 import { SidebarContext } from "@/app/(components)/SidebarContext";
+import ConfirmHost from "@/app/(components)/ConfirmHost";
 
 export default function PagesLayout({ children }) {
   const { data: session } = useSession();
   const pathname = usePathname();
 
-  const [darkMode, setDarkMode] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(true);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // ✅ ONLY auth/public pages (Reg is allowed)
@@ -66,29 +66,15 @@ export default function PagesLayout({ children }) {
     });
   };
 
+  // The staff area is always light.
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
-
-    const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
-
-    setDarkMode(isDark);
-    document.documentElement.classList.toggle("dark", isDark);
+    document.documentElement.classList.remove("dark");
   }, []);
 
   // Close mobile sidebar on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
-
-  const handleToggleDarkMode = () => {
-    const next = !darkMode;
-    setDarkMode(next);
-    localStorage.setItem("theme", next ? "dark" : "light");
-    document.documentElement.classList.toggle("dark", next);
-  };
 
   return (
     <SidebarContext.Provider
@@ -98,22 +84,26 @@ export default function PagesLayout({ children }) {
         toggleSidebar: () => setMobileOpen((p) => !p),
       }}
     >
-      <div className="flex min-h-screen print:block print:min-h-0">
+      <div
+        className={`flex min-h-screen print:block print:min-h-0 ${
+          shouldShowSidebar ? "dash-shell bg-canvas" : ""
+        }`}
+      >
         {shouldShowSidebar && (
           <Sidebar
             user={session?.user}
             unreadCount={0}
-            darkMode={darkMode}
             isMinimized={isMinimized}
             mobileOpen={mobileOpen}
-            onToggleDarkMode={handleToggleDarkMode}
             onToggleMinimize={toggleMinimized}
             onToggleMobile={() => setMobileOpen((p) => !p)}
           />
         )}
 
-        <main className="min-w-0 flex-1 overflow-x-hidden">{children}</main>
+        {/* below 1024 px the sidebar is a top bar (fixed, 56 px) – keep the page clear of it */}
+        <main className={`min-w-0 flex-1 overflow-x-clip ${shouldShowSidebar ? "pt-14 lg:pt-0 print:pt-0" : ""}`}>{children}</main>
       </div>
+      {shouldShowSidebar ? <ConfirmHost /> : null}
     </SidebarContext.Provider>
   );
 }

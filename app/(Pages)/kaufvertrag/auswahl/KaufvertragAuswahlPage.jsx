@@ -37,41 +37,32 @@ export default function KaufvertragAuswahlPage({ carId }) {
   ];
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-[#f5f5f2] px-4 py-10 text-[#101510]">
-      <button
-        onClick={openSidebar}
-        className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-2xl border border-black/10 bg-white text-[#101510] shadow-md shadow-black/5 transition hover:bg-[#f1f6f2] md:hidden"
-        aria-label="Menü öffnen"
-      >
-        <FiMenu className="h-4 w-4" />
-      </button>
+    <main className="mx-auto w-full max-w-xl px-3 py-4 sm:px-4">
+      <div className="ind-plate mb-4 flex items-center gap-3 px-4 py-3">
+        <button
+          onClick={openSidebar}
+          className="ind-icon-btn md:hidden"
+          aria-label="Menü öffnen"
+        >
+          <FiMenu className="h-4 w-4" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <h1 className="ind-title">Neuer Kaufvertrag</h1>
+          <p className="text-[12px] text-muted">Vertragsersteller wählen</p>
+        </div>
+        <FileText className="h-5 w-5 text-[#3e454e]" />
+      </div>
 
       <motion.section
-        initial={{ y: 18, opacity: 0 }}
+        initial={{ y: 8, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.28 }}
-        className="w-full max-w-[460px] overflow-hidden rounded-[26px] border border-white/80 bg-white shadow-xl shadow-black/5"
+        transition={{ duration: 0.2 }}
+        className="card overflow-hidden"
       >
-        <div className="border-b border-black/5 px-6 py-6 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e6f1e9] text-[#146c2e]">
-            <FileText className="h-6 w-6" />
-          </div>
-
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#146c2e]">
-            Kaufvertrag
+        <div className="space-y-2 p-4">
+          <p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#3e454e]">
+            Wer erscheint als Verkäufer im Vertrag?
           </p>
-
-          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-[#07111f]">
-            Vertragsersteller wählen
-          </h1>
-
-          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#5f695f]">
-            Wählen Sie aus, wer als Vertragsersteller im Kaufvertrag erscheinen
-            soll.
-          </p>
-        </div>
-
-        <div className="space-y-3 px-5 py-5">
           {options.map((opt) => {
             const active = selected === opt.value;
 
@@ -80,49 +71,40 @@ export default function KaufvertragAuswahlPage({ carId }) {
                 key={opt.value}
                 type="button"
                 onClick={() => setSelected(opt.value)}
-                className={`flex w-full items-center gap-4 rounded-[20px] border p-4 text-left transition ${
+                className={`flex w-full items-center gap-3 rounded-[4px] border p-3 text-left transition ${
                   active
-                    ? "border-[#146c2e]/40 bg-[#e6f1e9]"
-                    : "border-black/10 bg-[#fafaf8] hover:border-[#146c2e]/30 hover:bg-[#f1f6f2]"
+                    ? "border-[#3e454e] bg-[#eef0f2] shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]"
+                    : "border-line bg-white hover:border-[#9aa1aa]"
                 }`}
               >
-                <div
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition ${
+                <span
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[4px] border ${
                     active
-                      ? "bg-[#146c2e] text-white"
-                      : "bg-white text-[#146c2e] shadow-sm"
+                      ? "border-[#262b31] bg-gradient-to-b from-[#4b535d] to-[#343a42] text-white"
+                      : "border-line bg-canvas text-[#3e454e]"
                   }`}
                 >
                   <User className="h-5 w-5" />
-                </div>
+                </span>
 
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[15px] font-semibold text-[#07111f]">
-                    {opt.label}
-                  </h3>
-
-                  <p className="mt-0.5 text-sm text-[#5f695f]">{opt.role}</p>
-                </div>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14px] font-semibold text-ink">{opt.label}</span>
+                  <span className="block text-[12px] text-muted">{opt.role}</span>
+                </span>
 
                 <CheckCircle
-                  className={`h-5 w-5 shrink-0 transition ${
-                    active ? "text-[#146c2e]" : "text-black/15"
-                  }`}
+                  className={`h-5 w-5 shrink-0 ${active ? "text-emerald-600" : "text-black/15"}`}
                 />
               </button>
             );
           })}
         </div>
 
-        <div className="border-t border-black/5 bg-[#fafaf8] px-5 py-5">
+        <div className="flex justify-end border-t border-[#dfe2e6] bg-[#f7f8f9] px-4 py-3">
           <button
             onClick={handleContinue}
             disabled={!selected}
-            className={`flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-[14px] font-medium transition ${
-              selected
-                ? "bg-[#146c2e] text-white shadow-md shadow-green-900/10 hover:bg-[#0f5724]"
-                : "cursor-not-allowed bg-black/5 text-[#9aa39a]"
-            }`}
+            className="ind-btn ind-btn-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
             Weiter zum Vertrag
             <ChevronRight className="h-4 w-4" />

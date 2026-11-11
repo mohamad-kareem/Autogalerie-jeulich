@@ -71,9 +71,7 @@ function Button({ primary, className = "", children, ...rest }) {
   return (
     <button
       type="button"
-      className={`inline-flex h-9 items-center justify-center gap-1.5 rounded border px-3.5 text-[13px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-        primary ? "border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-      } ${className}`}
+      className={`${primary ? "ind-btn ind-btn-dark" : "btn btn-secondary"} btn-sm disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
       {...rest}
     >
       {children}
@@ -346,13 +344,13 @@ export default function FotostudioPage() {
   /* ---------- view ---------- */
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="min-h-screen text-slate-900">
       {/* header */}
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
-          <div>
-            <h1 className="text-[18px] font-semibold tracking-tight">Fotostudio</h1>
-            <p className="text-[13px] text-slate-500">Fahrzeugfotos freistellen und in einen Showroom setzen – das Fahrzeug bleibt unverändert.</p>
+      <header className="mx-auto max-w-[1500px] px-3 pt-4 sm:px-6">
+        <div className="ind-plate flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="ind-title">Fotostudio</h1>
+            <p className="text-[12px] text-muted">Fahrzeugfotos freistellen und in einen Showroom setzen – das Fahrzeug bleibt unverändert.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {photos.length ? (
