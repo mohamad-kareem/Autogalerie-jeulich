@@ -68,6 +68,7 @@ const PHASE_STYLES = {
 const BASE = "/Fahrzeugverwaltung";
 
 const TABS = [{ key: "", label: "Alle" }, ...PHASES];
+const EMPTY_ROWS = [];
 const kmFmt = (n) => (n == null ? "" : new Intl.NumberFormat("de-DE").format(n));
 
 function toEdit(v) {
@@ -108,9 +109,8 @@ export default function FahrzeugverwaltungClient() {
   const [tab, setTab] = useState(sp.get("phase") || "");
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [rows, setRows] = useState([]);
-  const [counts, setCounts] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [list, setList] = useState(null);
+  const [refresh, setRefresh] = useState(0);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [selected, setSelected] = useState(sp.get("id") || "");
@@ -118,33 +118,55 @@ export default function FahrzeugverwaltungClient() {
   const [scheinFor, setScheinFor] = useState(null);
   const [printing, setPrinting] = useState("");
 
+  const params = new URLSearchParams();
+  if (tab) params.set("phase", tab);
+  if (debounced) params.set("q", debounced);
+  const query = params.toString();
+  const currentList = list?.query === query ? list : null;
+  const rows = currentList?.rows ?? EMPTY_ROWS;
+  const counts = currentList?.counts;
+  const loading = currentList?.refresh !== refresh;
+  const listError = loading ? "" : currentList.error;
+  const reload = () => setRefresh((value) => value + 1);
+
   useEffect(() => {
     const t = setTimeout(() => setDebounced(q.trim()), 250);
     return () => clearTimeout(t);
   }, [q]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const p = new URLSearchParams();
-    if (tab) p.set("phase", tab);
-    if (debounced) p.set("q", debounced);
-    let res = await api(`/api/fahrzeugakte?${p}`);
-    // a short server hiccup (e.g. the database connection waking up): try once more before showing an error
-    if (!res.ok && res.status !== 401 && res.status !== 403) {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      res = await api(`/api/fahrzeugakte?${p}`);
-    }
-    setLoading(false);
-    if (!res.ok) return setError(res.data.error || "Fahrzeuge konnten nicht geladen werden.");
-    setError("");
-    setRows(res.data.vehicles || []);
-    setCounts({ ...res.data.counts, "": res.data.counts?.all });
-  }, [tab, debounced]);
-
   useEffect(() => {
+    let active = true;
+    async function load() {
+      const url = `/api/fahrzeugakte?${query}`;
+      let res = await api(url);
+      if (active && !res.ok && (res.status === 0 || res.status === 429 || res.status >= 500)) {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        if (active) res = await api(url);
+      }
+      if (!active) return;
+      if (!res.ok || !Array.isArray(res.data?.vehicles)) {
+        setList((previous) => ({
+          ...(previous?.query === query ? previous : {}),
+          query,
+          refresh,
+          error: res.data?.error || "Fahrzeuge konnten nicht geladen werden.",
+        }));
+        return;
+      }
+      setList({
+        query,
+        refresh,
+        rows: res.data.vehicles,
+        counts: { ...res.data.counts, "": res.data.counts?.all },
+        error: "",
+      });
+    }
     const t = setTimeout(load, 0);
-    return () => clearTimeout(t);
-  }, [load]);
+    return () => {
+      active = false;
+      clearTimeout(t);
+    };
+  }, [query, refresh]);
 
   // opened from a Kaufvertrag / the dashboard (?fin=…): open that car's file
   const finOpened = useRef(false);
@@ -196,6 +218,14 @@ export default function FahrzeugverwaltungClient() {
         </div>
       </div>
 
+      {listError ? (
+        <ErrorNote>
+          <span className="flex flex-wrap items-center justify-between gap-2">
+            <span role="alert">{listError}</span>
+            <button type="button" className="ind-btn" onClick={reload}>Erneut laden</button>
+          </span>
+        </ErrorNote>
+      ) : null}
       {error ? <ErrorNote onClose={() => setError("")}>{error}</ErrorNote> : null}
       {notice ? (
         <div className="flex items-center gap-2 rounded-[4px] border border-emerald-300 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
@@ -213,7 +243,7 @@ export default function FahrzeugverwaltungClient() {
             {TABS.map((t) => (
               <button key={t.key} type="button" onClick={() => setTab(t.key)} className={cx("ind-seg-btn", tab === t.key && "ind-seg-on")}>
                 {t.label}
-                {counts[t.key] != null ? <span className="ind-count">{counts[t.key]}</span> : null}
+                {counts?.[t.key] != null ? <span className="ind-count">{counts[t.key]}</span> : null}
               </button>
             ))}
           </div>
@@ -309,7 +339,7 @@ export default function FahrzeugverwaltungClient() {
           ))}
         </ul>
 
-        {!rows.length ? (
+        {!rows.length && !listError ? (
           <div className="flex flex-col items-center gap-2 px-4 py-14 text-center text-[13px] text-muted">
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <CarFront className="h-6 w-6 text-line-strong" />}
             {loading ? "Fahrzeuge werden geladen …" : debounced ? "Kein Fahrzeug gefunden." : "Noch keine Fahrzeugakten."}
@@ -317,15 +347,15 @@ export default function FahrzeugverwaltungClient() {
         ) : null}
       </div>
 
-      {scheinFor ? <ScheinViewer v={scheinFor} onRotated={load} onClose={() => setScheinFor(null)} onPrint={() => printSheet(scheinFor)} printing={printing === scheinFor._id} /> : null}
+      {scheinFor ? <ScheinViewer v={scheinFor} onRotated={reload} onClose={() => setScheinFor(null)} onPrint={() => printSheet(scheinFor)} printing={printing === scheinFor._id} /> : null}
 
-      <VehicleDrawer id={selected} onClose={() => openVehicle("")} onChanged={load} />
+      <VehicleDrawer id={selected} onClose={() => openVehicle("")} onChanged={reload} />
       <CreateModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onCreated={(v) => {
           setCreateOpen(false);
-          load();
+          reload();
           openVehicle(v._id);
         }}
       />

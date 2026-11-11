@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 import { connectDB } from "@/lib/mongodb";
 import CarSchein from "@/models/CarSchein";
 import { errorResponse, staffUser } from "@/lib/kaufvertragServer";
-import { POPULATE, STAGE_OF, extrasFor, toVehicle } from "@/lib/fahrzeugakte";
+import { SOLD_CONTACT, STAGE_OF, extrasFor, toVehicle } from "@/lib/fahrzeugakte";
 import { normVin } from "@/lib/sales";
 
 const PHASES = ["werkstatt", "aufbereitung", "platz", "tuev", "verkauft"];
@@ -14,7 +14,7 @@ const TRANSIENT = /Mongo(?:Network|ServerSelection|PoolCleared)|buffering timed 
 
 async function loadAll() {
   await connectDB();
-  const docs = await CarSchein.find({}).sort({ createdAt: -1 }).limit(3000).populate(...POPULATE).maxTimeMS(8000).lean();
+  const docs = await CarSchein.find({}).sort({ createdAt: -1 }).limit(3000).populate(SOLD_CONTACT).maxTimeMS(8000).lean();
   const extras = await extrasFor(docs);
   return docs.map((d) => toVehicle(d, extras));
 }
