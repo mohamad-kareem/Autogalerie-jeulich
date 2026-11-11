@@ -469,7 +469,6 @@ export default function ContractForm({ initial, mode = "new", contractId = "", n
                     </button>
                   ))}
                 </div>
-                <p className="mt-1.5 text-[11px] text-muted">Jede Vereinbarung kommt als Notiz in die Fahrzeugakte.</p>
               </div>
             </div>
 

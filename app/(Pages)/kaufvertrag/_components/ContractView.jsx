@@ -12,6 +12,7 @@ import VollmachtButton from "./VollmachtButton";
 import { downloadPdf, pdfDataUri } from "@/lib/pdfCapture";
 import {
   Archive,
+  ArrowLeft,
   ArchiveRestore,
   Ban,
   CarFront,
@@ -207,6 +208,19 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
           <FiMenu className="h-4 w-4" />
         </button>
         <div className="mr-auto flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              // back to where the contract was opened from, otherwise to the list
+              if (window.history.length > 1) router.back();
+              else router.push(c.archived ? "/kaufvertrag/archiv" : "/kaufvertrag/liste");
+            }}
+            className="ind-icon-btn shrink-0"
+            aria-label="Zurück"
+            title="Zurück"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
           <h1 className="truncate text-[15px] font-semibold text-ink">
             {isDraft ? "Entwurf" : c.number || <span className="text-muted line-through">{c.formerNumber}</span>}
           </h1>

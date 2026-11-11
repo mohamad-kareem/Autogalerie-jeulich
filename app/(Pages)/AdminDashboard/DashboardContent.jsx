@@ -16,7 +16,6 @@ import { ErrorNote, Modal } from "@/app/(components)/sales/ui";
 import { useSidebar } from "@/app/(components)/SidebarContext";
 import { alertDialog, confirmDialog } from "@/app/(components)/ConfirmHost";
 import { mapsHref, telHref } from "@/lib/sales";
-import { FaCarSide } from "react-icons/fa";
 import DashboardNotesPanel from "@/app/(components)/helpers/DashboardNotesPanel";
 import WeeklyTimeSchedule from "@/app/(components)/helpers/WeeklyTimeSchedule";
 
@@ -368,12 +367,6 @@ const DashboardContent = ({
   const mainBgClass = darkMode ? "bg-gray-900" : "bg-transparent";
   const textClass = darkMode ? "text-gray-100" : "text-slate-900";
 
-  // Compact top buttons (mobile), keep desktop unchanged
-  const topPillBase =
-    "inline-flex items-center gap-2 rounded-[4px] font-semibold shadow-[0_1px_0_rgba(255,255,255,0.6)_inset] transition-colors whitespace-nowrap";
-  const topPillPad = "px-2.5 py-1.5 sm:px-3 sm:py-2";
-  const topPillText = "text-[11px] sm:text-xs";
-
   return (
     <div
       className={`${mainBgClass} ${textClass} transition-colors duration-300 min-h-full flex`}
@@ -381,6 +374,7 @@ const DashboardContent = ({
       <div className="flex flex-1">
         <div className="flex flex-1 flex-col">
           {/* Top bar */}
+          {fuelAlertScheins.length > 0 || tuevScheins.length > 0 || werkstattScheins.length > 0 ? (
           <header
             className="ind-plate sticky top-14 z-30 flex min-h-14 lg:top-0 items-center justify-between rounded-none border-x-0 border-t-0 px-3 py-2 sm:px-4"
           >
@@ -393,122 +387,35 @@ const DashboardContent = ({
                 <FiMenu className="h-4 w-4" />
               </button>
 
-              <div className="mr-2 shrink-0">
-                <h1 className="ind-title">Übersicht</h1>
-                <p className="text-[11.5px] text-muted">
-                  {new Date().toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" })}
-                </p>
-              </div>
-
               <div className="flex items-center gap-2 flex-nowrap w-full overflow-x-auto sm:overflow-visible">
-                {/* Fuel alert button */}
-                {fuelAlertScheins.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowFuelModal(true)}
-                    className={`${topPillBase} ${topPillPad} ${topPillText} ${
-                      darkMode
-                        ? "bg-amber-900/30 text-amber-200 hover:bg-amber-800/40 border border-amber-800/30"
-                        : "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200"
-                    }`}
-                  >
-                    <span
-                      className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${
-                        darkMode ? "bg-amber-800/50" : "bg-amber-100"
-                      }`}
-                    >
-                      <FiDroplet
-                        className={`h-3.5 w-3.5 ${darkMode ? "text-amber-300" : "text-amber-500"}`}
-                      />
-                    </span>
-
-                    <span className="whitespace-nowrap">
-                      <span className="sm:hidden inline-flex items-center gap-1.5">
-                        <span>{fuelAlertScheins.length}</span>
-                        <FaCarSide className="h-4 w-4" />
-                        <span>leerem Tank</span>
-                      </span>
-
-                      <span className="hidden sm:inline">
-                        {fuelAlertScheins.length}{" "}
-                        {fuelAlertScheins.length === 1
-                          ? "Fahrzeug"
-                          : "Fahrzeuge"}{" "}
-                        mit leerem Tank
-                      </span>
-                    </span>
-                  </button>
-                )}
-
-                {/* TÜV alert button */}
-                {tuevScheins.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowTuevModal(true)}
-                    className={`${topPillBase} ${topPillPad} ${topPillText} ${
-                      darkMode
-                        ? "bg-blue-900/30 text-blue-200 hover:bg-blue-800/40 border border-blue-800/30"
-                        : "bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200"
-                    }`}
-                  >
-                    <TuvLogo size={26} className="shrink-0" />
-                    <span className="whitespace-nowrap">
-                      <span className="sm:hidden inline-flex items-center gap-1.5">
-                        <span>{tuevScheins.length}</span>
-                        <FaCarSide className="h-4 w-4" />
-                        <span>in TÜV</span>
-                      </span>
-
-                      <span className="hidden sm:inline">
-                        {tuevScheins.length}{" "}
-                        {tuevScheins.length === 1 ? "Fahrzeug" : "Fahrzeuge"} in
-                        TÜV
-                      </span>
-                    </span>
-                  </button>
-                )}
-
-                {/* Werkstatt button */}
-                {werkstattScheins.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowWerkstattModal(true)}
-                    className={`${topPillBase} ${topPillPad} ${topPillText} ${
-                      darkMode
-                        ? "bg-green-900/30 text-green-200 hover:bg-green-800/40 border border-green-800/30"
-                        : "bg-green-50 text-green-800 hover:bg-green-100 border border-green-200"
-                    }`}
-                  >
-                    <span
-                      className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${
-                        darkMode ? "bg-green-800/50" : "bg-green-100"
-                      }`}
-                    >
-                      <FiTool
-                        className={`h-3.5 w-3.5 ${darkMode ? "text-green-300" : "text-green-500"}`}
-                      />
-                    </span>
-
-                    <span className="whitespace-nowrap">
-                      <span className="sm:hidden inline-flex items-center gap-1.5">
-                        <span>{werkstattScheins.length}</span>
-                        <FaCarSide className="h-4 w-4" />
-                        <span>in Werkstatt</span>
-                      </span>
-
-                      <span className="hidden sm:inline">
-                        {werkstattScheins.length}{" "}
-                        {werkstattScheins.length === 1
-                          ? "Fahrzeug"
-                          : "Fahrzeuge"}{" "}
-                        in Werkstatt
-                      </span>
-                    </span>
-                  </button>
-                )}
+                {/* Tank · TÜV · Werkstatt as one joined steel switch, each with its count */}
+                <div className="ind-seg inline-flex shrink-0 overflow-hidden">
+                  {fuelAlertScheins.length > 0 && (
+                    <button type="button" onClick={() => setShowFuelModal(true)} className="ind-seg-btn" title="Fahrzeuge mit leerem Tank">
+                      <FiDroplet className="h-3.5 w-3.5 text-amber-600" />
+                      Leerer Tank
+                      <span className="ind-count tabular-nums">{fuelAlertScheins.length}</span>
+                    </button>
+                  )}
+                  {tuevScheins.length > 0 && (
+                    <button type="button" onClick={() => setShowTuevModal(true)} className="ind-seg-btn" title="Fahrzeuge beim TÜV">
+                      <TuvLogo size={18} className="shrink-0" />
+                      TÜV
+                      <span className="ind-count tabular-nums">{tuevScheins.length}</span>
+                    </button>
+                  )}
+                  {werkstattScheins.length > 0 && (
+                    <button type="button" onClick={() => setShowWerkstattModal(true)} className="ind-seg-btn" title="Fahrzeuge in der Werkstatt">
+                      <FiTool className="h-3.5 w-3.5 text-emerald-700" />
+                      Werkstatt
+                      <span className="ind-count tabular-nums">{werkstattScheins.length}</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </header>
+          ) : null}
 
           {/* ✅ OPTION A: main area + right sticky notes (desktop only) */}
           <div className="flex-1 px-3 sm:px-6 py-3 sm:py-4">
@@ -871,181 +778,47 @@ const DashboardContent = ({
       )}
 
       {/* Professional Werkstatt Modal */}
-      {showWerkstattModal && werkstattScheins.length > 0 && (
-        <>
-          <div
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowWerkstattModal(false)}
-          />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div
-              className={`w-full max-w-5xl rounded-lg shadow-xl ${
-                darkMode
-                  ? "bg-gray-800 border border-gray-700"
-                  : "bg-white border border-gray-200"
-              }`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div
-                className={`px-6 py-4 border-b ${
-                  darkMode ? "border-gray-700" : "border-gray-200"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`p-2 rounded ${
-                        darkMode ? "bg-green-900/30" : "bg-green-100"
-                      }`}
-                    >
-                      <FiTool
-                        className={`h-5 w-5 ${
-                          darkMode ? "text-green-300" : "text-green-600"
-                        }`}
-                      />
-                    </div>
-                    <div>
-                      <h3
-                        className={`text-base font-semibold ${
-                          darkMode ? "text-white" : "text-gray-900"
-                        }`}
-                      >
-                        Werkstattfahrzeuge
-                      </h3>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setShowWerkstattModal(false)}
-                    className={`p-1.5 rounded ${
-                      darkMode
-                        ? "hover:bg-gray-700 text-gray-400"
-                        : "hover:bg-gray-100 text-gray-500"
-                    }`}
-                  >
-                    <FiX size={18} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="max-h-[60vh] overflow-y-auto custom-scroll">
-                <table className="w-full table-fixed">
-                  <thead>
-                    <tr
-                      className={`text-left text-xs font-medium border-b ${
-                        darkMode
-                          ? "border-gray-700 text-gray-400"
-                          : "border-gray-200 text-gray-600"
-                      }`}
-                    >
-                      <th className="py-3 pl-4 sm:pl-6">Fahrzeug</th>
-
-                      {/* like TÜV: hide on mobile + spacing */}
-                      <th className="hidden sm:table-cell py-3 px-14">FIN</th>
-
-                      <th className="py-3 px-2">Wo</th>
-
-                      <th className="py-3 pl-6 pr-4 sm:pr-6">Was</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {werkstattScheins.map((car) => {
-                      const werkstattInfo = car?.stageMeta?.werkstatt || {};
-                      const where = werkstattInfo.where || "–";
-                      const what = werkstattInfo.what || "–";
-
-                      return (
-                        <tr
-                          key={car._id}
-                          className={`border-b ${
-                            darkMode
-                              ? "border-gray-700 hover:bg-gray-750"
-                              : "border-gray-100 hover:bg-gray-50"
-                          }`}
-                        >
-                          <td className="py-3 pl-4 sm:pl-6">
-                            <div
-                              className="font-medium text-sm truncate"
-                              title={car.carName || ""}
-                            >
-                              {car.carName || "Unbekannt"}
-                            </div>
-                          </td>
-
-                          <td className="hidden sm:table-cell py-3">
-                            <div
-                              className={`text-sm truncate ${
-                                darkMode ? "text-gray-300" : "text-gray-700"
-                              }`}
-                              title={car.finNumber || ""}
-                            >
-                              {car.finNumber || "–"}
-                            </div>
-                          </td>
-
-                          <td className="py-3 px-2">
-                            <div
-                              className={`text-sm truncate ${
-                                darkMode ? "text-gray-300" : "text-gray-700"
-                              }`}
-                              title={where}
-                            >
-                              {where}
-                            </div>
-                          </td>
-
-                          <td className="py-3 pl-4 pr-6">
-                            <div
-                              className={`text-sm leading-5 ${
-                                darkMode ? "text-gray-300" : "text-gray-700"
-                              }`}
-                              title={what}
-                            >
-                              {what}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <div
-                className={`px-6 py-4 border-t ${
-                  darkMode ? "border-gray-700" : "border-gray-200"
-                }`}
-              >
-                <div className="flex items-center justify-end">
-                  <div className="flex items-center gap-3">
+      <Modal
+        open={showWerkstattModal && werkstattScheins.length > 0}
+        onClose={() => setShowWerkstattModal(false)}
+        width="max-w-lg"
+        bodyClassName="max-h-[60vh] overflow-y-auto"
+        title="Werkstattfahrzeuge"
+      >
+        <ul className="divide-y divide-line">
+          {werkstattScheins.map((car) => {
+            const werkstattInfo = car?.stageMeta?.werkstatt || {};
+            return (
+              <li key={car._id} className="flex items-start gap-3 px-4 py-3">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] border border-[#a3aab3] bg-gradient-to-b from-[#f6f7f8] to-[#dde1e5] text-emerald-700">
+                  <FiTool className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
                     <Link
-                      href="/Fahrzeugverwaltung"
-                      className={`text-xs px-3 py-2 rounded border transition-colors ${
-                        darkMode
-                          ? "border-gray-600 text-gray-300 hover:bg-gray-700"
-                          : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                      }`}
+                      href={`/Fahrzeugverwaltung?id=${car._id}`}
+                      title={car.carName || ""}
+                      className="min-w-0 truncate text-[13.5px] font-semibold text-ink hover:text-brand-700"
                     >
-                      Alle anzeigen
+                      {car.carName || "Unbekannt"}
                     </Link>
-                    <button
-                      onClick={() => setShowWerkstattModal(false)}
-                      className={`text-xs px-3 py-2 rounded ${
-                        darkMode
-                          ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                    >
-                      Schließen
-                    </button>
+                    {werkstattInfo.where ? (
+                      <span className="inline-flex max-w-[50%] shrink-0 items-center gap-1 rounded-[3px] border border-[#c9ced5] bg-white px-1.5 py-0.5 text-[11.5px] font-medium text-body">
+                        <MapPin className="h-3 w-3 shrink-0 text-muted" />
+                        <span className="truncate">{werkstattInfo.where}</span>
+                      </span>
+                    ) : null}
                   </div>
+                  <p className="truncate font-mono text-[11.5px] text-muted">{car.finNumber || "ohne FIN"}</p>
+                  {werkstattInfo.what ? (
+                    <p className="mt-1 text-[12.5px] leading-snug text-body">{werkstattInfo.what}</p>
+                  ) : null}
                 </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+              </li>
+            );
+          })}
+        </ul>
+      </Modal>
 
       {/* Professional Fuel Modal */}
       {showFuelModal && fuelAlertScheins.length > 0 && (

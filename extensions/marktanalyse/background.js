@@ -43,6 +43,36 @@ function readListing() {
   return { ready: true, url: location.href, html: page.outerHTML };
 }
 
+/**
+ * Opens the mobile.de tab in a normal browser window. An installed app window
+ * (Chrome or Edge "App") has no tab strip, so the tab goes to a browser window
+ * of the same profile – or to a new one when none is open.
+ */
+async function openWorkTab(job, url) {
+  const appTab = job.port.sender.tab;
+  let windowId = null;
+  try {
+    const appWindow = await chrome.windows.get(appTab.windowId);
+    if (appWindow.type === "normal") windowId = appWindow.id;
+  } catch {
+    // The app window is gone; use another browser window.
+  }
+  if (!windowId) {
+    const windows = await chrome.windows.getAll({ windowTypes: ["normal"] });
+    windowId = windows.find((w) => w.incognito === Boolean(appTab.incognito))?.id ?? null;
+  }
+  if (windowId) return chrome.tabs.create({ url, active: false, windowId });
+  const created = await chrome.windows.create({ url, focused: false, type: "normal", incognito: Boolean(appTab.incognito) });
+  job.ownWindowId = created.id;
+  return created.tabs[0];
+}
+
+/** Brings a tab to the front – including its window (the app may be its own window). */
+async function showTab(tabId) {
+  const tab = await chrome.tabs.update(tabId, { active: true });
+  await chrome.windows.update(tab.windowId, { focused: true });
+}
+
 function reply(job, kind, data) {
   if (!job.connected) return;
   try {
@@ -71,7 +101,7 @@ async function importListing(job, url) {
   const startedAt = Date.now();
   try {
     reply(job, "STATUS", { status: "LOADING" });
-    const tab = await chrome.tabs.create({ url, active: false, windowId: job.port.sender.tab.windowId });
+    const tab = await openWorkTab(job, url);
     job.tabId = tab.id;
     while (!job.cancelled && Date.now() - startedAt < IMPORT_TIMEOUT_MS) {
       const current = await chrome.tabs.get(job.tabId);
@@ -99,7 +129,7 @@ async function importListing(job, url) {
       if (!job.shown && Date.now() - startedAt > 8000) {
         job.shown = true;
         if ((await chrome.tabs.get(job.appTabId)).active) {
-          await chrome.tabs.update(job.tabId, { active: true });
+          await showTab(job.tabId);
         }
         reply(job, "STATUS", { status: "WAITING" });
       }
@@ -113,7 +143,7 @@ async function importListing(job, url) {
   } finally {
     if (job.succeeded || job.cancelled || !job.shown) await closeOwnTab(job);
     if (job.succeeded && job.shown) {
-      try { await chrome.tabs.update(job.appTabId, { active: true }); } catch { /* app tab closed */ }
+      try { await showTab(job.appTabId); } catch { /* app tab closed */ }
     }
     if (jobs.get(job.appTabId) === job) jobs.delete(job.appTabId);
   }
@@ -138,7 +168,7 @@ async function searchListings(job, url) {
     }
     if (job.cancelled) return;
     const deadline = Date.now() + SEARCH_TIMEOUT_MS;
-    const tab = await chrome.tabs.create({ url, active: false, windowId: job.port.sender.tab.windowId });
+    const tab = await openWorkTab(job, url);
     job.tabId = tab.id;
     let reason = "timeout";
     let nextReadAt = 0;
@@ -181,7 +211,8 @@ async function searchListings(job, url) {
       try {
         const tab = await chrome.tabs.get(job.tabId);
         const currentUrl = tab.pendingUrl || tab.url;
-        if (!tab.active && (currentUrl === url || currentUrl === job.searchPageUrl)) {
+        // In a window opened only for this search the tab is the active one.
+        if ((!tab.active || tab.windowId === job.ownWindowId) && (currentUrl === url || currentUrl === job.searchPageUrl)) {
           await chrome.tabs.remove(job.tabId);
         }
       } catch { /* Tab already closed. */ }
@@ -199,7 +230,7 @@ chrome.runtime.onConnect.addListener((port) => {
   let job = null;
   port.onMessage.addListener((message) => {
     if (message?.kind === "SHOW_TAB" && job?.tabId) {
-      chrome.tabs.update(job.tabId, { active: true }).catch(() => {});
+      showTab(job.tabId).catch(() => {});
       return;
     }
     const isSearch = message?.kind === "SEARCH";

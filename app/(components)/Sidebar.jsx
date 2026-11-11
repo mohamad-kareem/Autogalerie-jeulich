@@ -38,7 +38,6 @@ import {
 } from "react-icons/fi";
 import { FaCar, FaCarSide, FaPaintRoller } from "react-icons/fa";
 
-import UserMenu from "@/app/(components)/UserMenu";
 
 const ADMIN_ONLY = new Set(["/kaufvertrag/archiv", "/Zeiterfassungsverwaltung", "/excel"]);
 
@@ -299,7 +298,7 @@ export default function Sidebar({
         {panel(isMinimized)}
       </aside>
 
-      {/* phone / tablet: top bar with the menu button and the account (like Autocenter) */}
+      {/* phone / tablet: top bar with the menu button (the account is in the menu) */}
       <header className="fixed inset-x-0 top-0 z-30 border-b border-line bg-white lg:hidden print:hidden">
         <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
           <button
@@ -311,11 +310,6 @@ export default function Sidebar({
             <FiMenu className="h-5 w-5" />
           </button>
           <p className="text-[13px] font-semibold text-ink">Autogalerie Jülich</p>
-          <div className="ml-auto">
-            <UserMenu
-              user={{ name: displayName, email: localUser?.email || "", role: localUser?.role || "" }}
-            />
-          </div>
         </div>
       </header>
 

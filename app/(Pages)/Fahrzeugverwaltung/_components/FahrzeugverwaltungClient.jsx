@@ -182,7 +182,7 @@ export default function FahrzeugverwaltungClient() {
         </button>
         <div className="mr-auto min-w-0">
           <h1 className="text-[17px] font-semibold tracking-[0.01em] text-[#1f252c]">Fahrzeugverwaltung</h1>
-          <p className="text-[11.5px] text-[#5d6671]">Fahrzeugakten – die FIN verbindet Akte, Kaufvertrag, Anzeige und Kunde.</p>
+          <p className="text-[11.5px] text-[#5d6671]">Fahrzeugakten – verbunden über die FIN.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => setCreateOpen(true)} className="ind-btn ind-btn-dark">

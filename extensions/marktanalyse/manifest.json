@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Autogalerie Jülich – Marktanalyse",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "mobile.de-Links für Marktanalyse und Ankaufbestätigung im eigenen Browser einlesen.",
   "minimum_chrome_version": "109",
   "permissions": ["scripting", "storage"],

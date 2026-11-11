@@ -9,6 +9,8 @@ Einmal in Chrome oder Edge installieren. Danach einen mobile.de-Link in die Mark
 3. **Entwicklermodus** aktivieren, **Entpackte Erweiterung laden** wählen und den entpackten Ordner mit der `manifest.json` auswählen.
 4. Die Marktanalyse im Browser neu laden. Dort erscheint **mobile.de-Erweiterung verbunden**.
 
+Die installierte App (eigenes Fenster) nutzt die Erweiterungen des Browsers, aus dem sie installiert wurde. Läuft die App in Edge, die Erweiterung also in Edge laden (`edge://extensions`), läuft sie in Chrome, in Chrome. Den Anzeigen-Tab öffnet die Erweiterung dann in einem normalen Browserfenster und holt es nach vorne, falls mobile.de eine Bestätigung braucht.
+
 Die Erweiterung öffnet die Anzeige in einem eigenen Browser-Tab. Falls mobile.de eine Bestätigung braucht, wird dieser Tab angezeigt. Nach erfolgreichem Import startet die Analyse oder das Fahrzeugformular wird ausgefüllt.
 
 Für die Marktanalyse wird zusätzlich eine Suchergebnisseite gelesen. Bis zu fünf passende mobile.de-Angebote fließen zusammen mit den übrigen Quellen in die Bewertung ein. Bei einer Zugriffssperre läuft die Analyse mit den übrigen Portalen weiter.
