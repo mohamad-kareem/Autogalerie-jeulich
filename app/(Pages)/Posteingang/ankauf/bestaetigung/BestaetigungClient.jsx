@@ -462,7 +462,6 @@ export default function BestaetigungClient() {
               <input type="checkbox" checked={copyToCompany} onChange={(e) => setCopyToCompany(e.target.checked)} className="h-3.5 w-3.5 accent-brand-600" />
               Kopie an {COMPANY.email}
             </label>
-            <p className="text-center text-[11px] text-muted">Das Fahrzeug erscheint danach unter „Abholungen“.</p>
           </div>
         </aside>
       </div>
