@@ -7,7 +7,7 @@ import { escapeHtml, sendMail } from "@/lib/mailer";
 import { COMPANY } from "@/lib/company";
 import { normEmail, parseEuro, str } from "@/lib/sales";
 import { normMonthYear as normMonthYearSafe } from "@/lib/listingParser";
-import { ANKAUF_MAIL_SECTIONS, ANKAUF_MAIL_TITLE, ankaufAccidentLabel } from "@/lib/ankaufMail";
+import { ANKAUF_DEFECTS_LABEL, ANKAUF_DEFECTS_MAX, ANKAUF_MAIL_SECTIONS, ANKAUF_MAIL_TITLE, ankaufAccidentLabel } from "@/lib/ankaufMail";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SECTION_HEADINGS = new Set(Object.values(ANKAUF_MAIL_SECTIONS));
@@ -114,6 +114,7 @@ export async function POST(req) {
       .map(([l, val]) => `${l}: ${str(val, 80)}`)
       .join("\n");
     const mileage = Number(v.mileage);
+    const defects = typeof v.defects === "string" ? str(v.defects, ANKAUF_DEFECTS_MAX) : "";
     const doc = await Pickup.create({
       vehicle: {
         name: str(v.name, 140),
@@ -145,6 +146,7 @@ export async function POST(req) {
       mode: b.mode === "delivery" ? "delivery" : "pickup",
       date: /^\d{4}-\d{2}-\d{2}$/.test(String(b.handoverDate || "")) ? b.handoverDate : "",
       time: /^\d{2}:\d{2}$/.test(String(b.handoverTime || "")) ? b.handoverTime : "",
+      note: defects ? `${ANKAUF_DEFECTS_LABEL}: ${defects}` : "",
       emailTo: email,
       createdBy: user.name || "",
     });

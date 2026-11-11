@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, CarFront, CheckCircle2, ChevronDown, ExternalLink, Link2, Loader2, RotateCcw, Send, UserRound } from "lucide-react";
 import { ErrorNote, Field as SalesField, Segmented, api, cx } from "@/app/(components)/sales/ui";
-import { ANKAUF_ACCIDENT_OPTIONS, ANKAUF_PAYMENT, buildAnkaufMail } from "@/lib/ankaufMail";
+import { ANKAUF_ACCIDENT_OPTIONS, ANKAUF_DEFECTS_LABEL, ANKAUF_DEFECTS_MAX, ANKAUF_PAYMENT, buildAnkaufMail } from "@/lib/ankaufMail";
 import { formatEuro, parseEuro } from "@/lib/sales";
 import { COMPANY } from "@/lib/company";
 import TravelTime from "@/app/(components)/TravelTime";
@@ -28,6 +28,7 @@ const EMPTY_VEHICLE = {
   color: "",
   owners: null,
   accidentStatus: "",
+  defects: "",
   bodyType: "",
   doors: "",
   seats: "",
@@ -347,6 +348,17 @@ export default function BestaetigungClient() {
                     <input id={`a-${key}`} className="field" value={vehicle[key] ?? ""} onChange={(e) => setV(key, e.target.value)} />
                   </Field>
                 ))}
+                <Field label={ANKAUF_DEFECTS_LABEL} id="a-defects" value={vehicle.defects} className="col-span-full">
+                  <textarea
+                    id="a-defects"
+                    className="field resize-y"
+                    rows={3}
+                    maxLength={ANKAUF_DEFECTS_MAX}
+                    value={vehicle.defects}
+                    onChange={(e) => setV("defects", e.target.value)}
+                    placeholder="Bekannte Mängel eintragen (optional)"
+                  />
+                </Field>
               </div>
             </details>
           </FormCard>
