@@ -281,337 +281,139 @@ export default function DashboardNotesPanel({
 
   const canAdd = !!text.trim() && !creating;
 
-  // Theme tokens (compact + professional)
-  const panel = darkMode
-    ? "bg-gray-800 border-gray-700 text-gray-100"
-    : "bg-white border-slate-200 text-slate-900";
-  const soft = darkMode
-    ? "bg-gray-900/20 border-gray-700"
-    : "bg-slate-50 border-slate-200";
-  const subtleText = darkMode ? "text-gray-400" : "text-slate-500";
-  const iconBtn = darkMode
-    ? "border-gray-700 text-gray-300 hover:bg-gray-700"
-    : "border-slate-200 text-slate-700 hover:bg-slate-50";
-
+  // Same look as the rest of the portal (steel panel, toolbar, buttons). darkMode is kept
+  // in the props for the pages that pass it, the staff area is always light.
   return (
-    <aside className={cx("w-full rounded-xl border shadow-sm", panel)}>
-      {/* Header: compact, no extra subtitle */}
-      <div
-        className={cx(
-          "px-3 py-2.5 border-b flex items-center justify-between",
-          darkMode ? "border-gray-700" : "border-slate-200",
+    <aside className="ind-panel w-full">
+      <div className="ind-toolbar flex items-center justify-between gap-2 px-3 py-2">
+        <h3 className="text-[13px] font-semibold text-ink">Notizen</h3>
+        {composerOpen ? null : (
+          <button type="button" onClick={() => setComposerOpen(true)} className="btn btn-secondary btn-sm" title="Neue Notiz">
+            <FiPlus /> Hinzufügen
+          </button>
         )}
-      >
-        <div className="min-w-0">
-          <h3 className="text-[13px] font-semibold tracking-tight">Notizen</h3>
-        </div>
-
-        <button
-          onClick={() => setComposerOpen((v) => !v)}
-          className={cx(
-            "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-semibold",
-            composerOpen
-              ? darkMode
-                ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
-                : "bg-slate-200 text-slate-800 hover:bg-slate-300"
-              : "bg-slate-500 text-white hover:bg-slate-700",
-          )}
-          title="Neue Notiz"
-        >
-          <FiPlus className="h-3.5 w-3.5" />
-          Hinzufügen
-        </button>
       </div>
 
       {/* Composer (hidden until user clicks Hinzufügen) */}
       {composerOpen && (
-        <div className="p-3">
-          <div className={cx("rounded-lg border overflow-hidden", soft)}>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Notiz schreiben…"
-              className={cx(
-                "w-full resize-none px-3 py-2 text-[13px] outline-none bg-transparent",
-                darkMode
-                  ? "text-gray-100 placeholder:text-gray-500"
-                  : "text-slate-900 placeholder:text-slate-400",
-              )}
-              rows={2}
-              autoFocus
-            />
-
-            <div
-              className={cx(
-                "flex items-center justify-between border-t px-2.5 py-1.5",
-                darkMode ? "border-gray-700" : "border-slate-200",
-              )}
-            >
-              <span
-                className={cx(
-                  "text-[11px]",
-                  darkMode ? "text-gray-500" : "text-slate-400",
-                )}
+        <div className="border-b border-line p-3">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Notiz schreiben…"
+            className="field resize-none"
+            rows={3}
+            autoFocus
+          />
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <span className="text-[11px] tabular-nums text-muted">{text.trim().length}/200</span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setComposerOpen(false);
+                  setText("");
+                }}
+                className="btn btn-secondary btn-sm"
               >
-                {text.trim().length}/200
-              </span>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    setComposerOpen(false);
-                    setText("");
-                  }}
-                  className={cx(
-                    "text-[11px] px-2.5 py-1.5 rounded-md border transition-colors",
-                    iconBtn,
-                  )}
-                >
-                  Abbrechen
-                </button>
-
-                <button
-                  onClick={createNote}
-                  disabled={!canAdd}
-                  className={cx(
-                    "text-[11px] px-2.5 py-1.5 rounded-md font-semibold",
-                    !canAdd
-                      ? "opacity-50 cursor-not-allowed bg-slate-300 text-white"
-                      : "bg-blue-600 hover:bg-blue-700 text-white",
-                  )}
-                >
-                  Speichern
-                </button>
-              </div>
+                Abbrechen
+              </button>
+              <button type="button" onClick={createNote} disabled={!canAdd} className="btn btn-primary btn-sm">
+                Speichern
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {/* List */}
-      <div className={cx("px-3", composerOpen ? "pb-3" : "py-3")}>
-        <div
-          className={cx(
-            "max-h-[42vh] overflow-y-auto custom-scroll",
-            "space-y-2",
-          )}
-        >
-          {loading ? (
-            <div className={cx("text-[13px] py-6 text-center", subtleText)}>
-              Lade Notizen…
-            </div>
-          ) : sortedNotes.length === 0 ? (
-            <div className={cx("text-[13px] py-6 text-center", subtleText)}>
-              Noch keine Notizen.
-            </div>
-          ) : (
-            sortedNotes.map((n) => {
+      <div className="scroll-slim max-h-[42vh] overflow-y-auto">
+        {loading ? (
+          <p className="px-3 py-6 text-center text-[13px] text-muted">Lade Notizen…</p>
+        ) : sortedNotes.length === 0 ? (
+          <p className="px-3 py-6 text-center text-[13px] text-muted">Noch keine Notizen.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {sortedNotes.map((n) => {
               const isEditing = editId === n._id;
-              const isBusy = busyId === n._id;
-
               return (
-                <div
-                  key={n._id}
-                  className={cx(
-                    "rounded-lg border",
-                    darkMode
-                      ? "border-gray-700 bg-gray-900/20"
-                      : "border-slate-200 bg-white",
-                  )}
-                >
-                  <div className="p-2.5">
-                    <div className="flex items-start gap-2">
-                      <div className="min-w-0 flex-1">
-                        {isEditing ? (
-                          <textarea
-                            value={editText}
-                            onChange={(e) => setEditText(e.target.value)}
-                            className={cx(
-                              "w-full resize-none rounded-md px-2 py-2 text-[13px] outline-none border",
-                              darkMode
-                                ? "bg-gray-800 border-gray-700 text-gray-100"
-                                : "bg-white border-slate-200 text-slate-900",
-                            )}
-                            rows={2}
-                            autoFocus
-                          />
-                        ) : (
-                          <p
-                            className={cx(
-                              "text-[13px] leading-relaxed whitespace-pre-wrap break-words",
-                            )}
-                          >
-                            {n.text}
-                          </p>
-                        )}
-
-                        <div className="mt-2 flex items-center justify-between">
-                          <div
-                            className={cx(
-                              "text-[11px] flex items-center gap-2",
-                              subtleText,
-                            )}
-                          >
-                            {n.pinned ? <span>📌 Angeheftet</span> : <span />}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right: 3-dots or edit buttons */}
-                      <div className="flex items-center gap-1">
-                        {isEditing ? (
-                          <>
-                            <button
-                              onClick={cancelEdit}
-                              disabled={savingEdit}
-                              className={cx(
-                                "p-1.5 rounded-md border transition-colors",
-                                iconBtn,
-                                savingEdit
-                                  ? "opacity-60 cursor-not-allowed"
-                                  : "",
-                              )}
-                              title="Abbrechen"
-                            >
-                              <FiX className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={saveEdit}
-                              disabled={savingEdit}
-                              className={cx(
-                                "p-1.5 rounded-md text-white transition-colors",
-                                savingEdit
-                                  ? "bg-slate-400 cursor-not-allowed"
-                                  : "bg-blue-600 hover:bg-blue-700",
-                              )}
-                              title="Speichern"
-                            >
-                              <FiSave className="h-4 w-4" />
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={(e) => openMenu(n._id, e)}
-                            className={cx(
-                              "p-1.5 rounded-md border transition-colors",
-                              iconBtn,
-                            )}
-                            title="Aktionen"
-                            aria-label="Aktionen"
-                          >
-                            <FiMoreHorizontal className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                <li key={n._id} className={cx("flex items-start gap-2 px-3 py-2.5", n.pinned && "bg-[#fbf6e6]")}>
+                  <div className="min-w-0 flex-1">
+                    {isEditing ? (
+                      <textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        className="field resize-none"
+                        rows={3}
+                        autoFocus
+                      />
+                    ) : (
+                      <p className="whitespace-pre-wrap break-words text-[13px] leading-snug text-ink">{n.text}</p>
+                    )}
+                    {n.pinned && !isEditing ? (
+                      <span className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-[#8a5a00]">
+                        <FiStar className="h-3 w-3 fill-current" /> Angeheftet
+                      </span>
+                    ) : null}
                   </div>
 
-                  {/* subtle separator */}
-                  <div
-                    className={cx(
-                      "h-px",
-                      darkMode ? "bg-gray-700" : "bg-slate-100",
-                    )}
-                  />
-                </div>
+                  {isEditing ? (
+                    <span className="ind-actions shrink-0">
+                      <button type="button" onClick={cancelEdit} disabled={savingEdit} className="ind-act" title="Abbrechen" aria-label="Abbrechen">
+                        <FiX className="h-3.5 w-3.5" />
+                      </button>
+                      <button type="button" onClick={saveEdit} disabled={savingEdit} className="ind-act" title="Speichern" aria-label="Speichern">
+                        <FiSave className="h-3.5 w-3.5" />
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => openMenu(n._id, e)}
+                      className="ind-icon-btn shrink-0"
+                      style={{ width: 26, height: 24 }}
+                      title="Aktionen"
+                      aria-label="Aktionen"
+                    >
+                      <FiMoreHorizontal className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </li>
               );
-            })
-          )}
-        </div>
+            })}
+          </ul>
+        )}
       </div>
 
-      {/* MENU PORTAL (fix clipping & visibility) */}
       {/* MENU PORTAL (click outside to close) */}
       {menu && (
         <div className="fixed inset-0 z-[9999]">
-          {/* Backdrop (click to close) */}
-          <button
-            type="button"
-            onClick={() => setMenu(null)}
-            className="absolute inset-0 cursor-default"
-            aria-label="Close menu"
-          />
-
-          {/* Menu box */}
+          <button type="button" onClick={() => setMenu(null)} className="absolute inset-0 cursor-default" aria-label="Menü schließen" />
           <div
             data-notes-menu="box"
-            className={cx(
-              "fixed rounded-lg border shadow-2xl overflow-hidden w-48",
-              darkMode
-                ? "bg-gray-800 border-gray-700"
-                : "bg-white border-slate-200",
-            )}
+            className="fixed w-48 overflow-hidden rounded-[4px] border border-[#a9b0b9] bg-white shadow-float"
             style={{ left: menu.x, top: menu.y }}
           >
             {(() => {
               const note = sortedNotes.find((x) => x._id === menu.id);
               if (!note) return null;
-
               const isBusy = busyId === note._id;
-
+              const item = "flex w-full items-center gap-2 px-3 py-2 text-left text-[12.5px] transition-colors disabled:opacity-60";
               return (
                 <div className="py-1">
-                  <button
-                    onClick={() => togglePin(note)}
-                    disabled={isBusy}
-                    className={cx(
-                      "w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 transition-colors",
-                      darkMode
-                        ? "text-gray-200 hover:bg-gray-700"
-                        : "text-slate-800 hover:bg-slate-200",
-                      isBusy ? "opacity-60 cursor-not-allowed" : "",
-                    )}
-                  >
-                    <FiStar
-                      className={cx(
-                        "h-4 w-4",
-                        note.pinned
-                          ? darkMode
-                            ? "text-yellow-300"
-                            : "text-yellow-600"
-                          : "",
-                      )}
-                    />
-                    {note.pinned ? "Unpin" : "Anheften"}
+                  <button type="button" onClick={() => togglePin(note)} disabled={isBusy} className={cx(item, "text-ink hover:bg-canvas")}>
+                    <FiStar className={cx("h-3.5 w-3.5", note.pinned && "fill-current text-[#c99a2e]")} />
+                    {note.pinned ? "Lösen" : "Anheften"}
                   </button>
-
-                  <button
-                    onClick={() => startEdit(note)}
-                    className={cx(
-                      "w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 transition-colors",
-                      darkMode
-                        ? "text-gray-200 hover:bg-gray-700"
-                        : "text-slate-800 hover:bg-slate-200",
-                    )}
-                  >
-                    <FiEdit2 className="h-4 w-4" />
+                  <button type="button" onClick={() => startEdit(note)} className={cx(item, "text-ink hover:bg-canvas")}>
+                    <FiEdit2 className="h-3.5 w-3.5" />
                     Bearbeiten
                   </button>
-
-                  <button
-                    onClick={() => deleteNote(note._id)}
-                    disabled={isBusy}
-                    className={cx(
-                      "w-full px-3 py-2 text-left text-[12px] flex items-center gap-2 transition-colors",
-                      darkMode
-                        ? "text-red-300 hover:bg-red-900/20"
-                        : "text-red-600 hover:bg-red-100",
-                      isBusy ? "opacity-60 cursor-not-allowed" : "",
-                    )}
-                  >
-                    <FiTrash2 className="h-4 w-4" />
+                  <button type="button" onClick={() => deleteNote(note._id)} disabled={isBusy} className={cx(item, "text-rose-700 hover:bg-rose-50")}>
+                    <FiTrash2 className="h-3.5 w-3.5" />
                     Löschen
                   </button>
-                  <div
-                    className={cx(
-                      "px-3 py-2 text-[11px] border-t",
-                      darkMode
-                        ? "border-gray-700 text-gray-400"
-                        : "border-slate-200 text-slate-500",
-                    )}
-                  >
-                    Erstellt: {fmtDate(note.createdAt)}
-                  </div>
+                  <div className="border-t border-line px-3 py-1.5 text-[11px] text-muted">Erstellt: {fmtDate(note.createdAt)}</div>
                 </div>
               );
             })()}

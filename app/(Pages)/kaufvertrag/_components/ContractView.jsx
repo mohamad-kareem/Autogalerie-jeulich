@@ -9,6 +9,7 @@ import { FiMenu } from "react-icons/fi";
 import { useSidebar } from "@/app/(components)/SidebarContext";
 import KaufvertragDocument from "./KaufvertragDocument";
 import VollmachtButton from "./VollmachtButton";
+import SepaButton from "./SepaButton";
 import { downloadPdf, pdfDataUri } from "@/lib/pdfCapture";
 import {
   Archive,
@@ -245,6 +246,7 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
               {busy === "pdf" ? <Loader2 className="animate-spin" /> : <Download />} <span className="hidden sm:inline">PDF</span>
             </button>
             <VollmachtButton buyer={c.buyer} vehicle={c.vehicle} />
+            <SepaButton buyer={c.buyer} plate={c.vehicle?.plate} />
             <button type="button" onClick={() => setMailOpen(true)} className="btn btn-secondary">
               <Mail /> <span className="hidden sm:inline">An Käufer senden</span>
             </button>

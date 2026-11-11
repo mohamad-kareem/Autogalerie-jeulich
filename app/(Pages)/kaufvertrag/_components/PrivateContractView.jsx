@@ -9,6 +9,7 @@ import { useSidebar } from "@/app/(components)/SidebarContext";
 import PrivateSheet from "./PrivateSheet";
 import PrivateDocumentOptions from "./PrivateDocumentOptions";
 import VollmachtButton from "./VollmachtButton";
+import SepaButton from "./SepaButton";
 import { downloadPdf, pdfDataUri } from "@/lib/pdfCapture";
 import { privateForm } from "@/lib/privateContract";
 import { ErrorNote, Modal, Pill, api, cx } from "@/app/(components)/sales/ui";
@@ -137,6 +138,7 @@ export default function PrivateContractView({ contract: initial, vehicle }) {
           {busy === "pdf" ? <Loader2 className="animate-spin" /> : <Download />} <span className="hidden sm:inline">PDF</span>
         </button>
         <VollmachtButton buyer={buyer} vehicle={{ name: carName, vin: car.vin, plate: car.plate }} />
+        <SepaButton buyer={buyer} plate={car.plate} />
         <button type="button" onClick={() => setMailOpen(true)} disabled={savingDocumentOptions} className="btn btn-secondary">
           <Mail /> <span className="hidden sm:inline">An Käufer senden</span>
         </button>
