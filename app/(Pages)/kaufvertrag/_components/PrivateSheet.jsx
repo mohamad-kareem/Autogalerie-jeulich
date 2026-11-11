@@ -97,6 +97,11 @@ const HEADER_TEXT_RIGHT = 485;
 const EXCLUSION_TOP = 491;
 const EXCLUSION_BOTTOM = 543;
 const EXCLUSION_HEIGHT = EXCLUSION_BOTTOM - EXCLUSION_TOP;
+// With the company logo the TÜV notes are left out: the line "Je ein Exemplar
+// für Käufer und Verkäufer" above the title and the vertical TÜV SÜD line on
+// the right edge (the form boxes end at x 559).
+const TITLE_TOP = 40;
+const BOXES_RIGHT = 563;
 
 function FormImageSlice({ from, to, top = from, right = FORM_W }) {
   const height = to - from;
@@ -123,7 +128,7 @@ function FormBackground({ logo, includeWarrantyExclusion }) {
     <>
       {companyLogo ? (
         <>
-          <FormImageSlice from={0} to={HEADER_BOTTOM} right={HEADER_TEXT_RIGHT} />
+          <FormImageSlice from={TITLE_TOP} to={HEADER_BOTTOM} right={HEADER_TEXT_RIGHT} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo11.png"
@@ -134,8 +139,14 @@ function FormBackground({ logo, includeWarrantyExclusion }) {
           />
         </>
       ) : null}
-      <FormImageSlice from={companyLogo ? HEADER_BOTTOM : 0} to={includeWarrantyExclusion ? FORM_H : EXCLUSION_TOP} />
-      {includeWarrantyExclusion ? null : <FormImageSlice from={EXCLUSION_BOTTOM} to={FORM_H} top={EXCLUSION_TOP} />}
+      <FormImageSlice
+        from={companyLogo ? HEADER_BOTTOM : 0}
+        to={includeWarrantyExclusion ? FORM_H : EXCLUSION_TOP}
+        right={companyLogo ? BOXES_RIGHT : FORM_W}
+      />
+      {includeWarrantyExclusion ? null : (
+        <FormImageSlice from={EXCLUSION_BOTTOM} to={FORM_H} top={EXCLUSION_TOP} right={companyLogo ? BOXES_RIGHT : FORM_W} />
+      )}
     </>
   );
 }

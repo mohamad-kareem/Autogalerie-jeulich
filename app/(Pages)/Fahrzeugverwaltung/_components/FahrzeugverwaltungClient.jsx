@@ -128,7 +128,12 @@ export default function FahrzeugverwaltungClient() {
     const p = new URLSearchParams();
     if (tab) p.set("phase", tab);
     if (debounced) p.set("q", debounced);
-    const res = await api(`/api/fahrzeugakte?${p}`);
+    let res = await api(`/api/fahrzeugakte?${p}`);
+    // a short server hiccup (e.g. the database connection waking up): try once more before showing an error
+    if (!res.ok && res.status !== 401 && res.status !== 403) {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      res = await api(`/api/fahrzeugakte?${p}`);
+    }
     setLoading(false);
     if (!res.ok) return setError(res.data.error || "Fahrzeuge konnten nicht geladen werden.");
     setError("");

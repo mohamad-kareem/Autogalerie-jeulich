@@ -9,15 +9,29 @@ import { normVin } from "@/lib/sales";
 
 const PHASES = ["werkstatt", "aufbereitung", "platz", "tuev", "verkauft"];
 
+/** Connection hiccups (sleeping server, dropped socket) – worth one more try. */
+const TRANSIENT = /Mongo(?:Network|ServerSelection|PoolCleared)|buffering timed out|ECONNRESET|ETIMEDOUT|Failed to connect|socket|topology/i;
+
+async function loadAll() {
+  await connectDB();
+  const docs = await CarSchein.find({}).sort({ createdAt: -1 }).limit(3000).populate(...POPULATE).maxTimeMS(8000).lean();
+  const extras = await extrasFor(docs);
+  return docs.map((d) => toVehicle(d, extras));
+}
+
 /** GET /api/fahrzeugakte?phase=&q= → { vehicles, counts } */
 export async function GET(req) {
   if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   const sp = new URL(req.url).searchParams;
   try {
-    await connectDB();
-    const docs = await CarSchein.find({}).sort({ createdAt: -1 }).limit(3000).populate(...POPULATE).maxTimeMS(8000).lean();
-    const extras = await extrasFor(docs);
-    let all = docs.map((d) => toVehicle(d, extras));
+    let all;
+    try {
+      all = await loadAll();
+    } catch (err) {
+      if (!TRANSIENT.test(`${err?.name} ${err?.message}`)) throw err;
+      console.warn("fahrzeugakte: retry after", err?.name, err?.message);
+      all = await loadAll();
+    }
 
     const q = String(sp.get("q") || "").trim().toLowerCase().slice(0, 80);
     if (q) {
