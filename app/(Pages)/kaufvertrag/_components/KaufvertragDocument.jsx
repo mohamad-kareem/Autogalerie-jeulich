@@ -296,9 +296,27 @@ const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref
           pointer-events: none;
         }
         @media print {
+          @page {
+            size: A4;
+            margin: 10mm 12mm;
+          }
           body {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+          }
+          /* only the sheet on paper: no grey desk, no page padding, no card frame around it */
+          .dash-shell:has(.kv-doc),
+          .dash-shell:has(.kv-doc) main {
+            background: #fff !important;
+          }
+          .dash-shell main > div:has(.kv-doc) {
+            padding: 0 !important;
+          }
+          .card:has(.kv-doc) {
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            overflow: visible !important;
           }
         }
       `}</style>
