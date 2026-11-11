@@ -176,17 +176,17 @@ export default function FahrzeugverwaltungClient() {
   return (
     <div className="ind mx-auto max-w-[1400px] space-y-3">
       {/* Title plate */}
-      <div className="ind-plate flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+      <div className="ind-plate flex items-center justify-between gap-3 px-4 py-3">
         <button type="button" onClick={openSidebar} className="ind-icon-btn md:hidden" aria-label="Menü öffnen">
           <FiMenu className="h-4 w-4" />
         </button>
         <div className="mr-auto min-w-0">
-          <h1 className="text-[17px] font-semibold tracking-[0.01em] text-[#1f252c]">Fahrzeugverwaltung</h1>
-          <p className="text-[11.5px] text-[#5d6671]">Fahrzeugakten – verbunden über die FIN.</p>
+          <h1 className="truncate text-[17px] font-semibold tracking-[0.01em] text-[#1f252c]">Fahrzeugverwaltung</h1>
+          <p className="hidden text-[11.5px] text-[#5d6671] sm:block">Fahrzeugakten – verbunden über die FIN.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex shrink-0 gap-2">
           <button type="button" onClick={() => setCreateOpen(true)} className="ind-btn ind-btn-dark">
-            <Plus className="h-4 w-4" /> Fahrzeug anlegen
+            <Plus className="h-4 w-4" /> Fahrzeug<span className="hidden sm:inline"> anlegen</span>
           </button>
         </div>
       </div>
@@ -1265,7 +1265,7 @@ function VehicleDrawer({ id, onClose, onChanged }) {
 
           {/* Registration photo */}
           <Section>
-            <input ref={fileInput} type="file" accept="image/*" capture="environment" className="hidden" onChange={(ev) => upload(ev.target.files?.[0])} />
+            <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={(ev) => upload(ev.target.files?.[0])} />
             <Panel
               title="Fahrzeugschein"
               actions={

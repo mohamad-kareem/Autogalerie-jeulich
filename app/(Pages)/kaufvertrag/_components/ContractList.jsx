@@ -112,13 +112,13 @@ export default function ContractList({ scope = "year" }) {
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-4">
-      <div className="ind-plate flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+      <div className="ind-plate flex items-center justify-between gap-3 px-4 py-3">
         <button type="button" onClick={openSidebar} className="ind-icon-btn md:hidden" aria-label="Menü öffnen">
           <FiMenu className="h-4 w-4" />
         </button>
-        <div className="mr-auto">
-          <h1 className="ind-title">{archive ? "Archiv" : "Kaufverträge"}</h1>
-          <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-muted">
+        <div className="mr-auto min-w-0">
+          <h1 className="ind-title truncate">{archive ? "Archiv" : "Kaufverträge"}</h1>
+          <p className="mt-0.5 hidden flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-muted sm:flex">
             <span>{archive ? `Verträge aus ${archiveYear || "früheren Jahren"}` : `Alle Verträge ${year}`}</span>
             {!archive && next ? (
               <span className="inline-flex items-center gap-1">
@@ -139,19 +139,19 @@ export default function ContractList({ scope = "year" }) {
             ) : null}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex shrink-0 gap-1.5 sm:gap-2">
           {isAdmin ? (
-            <a href={exportHref} className="btn btn-secondary">
-              <Download /> Export
+            <a href={exportHref} className="btn btn-secondary" title="Export" aria-label="Export">
+              <Download /> <span className="hidden sm:inline">Export</span>
             </a>
           ) : null}
           {!archive ? (
             <>
-              <Link href="/kaufvertrag/privat" className="btn btn-secondary" title="Privater Kaufvertrag (TÜV-SÜD-Formular)">
-                <FileText /> Privatvertrag
+              <Link href="/kaufvertrag/privat" className="btn btn-secondary" title="Privater Kaufvertrag (TÜV-SÜD-Formular)" aria-label="Privatvertrag">
+                <FileText /> <span className="hidden sm:inline">Privatvertrag</span>
               </Link>
               <Link href="/kaufvertrag/form" className="btn btn-primary">
-                <Plus /> Neuer Vertrag
+                <Plus /> <span className="hidden sm:inline">Neuer </span>Vertrag
               </Link>
             </>
           ) : null}

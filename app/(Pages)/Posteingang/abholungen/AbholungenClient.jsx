@@ -133,13 +133,13 @@ export default function AbholungenClient() {
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-4">
-      <div className="ind-plate flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <div>
-          <h1 className="ind-title">Abholungen</h1>
-          <p className="mt-0.5 text-[12.5px] text-muted">Angekaufte Fahrzeuge, die noch zu uns kommen.</p>
+      <div className="ind-plate flex items-center justify-between gap-3 px-4 py-3">
+        <div className="min-w-0">
+          <h1 className="ind-title truncate">Abholungen</h1>
+          <p className="mt-0.5 hidden text-[12.5px] text-muted sm:block">Angekaufte Fahrzeuge, die noch zu uns kommen.</p>
         </div>
-        <Link href="/Posteingang/ankauf/bestaetigung" className="btn btn-primary">
-          <MailCheck /> Ankauf bestätigen
+        <Link href="/Posteingang/ankauf/bestaetigung" className="btn btn-primary shrink-0">
+          <MailCheck /> <span className="sm:hidden">Bestätigen</span><span className="hidden sm:inline">Ankauf bestätigen</span>
         </Link>
       </div>
 
