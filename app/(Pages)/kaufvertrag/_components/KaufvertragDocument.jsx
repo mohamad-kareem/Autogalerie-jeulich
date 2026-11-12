@@ -4,6 +4,8 @@
  * The printed Kaufvertrag – exactly the document Autogalerie always printed
  * (header, buyer, vehicle, warranty, agreements, papers, payment, terms,
  * signatures, bank). Read-only; on screen it looks like the print.
+ * The layout follows the sheet's own width (container queries), so a phone
+ * shows the same page as the computer – just scaled down.
  */
 
 import { forwardRef } from "react";
@@ -25,12 +27,12 @@ const formatDateToGermanDash = (dateStr) => {
 
 function AlawieHeader() {
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-center border p-2 sm:p-7 bg-black text-white print:flex-row print:justify-between print:items-center print:p-2 print:px-6">
-      <div className="text-left w-full md:w-auto mb-2 md:mb-0 print:mb-2 print:text-left print:w-full">
-        <p className="font-semibold text-sm md:text-lg print:text-sm">E-Mail: autogalerie.juelich@web.de / Tel.: 02461/916006613</p>
+    <div className="flex flex-col @min-[640px]:flex-row justify-between items-center border p-2 @min-[640px]:p-7 bg-black text-white print:flex-row print:justify-between print:items-center print:p-2 print:px-6">
+      <div className="text-left w-full @min-[768px]:w-auto mb-2 @min-[768px]:mb-0 print:mb-2 print:text-left print:w-full">
+        <p className="font-semibold text-sm @min-[768px]:text-lg print:text-sm">E-Mail: autogalerie.juelich@web.de / Tel.: 02461/916006613</p>
       </div>
-      <div className="text-right w-full md:w-auto print:w-1/2 print:text-right">
-        <Image src={logo} alt="Autogalerie Jülich – Alawie" width={150} height={100} className="object-fill mx-auto md:mx-0 print:ml-auto print:mr-0" />
+      <div className="text-right w-full @min-[768px]:w-auto print:w-1/2 print:text-right">
+        <Image src={logo} alt="Autogalerie Jülich – Alawie" width={150} height={100} className="object-fill mx-auto @min-[768px]:mx-0 print:ml-auto print:mr-0" />
       </div>
     </div>
   );
@@ -38,16 +40,16 @@ function AlawieHeader() {
 
 function KarimHeader() {
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-center border py-2 px-2 sm:px-7 sm:py-6 bg-gradient-to-b from-slate-950/95 to-slate-900/90 text-white print:flex-row print:justify-between print:items-center print:py-2 print:px-6">
-      <div className="flex items-center gap-3 w-full md:w-auto mb-2 md:mb-0 print:mb-2 print:w-full">
+    <div className="flex flex-col @min-[640px]:flex-row justify-between items-center border py-2 px-2 @min-[640px]:px-7 @min-[640px]:py-6 bg-gradient-to-b from-slate-950/95 to-slate-900/90 text-white print:flex-row print:justify-between print:items-center print:py-2 print:px-6">
+      <div className="flex items-center gap-3 w-full @min-[768px]:w-auto mb-2 @min-[768px]:mb-0 print:mb-2 print:w-full">
         <Image src={LogoKarim} alt="Autogalerie Jülich – Karim" width={55} height={55} className="object-contain" priority />
-        <span className="font-playfair text-lg md:text-xl tracking-wide print:text-lg">AUTOGALERIE JÜLICH</span>
+        <span className="font-playfair text-lg @min-[768px]:text-xl tracking-wide print:text-lg">AUTOGALERIE JÜLICH</span>
       </div>
-      <div className="text-right w-full md:w-auto print:w-1/2 print:text-right">
-        <p className="font-mono text-sm md:text-lg print:text-sm">
+      <div className="text-right w-full @min-[768px]:w-auto print:w-1/2 print:text-right">
+        <p className="font-mono text-sm @min-[768px]:text-lg print:text-sm">
           <span className="print:whitespace-nowrap">E-Mail:&nbsp;autogalerie.juelich@web.de</span>
         </p>
-        <p className="font-mono text-sm md:text-lg print:text-sm">
+        <p className="font-mono text-sm @min-[768px]:text-lg print:text-sm">
           <span className="print:whitespace-nowrap">Tel.:&nbsp;02461&nbsp;/&nbsp;916006613</span>
         </p>
       </div>
@@ -67,24 +69,24 @@ const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref
   const agreements = Array.isArray(form.agreements) ? form.agreements : [];
 
   return (
-    <div ref={ref} className="kv-doc bg-white p-4 font-sans text-[13px] text-black print:p-0">
+    <div ref={ref} className="kv-doc @container bg-white p-4 font-sans text-[13px] text-black print:p-0">
       <div className="space-y-4 print:space-y-1">
         {/* Header */}
         {form.issuer === "karim" ? <KarimHeader /> : <AlawieHeader />}
 
         {/* Buyer Info and Invoice */}
-        <div className="flex flex-col sm:flex-row justify-between items-start pb-2 print:pb-1 gap-4 md:gap-0">
-          <div className="text-left space-y-1 print:space-y-0 print:leading-none print:gap-0 print:mt-2 w-full md:w-1/2">
+        <div className="flex flex-col @min-[640px]:flex-row justify-between items-start pb-2 print:pb-1 gap-4 @min-[768px]:gap-0">
+          <div className="text-left space-y-1 print:space-y-0 print:leading-none print:gap-0 print:mt-2 w-full @min-[768px]:w-1/2">
             <p className="font-bold">Käuferdaten:</p>
             <Val value={form.buyerName} className="input w-full p-1" />
             <Val value={form.buyerStreet} className="input w-full p-1" />
             <Val value={form.buyerCity} className="input w-full p-1" />
           </div>
 
-          <div className="text-right space-y-1 w-full md:w-auto">
+          <div className="text-right space-y-1 w-full @min-[768px]:w-auto">
             <Val
               value={form.title || "Kaufvertrag"}
-              className={`text-xl md:text-2xl print:text-2xl bg-transparent border-none outline-none w-[160px] text-right ${
+              className={`text-xl @min-[768px]:text-2xl print:text-2xl bg-transparent border-none outline-none w-[160px] text-right ${
                 form.issuer === "karim" ? "text-slate-800" : "text-red-600"
               }`}
             />
@@ -100,7 +102,7 @@ const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref
         </div>
 
         {/* Contact Info */}
-        <div className="grid grid-cols-[max-content_1fr] gap-y-1 print:gap-y-0 print:leading-none w-full md:w-1/2">
+        <div className="grid grid-cols-[max-content_1fr] gap-y-1 print:gap-y-0 print:leading-none w-full @min-[768px]:w-1/2">
           <label className="font-semibold text-[13px] print:text-[11px] self-center">Ausweisnummer</label>
           <Val value={form.idNumber} className="input p-1 text-[13px] print:text-[11px] w-full" />
           <label className="font-semibold text-[13px] print:text-[11px] self-center">Telefon / Mobil</label>
@@ -110,8 +112,8 @@ const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref
         </div>
 
         {/* Vehicle Info */}
-        <div className="pt-4 md:pt-6 print:pt-1">
-          <div className="grid grid-cols-1 sm:grid-cols-4 md:grid-cols-4 gap-2 text-[13px] font-semibold">
+        <div className="pt-4 @min-[768px]:pt-6 print:pt-1">
+          <div className="grid grid-cols-1 @min-[640px]:grid-cols-4 @min-[768px]:grid-cols-4 gap-2 text-[13px] font-semibold">
             {[
               ["Fahrzeugtyp", form.carType],
               ["Fahrgestellnummer", form.vin],
@@ -128,7 +130,7 @@ const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref
         </div>
 
         {/* Warranty */}
-        <div className="pt-4 md:pt-6 print:mt-1">
+        <div className="pt-4 @min-[768px]:pt-6 print:mt-1">
           <p className="font-semibold">Gewährleistung:</p>
           <div className="p-1 text-[13px]">
             <div className="flex items-center space-x-1">
@@ -159,9 +161,9 @@ const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref
         </div>
 
         {/* Documents */}
-        <div className="pt-4 md:pt-6 print:pt-1">
+        <div className="pt-4 @min-[768px]:pt-6 print:pt-1">
           <p className="font-semibold text-[13px] border-b w-fit">Das Kfz wurde mit folgenden Papieren und Schlüsseln übergeben</p>
-          <div className="grid grid-cols-1 sm:grid-cols-4 md:grid-cols-4 gap-1 text-[13px] pt-2">
+          <div className="grid grid-cols-1 @min-[640px]:grid-cols-4 @min-[768px]:grid-cols-4 gap-1 text-[13px] pt-2">
             <label className="flex items-center">
               <input type="checkbox" readOnly tabIndex={-1} checked={Boolean(form.kfzBrief)} className="mr-1" />
               Kfz Brief
@@ -182,7 +184,7 @@ const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref
         </div>
 
         {/* Payment Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-4 md:pt-6 print:pt-1">
+        <div className="grid grid-cols-1 @min-[640px]:grid-cols-3 gap-2 pt-4 @min-[768px]:pt-6 print:pt-1">
           <div>
             <div className="border-b border-black inline-block text-[13px] font-semibold mb-1">Rechnungsbetrag (€)</div>
             <Val value={total ? `€ ${formatGermanNumber(total)}` : ""} className="input w-full p-1" />
@@ -206,11 +208,11 @@ const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref
 
         {/* Terms */}
         <div className="mb-3 print:mt-2">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end font-bold text-[13px] gap-2">
+          <div className="flex flex-col @min-[640px]:flex-row justify-between items-start @min-[640px]:items-end font-bold text-[13px] gap-2">
             <p>Zahlungsbedingungen</p>
-            <div className="flex flex-col items-start sm:items-center w-full sm:w-auto">
+            <div className="flex flex-col items-start @min-[640px]:items-center w-full @min-[640px]:w-auto">
               <div className="h-12 w-40 border-b border-dashed border-gray-400 mb-1 print:h-16" />
-              <p className="text-left sm:text-center text-[13px]">Restbetrag erhalten</p>
+              <p className="text-left @min-[640px]:text-center text-[13px]">Restbetrag erhalten</p>
             </div>
           </div>
           <ul className="text-[13px] text-black list-disc pl-4 mt-1 space-y-0 print:text-[13px]">
@@ -223,19 +225,19 @@ const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref
         </div>
 
         {/* Signatures */}
-        <div className="flex flex-col sm:flex-row justify-between mt-8 sm:mt-18 print:mt-3 gap-4 sm:gap-0">
-          <div className="flex flex-col items-start sm:items-center">
+        <div className="flex flex-col @min-[640px]:flex-row justify-between mt-8 @min-[640px]:mt-18 print:mt-3 gap-4 @min-[640px]:gap-0">
+          <div className="flex flex-col items-start @min-[640px]:items-center">
             <div className="h-12 w-40 border-b border-dashed border-gray-400 mb-1 print:h-16" />
-            <p className="text-left sm:text-center text-[13px]">Unterschrift Verkäufer</p>
+            <p className="text-left @min-[640px]:text-center text-[13px]">Unterschrift Verkäufer</p>
           </div>
-          <div className="flex flex-col items-start sm:items-center">
+          <div className="flex flex-col items-start @min-[640px]:items-center">
             <div className="h-12 w-40 border-b border-dashed border-gray-400 mb-1 print:h-16" />
-            <p className="text-left sm:text-center text-[13px]">Unterschrift Käufer</p>
+            <p className="text-left @min-[640px]:text-center text-[13px]">Unterschrift Käufer</p>
           </div>
         </div>
 
         {/* Bank Info */}
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 text-white print:mt-2">
+        <div className="mt-4 grid grid-cols-1 @min-[768px]:grid-cols-2 print:grid-cols-2 text-white print:mt-2">
           {form.issuer === "alawie" ? (
             <>
               <div className="bg-gray-600 p-2 print:p-1">
@@ -244,7 +246,7 @@ const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref
                 <p className="text-[13px]">Alte Dürener straße 4</p>
                 <p className="text-[13px]">52428 Jülich</p>
               </div>
-              <div className="bg-gray-600 p-2 md:text-right print:text-right print:p-1">
+              <div className="bg-gray-600 p-2 @min-[768px]:text-right print:text-right print:p-1">
                 <p className="font-semibold text-[13px]">Commerzbank</p>
                 <p className="text-[13px]">IBAN: DE42 3904 0013 0446 9508 00</p>
                 <p className="text-[13px]">USt-IdNr.: DE317574583</p>
@@ -258,7 +260,7 @@ const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref
                 <p className="text-[13px]">Alte Dürener straße 4</p>
                 <p className="text-[13px]">52428 Jülich</p>
               </div>
-              <div className="bg-gray-600 p-2 md:text-right print:text-right print:p-1">
+              <div className="bg-gray-600 p-2 @min-[768px]:text-right print:text-right print:p-1">
                 <p className="font-semibold text-[13px]">Commerzbank</p>
                 <p className="text-[13px]">IBAN: DE91 3904 0013 0444 4964 00</p>
                 <p className="text-[13px]">USt-IdNr.: DE305423608</p>
@@ -311,6 +313,14 @@ const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref
           }
           .dash-shell main > div:has(.kv-doc) {
             padding: 0 !important;
+          }
+          .kv-fit-outer {
+            height: auto !important;
+            overflow: visible !important;
+          }
+          .kv-fit {
+            width: auto !important;
+            transform: none !important;
           }
           .card:has(.kv-doc) {
             border: 0 !important;

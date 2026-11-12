@@ -88,8 +88,8 @@ export default function PrintableFormButton({ form, defaults, icon: Icon = FileS
 
   return (
     <>
-      <button type="button" onClick={openForm} className="btn btn-secondary" title={`${form.title} ausfüllen`}>
-        <Icon /> {form.label}
+      <button type="button" onClick={openForm} className="btn btn-secondary" title={`${form.title} ausfüllen`} aria-label={form.label}>
+        <Icon /> <span className="hidden sm:inline">{form.label}</span>
       </button>
       {open && values ? createPortal(
         <div className="dash-shell print:hidden">

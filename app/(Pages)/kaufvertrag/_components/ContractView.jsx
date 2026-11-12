@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -41,6 +41,45 @@ const dtFmt = new Intl.DateTimeFormat("de-DE", {
   hour: "2-digit",
   minute: "2-digit",
 });
+
+/**
+ * Shows the sheet at its paper width and scales it down to the space there is,
+ * so a phone sees the same page as the computer. Print and PDF ignore the scaling
+ * (see the print rules in KaufvertragDocument).
+ */
+const SHEET_WIDTH = 800;
+function FitWidth({ children }) {
+  const outer = useRef(null);
+  const inner = useRef(null);
+  const [fit, setFit] = useState({ scale: 1, height: null });
+
+  useLayoutEffect(() => {
+    const o = outer.current;
+    const i = inner.current;
+    if (!o || !i) return undefined;
+    const update = () => {
+      const scale = Math.min(1, o.clientWidth / SHEET_WIDTH);
+      setFit({ scale, height: Math.ceil(i.offsetHeight * scale) });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(o);
+    ro.observe(i);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div ref={outer} className="kv-fit-outer overflow-hidden" style={fit.scale < 1 ? { height: fit.height } : undefined}>
+      <div
+        ref={inner}
+        className="kv-fit"
+        style={fit.scale < 1 ? { width: SHEET_WIDTH, transform: `scale(${fit.scale})`, transformOrigin: "top left" } : undefined}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function ContractView({ contract: initial, doc: initialDoc, vehicle: initialVehicle }) {
   const router = useRouter();
@@ -204,11 +243,11 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
   return (
     <div className="mx-auto max-w-[1280px]">
       {/* Action bar */}
-      <div className="sticky top-14 z-20 -mt-6 mb-4 lg:top-0 ind-stickybar rounded-b-[4px] border-x border-[#a9b0b9] flex flex-wrap items-center gap-2 px-4 py-2.5 print:hidden">
+      <div className="sticky top-14 z-20 -mt-6 mb-4 lg:top-0 ind-stickybar rounded-b-[4px] border-x border-[#a9b0b9] flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:px-4 print:hidden">
         <button type="button" onClick={openSidebar} className="ind-icon-btn md:hidden" aria-label="Menü öffnen">
           <FiMenu className="h-4 w-4" />
         </button>
-        <div className="mr-auto flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2 sm:mr-auto">
           <button
             type="button"
             onClick={() => {
@@ -237,21 +276,21 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
           {c.archived ? <Pill>Archiviert</Pill> : null}
         </div>
 
-        {(
-          <>
-            <button type="button" onClick={print} className="btn btn-secondary">
+        {/* phones: one tidy row of equal icon buttons; larger screens: buttons with text */}
+        <div className="flex w-full items-center gap-1.5 sm:w-auto sm:flex-wrap sm:gap-2 max-sm:[&>*]:flex-1 max-sm:[&>*]:px-0">
+            <button type="button" onClick={print} className="btn btn-secondary" title="Drucken" aria-label="Drucken">
               <Printer /> <span className="hidden sm:inline">Drucken</span>
             </button>
-            <button type="button" onClick={savePdf} disabled={busy === "pdf"} className="btn btn-secondary">
+            <button type="button" onClick={savePdf} disabled={busy === "pdf"} className="btn btn-secondary" title="PDF" aria-label="PDF">
               {busy === "pdf" ? <Loader2 className="animate-spin" /> : <Download />} <span className="hidden sm:inline">PDF</span>
             </button>
             <VollmachtButton buyer={c.buyer} vehicle={c.vehicle} />
             <SepaButton buyer={c.buyer} plate={c.vehicle?.plate} />
-            <button type="button" onClick={() => setMailOpen(true)} className="btn btn-secondary">
+            <button type="button" onClick={() => setMailOpen(true)} className="btn btn-secondary" title="An Käufer senden" aria-label="An Käufer senden">
               <Mail /> <span className="hidden sm:inline">An Käufer senden</span>
             </button>
-            <Link href={`/kaufvertrag/${c._id}/bearbeiten`} className="btn btn-primary">
-              <Pencil /> Bearbeiten
+            <Link href={`/kaufvertrag/${c._id}/bearbeiten`} className="btn btn-primary" title="Bearbeiten" aria-label="Bearbeiten">
+              <Pencil /> <span className="hidden sm:inline">Bearbeiten</span>
             </Link>
             {isAdmin ? (
               <Menu>
@@ -286,8 +325,7 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
                 </MenuItems>
               </Menu>
             ) : null}
-          </>
-        )}
+        </div>
       </div>
 
       <div className="mb-3 space-y-2 print:hidden">
@@ -301,10 +339,10 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* Printed contract – the same document as on paper */}
-        <div className="card overflow-x-auto print:overflow-visible print:border-0 print:shadow-none">
-          <div className="min-w-[680px] print:min-w-0">
+        <div className="card overflow-hidden print:overflow-visible print:border-0 print:shadow-none">
+          <FitWidth>
             <KaufvertragDocument ref={sheet} doc={doc} />
-          </div>
+          </FitWidth>
         </div>
 
         {/* Side */}
