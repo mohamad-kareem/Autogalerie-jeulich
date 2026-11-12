@@ -418,7 +418,7 @@ const DashboardContent = ({
           ) : null}
 
           {/* ✅ OPTION A: main area + right sticky notes (desktop only) */}
-          <div className="flex-1 px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex-1 py-3 sm:px-6 sm:py-4">
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(260px,300px)] gap-4 sm:gap-6 items-start">
               {/* Left content */}
               <main className="space-y-4 sm:space-y-6">

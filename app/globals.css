@@ -1165,3 +1165,21 @@ input[type="number"] {
   border-color: #8a5a00;
   background: #8a5a00 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5'/%3E%3C/svg%3E") center / 11px no-repeat;
 }
+
+/* ==========================================================
+   Phones: the staff pages use the full screen width – no empty
+   strip left and right. Only the page wrappers lose their side
+   padding; cards, plates, panels and their contents keep theirs.
+   ========================================================== */
+@media (max-width: 639.98px) {
+  .dash-shell > main > div.px-4,
+  .dash-shell main .min-h-screen,
+  .dash-shell main .mx-auto:is([class*="max-w-"], .container):not(.card):not(.ind-plate):not(.ind-panel):not([class*="border"]):not([class*="bg-"]):not([class*="shadow"]):not([class*="rounded"]) {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  /* wrappers that kept a 95vw width: use the whole width on phones */
+  .dash-shell main .mx-auto[class*="max-w-[95vw]"] {
+    max-width: none !important;
+  }
+}
