@@ -1,24 +1,9 @@
-// The company stamp as printed text – used on both Kaufvertrag sheets.
-// Font size comes from the parent (className or style), the lines scale with it.
-
-import { COMPANY_STAMP } from "@/lib/company";
-
-export default function CompanyStamp({ className = "", style }) {
-  const [head, ...lines] = COMPANY_STAMP;
+export default function CompanyStamp({ imageId, className = "", style }) {
+  if (!imageId) return null;
   return (
-    <div
-      aria-label="Firmenstempel"
-      className={`pointer-events-none select-none whitespace-nowrap text-center leading-[1.25] text-[#111] ${className}`}
-      style={style}
-    >
-      <p className="m-0 font-bold" style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: "1.12em" }}>
-        {head}
-      </p>
-      {lines.map((line) => (
-        <p key={line} className="m-0" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-          {line}
-        </p>
-      ))}
+    <div className={`pointer-events-none flex select-none items-center justify-center ${className}`} style={style}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img data-company-stamp src={imageId} alt="Firmenstempel" className="h-auto max-h-full w-auto max-w-full" />
     </div>
   );
 }

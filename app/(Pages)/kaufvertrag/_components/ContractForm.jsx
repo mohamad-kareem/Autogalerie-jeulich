@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import { Loader2, OctagonAlert, AlertTriangle, Plus, Save, UserCheck, X } from "lucide-react";
 import { FiMenu } from "react-icons/fi";
 import { useSidebar } from "@/app/(components)/SidebarContext";
+import { useCompanyStamp } from "@/app/(components)/useCompanyStamp";
 import Fahrzeugakte, { keysOf, tuevOf } from "../form/Fahrzeugakte";
+import CompanyStampNotice from "./CompanyStampNotice";
 import { ErrorNote, Field, Modal, Segmented, api, cx } from "@/app/(components)/sales/ui";
 import { PAYMENT_METHODS, addMonthsDay, dateDE, formatEuro, isEmail, isPhone, normVin, parseEuro, phoneChars, remaining } from "@/lib/sales";
 import { fromForm } from "@/lib/kaufvertrag";
@@ -60,6 +62,8 @@ export default function ContractForm({ initial, mode = "new", contractId = "", n
   const router = useRouter();
   const { openSidebar } = useSidebar();
   const [form, setForm] = useState(() => toForm(initial));
+  const [companyStamp] = useCompanyStamp();
+  const canStamp = Boolean(form.stamp || companyStamp.id);
   const [touched, setTouched] = useState({ tuev: Boolean(initial.handover?.tuevUntil), keys: mode !== "new" });
   const [missing, setMissing] = useState([]);
   const [error, setError] = useState("");
@@ -543,11 +547,10 @@ export default function ContractForm({ initial, mode = "new", contractId = "", n
             </div>
           </div>
 
-          {issuer === "karim" ? (
-            <div className="mt-6 border-t border-line pt-4">
-              <Check label="Firmenstempel bei der Unterschrift des Verkäufers" checked={form.stamp} onChange={(v) => set("stamp", v)} />
-            </div>
-          ) : null}
+          <div className="mt-6 border-t border-line pt-4">
+            <Check label="Firmenstempel bei der Unterschrift des Verkäufers" checked={form.stamp} onChange={(v) => set("stamp", v)} disabled={!canStamp || Boolean(busy)} />
+            {canStamp ? null : <CompanyStampNotice stamp={companyStamp} />}
+          </div>
         </div>
 
         {/* ----------------------------- Side panel ----------------------------- */}
@@ -612,10 +615,10 @@ function SheetTitle({ children, right }) {
   );
 }
 
-function Check({ label, checked, onChange }) {
+function Check({ label, checked, onChange, disabled = false }) {
   return (
     <label className="inline-flex cursor-pointer items-center gap-2 text-[13px] text-ink">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 cursor-pointer rounded accent-navy-900" />
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 cursor-pointer rounded accent-navy-900 disabled:cursor-not-allowed" />
       {label}
     </label>
   );

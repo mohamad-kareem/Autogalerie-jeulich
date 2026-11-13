@@ -159,15 +159,17 @@ const STAMP_AREA = { seller: [140, 284.6], buyer: [414.6, 559.3] };
 const STAMP_TOP = 776.6;
 const STAMP_FONT = 7.5;
 
-function SheetStamp({ side, includeWarrantyExclusion }) {
+function SheetStamp({ side, includeWarrantyExclusion, imageId }) {
   const [left, right] = STAMP_AREA[side];
   return (
     <CompanyStamp
+      imageId={imageId}
       className="absolute"
       style={{
         top: fieldTop(STAMP_TOP, includeWarrantyExclusion),
         left: pct(left, FORM_W),
         width: pct(right - left, FORM_W),
+        height: pct(33, FORM_H),
         fontSize: `${(STAMP_FONT / FORM_W) * 100}cqw`,
         lineHeight: 1.1,
       }}
@@ -236,7 +238,7 @@ function SheetCheck({ id, on, onToggle, readOnly, includeWarrantyExclusion }) {
 
 
 /** The whole sheet: background form + all boxes */
-const PrivateSheet = forwardRef(function PrivateSheet({ d, setField, toggle, readOnly = false }, ref) {
+const PrivateSheet = forwardRef(function PrivateSheet({ d, stampImageId, setField, toggle, readOnly = false }, ref) {
   const priceNum = Number(String(d.price ?? "").replace(/\./g, "").replace(",", ".")) || 0;
   const { logo, includeWarrantyExclusion, stamp } = privateDocumentOptions(d.documentOptions);
   return (
@@ -247,7 +249,9 @@ const PrivateSheet = forwardRef(function PrivateSheet({ d, setField, toggle, rea
       style={{ aspectRatio: `${FORM_W} / ${FORM_H}`, containerType: "inline-size" }}
     >
       <FormBackground logo={logo} includeWarrantyExclusion={includeWarrantyExclusion} />
-      {stamp !== "none" ? <SheetStamp side={stamp} includeWarrantyExclusion={includeWarrantyExclusion} /> : null}
+      {stamp !== "none" && stampImageId ? (
+        <SheetStamp side={stamp} includeWarrantyExclusion={includeWarrantyExclusion} imageId={stampImageId} />
+      ) : null}
 
       {Object.keys(FIELDS).map((key) => {
         const [g, k] = FIELDS[key];

@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 import mongoose from "mongoose";
 import ContactCustomer from "@/models/ContactCustomer";
 
-import { nextNumber, staffUser } from "@/lib/kaufvertragServer";
+import { nextNumber, SaleError, staffUser } from "@/lib/kaufvertragServer";
 
 /** Never lets the contract fail: the contract matters more than the label. */
 async function markWebsiteCarSold({ vin, carId }) {
@@ -50,8 +50,11 @@ export async function POST(req) {
 
     /* 4️⃣ Create Kaufvertrag */
     const user = await staffUser();
+    const stamp = Kaufvertrag.schema.path("stamp").cast(data.stamp ?? false);
+    if (stamp && !user) throw new SaleError("Nicht angemeldet.", 401);
     const contract = await Kaufvertrag.create({
       ...data,
+      stamp,
       issuer: data.issuer || "karim",
       invoiceNumber,
       paid: data.paid === true,
@@ -121,6 +124,7 @@ export async function POST(req) {
 
     return NextResponse.json(contract, { status: 201 });
   } catch (err) {
+    if (err instanceof SaleError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error("POST /kaufvertrag ERROR:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

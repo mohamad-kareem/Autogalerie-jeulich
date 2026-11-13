@@ -63,8 +63,9 @@ function Val({ value, className = "", type = "text" }) {
   return <input type={type} readOnly tabIndex={-1} value={value ?? ""} className={className} />;
 }
 
-const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref) {
+const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc, stampImage }, ref) {
   const form = doc || {};
+  const hasStampImage = Boolean(stampImage);
   const total = Number(form.total) || 0;
   const down = Number(form.downPayment) || 0;
   const agreements = Array.isArray(form.agreements) ? form.agreements : [];
@@ -229,7 +230,12 @@ const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref
         <div className="flex flex-col @min-[640px]:flex-row justify-between mt-8 @min-[640px]:mt-18 print:mt-3 gap-4 @min-[640px]:gap-0">
           <div className="flex flex-col items-start @min-[640px]:items-center">
             <div className="relative h-12 w-40 border-b border-dashed border-gray-400 mb-1 print:h-16">
-              {form.stamp && form.issuer !== "alawie" ? <CompanyStamp className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[11px]" /> : null}
+              {form.stamp && hasStampImage ? (
+                <CompanyStamp
+                  imageId={stampImage}
+                  className={hasStampImage ? "absolute inset-x-0 bottom-0.5 top-0" : "absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[11px]"}
+                />
+              ) : null}
             </div>
             <p className="text-left @min-[640px]:text-center text-[13px]">Unterschrift Verkäufer</p>
           </div>

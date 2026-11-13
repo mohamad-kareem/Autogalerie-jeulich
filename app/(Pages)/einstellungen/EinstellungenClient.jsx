@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Download, LoaderCircle, Plug, Puzzle, Settings, User, UserPlus } from "lucide-react";
+import { CheckCircle2, Download, LoaderCircle, Plug, Puzzle, Settings, Stamp, User, UserPlus } from "lucide-react";
 import { detectMarketExtension, hasRecentMarketExtensionConnection } from "@/lib/market/extension";
 import ProfileClient from "./ProfileClient";
 import RegisterForm from "./RegisterForm";
+import CompanyStampSettings from "./CompanyStampSettings";
 
 function Block({ id, icon: Icon, title, children }) {
   return (
@@ -49,6 +50,10 @@ export default function EinstellungenClient({ isAdmin, user }) {
 
       <Block id="profil" icon={User} title="Mein Profil">
         <ProfileClient initialUser={user} />
+      </Block>
+
+      <Block id="firmenstempel" icon={Stamp} title="Firmenstempel">
+        <CompanyStampSettings />
       </Block>
 
       <Block id="browser-erweiterung" icon={Puzzle} title="Browser-Erweiterung">

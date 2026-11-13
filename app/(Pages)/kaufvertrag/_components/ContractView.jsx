@@ -7,10 +7,12 @@ import { useSession } from "next-auth/react";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { FiMenu } from "react-icons/fi";
 import { useSidebar } from "@/app/(components)/SidebarContext";
+import { useCompanyStamp } from "@/app/(components)/useCompanyStamp";
 import KaufvertragDocument from "./KaufvertragDocument";
+import CompanyStampNotice from "./CompanyStampNotice";
 import VollmachtButton from "./VollmachtButton";
 import SepaButton from "./SepaButton";
-import { downloadPdf, pdfDataUri } from "@/lib/pdfCapture";
+import { downloadPdf, pdfDataUri, waitForCompanyStamp } from "@/lib/pdfCapture";
 import {
   Archive,
   ArrowLeft,
@@ -88,6 +90,8 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
   const { openSidebar } = useSidebar();
   const sheet = useRef(null);
   const [c, setCState] = useState(initial);
+  const [companyStamp] = useCompanyStamp();
+  const canStamp = Boolean(c.stamp || companyStamp.id);
   const [doc, setDoc] = useState(initialDoc);
   const [vehicle, setVehicle] = useState(initialVehicle);
   const vehicleSoldHere = Boolean(vehicle?.sold);
@@ -158,8 +162,8 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
     const stamp = !c.stamp;
     const data = await patch({ action: "stamp", stamp }, "stamp");
     if (!data?.contract) return;
-    setDoc((current) => ({ ...current, stamp }));
-    setC(data.contract);
+    setDoc((current) => ({ ...current, stamp: data.contract.stamp }));
+    setCState(data.contract);
   }
 
   async function cancel() {
@@ -223,8 +227,14 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
     router.refresh();
   }
 
-  function print() {
-    window.print();
+  async function print() {
+    setError("");
+    try {
+      await waitForCompanyStamp(sheet.current);
+      window.print();
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   async function savePdf() {
@@ -286,15 +296,15 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
 
         {/* phones: one tidy row of equal icon buttons; larger screens: buttons with text */}
         <div className="flex w-full items-center gap-1.5 sm:w-auto sm:flex-wrap sm:gap-2 max-sm:[&>*]:flex-1 max-sm:[&>*]:px-0">
-            <button type="button" onClick={print} className="btn btn-secondary" title="Drucken" aria-label="Drucken">
+            <button type="button" onClick={print} disabled={Boolean(busy) || companyStamp.loading || Boolean(companyStamp.error)} className="btn btn-secondary" title="Drucken" aria-label="Drucken">
               <Printer /> <span className="hidden sm:inline">Drucken</span>
             </button>
-            <button type="button" onClick={savePdf} disabled={busy === "pdf"} className="btn btn-secondary" title="PDF" aria-label="PDF">
+            <button type="button" onClick={savePdf} disabled={Boolean(busy) || companyStamp.loading || Boolean(companyStamp.error)} className="btn btn-secondary" title="PDF" aria-label="PDF">
               {busy === "pdf" ? <Loader2 className="animate-spin" /> : <Download />} <span className="hidden sm:inline">PDF</span>
             </button>
             <VollmachtButton buyer={c.buyer} vehicle={c.vehicle} />
             <SepaButton buyer={c.buyer} plate={c.vehicle?.plate} />
-            <button type="button" onClick={() => setMailOpen(true)} className="btn btn-secondary" title="An Käufer senden" aria-label="An Käufer senden">
+            <button type="button" onClick={() => setMailOpen(true)} disabled={Boolean(busy) || companyStamp.loading || Boolean(companyStamp.error)} className="btn btn-secondary" title="An Käufer senden" aria-label="An Käufer senden">
               <Mail /> <span className="hidden sm:inline">An Käufer senden</span>
             </button>
             <Link href={`/kaufvertrag/${c._id}/bearbeiten`} className="btn btn-primary" title="Bearbeiten" aria-label="Bearbeiten">
@@ -349,7 +359,7 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
         {/* Printed contract – the same document as on paper */}
         <div className="card overflow-hidden print:overflow-visible print:border-0 print:shadow-none">
           <FitWidth>
-            <KaufvertragDocument ref={sheet} doc={doc} />
+            <KaufvertragDocument ref={sheet} doc={doc} stampImage={companyStamp.id} />
           </FitWidth>
         </div>
 
@@ -408,21 +418,20 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
             ) : null}
           </div>
 
-          {c.issuer === "karim" ? (
-            <div className="card p-4">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={Boolean(c.stamp)}
-                onClick={toggleStamp}
-                disabled={busy === "stamp"}
-                className={`ind-toggle ${c.stamp ? "ind-toggle-on" : ""}`}
-              >
-                <span className="ind-toggle-box" />
-                Firmenstempel bei der Unterschrift
-              </button>
-            </div>
-          ) : null}
+          <div className="card p-4">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={Boolean(c.stamp)}
+              onClick={toggleStamp}
+              disabled={!canStamp || Boolean(busy)}
+              className={`ind-toggle ${c.stamp ? "ind-toggle-on" : ""}`}
+            >
+              <span className="ind-toggle-box" />
+              Firmenstempel bei der Unterschrift
+            </button>
+            {canStamp ? null : <CompanyStampNotice stamp={companyStamp} />}
+          </div>
 
           {/* Buyer */}
           <div className="card p-4 text-[13px]">

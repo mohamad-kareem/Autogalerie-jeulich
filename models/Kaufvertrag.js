@@ -78,7 +78,7 @@ const KaufvertragSchema = new mongoose.Schema(
 );
 
 // Dev hot reload: recompile the model when new fields were added.
-if (mongoose.models.Kaufvertrag && !mongoose.models.Kaufvertrag.schema.path("stamp")) {
+if (mongoose.models.Kaufvertrag && (!mongoose.models.Kaufvertrag.schema.path("stamp") || mongoose.models.Kaufvertrag.schema.path("stampImageId"))) {
   mongoose.deleteModel("Kaufvertrag");
 }
 

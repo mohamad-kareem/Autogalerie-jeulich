@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Save } from "lucide-react";
 import { FiMenu } from "react-icons/fi";
 import { useSidebar } from "@/app/(components)/SidebarContext";
+import { useCompanyStamp } from "@/app/(components)/useCompanyStamp";
 import { ErrorNote, api } from "@/app/(components)/sales/ui";
 import Fahrzeugakte, { tuevOf } from "../form/Fahrzeugakte";
 import { isPhone, phoneChars } from "@/lib/sales";
@@ -19,6 +20,8 @@ export default function PrivateContractForm({ initial, contractId = "", carId = 
   const router = useRouter();
   const { openSidebar } = useSidebar();
   const [d, setD] = useState(initial);
+  const [companyStamp] = useCompanyStamp();
+  const stampImageId = companyStamp.id;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const editing = Boolean(contractId);
@@ -152,7 +155,7 @@ export default function PrivateContractForm({ initial, contractId = "", carId = 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
         {/* ----------------------------- the TÜV-SÜD form ----------------------------- */}
         <div className="overflow-x-auto">
-          <PrivateSheet d={d} setField={setField} toggle={toggle} />
+          <PrivateSheet d={d} stampImageId={stampImageId} setField={setField} toggle={toggle} />
         </div>
 
         {/* ----------------------------- Side panel ----------------------------- */}
@@ -165,6 +168,8 @@ export default function PrivateContractForm({ initial, contractId = "", carId = 
           />
           <PrivateDocumentOptions
             value={d.documentOptions}
+            companyStamp={companyStamp}
+            canStamp={Boolean(stampImageId) || d.documentOptions.stamp !== "none"}
             onChange={(documentOptions) => setD((current) => ({ ...current, documentOptions }))}
             disabled={busy}
           />

@@ -8,6 +8,7 @@ import { errorResponse, isId, scheinOf, staffUser } from "@/lib/kaufvertragServe
 import { applyPrivateSale, undoPrivateSale } from "@/lib/privateSale";
 import { cleanPrivate, privateDocumentOptions, privateSummary, serializePrivate } from "@/lib/privateContract";
 
+
 async function guard(params) {
   if (!(await staffUser())) return { res: Response.json({ error: "Nicht angemeldet." }, { status: 401 }) };
   const { id } = await params;

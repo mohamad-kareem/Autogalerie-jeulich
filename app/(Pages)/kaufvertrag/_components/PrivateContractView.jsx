@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import { CarFront, CheckCircle2, Download, Loader2, Mail, Pencil, Phone, Printer, Trash2, User } from "lucide-react";
 import { FiMenu } from "react-icons/fi";
 import { useSidebar } from "@/app/(components)/SidebarContext";
+import { useCompanyStamp } from "@/app/(components)/useCompanyStamp";
 import PrivateSheet from "./PrivateSheet";
 import PrivateDocumentOptions from "./PrivateDocumentOptions";
 import VollmachtButton from "./VollmachtButton";
 import SepaButton from "./SepaButton";
-import { downloadPdf, pdfDataUri } from "@/lib/pdfCapture";
+import { downloadPdf, pdfDataUri, waitForCompanyStamp } from "@/lib/pdfCapture";
 import { privateForm } from "@/lib/privateContract";
 import { ErrorNote, Modal, Pill, api, cx } from "@/app/(components)/sales/ui";
 import { berlinDay, buyerAddress, dateDE, formatEuro, isEmail, telHref } from "@/lib/sales";
@@ -32,6 +33,7 @@ export default function PrivateContractView({ contract: initial, vehicle }) {
   const sheet = useRef(null);
   const vehicleSoldHere = Boolean(vehicle?.sold);
   const [c, setC] = useState(initial);
+  const [companyStamp] = useCompanyStamp();
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -42,6 +44,7 @@ export default function PrivateContractView({ contract: initial, vehicle }) {
 
   const d = privateForm(c.data);
   const { buyer, seller, car, documentOptions } = d;
+  const stampImageId = companyStamp.id;
   const carName = [car.maker, car.type].filter(Boolean).join(" ") || c.vehicleName;
   const pdfName = `Kaufvertrag_privat_${(carName || "Fahrzeug").replace(/[^\w-]+/g, "-")}.pdf`;
 
@@ -104,8 +107,14 @@ export default function PrivateContractView({ contract: initial, vehicle }) {
     router.refresh();
   }
 
-  function print() {
-    window.print();
+  async function print() {
+    setError("");
+    try {
+      await waitForCompanyStamp(sheet.current);
+      window.print();
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   async function savePdf() {
@@ -131,15 +140,15 @@ export default function PrivateContractView({ contract: initial, vehicle }) {
           <h1 className="truncate text-[15px] font-semibold text-ink">Privatvertrag</h1>
           {c.paid ? <Pill tone="green">Bezahlt</Pill> : <Pill tone="amber">Offen</Pill>}
         </div>
-        <button type="button" onClick={print} disabled={savingDocumentOptions} className="btn btn-secondary">
+        <button type="button" onClick={print} disabled={savingDocumentOptions || companyStamp.loading || Boolean(companyStamp.error)} className="btn btn-secondary">
           <Printer /> <span className="hidden sm:inline">Drucken</span>
         </button>
-        <button type="button" onClick={savePdf} disabled={busy === "pdf" || savingDocumentOptions} className="btn btn-secondary">
+        <button type="button" onClick={savePdf} disabled={Boolean(busy) || companyStamp.loading || Boolean(companyStamp.error)} className="btn btn-secondary">
           {busy === "pdf" ? <Loader2 className="animate-spin" /> : <Download />} <span className="hidden sm:inline">PDF</span>
         </button>
         <VollmachtButton buyer={buyer} vehicle={{ name: carName, vin: car.vin, plate: car.plate }} />
         <SepaButton buyer={buyer} plate={car.plate} />
-        <button type="button" onClick={() => setMailOpen(true)} disabled={savingDocumentOptions} className="btn btn-secondary">
+        <button type="button" onClick={() => setMailOpen(true)} disabled={savingDocumentOptions || companyStamp.loading || Boolean(companyStamp.error)} className="btn btn-secondary">
           <Mail /> <span className="hidden sm:inline">An Käufer senden</span>
         </button>
         <Link href={`/kaufvertrag/privat/${c._id}/bearbeiten`} className="btn btn-primary">
@@ -168,7 +177,7 @@ export default function PrivateContractView({ contract: initial, vehicle }) {
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* the filled TÜV-SÜD form – as printed */}
         <div className="overflow-x-auto print:overflow-visible">
-          <PrivateSheet ref={sheet} d={d} readOnly />
+          <PrivateSheet ref={sheet} d={d} stampImageId={stampImageId} readOnly />
         </div>
 
         {/* Side */}
@@ -244,7 +253,7 @@ export default function PrivateContractView({ contract: initial, vehicle }) {
             {c.vin ? <p className="font-mono text-[12px] text-muted">{c.vin}</p> : null}
             {vehicle ? <div className="mt-2">{vehicleSoldHere ? <Pill tone="green">Verkauft</Pill> : <Pill tone="amber">Nicht als verkauft markiert</Pill>}</div> : null}
           </div>
-          <PrivateDocumentOptions value={documentOptions} onChange={saveDocumentOptions} disabled={Boolean(busy)} />
+          <PrivateDocumentOptions value={documentOptions} onChange={saveDocumentOptions} companyStamp={companyStamp} canStamp={Boolean(stampImageId) || documentOptions.stamp !== "none"} disabled={Boolean(busy)} />
         </aside>
       </div>
 

@@ -15,6 +15,8 @@ import {
   staffUser,
 } from "@/lib/kaufvertragServer";
 
+
+
 // 🔎 Get a single contract
 export async function GET(request, context) {
   try {
@@ -51,9 +53,9 @@ export async function GET(request, context) {
 export async function PUT(request, context) {
   try {
     await connectDB();
-    const { params } = context;
+    const { id } = await context.params;
     const body = await request.json();
-    const contract = await Kaufvertrag.findById(params.id);
+    const contract = await Kaufvertrag.findById(id);
 
     if (!contract) {
       return NextResponse.json(
@@ -108,11 +110,12 @@ export async function PUT(request, context) {
     }
 
     // 🔄 Default update (any other fields)
-    const updated = await Kaufvertrag.findByIdAndUpdate(params.id, body, {
+    const updated = await Kaufvertrag.findByIdAndUpdate(id, body, {
       new: true,
     });
     return NextResponse.json(updated);
   } catch (err) {
+    if (err instanceof SaleError) return NextResponse.json({ error: err.message }, { status: err.status });
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

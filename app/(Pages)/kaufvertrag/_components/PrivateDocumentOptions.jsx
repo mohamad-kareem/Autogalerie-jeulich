@@ -1,4 +1,6 @@
-export default function PrivateDocumentOptions({ value, onChange, disabled = false }) {
+import CompanyStampNotice from "./CompanyStampNotice";
+
+export default function PrivateDocumentOptions({ value, onChange, companyStamp, canStamp, disabled = false }) {
   return (
     <fieldset aria-label="Vertragsoptionen" disabled={disabled} className="card min-w-0 space-y-2.5 p-4">
       <h2 className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted">Vertragsoptionen</h2>
@@ -29,6 +31,7 @@ export default function PrivateDocumentOptions({ value, onChange, disabled = fal
         <select
           className="field"
           value={value.stamp || "none"}
+          disabled={!canStamp}
           onChange={(event) => onChange({ ...value, stamp: event.target.value })}
         >
           <option value="none">Ohne Stempel</option>
@@ -36,6 +39,7 @@ export default function PrivateDocumentOptions({ value, onChange, disabled = fal
           <option value="buyer">Beim Käufer</option>
         </select>
       </label>
+      {canStamp ? null : <CompanyStampNotice stamp={companyStamp} />}
     </fieldset>
   );
 }
