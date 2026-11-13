@@ -147,7 +147,7 @@ export async function DELETE(request, context) {
 
 /* ─────────────────────────────────────────────
    PATCH → Händlerportal actions
-   { action: "star" | "paid" | "cancel" | "uncancel" | "archive" | "correct", … }
+   { action: "star" | "paid" | "cancel" | "uncancel" | "archive" | "stamp" | "correct", … }
 ───────────────────────────────────────────── */
 export async function PATCH(request, context) {
   const user = await staffUser();
@@ -231,6 +231,12 @@ export async function PATCH(request, context) {
       log("uncancel");
       await contract.save();
       if (contract.vin) await markVehicleSold(contract.vin, contract.invoiceDate);
+      return Response.json({ contract: toContract(contract.toObject()) });
+    }
+
+    if (action === "stamp") {
+      contract.stamp = Boolean(body.stamp);
+      await contract.save();
       return Response.json({ contract: toContract(contract.toObject()) });
     }
 

@@ -154,6 +154,14 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
     if (data?.contract) setC(data.contract);
   }
 
+  async function toggleStamp() {
+    const stamp = !c.stamp;
+    const data = await patch({ action: "stamp", stamp }, "stamp");
+    if (!data?.contract) return;
+    setDoc((current) => ({ ...current, stamp }));
+    setC(data.contract);
+  }
+
   async function cancel() {
     const data = await patch({ action: "cancel", reason: cancelReason, makeAvailable }, "cancel");
     if (data?.contract) {
@@ -399,6 +407,22 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
               </div>
             ) : null}
           </div>
+
+          {c.issuer === "karim" ? (
+            <div className="card p-4">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={Boolean(c.stamp)}
+                onClick={toggleStamp}
+                disabled={busy === "stamp"}
+                className={`ind-toggle ${c.stamp ? "ind-toggle-on" : ""}`}
+              >
+                <span className="ind-toggle-box" />
+                Firmenstempel bei der Unterschrift
+              </button>
+            </div>
+          ) : null}
 
           {/* Buyer */}
           <div className="card p-4 text-[13px]">

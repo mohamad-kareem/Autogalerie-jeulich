@@ -24,6 +24,18 @@ export default function PrivateDocumentOptions({ value, onChange, disabled = fal
           <option value="omit">Weglassen</option>
         </select>
       </label>
+      <label className="block space-y-1 text-[12px] text-ink">
+        <span>Firmenstempel</span>
+        <select
+          className="field"
+          value={value.stamp || "none"}
+          onChange={(event) => onChange({ ...value, stamp: event.target.value })}
+        >
+          <option value="none">Ohne Stempel</option>
+          <option value="seller">Beim Verkäufer</option>
+          <option value="buyer">Beim Käufer</option>
+        </select>
+      </label>
     </fieldset>
   );
 }

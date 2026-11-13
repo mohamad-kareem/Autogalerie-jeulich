@@ -5,6 +5,7 @@
 import { forwardRef } from "react";
 import { FORM_BOX, FORM_CHECK, FORM_H, FORM_W, privateDocumentOptions } from "@/lib/privateContract";
 import { euroInWords } from "@/lib/germanNumber";
+import CompanyStamp from "./CompanyStamp";
 
 /** form box → [group, key] in the data */
 export const FIELDS = {
@@ -151,6 +152,29 @@ function FormBackground({ logo, includeWarrantyExclusion }) {
   );
 }
 
+// The company stamp sits on the signature box (right part, the caption stays
+// free); the box lines fall between its text lines. x from / to per side and
+// the top edge, in pt of the form.
+const STAMP_AREA = { seller: [140, 284.6], buyer: [414.6, 559.3] };
+const STAMP_TOP = 776.6;
+const STAMP_FONT = 7.5;
+
+function SheetStamp({ side, includeWarrantyExclusion }) {
+  const [left, right] = STAMP_AREA[side];
+  return (
+    <CompanyStamp
+      className="absolute"
+      style={{
+        top: fieldTop(STAMP_TOP, includeWarrantyExclusion),
+        left: pct(left, FORM_W),
+        width: pct(right - left, FORM_W),
+        fontSize: `${(STAMP_FONT / FORM_W) * 100}cqw`,
+        lineHeight: 1.1,
+      }}
+    />
+  );
+}
+
 function fieldTop(top, includeWarrantyExclusion) {
   return pct(!includeWarrantyExclusion && top >= EXCLUSION_BOTTOM ? top - EXCLUSION_HEIGHT : top, FORM_H);
 }
@@ -214,7 +238,7 @@ function SheetCheck({ id, on, onToggle, readOnly, includeWarrantyExclusion }) {
 /** The whole sheet: background form + all boxes */
 const PrivateSheet = forwardRef(function PrivateSheet({ d, setField, toggle, readOnly = false }, ref) {
   const priceNum = Number(String(d.price ?? "").replace(/\./g, "").replace(",", ".")) || 0;
-  const { logo, includeWarrantyExclusion } = privateDocumentOptions(d.documentOptions);
+  const { logo, includeWarrantyExclusion, stamp } = privateDocumentOptions(d.documentOptions);
   return (
     <div
       ref={ref}
@@ -223,6 +247,7 @@ const PrivateSheet = forwardRef(function PrivateSheet({ d, setField, toggle, rea
       style={{ aspectRatio: `${FORM_W} / ${FORM_H}`, containerType: "inline-size" }}
     >
       <FormBackground logo={logo} includeWarrantyExclusion={includeWarrantyExclusion} />
+      {stamp !== "none" ? <SheetStamp side={stamp} includeWarrantyExclusion={includeWarrantyExclusion} /> : null}
 
       {Object.keys(FIELDS).map((key) => {
         const [g, k] = FIELDS[key];

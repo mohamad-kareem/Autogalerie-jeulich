@@ -23,6 +23,7 @@ import { ANKAUF_PAYMENT } from "@/lib/ankaufMail";
 import { berlinDay, dateDE, daysBetween, formatEuro, mapsHref, telHref } from "@/lib/sales";
 import { confirmDialog } from "@/app/(components)/ConfirmHost";
 import PlateBadge from "@/app/(Pages)/Fahrzeugverwaltung/_components/PlateBadge";
+import AbholvollmachtButton from "./AbholvollmachtButton";
 
 /** 95 → "1 Std. 35 Min." */
 const durationDE = (m) => (m >= 60 ? `${Math.floor(m / 60)} Std.${m % 60 ? ` ${m % 60} Min.` : ""}` : `${m} Min.`);
@@ -279,17 +280,12 @@ export default function AbholungenClient() {
                   {p.note ? <p className="whitespace-pre-line text-[12px] text-body">{p.note}</p> : null}
                 </div>
 
-                <div className="mt-auto flex items-center gap-1.5 border-t border-line bg-canvas/40 px-3 py-2">
-                  <div className="mr-auto flex items-center gap-2 text-[11.5px]">
+                <div className="mt-auto flex items-center gap-2 border-t border-line bg-canvas/40 px-3 py-2">
+                  <div className="mr-auto flex min-w-0 items-center gap-2 text-[11.5px]">
                     {p.vehicle.url ? (
                       <a href={p.vehicle.url} target="_blank" rel="noreferrer" className="link inline-flex items-center gap-1">
                         Inserat <ExternalLink className="h-3 w-3" />
                       </a>
-                    ) : null}
-                    {p.vehicleId ? (
-                      <Link href={`/Fahrzeugverwaltung?id=${p.vehicleId}`} className="link">
-                        Fahrzeugakte
-                      </Link>
                     ) : null}
                   </div>
                   {isDone ? (
@@ -298,9 +294,11 @@ export default function AbholungenClient() {
                     </button>
                   ) : (
                     <>
-                      <button type="button" onClick={() => remove(p)} className="rounded-md p-1.5 text-muted hover:bg-white hover:text-rose-600" title="Löschen">
+                      <div className="ind-actions shrink-0">
+                      <button type="button" onClick={() => remove(p)} className="ind-act ind-act-danger" title="Löschen" aria-label="Löschen">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
+                      <AbholvollmachtButton pickup={p} />
                       <button
                         type="button"
                         onClick={() =>
@@ -319,11 +317,14 @@ export default function AbholungenClient() {
                             seller: { ...p.seller },
                           })
                         }
-                        className="btn btn-secondary btn-sm"
+                        className="ind-act"
+                        title="Planen"
+                        aria-label="Planen"
                       >
-                        <Pencil /> Planen
+                        <Pencil className="h-3.5 w-3.5" />
                       </button>
-                      <button type="button" onClick={() => done(p)} disabled={busy === `d-${p._id}`} className="btn btn-primary btn-sm">
+                      </div>
+                      <button type="button" onClick={() => done(p)} disabled={busy === `d-${p._id}`} className="btn btn-primary btn-sm shrink-0">
                         {busy === `d-${p._id}` ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} {isPickup ? "Abgeholt" : "Angekommen"}
                       </button>
                     </>

@@ -12,6 +12,7 @@ import { forwardRef } from "react";
 import Image from "next/image";
 import logo from "@/app/(assets)/kauftraglogo.png";
 import LogoKarim from "@/app/(assets)/logo1111.png";
+import CompanyStamp from "./CompanyStamp";
 
 const formatGermanNumber = (value) =>
   new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value) || 0);
@@ -227,7 +228,9 @@ const KaufvertragDocument = forwardRef(function KaufvertragDocument({ doc }, ref
         {/* Signatures */}
         <div className="flex flex-col @min-[640px]:flex-row justify-between mt-8 @min-[640px]:mt-18 print:mt-3 gap-4 @min-[640px]:gap-0">
           <div className="flex flex-col items-start @min-[640px]:items-center">
-            <div className="h-12 w-40 border-b border-dashed border-gray-400 mb-1 print:h-16" />
+            <div className="relative h-12 w-40 border-b border-dashed border-gray-400 mb-1 print:h-16">
+              {form.stamp && form.issuer !== "alawie" ? <CompanyStamp className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[11px]" /> : null}
+            </div>
             <p className="text-left @min-[640px]:text-center text-[13px]">Unterschrift Verkäufer</p>
           </div>
           <div className="flex flex-col items-start @min-[640px]:items-center">

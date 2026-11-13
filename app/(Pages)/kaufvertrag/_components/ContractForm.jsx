@@ -48,6 +48,7 @@ function toForm(c) {
     total: euroInput(c.total),
     deposit: euroInput(c.deposit),
     paymentMethod: c.paymentMethod || "cash",
+    stamp: Boolean(c.stamp),
     customerId: c.customerId || "",
   };
 }
@@ -541,6 +542,12 @@ export default function ContractForm({ initial, mode = "new", contractId = "", n
               </div>
             </div>
           </div>
+
+          {issuer === "karim" ? (
+            <div className="mt-6 border-t border-line pt-4">
+              <Check label="Firmenstempel bei der Unterschrift des Verkäufers" checked={form.stamp} onChange={(v) => set("stamp", v)} />
+            </div>
+          ) : null}
         </div>
 
         {/* ----------------------------- Side panel ----------------------------- */}

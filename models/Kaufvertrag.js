@@ -61,6 +61,7 @@ const KaufvertragSchema = new mongoose.Schema(
     cancelledBy: { type: String, default: "" },
     cancelReason: { type: String, default: "" },
     createdBy: { type: String, default: "" },
+    stamp: { type: Boolean, default: false }, // company stamp next to the seller's signature
     log: {
       type: [
         {
@@ -77,7 +78,7 @@ const KaufvertragSchema = new mongoose.Schema(
 );
 
 // Dev hot reload: recompile the model when new fields were added.
-if (mongoose.models.Kaufvertrag && !mongoose.models.Kaufvertrag.schema.path("cancelReason")) {
+if (mongoose.models.Kaufvertrag && !mongoose.models.Kaufvertrag.schema.path("stamp")) {
   mongoose.deleteModel("Kaufvertrag");
 }
 
