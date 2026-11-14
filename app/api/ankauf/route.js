@@ -3,7 +3,7 @@ export const runtime = "nodejs";
 import { connectDB as dbConnect } from "@/lib/mongodb";
 import ManualCar from "@/models/AddCar";
 import { staffUser as getStaffUser } from "@/lib/kaufvertragServer";
-import { TRADEIN_STATUS, UNREAD, serializeOffer, tradeStatusFilter } from "@/lib/ankauf";
+import { TRADEIN_STATUS, UNREAD, serializeOffer, tradeStatusFilter } from "@/lib/ankauf/offers";
 import { str } from "@/lib/sales";
 
 /** GET /api/ankauf?status=&q= – staff list   ·   ?count=1 → { unread } for the sidebar */

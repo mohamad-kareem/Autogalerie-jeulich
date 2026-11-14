@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createCoverage, scheduleCoverage } from "../lib/feed/coverage.js";
-import { detectNew, mergeFeed } from "../lib/feed/detect.js";
+import { createCoverage, scheduleCoverage } from "../lib/neue-angebote/coverage.js";
+import { detectNew, mergeFeed } from "../lib/neue-angebote/detect.js";
 
 test("bursts cannot bypass recovery or indefinitely postpone catch-up", () => {
   const recovering = { ok: true, hasMore: true, overlap: false, recoveryIntervalMs: 10000 };

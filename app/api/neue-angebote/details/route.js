@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { detailSource, fetchDetails } from "@/lib/feed/details";
-import { looksRefused, pauseRemainingMs, pauseSource, resumeSource } from "@/lib/feed/pause";
+import { detailSource, fetchDetails } from "@/lib/neue-angebote/details";
+import { looksRefused, pauseRemainingMs, pauseSource, resumeSource } from "@/lib/neue-angebote/pause";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

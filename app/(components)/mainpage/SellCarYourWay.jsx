@@ -7,7 +7,7 @@ import { FaSearch, FaCarAlt } from "react-icons/fa";
 import { MdOutlineAttachMoney, MdSell } from "react-icons/md";
 import { IoIosArrowForward } from "react-icons/io";
 import Image from "next/image";
-import Marketing from "../../(assets)/Marketing.png";
+import Werbung from "../../(assets)/Werbung.png";
 import Button from "../helpers/Button";
 import Link from "next/link";
 
@@ -129,7 +129,7 @@ export default function SellCarYourWay() {
         >
           <div className="relative w-full max-w-xl aspect-video rounded-xl md:rounded-2xl overflow-hidden shadow-lg md:shadow-2xl border-2 md:border-4 border-gray-300">
             <Image
-              src={Marketing}
+              src={Werbung}
               alt="Illustration Auto kaufen und verkaufen"
               fill
               className="object-contain"

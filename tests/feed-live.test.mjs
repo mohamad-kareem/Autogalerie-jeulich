@@ -2,12 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { SourceTextModule, SyntheticModule, createContext } from "node:vm";
-import { createCheckPool, streamCheck, readCheckStream, requestCheck } from "../lib/feed/live.js";
-import { nextCheckDelay } from "../lib/feed/polling.js";
-import { detectNew, mergeFeed } from "../lib/feed/detect.js";
+import { createCheckPool, streamCheck, readCheckStream, requestCheck } from "../lib/neue-angebote/live.js";
+import { nextCheckDelay } from "../lib/neue-angebote/polling.js";
+import { detectNew, mergeFeed } from "../lib/neue-angebote/detect.js";
 import { join } from "node:path";
-import * as filters from "../lib/feed/filters.js";
-import { createCoverage, advanceCoverage } from "../lib/feed/coverage.js";
+import * as filters from "../lib/neue-angebote/filters.js";
+import { createCoverage, advanceCoverage } from "../lib/neue-angebote/coverage.js";
 
 const deferred = () => {
   let resolve;
@@ -18,7 +18,7 @@ const ad = (id) => ({ source: "KLEINANZEIGEN", key: `KLEINANZEIGEN:${id}`, numer
 
 async function loadPause(clock) {
   const context = createContext({ Date: class extends Date { static now() { return clock.now; } } });
-  const module = new SourceTextModule(await readFile(new URL("../lib/feed/pause.js", import.meta.url), "utf8"), { context });
+  const module = new SourceTextModule(await readFile(new URL("../lib/neue-angebote/pause.js", import.meta.url), "utf8"), { context });
   await module.link(() => { throw new Error("Unexpected import"); });
   await module.evaluate();
   return module.namespace;
@@ -51,7 +51,7 @@ test("HTTP Retry-After seconds and dates survive transport without an early retr
   const context = createContext({ fetch: async () => { calls++; return new Response("limited", {
     status: 429, headers: { "Retry-After": "120" },
   }); }, URL, AbortController, setTimeout, clearTimeout });
-  const http = new SourceTextModule(await readFile(new URL("../lib/market/http.js", import.meta.url), "utf8"), { context });
+  const http = new SourceTextModule(await readFile(new URL("../lib/portals/http.js", import.meta.url), "utf8"), { context });
   await http.link(() => new SyntheticModule(["FETCH_PROXY_TEMPLATE", "POLICY"], function () {
     this.setExport("FETCH_PROXY_TEMPLATE", "");
     this.setExport("POLICY", { requestTimeoutMs: 1000, requestRetries: 2 });
@@ -336,9 +336,10 @@ test("merge restores previously discarded ads, refreshes prices, and keeps more 
 });
 
 async function loadSources(request = async () => ({ ok: true, body: "" })) {
-  const source = new SourceTextModule(await readFile(new URL("../lib/feed/sources.js", import.meta.url), "utf8"));
+  const source = new SourceTextModule(await readFile(new URL("../lib/neue-angebote/sources.js", import.meta.url), "utf8"));
   await source.link(async (name) => {
     const exports = name.endsWith("/http") ? { request, requestJson: async () => ({ data: {} }) }
+      : name.endsWith("/details") ? { summarizeVehicle: (vehicle) => vehicle }
       : name.endsWith("/autoscout24") ? { makeSlug: (value) => value }
         : { searchNewest: async () => ({}), isConfigured: () => false };
     return new SyntheticModule(Object.keys(exports), function () {
@@ -401,12 +402,13 @@ test("paid placements and repeated results do not create new arrivals", () => {
 test("Kleinanzeigen adapter publishes fast combination without waiting for slow combination", async () => {
   const slow = deferred();
   const early = deferred();
-  const source = new SourceTextModule(await readFile(new URL("../lib/feed/sources.js", import.meta.url), "utf8"));
+  const source = new SourceTextModule(await readFile(new URL("../lib/neue-angebote/sources.js", import.meta.url), "utf8"));
   await source.link(async (name) => {
     const exports = name.endsWith("/http") ? {
       request: (url) => url.includes("diesel") ? slow.promise : Promise.resolve({ ok: true, body: "" }),
       requestJson: async () => ({ data: {} }),
-    } : name.endsWith("/autoscout24") ? { makeSlug: (value) => value }
+    } : name.endsWith("/details") ? { summarizeVehicle: (vehicle) => vehicle }
+      : name.endsWith("/autoscout24") ? { makeSlug: (value) => value }
       : { searchNewest: async () => ({}), isConfigured: () => false };
     return new SyntheticModule(Object.keys(exports), function () {
       for (const [key, value] of Object.entries(exports)) this.setExport(key, value);
@@ -653,7 +655,7 @@ test("HTTP chunk callbacks run before body completion and preserve split UTF-8",
   const stream = new ReadableStream({ start(controller) { sender = controller; } });
   const context = createContext({ fetch: async () => new Response(stream), URL, AbortController,
     TextDecoder, setTimeout, clearTimeout });
-  const http = new SourceTextModule(await readFile(new URL("../lib/market/http.js", import.meta.url), "utf8"), { context });
+  const http = new SourceTextModule(await readFile(new URL("../lib/portals/http.js", import.meta.url), "utf8"), { context });
   await http.link(() => new SyntheticModule(["FETCH_PROXY_TEMPLATE", "POLICY"], function () {
     this.setExport("FETCH_PROXY_TEMPLATE", null);
     this.setExport("POLICY", { requestTimeoutMs: 1000, requestRetries: 0 });
@@ -682,7 +684,7 @@ test("complete parser payload cancels a never-ending footer and releases the HTT
   });
   const context = createContext({ fetch: async () => new Response(stream), URL, AbortController,
     TextDecoder, setTimeout, clearTimeout });
-  const http = new SourceTextModule(await readFile(new URL("../lib/market/http.js", import.meta.url), "utf8"), { context });
+  const http = new SourceTextModule(await readFile(new URL("../lib/portals/http.js", import.meta.url), "utf8"), { context });
   await http.link(() => new SyntheticModule(["FETCH_PROXY_TEMPLATE", "POLICY"], function () {
     this.setExport("FETCH_PROXY_TEMPLATE", null);
     this.setExport("POLICY", { requestTimeoutMs: 1000, requestRetries: 0 });

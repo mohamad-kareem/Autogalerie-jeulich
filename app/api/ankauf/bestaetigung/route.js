@@ -6,8 +6,8 @@ import { staffUser as getStaffUser } from "@/lib/kaufvertragServer";
 import { escapeHtml, sendMail } from "@/lib/mailer";
 import { COMPANY } from "@/lib/company";
 import { normEmail, parseEuro, str } from "@/lib/sales";
-import { normMonthYear as normMonthYearSafe } from "@/lib/listingParser";
-import { ANKAUF_DEFECTS_LABEL, ANKAUF_DEFECTS_MAX, ANKAUF_MAIL_SECTIONS, ANKAUF_MAIL_TITLE, ankaufAccidentLabel } from "@/lib/ankaufMail";
+import { normMonthYear as normMonthYearSafe } from "@/lib/ankauf/listingParser";
+import { ANKAUF_DEFECTS_LABEL, ANKAUF_DEFECTS_MAX, ANKAUF_MAIL_SECTIONS, ANKAUF_MAIL_TITLE, ankaufAccidentLabel } from "@/lib/ankauf/mail";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SECTION_HEADINGS = new Set(Object.values(ANKAUF_MAIL_SECTIONS));

@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import { connectDB as dbConnect } from "@/lib/mongodb";
 import ManualCar from "@/models/AddCar";
 import { adminUser as getAdminUser, staffUser as getStaffUser } from "@/lib/kaufvertragServer";
-import { TRADEIN_STATUS, serializeOffer } from "@/lib/ankauf";
+import { TRADEIN_STATUS, serializeOffer } from "@/lib/ankauf/offers";
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(String(id || ""));
 

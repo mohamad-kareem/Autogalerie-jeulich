@@ -1,7 +1,5 @@
 // next.config.js
 module.exports = {
-  serverExternalPackages: ["playwright", "playwright-core"],
-
   images: {
     domains: [
       "res.cloudinary.com",

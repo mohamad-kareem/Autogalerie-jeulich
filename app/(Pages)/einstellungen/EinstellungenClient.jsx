@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle2, Download, LoaderCircle, Plug, Puzzle, Settings, Stamp, User, UserPlus } from "lucide-react";
-import { detectMarketExtension, hasRecentMarketExtensionConnection } from "@/lib/market/extension";
+import { detectHelperExtension, hasRecentHelperConnection } from "@/lib/ankauf/helperExtension";
 import ProfileClient from "./ProfileClient";
 import RegisterForm from "./RegisterForm";
 import CompanyStampSettings from "./CompanyStampSettings";
@@ -25,10 +25,10 @@ export default function EinstellungenClient({ isAdmin, user }) {
   useEffect(() => {
     let active = true;
     async function checkExtension() {
-      const connected = await detectMarketExtension();
+      const connected = await detectHelperExtension();
       if (!active) return;
       if (connected) setExtensionStatus("connected");
-      else if (hasRecentMarketExtensionConnection()) setExtensionStatus("recent");
+      else if (hasRecentHelperConnection()) setExtensionStatus("recent");
       else setExtensionStatus("unavailable");
     }
     checkExtension();
@@ -62,12 +62,12 @@ export default function EinstellungenClient({ isAdmin, user }) {
             <Plug className="size-5" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <h3 className="text-[15px] font-semibold leading-tight text-ink">mobile.de-Erweiterung</h3>
-            <p className="mt-1 text-[13px] leading-snug text-muted">Für Marktanalyse und Ankauf bestätigen.</p>
+            <h3 className="text-[15px] font-semibold leading-tight text-ink">Autogalerie Jülich – Helfer</h3>
+            <p className="mt-1 text-[13px] leading-snug text-muted">Liest mobile.de-Anzeigen für „Ankauf bestätigen“ ein.</p>
           </div>
           <div className="col-span-2 sm:col-span-1 sm:justify-self-end">
             {extensionStatus === "unavailable" ? (
-              <a href="/downloads/marktanalyse-extension.zip" download className="btn btn-primary">
+              <a href="/downloads/autogalerie-helper.zip" download className="btn btn-primary">
                 <Download /> Erweiterung herunterladen
               </a>
             ) : (

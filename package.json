@@ -35,7 +35,6 @@
     "nodemailer": "^6.10.1",
     "openai": "^6.49.0",
     "pdf-lib": "^1.17.1",
-    "playwright": "^1.62.1",
     "postcss": "^8.5.6",
     "react": "^19.0.1",
     "react-datepicker": "^8.3.0",

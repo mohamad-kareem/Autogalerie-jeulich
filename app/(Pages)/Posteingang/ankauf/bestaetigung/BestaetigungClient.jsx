@@ -4,13 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, CarFront, CheckCircle2, ChevronDown, ExternalLink, Link2, Loader2, RotateCcw, Send, UserRound } from "lucide-react";
 import { ErrorNote, Field as SalesField, Segmented, api, cx } from "@/app/(components)/sales/ui";
-import { ANKAUF_ACCIDENT_OPTIONS, ANKAUF_DEFECTS_LABEL, ANKAUF_DEFECTS_MAX, ANKAUF_PAYMENT, buildAnkaufMail } from "@/lib/ankaufMail";
+import { ANKAUF_ACCIDENT_OPTIONS, ANKAUF_DEFECTS_LABEL, ANKAUF_DEFECTS_MAX, ANKAUF_PAYMENT, buildAnkaufMail } from "@/lib/ankauf/mail";
 import { formatEuro, parseEuro } from "@/lib/sales";
 import { COMPANY } from "@/lib/company";
 import TravelTime from "@/app/(components)/TravelTime";
 import { confirmDialog } from "@/app/(components)/ConfirmHost";
-import { detectMarketExtension, importMobileListing } from "@/lib/market/extension";
-import { mobileUrl } from "@/extensions/marktanalyse/protocol";
+import { detectHelperExtension, importMobileListing } from "@/lib/ankauf/helperExtension";
+import { mobileUrl } from "@/extensions/autogalerie-helper/protocol";
 
 const EMPTY_VEHICLE = {
   source: "",
@@ -119,7 +119,7 @@ export default function BestaetigungClient() {
       let payload = fromText ? { text: paste, url } : { url };
       if (!fromText && mobileUrl(url.trim())) {
         setImportStatus({ status: "LOADING" });
-        const connected = await detectMarketExtension();
+        const connected = await detectHelperExtension();
         if (controller.signal.aborted) return;
         if (!connected) {
           setError(

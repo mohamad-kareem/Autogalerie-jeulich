@@ -18,10 +18,11 @@ for (const [name, value] of Object.entries({ category_id: "216", min_price: "150
   api.searchParams.set(name, value);
 }
 
-const parser = new SourceTextModule(await readFile(new URL("../lib/feed/sources.js", import.meta.url), "utf8"));
+const parser = new SourceTextModule(await readFile(new URL("../lib/neue-angebote/sources.js", import.meta.url), "utf8"));
 await parser.link((name) => {
   const unexpected = () => { throw new Error("Only the pure HTML parser is used in this trial"); };
   const exports = name.endsWith("/http") ? { request: unexpected, requestJson: unexpected }
+    : name.endsWith("/details") ? { summarizeVehicle: unexpected }
     : name.endsWith("/autoscout24") ? { makeSlug: unexpected }
       : { searchNewest: unexpected, isConfigured: unexpected };
   return new SyntheticModule(Object.keys(exports), function () {

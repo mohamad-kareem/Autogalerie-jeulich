@@ -58,12 +58,12 @@ import {
   filterKey,
   kleinanzeigenSearchCount,
   normalizeFilters,
-} from "@/lib/feed/filters";
-import { detectNew, mergeFeed, startSession } from "@/lib/feed/detect";
-import { requestCheck } from "@/lib/feed/live";
-import { createChime, notifyArrivals } from "@/lib/feed/alerts";
-import { nextCheckDelay } from "@/lib/feed/polling";
-import { KA_CYCLE_MS, KA_DEFAULT_LANDING_MS, nextKaCheck, observeKa } from "@/lib/feed/kaCycle";
+} from "@/lib/neue-angebote/filters";
+import { detectNew, mergeFeed, startSession } from "@/lib/neue-angebote/detect";
+import { requestCheck } from "@/lib/neue-angebote/live";
+import { createChime, notifyArrivals } from "@/lib/neue-angebote/alerts";
+import { nextCheckDelay } from "@/lib/neue-angebote/polling";
+import { KA_CYCLE_MS, KA_DEFAULT_LANDING_MS, nextKaCheck, observeKa } from "@/lib/neue-angebote/kaCycle";
 import PageLoader from "@/app/(components)/helpers/PageLoader";
 
 // The name shown in the page title, the browser tab and the test message.
@@ -573,36 +573,26 @@ function CardFacts({ item, onLoad }) {
     );
   }
 
-  const huText = d.hu.label === "HU unbekannt" ? "HU ?" : d.hu.label + (d.hu.note ? ` · ${d.hu.note}` : "");
-  const plus = d.goodSigns.filter((sign) => sign !== "Zahnriemen neu");
+  const huText = d.hu.label === "HU unbekannt" ? "HU ?" : d.hu.label;
 
   return (
     <div className="mt-3 flex flex-col gap-1.5">
       <div className="flex flex-wrap gap-1.5">
-        <FactBox tone={d.hu.tone}>{huText}</FactBox>
+        <FactBox tone={d.hu.label === "HU unbekannt" ? "unknown" : "neutral"}>{huText}</FactBox>
         <FactBox tone={d.condition.tone}>{CONDITION_SHORT[d.condition.label] || d.condition.label}</FactBox>
         <FactBox tone={d.owners?.tone || "unknown"}>{d.owners ? d.owners.label : "Halter ?"}</FactBox>
-        {d.usage ? (
-          <FactBox tone={d.usage.level === "VERY_HIGH" ? "warn" : "neutral"} dot={false}>
-            {d.usage.label.replace("/Jahr", " / Jahr")}
-          </FactBox>
-        ) : null}
         {d.redFlags.map((flag) => (
           <FactBox key={flag} tone="bad">{flag}</FactBox>
         ))}
       </div>
-      {plus.length || d.equipment.length ? (
-        <p className="text-[12px] leading-5 text-muted">
-          {plus.length ? <span className="text-body">{plus.join(" · ")}</span> : null}
-          {plus.length && d.equipment.length ? <span className="mx-2 opacity-50">|</span> : null}
-          {d.equipment.length ? d.equipment.join(", ") : null}
-        </p>
+      {d.goodSigns.length ? (
+        <p className="text-[12px] leading-5 text-body">{d.goodSigns.join(" · ")}</p>
       ) : null}
     </div>
   );
 }
 
-/** The seller's phone and e-mail, when he published them in the ad. */
+/** The seller's phone and e-mail, when the portal's seller record shows them. */
 function SellerContact({ contact }) {
   if (!contact || (!contact.phones?.length && !contact.email)) return null;
   const link = "link inline-flex min-w-0 items-center gap-1.5 text-[12.5px]";
@@ -745,15 +735,6 @@ const ListingCard = memo(function ListingCard({ item, now, onHide, onLoadDetails
         </div>
 
         <div className="flex items-center gap-1.5">
-          <a
-            href={`/marktanalyse?url=${encodeURIComponent(item.url)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Ankaufs-Check in neuem Tab"
-            className="btn btn-sm btn-secondary"
-          >
-            <FiZap /> Check
-          </a>
           <a href={item.url} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-primary">
             Öffnen <FiExternalLink />
           </a>

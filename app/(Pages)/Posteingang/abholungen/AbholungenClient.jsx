@@ -19,7 +19,7 @@ import {
   User,
 } from "lucide-react";
 import { ErrorNote, Field, Modal, Tabs, api, cx } from "@/app/(components)/sales/ui";
-import { ANKAUF_PAYMENT } from "@/lib/ankaufMail";
+import { ANKAUF_PAYMENT } from "@/lib/ankauf/mail";
 import { berlinDay, dateDE, daysBetween, formatEuro, mapsHref, telHref } from "@/lib/sales";
 import { confirmDialog } from "@/app/(components)/ConfirmHost";
 import PlateBadge from "@/app/(Pages)/Fahrzeugverwaltung/_components/PlateBadge";

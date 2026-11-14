@@ -4,12 +4,13 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { SourceTextModule, SyntheticModule } from 'node:vm';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { normalizeFilters } from '../lib/feed/filters.js';
+import { normalizeFilters } from '../lib/neue-angebote/filters.js';
 
-const module = new SourceTextModule(await readFile(new URL('../lib/feed/sources.js', import.meta.url), 'utf8'));
+const module = new SourceTextModule(await readFile(new URL('../lib/neue-angebote/sources.js', import.meta.url), 'utf8'));
 await module.link((name) => {
   const unexpected = () => { throw new Error('Only pure URL builders and parsers are used'); };
   const exports = name.endsWith('/http') ? { request: unexpected, requestJson: unexpected }
+    : name.endsWith('/details') ? { summarizeVehicle: unexpected }
     : name.endsWith('/autoscout24') ? { makeSlug: unexpected }
       : { searchNewest: unexpected, isConfigured: unexpected };
   return new SyntheticModule(Object.keys(exports), function () {

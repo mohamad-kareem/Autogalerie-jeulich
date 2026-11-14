@@ -1,8 +1,8 @@
 export const runtime = "nodejs";
 
 import { staffUser as getStaffUser } from "@/lib/kaufvertragServer";
-import { foundCount, listingSource, parseListingHtml, parseListingText } from "@/lib/listingParser";
-import { MAX_HTML_LENGTH, mobileUrl } from "@/extensions/marktanalyse/protocol";
+import { foundCount, listingSource, parseListingHtml, parseListingText } from "@/lib/ankauf/listingParser";
+import { MAX_HTML_LENGTH, mobileUrl } from "@/extensions/autogalerie-helper/protocol";
 
 const HEADERS = {
   "User-Agent":

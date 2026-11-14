@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createChime, notifyArrivals } from "../lib/feed/alerts.js";
+import { createChime, notifyArrivals } from "../lib/neue-angebote/alerts.js";
 
 test("desktop alerts work for active searches and preserve separate cars", () => {
   const notes = [];

@@ -1,10 +1,10 @@
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { filterKey, normalizeFilters } from "@/lib/feed/filters";
-import { looksRefused, pauseRemainingMs, pauseSource, resumeSource, recoveryIntervalMs } from "@/lib/feed/pause";
-import { SEARCHERS } from "@/lib/feed/sources";
-import { createCheckPool, streamCheck } from "@/lib/feed/live";
+import { filterKey, normalizeFilters } from "@/lib/neue-angebote/filters";
+import { looksRefused, pauseRemainingMs, pauseSource, resumeSource, recoveryIntervalMs } from "@/lib/neue-angebote/pause";
+import { SEARCHERS } from "@/lib/neue-angebote/sources";
+import { createCheckPool, streamCheck } from "@/lib/neue-angebote/live";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

@@ -21,7 +21,7 @@ import {
   TRADEIN_STATUS_STYLES,
   formatEuro,
   formatKm,
-} from "@/lib/tradeInOptions";
+} from "@/lib/ankauf/tradeInOptions";
 import { confirmDialog } from "@/app/(components)/ConfirmHost";
 
 const cx = (...c) => c.filter(Boolean).join(" ");
