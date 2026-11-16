@@ -1,15 +1,25 @@
 {
   "manifest_version": 3,
-  "name": "Autogalerie Jülich – Helfer",
-  "version": "2.0.0",
-  "description": "mobile.de-Anzeigen für „Ankauf bestätigen“ im eigenen Browser einlesen.",
-  "minimum_chrome_version": "109",
+  "name": "Helfer",
+  "version": "3.1.1",
+  "description": "Liest Anzeigen und Suchergebnisse von mobile.de, AutoScout24 und Kleinanzeigen im eigenen Browser für die Marktanalyse und „Ankauf bestätigen“.",
+  "minimum_chrome_version": "111",
   "permissions": [
     "scripting"
   ],
   "host_permissions": [
     "https://mobile.de/*",
-    "https://*.mobile.de/*"
+    "https://*.mobile.de/*",
+    "https://autoscout24.de/*",
+    "https://*.autoscout24.de/*",
+    "https://kleinanzeigen.de/*",
+    "https://*.kleinanzeigen.de/*",
+    "https://xn--autogaleriejlich-uzb.de/*",
+    "https://www.xn--autogaleriejlich-uzb.de/*",
+    "https://autogalerie-juelich.de/*",
+    "https://www.autogalerie-juelich.de/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
   "background": {
     "service_worker": "background.js",

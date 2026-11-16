@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 import {
   FiArchive,
@@ -24,7 +24,6 @@ import {
   FiInbox,
   FiKey,
   FiLayout,
-  FiLogOut,
   FiMenu,
   FiMapPin,
   FiPrinter,
@@ -39,13 +38,15 @@ import {
 import { FaCar, FaCarSide, FaPaintRoller } from "react-icons/fa";
 
 
-const ADMIN_ONLY = new Set(["/kaufvertrag/archiv", "/Zeiterfassungsverwaltung", "/excel"]);
+const ADMIN_ONLY = new Set(["/Zeiterfassungsverwaltung", "/excel"]);
 
 /** The menu, grouped the way the work is done. `badge` names a live counter. */
 const SECTIONS = [
   {
     items: [
       { href: "/AdminDashboard", icon: FiLayout, label: "Übersicht" },
+      { href: "/Rotkennzeichen", icon: FiMapPin, label: "Rote Kennzeichen" },
+      { href: "/schlussel", icon: FiKey, label: "Schlüssel" },
     ],
   },
   {
@@ -54,9 +55,6 @@ const SECTIONS = [
       { href: "/kaufvertrag/liste", icon: FiFileText, label: "Kaufverträge" },
       { href: "/Kundenkontakte", icon: FiUsers, label: "Kunden" },
       { href: "/Fahrzeugverwaltung", icon: FaCarSide, label: "Fahrzeugverwaltung" },
-      { href: "/schlussel", icon: FiKey, label: "Schlüssel" },
-      { href: "/Rotkennzeichen", icon: FiMapPin, label: "Rote Kennzeichen" },
-      { href: "/kaufvertrag/archiv", icon: FiArchive, label: "Archiv" },
     ],
   },
   {
@@ -106,35 +104,14 @@ export default function Sidebar({
   const pathname = usePathname() || "/";
   const { data: session } = useSession();
 
-  const [localUser, setLocalUser] = useState(user || session?.user || null);
+  const localUser = user || session?.user;
   const [unread, setUnread] = useState(unreadCountProp || 0);
   const [pickups, setPickups] = useState(0);
   const [tradeins, setTradeins] = useState(0);
 
   useEffect(() => setUnread(unreadCountProp || 0), [unreadCountProp]);
 
-  useEffect(() => {
-    if (user) setLocalUser(user);
-    else if (session?.user) setLocalUser(session.user);
-  }, [user, session]);
-
-  const userId = user?._id || user?.id || session?.user?.id || session?.user?._id || localUser?._id || localUser?.id || null;
-
-  /* profile picture and full profile, once */
-  useEffect(() => {
-    if (!userId || localUser?.image) return undefined;
-    let cancelled = false;
-    fetch(`/api/admins?id=${userId}`, { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data) => {
-        if (!cancelled && data) setLocalUser((previous) => ({ ...(previous || {}), ...data }));
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  const userId = user?._id || user?.id || session?.user?.id || session?.user?._id || null;
 
   /* unread messages: every 15 s while the tab is visible */
   const fetchUnread = useCallback(async () => {
@@ -162,8 +139,7 @@ export default function Sidebar({
     };
   }, [fetchUnread]);
 
-  const isAdmin = localUser?.role === "admin";
-  const displayName = localUser?.name || "Benutzer";
+  const isAdmin = (localUser?.role ?? session?.user?.role) === "admin";
 
   const sections = useMemo(
     () =>
@@ -179,8 +155,7 @@ export default function Sidebar({
   // the most specific entry wins ("Ankauf bestätigen" vs. "Ankauf")
   const activeHref = useMemo(
     () =>
-      // every contract page (new, single, Privat) belongs to "Kaufverträge" – only the Archiv has its own entry
-      /^\/kaufvertrag(\/|$)/.test(pathname) && !/^\/kaufvertrag\/archiv/.test(pathname)
+      /^\/kaufvertrag(\/|$)/.test(pathname)
         ? "/kaufvertrag/liste"
         : SECTIONS.flatMap((s) => s.items)
         .filter((i) => i.href && (i.href === "/" ? pathname === "/" : pathname === i.href || pathname.startsWith(`${i.href}/`)))
@@ -198,25 +173,20 @@ export default function Sidebar({
     return () => window.removeEventListener("keydown", onKey);
   }, [mobileOpen, onToggleMobile]);
 
-  const initials =
-    displayName
-      .split(/\s+/)
-      .map((part) => part[0])
-      .filter(Boolean)
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "?";
-
   const panel = (mini, { mobile = false } = {}) => (
     <>
-      {/* phone: close button on top (no brand plate – like Autocenter) */}
-      {mobile ? (
-        <div className="flex h-10 shrink-0 items-center justify-end border-b border-[#b9bfc7] px-2">
-          <button type="button" onClick={onToggleMobile} aria-label="Menü schließen" className="flex h-8 w-8 items-center justify-center text-[#4f5863] hover:text-[#1f252c]">
-            <FiX className="h-4 w-4" />
-          </button>
-        </div>
-      ) : null}
+      <div className={cx("sb-brand flex h-9 shrink-0 items-center", mini ? "justify-center" : "justify-between gap-2 pl-5 pr-2.5")}>
+        <p className={mini ? "sr-only" : "sb-brand-title min-w-0 truncate"}>Händlerportal</p>
+        <button
+          type="button"
+          onClick={mobile ? onToggleMobile : onToggleMinimize}
+          aria-expanded={mobile ? undefined : !mini}
+          aria-label={mobile ? "Menü schließen" : mini ? "Menü ausklappen" : "Menü einklappen"}
+          className="sb-collapse flex h-7 w-7 shrink-0 items-center justify-center"
+        >
+          {mobile ? <FiX aria-hidden="true" className="h-4 w-4" /> : <FiChevronsLeft aria-hidden="true" className={cx("h-4 w-4 transition-transform", mini && "rotate-180")} />}
+        </button>
+      </div>
 
       <nav aria-label="Hauptnavigation" className="sb-nav no-scrollbar flex-1 overflow-y-auto">
         {sections.map((section, gi) => (
@@ -224,12 +194,9 @@ export default function Sidebar({
             {section.title ? <p className={cx("sb-group", mini && "sb-group-mini")}>{mini ? null : section.title}</p> : null}
             {section.items.map(({ icon: Icon, ...item }) => {
               const active = item.href && item.href === activeHref;
-              // the collapse button sits on the first entry (Übersicht), like in Autocenter
-              const hasCollapse = !mobile && gi === 0 && item.href === "/AdminDashboard";
               const className = cx(
                 "sb-link relative flex h-10 w-full items-center gap-3 text-left",
                 mini ? "justify-center" : "sb-text pl-5 pr-3",
-                hasCollapse && (mini ? "pr-8" : "pr-10"),
                 active && "sb-active",
               );
               const inner = (
@@ -240,23 +207,7 @@ export default function Sidebar({
                   {item.count && mini ? <span className="sb-dot absolute right-3 top-2 h-1.5 w-1.5" /> : null}
                 </>
               );
-              return hasCollapse ? (
-                <div key={item.label} className="relative">
-                  <Link href={item.href} title={mini ? item.label : undefined} aria-current={active ? "page" : undefined} className={className}>
-                    {inner}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={onToggleMinimize}
-                    aria-expanded={!mini}
-                    aria-label={mini ? "Menü ausklappen" : "Menü einklappen"}
-                    title={mini ? "Menü ausklappen" : "Menü einklappen"}
-                    className={cx("sb-collapse absolute right-2 top-1.5 flex h-7 w-6 items-center justify-center", active && "sb-collapse-on-dark")}
-                  >
-                    <FiChevronsLeft aria-hidden="true" className={cx("h-4 w-4 transition-transform", mini && "rotate-180")} />
-                  </button>
-                </div>
-              ) : (
+              return (
                 <Link key={item.label} href={item.href} title={mini ? item.label : undefined} aria-current={active ? "page" : undefined} className={className}>
                   {inner}
                 </Link>
@@ -266,28 +217,6 @@ export default function Sidebar({
         ))}
       </nav>
 
-      {/* account plate */}
-      <div className={cx("sb-foot flex shrink-0 items-center gap-2.5 py-2.5 pl-4 pr-2", mini && "flex-col gap-1.5 px-2")}>
-        <Link href="/einstellungen" title="Einstellungen" className={cx("flex min-w-0 items-center gap-2.5 text-left", !mini && "flex-1")}>
-          <span className="sb-avatar flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden text-[11px] font-bold text-white">
-            {localUser?.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={localUser.image} alt="" className="h-full w-full object-cover" />
-            ) : (
-              initials
-            )}
-          </span>
-          {!mini ? (
-            <span className="min-w-0">
-              <span className="block truncate text-[13px] font-semibold text-[#1f252c]">{displayName}</span>
-              <span className="block text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#66707c]">{isAdmin ? "Administrator" : "Mitarbeiter"}</span>
-            </span>
-          ) : null}
-        </Link>
-        <button type="button" onClick={() => signOut({ callbackUrl: "/login" })} title="Abmelden" aria-label="Abmelden" className="sb-logout flex h-8 w-8 items-center justify-center">
-          <FiLogOut className="h-4 w-4" />
-        </button>
-      </div>
     </>
   );
 
@@ -298,7 +227,7 @@ export default function Sidebar({
         {panel(isMinimized)}
       </aside>
 
-      {/* phone / tablet: top bar with the menu button (the account is in the menu) */}
+      {/* phone / tablet: top bar with the menu button */}
       <header className="fixed inset-x-0 top-0 z-30 border-b border-line bg-white lg:hidden print:hidden">
         <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
           <button
@@ -309,7 +238,7 @@ export default function Sidebar({
           >
             <FiMenu className="h-5 w-5" />
           </button>
-          <p className="text-[13px] font-semibold text-ink">Autogalerie Jülich</p>
+          <p className="text-[13px] font-semibold text-ink">Händlerportal</p>
         </div>
       </header>
 

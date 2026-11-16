@@ -71,7 +71,7 @@ function relativeTime(value) {
 }
 
 export default function AnfragenClient({ canDelete = false }) {
-  const [tab, setTab] = useState("new");
+  const [tab, setTab] = useState("");
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [messages, setMessages] = useState([]);

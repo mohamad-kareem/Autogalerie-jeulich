@@ -3,14 +3,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, CarFront, CheckCircle2, ChevronDown, ExternalLink, Link2, Loader2, RotateCcw, Send, UserRound } from "lucide-react";
-import { ErrorNote, Field as SalesField, Segmented, api, cx } from "@/app/(components)/sales/ui";
+import { Field as SalesField, Segmented, api, cx } from "@/app/(components)/sales/ui";
 import { ANKAUF_ACCIDENT_OPTIONS, ANKAUF_DEFECTS_LABEL, ANKAUF_DEFECTS_MAX, ANKAUF_PAYMENT, buildAnkaufMail } from "@/lib/ankauf/mail";
 import { formatEuro, parseEuro } from "@/lib/sales";
 import { COMPANY } from "@/lib/company";
 import TravelTime from "@/app/(components)/TravelTime";
-import { confirmDialog } from "@/app/(components)/ConfirmHost";
+import { alertDialog, confirmDialog } from "@/app/(components)/ConfirmHost";
 import { detectHelperExtension, importMobileListing } from "@/lib/ankauf/helperExtension";
 import { mobileUrl } from "@/extensions/autogalerie-helper/protocol";
+
+// Eingabefelder auf dieser Seite: etwas höher, hellerer Rand, beim Tippen nur blauer Rand (kein Schein).
+const INPUT_STYLE = [
+  "[&_input.field]:h-9! [&_select.field]:h-9!",
+  "[&_.field]:border-[#d5dae0]! [&_.field]:rounded-md! [&_.field]:text-[13.5px]! [&_.field]:shadow-none!",
+  "[&_.field:hover:not(:focus)]:border-[#b8c0ca]!",
+  "[&_.field:focus]:border-brand-500! [&_.field:focus]:shadow-none!",
+  "[&_.field::placeholder]:text-slate-400!",
+].join(" ");
 
 const EMPTY_VEHICLE = {
   source: "",
@@ -80,6 +89,13 @@ export default function BestaetigungClient() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(null);
   const [error, setError] = useState("");
+  // Fehler erscheinen im Hinweis-Fenster der App (wie die Bestätigungen), nicht als Kasten im Formular.
+  useEffect(() => {
+    if (!error) return;
+    const missing = typeof error === "string" && /^Bitte /.test(error);
+    alertDialog({ title: missing ? "Angabe fehlt" : "Hinweis", message: error });
+    setError("");
+  }, [error]);
   const [copyToCompany, setCopyToCompany] = useState(false);
 
   const setV = (k, val) => setVehicle((v) => ({ ...v, [k]: val }));
@@ -233,6 +249,28 @@ export default function BestaetigungClient() {
     );
   }
 
+  // Zusätzliche Fahrzeugfelder (Ausstattung, Farbe …) und Mängel.
+  const moreFields = (
+    <>
+      {DETAILS.map(([key, label]) => (
+        <Field key={key} label={label} id={`a-${key}`} value={vehicle[key]}>
+          <input id={`a-${key}`} className="field" value={vehicle[key] ?? ""} onChange={(e) => setV(key, e.target.value)} />
+        </Field>
+      ))}
+      <Field label={ANKAUF_DEFECTS_LABEL} id="a-defects" value={vehicle.defects} className="col-span-full">
+        <textarea
+          id="a-defects"
+          className="field resize-y"
+          rows={3}
+          maxLength={ANKAUF_DEFECTS_MAX}
+          value={vehicle.defects}
+          onChange={(e) => setV("defects", e.target.value)}
+          placeholder="Bekannte Mängel eintragen (optional)"
+        />
+      </Field>
+    </>
+  );
+
   return (
     <div className="mx-auto max-w-[1280px]">
       <div className="ind-plate mb-4 flex flex-wrap items-center gap-2 px-3 py-3">
@@ -241,15 +279,10 @@ export default function BestaetigungClient() {
         </div>
       </div>
 
-      {error ? (
-        <div className="mb-3">
-          <ErrorNote onClose={() => setError("")}>{error}</ErrorNote>
-        </div>
-      ) : null}
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_clamp(320px,35vw,440px)]">
-        <div className="@container min-w-0 space-y-4">
-          <FormCard title="Inserat" icon={Link2}>
+        <div className={cx("@container min-w-0 space-y-4", INPUT_STYLE)}>
+          <FormCard title="Inserat" icon={Link2} main>
             <form
               className="flex flex-col gap-2 @sm:flex-row"
               onSubmit={(e) => {
@@ -338,29 +371,21 @@ export default function BestaetigungClient() {
                 </select>
               </Field>
             </div>
+            {/* Mit eingelesenem Inserat stehen alle Fahrzeugdaten offen da; ohne Inserat sind sie eingeklappt. */}
+            {vehicle.url ? (
+              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-line pt-4 @xl:grid-cols-4">
+                {moreFields}
+              </div>
+            ) : (
             <details className="group mt-4 border-t border-line pt-3">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[13px] font-semibold text-muted hover:text-ink [&::-webkit-details-marker]:hidden">
                 Weitere Fahrzeugdaten <ChevronDown className="size-4 group-open:rotate-180" aria-hidden="true" />
               </summary>
               <div className="mt-3 grid grid-cols-2 gap-3 @xl:grid-cols-4">
-                {DETAILS.map(([key, label]) => (
-                  <Field key={key} label={label} id={`a-${key}`} value={vehicle[key]}>
-                    <input id={`a-${key}`} className="field" value={vehicle[key] ?? ""} onChange={(e) => setV(key, e.target.value)} />
-                  </Field>
-                ))}
-                <Field label={ANKAUF_DEFECTS_LABEL} id="a-defects" value={vehicle.defects} className="col-span-full">
-                  <textarea
-                    id="a-defects"
-                    className="field resize-y"
-                    rows={3}
-                    maxLength={ANKAUF_DEFECTS_MAX}
-                    value={vehicle.defects}
-                    onChange={(e) => setV("defects", e.target.value)}
-                    placeholder="Bekannte Mängel eintragen (optional)"
-                  />
-                </Field>
+                {moreFields}
               </div>
             </details>
+            )}
           </FormCard>
 
           <FormCard title="Verkäufer" icon={UserRound}>
@@ -417,7 +442,7 @@ export default function BestaetigungClient() {
             </div>
             <div className="mt-4 flex flex-wrap items-end justify-between gap-3 border-t border-line pt-3">
               <div>
-                <p className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-brand-700">Zahlungsart</p>
+                <p className="mb-1.5 text-[12px] font-medium text-slate-600">Zahlungsart</p>
                 <Segmented value={payment} onChange={setPayment} options={ANKAUF_PAYMENT} size="sm" />
               </div>
               {travelTo ? <div className="text-[12px] text-muted"><TravelTime address={travelTo} /></div> : null}
@@ -428,7 +453,10 @@ export default function BestaetigungClient() {
         {/* E-mail */}
         <aside className="card overflow-hidden lg:sticky lg:top-4">
           <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted">E-Mail an den Verkäufer</p>
+            <p className="flex items-center gap-2 text-[12px] font-medium text-slate-600">
+              <img src="/logos/seller-envelope.png" alt="" width={28} height={20} className="h-auto shrink-0" />
+              E-Mail an den Verkäufer
+            </p>
             {edited ? (
               <button type="button" onClick={() => setEdited(false)} className="inline-flex items-center gap-1 text-[12px] text-muted hover:text-ink" title="Text wieder aus dem Formular erstellen">
                 <RotateCcw className="h-3.5 w-3.5" /> Neu erstellen
@@ -481,22 +509,50 @@ export default function BestaetigungClient() {
   );
 }
 
+/** Beschriftung in normaler Schreibweise (nicht in Großbuchstaben); ausgefüllte Felder blau beschriftet. */
 function Field({ value, className, ...props }) {
   const filled = String(value ?? "").trim().length > 0;
-  return <SalesField {...props} className={cx(className, filled && "[&>label]:text-brand-700")} />;
+  return (
+    <SalesField
+      {...props}
+      className={cx(
+        className,
+        "[&>label]:mb-1.5 [&>label]:text-[12px] [&>label]:font-medium [&>label]:normal-case [&>label]:tracking-normal",
+        filled ? "[&>label]:text-brand-700" : "[&>label]:text-slate-600",
+      )}
+    />
+  );
 }
 
-function FormCard({ title, icon: Icon, right, children }) {
+/**
+ * Abschnitt des Formulars. Nur der Hauptabschnitt ("Inserat") hat die graue Kopfleiste;
+ * die übrigen tragen eine ruhige Überschrift ohne Balken.
+ */
+function FormCard({ title, icon: Icon, right, main = false, children }) {
+  if (main) {
+    return (
+      <section className="card overflow-hidden">
+        <div className="ind-toolbar flex flex-wrap items-center justify-between gap-2 px-4 py-2.5">
+          <h2 className="flex items-center gap-2 text-[13px] font-semibold text-ink">
+            <Icon className="size-4 text-muted" aria-hidden="true" />
+            {title}
+          </h2>
+          {right}
+        </div>
+        <div className="p-4">{children}</div>
+      </section>
+    );
+  }
   return (
     <section className="card overflow-hidden">
-      <div className="ind-toolbar flex flex-wrap items-center justify-between gap-2 px-4 py-2.5">
-        <h2 className="flex items-center gap-2 text-[13px] font-semibold text-ink">
-          <Icon className="size-4 text-muted" aria-hidden="true" />
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-3">
+        <h2 className="flex items-center gap-1.5 text-[12.5px] font-medium text-slate-500">
+          <Icon className="size-3.5 text-slate-400" aria-hidden="true" />
           {title}
         </h2>
         {right}
       </div>
-      <div className="p-4">{children}</div>
+      <div className="px-4 pb-4 pt-2.5">{children}</div>
     </section>
   );
 }

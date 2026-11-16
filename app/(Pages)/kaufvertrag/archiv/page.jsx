@@ -1,14 +1,8 @@
-import { Suspense } from "react";
-import ContractList from "../_components/ContractList";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Archiv", robots: { index: false, follow: false } };
-
-export default function ArchivePage() {
-  return (
-    <div className="px-4 py-6 sm:px-6">
-      <Suspense fallback={null}>
-        <ContractList scope="archive" />
-      </Suspense>
-    </div>
-  );
+export default async function ArchivePage({ searchParams }) {
+  const { tab } = (await searchParams) ?? {};
+  const params = new URLSearchParams({ scope: "archive" });
+  if (typeof tab === "string") params.set("tab", tab);
+  redirect(`/kaufvertrag/liste?${params}`);
 }

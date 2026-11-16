@@ -271,7 +271,7 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
             onClick={() => {
               // back to where the contract was opened from, otherwise to the list
               if (window.history.length > 1) router.back();
-              else router.push(c.archived ? "/kaufvertrag/archiv" : "/kaufvertrag/liste");
+              else router.push(c.archived ? "/kaufvertrag/liste?scope=archive" : "/kaufvertrag/liste");
             }}
             className="ind-icon-btn shrink-0"
             aria-label="Zurück"
@@ -418,21 +418,6 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
             ) : null}
           </div>
 
-          <div className="card p-4">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={Boolean(c.stamp)}
-              onClick={toggleStamp}
-              disabled={!canStamp || Boolean(busy)}
-              className={`ind-toggle ${c.stamp ? "ind-toggle-on" : ""}`}
-            >
-              <span className="ind-toggle-box" />
-              Firmenstempel bei der Unterschrift
-            </button>
-            {canStamp ? null : <CompanyStampNotice stamp={companyStamp} />}
-          </div>
-
           {/* Buyer */}
           <div className="card p-4 text-[13px]">
             <div className="mb-2 flex items-center justify-between">
@@ -473,6 +458,21 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
               {warranty ? <Pill tone={warranty.active ? "green" : "slate"}>{warranty.label}</Pill> : null}
               {vehicle ? vehicleSoldHere ? <Pill tone="green">Verkauft</Pill> : <Pill tone="amber">Nicht als verkauft markiert</Pill> : null}
             </div>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={Boolean(c.stamp)}
+              onClick={toggleStamp}
+              disabled={!canStamp || Boolean(busy)}
+              className={`ind-toggle ${c.stamp ? "ind-toggle-on" : ""}`}
+            >
+              <span className="ind-toggle-box" />
+              Firmenstempel bei der Unterschrift
+            </button>
+            {canStamp ? null : <CompanyStampNotice stamp={companyStamp} />}
           </div>
 
         </aside>

@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { FiMenu } from "react-icons/fi";
 import { useSidebar } from "@/app/(components)/SidebarContext";
-import { Download, FileText, Hash, Loader2, Plus, Search } from "lucide-react";
+import { Archive, Download, FileText, Hash, Loader2, Plus, Search } from "lucide-react";
 import { ErrorNote, Modal, Pill, Tabs, api, cx } from "@/app/(components)/sales/ui";
 import { dateDE, formatEuro, remaining } from "@/lib/sales";
 
@@ -35,7 +35,7 @@ export default function ContractList({ scope = "year" }) {
   const year = new Date().getFullYear();
   const sp = useSearchParams();
   const archive = scope === "archive";
-  const [tab, setTab] = useState(() => TABS.find(({ key }) => key === sp.get("tab"))?.key || "all");
+  const tab = TABS.find(({ key }) => key === sp.get("tab"))?.key || "all";
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
   const [month, setMonth] = useState("");
@@ -90,8 +90,11 @@ export default function ContractList({ scope = "year" }) {
   }, [archive]);
 
   function changeTab(key) {
-    setTab(key);
-    router.replace(`${archive ? "/kaufvertrag/archiv" : "/kaufvertrag/liste"}${key !== "all" ? `?tab=${key}` : ""}`, { scroll: false });
+    const params = new URLSearchParams();
+    if (archive) params.set("scope", "archive");
+    if (key !== "all") params.set("tab", key);
+    const search = params.toString();
+    router.replace(`/kaufvertrag/liste${search ? `?${search}` : ""}`, { scroll: false });
   }
 
   async function saveNumber() {
@@ -141,9 +144,19 @@ export default function ContractList({ scope = "year" }) {
         </div>
         <div className="flex shrink-0 gap-1.5 sm:gap-2">
           {isAdmin ? (
-            <a href={exportHref} className="btn btn-secondary" title="Export" aria-label="Export">
-              <Download /> <span className="hidden sm:inline">Export</span>
-            </a>
+            <>
+              <a href={exportHref} className="btn btn-secondary" title="Export" aria-label="Export">
+                <Download /> <span className="hidden sm:inline">Export</span>
+              </a>
+              <Link
+                href={archive ? "/kaufvertrag/liste" : "/kaufvertrag/liste?scope=archive"}
+                className="btn btn-secondary"
+                title={archive ? "Aktuelles Jahr" : "Archiv"}
+                aria-label={archive ? "Aktuelles Jahr" : "Archiv"}
+              >
+                <Archive /> <span className="hidden sm:inline">{archive ? "Aktuelles Jahr" : "Archiv"}</span>
+              </Link>
+            </>
           ) : null}
           {!archive ? (
             <>

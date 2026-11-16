@@ -8,8 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
-// Light green.
-const BRAND = "#4ADE80";
+const BRAND = "var(--color-brand-500)";
 
 function isInternalNavigation(event) {
   if (event.defaultPrevented || event.button !== 0) return null;
@@ -100,7 +99,7 @@ export default function RouteProgress() {
         style={{
           width: `${progress}%`,
           background: BRAND,
-          boxShadow: `0 0 8px ${BRAND}66`,
+          boxShadow: `0 0 8px color-mix(in srgb, ${BRAND} 40%, transparent)`,
           transition: progress === 0 ? "none" : "width 200ms ease-out",
         }}
       />

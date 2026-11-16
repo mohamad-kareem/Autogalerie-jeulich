@@ -4,12 +4,13 @@ import SessionWrapper from "@/app/(components)/helpers/SessionWrapper";
 import { Toaster } from "react-hot-toast";
 import PageLogger from "@/app/(components)/PageLogger";
 import LayoutWrapper from "@/app/(components)/helpers/LayoutWrapper";
-import { Playfair_Display } from "next/font/google";
+import localFont from "next/font/local";
 import RouteProgress from "@/app/(components)/helpers/RouteProgress";
 
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const playfair = localFont({
+  src: "./fonts/playfair-display-latin.woff2",
+  weight: "400 900",
+  display: "swap",
   variable: "--font-playfair",
 });
 

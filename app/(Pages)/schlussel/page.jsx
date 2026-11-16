@@ -17,7 +17,7 @@ const carBrands = [
   { name: "Dacia", logo: "/logos/Dacia1.png" },
   { name: "Honda", logo: "/logos/honda1.png" },
   { name: "Mercedes", logo: "/logos/Mercedes2.png" },
-  { name: "Suzuki", logo: "/logos/suzuki.png" },
+  { name: "Suzuki", logo: "/logos/suzuki.jpg" },
   { name: "Renault", logo: "/logos/Renault.png" },
   { name: "Skoda", logo: "/logos/skodaa.png" },
   { name: "Hyundai", logo: "/logos/hyundia.png" },

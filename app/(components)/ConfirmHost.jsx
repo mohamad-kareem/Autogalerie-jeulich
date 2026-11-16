@@ -110,7 +110,7 @@ export default function ConfirmHost() {
       >
         <div className="overflow-hidden rounded-b-[5px] border border-t-0 border-[#a9b0b9] bg-white shadow-[0_18px_44px_-12px_rgba(6,15,29,0.45)]">
           <div className={`h-[3px] ${item.danger ? "bg-rose-600" : "bg-[#3e454e]"}`} />
-          <div className="flex gap-3 px-5 pb-4 pt-4">
+          <div className="flex gap-3 px-5 pb-3.5 pt-4">
             <span
               className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[4px] border ${
                 item.danger ? "border-rose-200 bg-rose-50 text-rose-600" : "border-[#b9bfc7] bg-gradient-to-b from-[#f6f7f8] to-[#dde1e5] text-[#3e454e]"
@@ -125,7 +125,7 @@ export default function ConfirmHost() {
               {item.message ? <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-body">{item.message}</p> : null}
             </div>
           </div>
-          <div className="ind-toolbar flex justify-end gap-2 border-t border-[#b9bfc7] px-5 py-2.5">
+          <div className="flex justify-end gap-2 border-t border-[#d5dae0] bg-[#f6f7f9] px-4 py-1.5">
             {item.kind === "confirm" ? (
               <button type="button" onClick={() => close(false)} className="ind-btn">
                 {item.cancelLabel}
