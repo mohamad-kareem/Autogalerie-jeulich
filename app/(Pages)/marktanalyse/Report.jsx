@@ -575,7 +575,7 @@ function CarTable({ cars, excluded }) {
                       <span title={car.title}>{shortTitle(car.title)}</span><ExternalLink size={12} aria-hidden="true" />
                     </a>
                   ) : <strong title={car.title}>{shortTitle(car.title)}</strong>}
-                  <small>{[sources, car.trim, car.location].filter(Boolean).join(" · ")}</small>
+                  <small>{[sources, car.trim, { 4: "Erhöhter Preis", 5: "Hoher Preis" }[car.rating], car.location].filter(Boolean).join(" · ")}</small>
                 </td>
                 <td className="ma-number">{car.firstRegistration || "–"}</td>
                 <td className="ma-number">{Number.isFinite(car.mileageKm) ? car.mileageKm.toLocaleString("de-DE") : "–"}</td>
