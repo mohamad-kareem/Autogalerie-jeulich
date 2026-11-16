@@ -77,6 +77,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  * Says whether the page is showing its content yet and returns its HTML.
  */
 function readPage(portal, pageKind) {
+  // Erst lesen, wenn das Dokument selbst fertig aufgebaut ist (sonst fehlen evtl. Fahrzeuge).
+  if (document.readyState === "loading") return { ready: false, url: location.href };
   const text = document.body?.innerText || "";
   const head = `${document.title}\n${text.slice(0, 3000)}`;
   const scripts = [...document.scripts];
@@ -185,14 +187,23 @@ async function loadPage(job) {
     while (!job.cancelled && Date.now() - startedAt < (job.shown ? IMPORT_TIMEOUT_MS : timeout)) {
       const current = await chrome.tabs.get(job.tabId);
       let blocked = false;
-      if (current.status === "complete" && current.url) {
+      // Suchseiten werden gelesen, sobald ihr Inhalt da ist – ohne auf Werbung und Tracking
+      // zu warten, die eine Seite oft noch lange "ladend" halten.
+      const loaded = current.status === "complete";
+      const early = !loaded && job.pageKind === "search" && /^https?:/.test(current.url || "") && portalOf(current.url) === job.portal;
+      if ((loaded || early) && current.url) {
         if (portalOf(current.url) !== job.portal) throw new Error(`Die Seite hat ${name} verlassen. Bitte den direkten Link verwenden.`);
         if (job.legacy) {
           const actualId = mobileListingId(current.url);
           if (!actualId && isMobileSearchPage(current.url)) throw new Error(`mobile.de hat statt der Fahrzeuganzeige eine Suchseite geöffnet. ${LISTING_REQUIRED}`);
           if (job.listingId && actualId && actualId !== job.listingId) throw new Error("Im Anzeigen-Tab wurde ein anderes Fahrzeug geöffnet. Bitte den gewünschten Link erneut prüfen.");
         }
-        const [snapshot] = await chrome.scripting.executeScript({ target: { tabId: job.tabId }, func: readPage, args: [job.portal, job.pageKind] });
+        let snapshot = null;
+        try {
+          [snapshot] = await chrome.scripting.executeScript({ target: { tabId: job.tabId }, func: readPage, args: [job.portal, job.pageKind] });
+        } catch (error) {
+          if (loaded) throw error; // während des Ladens kann das Lesen noch scheitern – dann später erneut
+        }
         const page = snapshot?.result;
         blocked = Boolean(page?.blocked);
         if (page?.ready) {

@@ -975,3 +975,22 @@ details.ma-finding {
   font-variant-numeric: tabular-nums;
 }
 
+/* Preisbewertung des Portals unter dem Fahrzeugtitel: gleiche Schriftgröße, aber farbig */
+.ma-rating-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+.ma-rating-pill::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
+.ma-rating-pill[data-level="1"] { color: #15803d; background: #dcf5e4; }
+.ma-rating-pill[data-level="2"] { color: #3f8f2f; background: #e8f6df; }
+.ma-rating-pill[data-level="3"] { color: #475569; background: #eef1f5; }
+.ma-rating-pill[data-level="4"] { color: #b45309; background: #fdf0dd; }
+.ma-rating-pill[data-level="5"] { color: #b91c1c; background: #fde4e4; }

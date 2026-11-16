@@ -145,6 +145,9 @@ function VehicleEquipment({ items }) {
 }
 
 /** Kurze Zeile für die Fahrzeugkarte: links Zahnriemen oder Steuerkette, rechts nur die Angabe. */
+/** Preisbewertung des Portals als kleines farbiges Etikett unter dem Fahrzeug. */
+const RATING_PILL = { 1: "Sehr guter Preis", 2: "Guter Preis", 3: "Fairer Preis", 4: "Erhöhter Preis", 5: "Hoher Preis" };
+
 /**
  * Lange Anzeigentitel in der Vergleichstabelle: höchstens etwa 60 Zeichen, dann „…“
  * (voller Titel beim Darüberfahren). Gezählt wird nach Zeichen, weil viele Händler
@@ -575,7 +578,10 @@ function CarTable({ cars, excluded }) {
                       <span title={car.title}>{shortTitle(car.title)}</span><ExternalLink size={12} aria-hidden="true" />
                     </a>
                   ) : <strong title={car.title}>{shortTitle(car.title)}</strong>}
-                  <small>{[sources, car.trim, { 4: "Erhöhter Preis", 5: "Hoher Preis" }[car.rating], car.location].filter(Boolean).join(" · ")}</small>
+                  <small>
+                    {[sources, car.trim, car.location].filter(Boolean).join(" · ")}
+                    {RATING_PILL[car.rating] && <span className="ma-rating-pill" data-level={car.rating}>{RATING_PILL[car.rating]}</span>}
+                  </small>
                 </td>
                 <td className="ma-number">{car.firstRegistration || "–"}</td>
                 <td className="ma-number">{Number.isFinite(car.mileageKm) ? car.mileageKm.toLocaleString("de-DE") : "–"}</td>
