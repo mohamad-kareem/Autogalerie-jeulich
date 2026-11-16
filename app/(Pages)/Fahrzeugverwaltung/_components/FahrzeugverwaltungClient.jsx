@@ -382,19 +382,20 @@ function KeyLine({ v }) {
   const failed = v.tuevStatus === "failed";
   const hasHu = failed || /^\d{4}-\d{2}$/.test(v.tuevUntil || "");
   if (!v.keyNumber && !v.inStockSince && !hasHu) return null;
+  // feste Spalten: Datum | TÜV | Schlüssel – so steht alles untereinander, auch wenn etwas fehlt
   return (
-    <span className="mt-0.5 flex items-center gap-3 text-[11.5px] tabular-nums text-[#66707c]">
-      {v.inStockSince ? (
-        <span className="inline-flex items-center gap-1" title="Aufgenommen am">
-          <CalendarPlus className="h-3 w-3" />
-          {dateDE(v.inStockSince)}
-        </span>
-      ) : null}
-      {hasHu ? (
-        <span className="inline-flex" title={failed ? "HU nicht bestanden" : `HU / TÜV bis ${monthDE(v.tuevUntil)}${tuevExpired(v.tuevUntil) ? " – abgelaufen" : ""}`}>
-          <HuBadge until={failed ? "" : v.tuevUntil} bad={failed || tuevExpired(v.tuevUntil)} size={25} />
-        </span>
-      ) : null}
+    <span className="mt-1 flex items-center text-[11.5px] tabular-nums text-[#66707c]">
+      <span className="inline-flex w-[88px] shrink-0 items-center gap-1" title={v.inStockSince ? "Aufgenommen am" : undefined}>
+        {v.inStockSince ? (
+          <>
+            <CalendarPlus className="h-3 w-3" />
+            {dateDE(v.inStockSince)}
+          </>
+        ) : null}
+      </span>
+      <span className="inline-flex w-[86px] shrink-0" title={hasHu ? (failed ? "HU nicht bestanden" : `HU / TÜV bis ${monthDE(v.tuevUntil)}${tuevExpired(v.tuevUntil) ? " – abgelaufen" : ""}`) : undefined}>
+        {hasHu ? <HuPill until={v.tuevUntil} failed={failed} expired={tuevExpired(v.tuevUntil)} /> : null}
+      </span>
       {v.keyNumber ? (
         <span className="inline-flex items-center gap-1" title="Schlüssel-Nr.">
           <KeyRound className="h-3 w-3" />
@@ -507,81 +508,90 @@ function HuBadge({ until, bad, size = 22 }) {
   );
 }
 
+/**
+ * HU for the table: white rounded frame in the HU year colour with the full date ("02/2028"). Expired: red frame and red date; not passed: red "HU ✕".
+ */
+function HuPill({ until, failed, expired }) {
+  const y = /^\d{4}-\d{2}$/.test(until || "") ? Number(until.slice(0, 4)) : null;
+  const colour = y ? HU_COLORS[(((y - 2022) % 6) + 6) % 6] : "#c9ced5";
+  const bad = failed || expired;
+  return (
+    <span
+      className={cx(
+        "inline-flex h-[19px] items-center rounded-full border-[1.5px] bg-white px-[7px] text-[11.5px] font-bold leading-none tabular-nums",
+        bad ? "text-[#a12d22]" : "text-[#1f252c]",
+      )}
+      style={{ borderColor: bad ? "#c0392b" : colour }}
+    >
+      {failed ? "HU ✕" : y ? monthDE(until) : "–"}
+    </span>
+  );
+}
+
 /** one block of the vehicle drawer's data form – no box, no title, no line */
 function EditGroup({ children }) {
   return <div className="grid grid-cols-6 gap-x-3 gap-y-2.5 py-2.5 first:pt-1">{children}</div>;
 }
 
-function Cell({ label, children, className, big, sub }) {
+const dash = <span className="font-normal text-[#a3aab3]">–</span>;
+
+/** one line of the read view: label left, value right */
+function Fact({ label, children, sub, className }) {
   return (
-    <div className={cx("min-w-0 px-3.5 py-2.5", className)}>
-      <dt className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[#6b7480]">{label}</dt>
-      <dd className={cx("mt-1 flex min-h-[22px] items-center gap-2 truncate text-ink", big ? "text-[16px] font-semibold tabular-nums" : "text-[13.5px] font-medium")}>{children}</dd>
-      {sub ? <p className="mt-0.5 truncate text-[11.5px] text-muted" title={sub}>{sub}</p> : null}
+    <div className={cx("flex min-w-0 items-center justify-between gap-3 px-3 py-[7px]", className)}>
+      <dt className="shrink-0 text-[12px] text-[#6b7480]">{label}</dt>
+      <dd className="flex min-w-0 items-center justify-end gap-1.5 truncate text-right text-[13px] font-medium text-ink" title={sub || undefined}>
+        {children}
+      </dd>
     </div>
   );
 }
 
-const dash = <span className="font-normal text-[#a3aab3]">–</span>;
+/** a longer text (Werkstatt, Mängel, Notiz) across the full width */
+function FactText({ label, children }) {
+  return (
+    <div className="col-span-2 !border-l-0 border-t border-[#e8ebee] px-3 py-2">
+      <dt className="text-[12px] text-[#6b7480]">{label}</dt>
+      <dd className="mt-0.5 whitespace-pre-wrap text-[13px] text-ink">{children}</dd>
+    </div>
+  );
+}
 
-/** Read-only view of the car's data (drawer, before "Bearbeiten"): 2 main facts on top, 6 below */
+/** Read-only view of the car's data (drawer, before "Bearbeiten"): compact two-column list, FIN and Erstzulassung first */
 function ReadFacts({ v, redPlates }) {
   const failed = v.tuevStatus === "failed";
   const hasHu = /^\d{4}-\d{2}$/.test(v.tuevUntil || "");
   const tuevLabel = TUEV_STATUS.find((t) => t.key === v.tuevStatus)?.label;
-  const line = "border-[#e3e6ea]";
+  const row = "border-t border-[#e8ebee]";
   return (
     <div className="pb-3">
-      <dl className={cx("grid grid-cols-3 overflow-hidden rounded-[4px] border bg-white", line)}>
-        {/* the two main facts */}
-        <Cell big label="Erstzulassung" className="bg-[#f6f7f8]">
-          {v.firstRegistration || dash}
-        </Cell>
-        <Cell big label="FIN" className={cx("col-span-2 border-l bg-[#f6f7f8]", line)}>
-          <CopyVin vin={v.vin} large />
-        </Cell>
+      <dl className="overflow-hidden rounded-md border border-[#dfe3e8] bg-white">
+        <div className="grid grid-cols-2 [&>div:nth-child(even)]:border-l [&>div:nth-child(even)]:border-[#e8ebee] [&>div:nth-child(-n+2)]:border-t-0 [&>div:nth-child(-n+2)]:bg-[#f6f7f9]">
+          {/* first line: the two identifying facts */}
+          <Fact label="FIN" className={row}><CopyVin vin={v.vin} /></Fact>
+          <Fact label="Erstzulassung" className={row}>{v.firstRegistration || dash}</Fact>
+          <Fact label="Kilometer" className={row}>{v.mileage != null ? `${kmFmt(v.mileage)} km` : dash}</Fact>
+          <Fact label="Preis" className={row}>{v.price != null ? formatEuro(v.price).replace(",00", "") : dash}</Fact>
+          <Fact label="Vorbesitzer" className={row}>{v.owners ?? dash}</Fact>
+          <Fact label="Schlüssel" className={row} sub={v.keyNote || ""}>
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full border border-black/20" style={{ background: v.keyColor || "#000" }} aria-hidden />
+            {v.keyNumber ? `Nr. ${v.keyNumber}` : "ohne Nr."}
+            <span className="font-normal text-muted">· {v.keyCount ?? 0} Stk.</span>
+          </Fact>
+          <Fact label="HU / TÜV" className={row}>
+            {hasHu || failed ? <HuBadge until={v.tuevUntil} bad={failed} size={18} /> : null}
+            {failed ? <span className="text-[#a12d22]">nicht bestanden</span> : hasHu ? monthDE(v.tuevUntil) : tuevLabel && tuevLabel !== "–" ? tuevLabel : dash}
+          </Fact>
+          <Fact label="Rotes Kennzeichen" className={row}>
+            {redPlates.length ? redPlates.map((r) => <PlateBadge key={r.plateId} number={r.number} size="xs" />) : dash}
+          </Fact>
 
-        <Cell label="Schlüssel" className={cx("border-t", line)} sub={v.keyNote || ""}>
-          <span className="h-3 w-3 shrink-0 rounded-full border border-black/20" style={{ background: v.keyColor || "#000" }} aria-hidden />
-          {v.keyNumber ? `Nr. ${v.keyNumber}` : "ohne Nr."}
-          <span className="font-normal text-muted">· {v.keyCount ?? 0} Stk.</span>
-        </Cell>
-        <Cell label="Kilometer" className={cx("border-l border-t", line)}>
-          {v.mileage != null ? `${kmFmt(v.mileage)} km` : dash}
-        </Cell>
-        <Cell label="Preis" className={cx("border-l border-t", line)}>
-          {v.price != null ? formatEuro(v.price).replace(",00", "") : dash}
-        </Cell>
-
-        <Cell label="Vorbesitzer" className={cx("border-t", line)}>
-          {v.owners ?? dash}
-        </Cell>
-        <Cell label="HU / TÜV" className={cx("border-l border-t", line)}>
-          {hasHu || failed ? <HuBadge until={v.tuevUntil} bad={failed} size={20} /> : null}
-          {failed ? <span className="text-[#a12d22]">nicht bestanden</span> : hasHu ? monthDE(v.tuevUntil) : tuevLabel && tuevLabel !== "–" ? tuevLabel : dash}
-        </Cell>
-        <Cell label="Rotes Kennzeichen" className={cx("border-l border-t", line)}>
-          {redPlates.length ? redPlates.map((r) => <PlateBadge key={r.plateId} number={r.number} size="xs" />) : dash}
-        </Cell>
-
-        {v.phase === "werkstatt" && (v.werkstatt?.where || v.werkstatt?.what) ? (
-          <div className={cx("col-span-3 border-t px-3.5 py-2.5", line)}>
-            <dt className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[#6b7480]">Werkstatt</dt>
-            <dd className="mt-1 text-[13.5px] text-ink">{[v.werkstatt.where, v.werkstatt.what].filter(Boolean).join(" · ")}</dd>
-          </div>
-        ) : null}
-        {failed && v.tuevIssues?.length ? (
-          <div className={cx("col-span-3 border-t px-3.5 py-2.5", line)}>
-            <dt className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[#6b7480]">Mängel</dt>
-            <dd className="mt-1 text-[13.5px] text-ink">{v.tuevIssues.join(" · ")}</dd>
-          </div>
-        ) : null}
-        {v.notes ? (
-          <div className={cx("col-span-3 border-t px-3.5 py-2.5", line)}>
-            <dt className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[#6b7480]">Notiz</dt>
-            <dd className="mt-1 whitespace-pre-wrap text-[13.5px] text-ink">{v.notes}</dd>
-          </div>
-        ) : null}
+          {v.phase === "werkstatt" && (v.werkstatt?.where || v.werkstatt?.what) ? (
+            <FactText label="Werkstatt">{[v.werkstatt.where, v.werkstatt.what].filter(Boolean).join(" · ")}</FactText>
+          ) : null}
+          {failed && v.tuevIssues?.length ? <FactText label="Mängel">{v.tuevIssues.join(" · ")}</FactText> : null}
+          {v.notes ? <FactText label="Notiz">{v.notes}</FactText> : null}
+        </div>
       </dl>
     </div>
   );

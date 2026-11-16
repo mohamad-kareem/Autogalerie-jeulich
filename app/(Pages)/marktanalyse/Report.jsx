@@ -385,7 +385,7 @@ function Assessment({ report, id, feedback, onFeedback, onReportChange }) {
 function Pricing({ prices }) {
   const details = [
     { label: "Zielpreis", value: prices.target },
-    { label: "Nötige Arbeiten", value: prices.costs },
+    { label: "Nötige Arbeiten", value: prices.repairs ?? prices.costs, note: prices.repairs > 0 && !prices.costs ? "nicht eingerechnet" : null },
     { label: "Privatpreis", value: prices.privateValue || null },
   ];
 
@@ -397,10 +397,10 @@ function Pricing({ prices }) {
         <div><dt>Verkaufspreis</dt><dd>{euro(prices.sell)}</dd></div>
       </dl>
       <dl className="ma-price-details">
-        {details.map(({ label, value }) => (
+        {details.map(({ label, value, note }) => (
           <div key={label}>
             <dt>{label}</dt>
-            <dd>{euro(value)}</dd>
+            <dd>{euro(value)}{note && <small className="ml-1 text-xs font-normal text-muted">{note}</small>}</dd>
           </div>
         ))}
       </dl>
@@ -590,7 +590,7 @@ function CarTable({ cars, excluded }) {
                 {excluded ? <td className="text-muted">{car.reason}</td> : (
                   <>
                     <td className="ma-number font-semibold">{euro(car.adjusted)}</td>
-                    <td className="ma-number text-muted">{Number.isFinite(car.weight) ? Math.round(car.weight * 100) + " %" : "–"}</td>
+                    <td className="ma-number text-muted" title={car.notCounted ? "Vom Portal als zu teuer bewertet – zählt nicht in den Marktwert" : undefined}>{car.notCounted ? "nicht gewertet" : Number.isFinite(car.weight) ? Math.round(car.weight * 100) + " %" : "–"}</td>
                   </>
                 )}
               </tr>

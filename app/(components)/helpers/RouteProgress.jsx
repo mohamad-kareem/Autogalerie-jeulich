@@ -8,7 +8,8 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
-const BRAND = "var(--color-brand-500)";
+// Stahlblau: ruhiger als das helle Leuchtblau, passt zum Stahl-Grau der Oberfläche.
+const BRAND = "#2e7dbf";
 
 function isInternalNavigation(event) {
   if (event.defaultPrevented || event.button !== 0) return null;
@@ -99,7 +100,7 @@ export default function RouteProgress() {
         style={{
           width: `${progress}%`,
           background: BRAND,
-          boxShadow: `0 0 8px color-mix(in srgb, ${BRAND} 40%, transparent)`,
+          boxShadow: `0 0 6px color-mix(in srgb, ${BRAND} 30%, transparent)`,
           transition: progress === 0 ? "none" : "width 200ms ease-out",
         }}
       />

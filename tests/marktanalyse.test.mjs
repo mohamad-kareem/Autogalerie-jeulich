@@ -170,7 +170,10 @@ test("Urteil: Kaufen, knapp, verhandeln, Finger weg – gerechnet mit 2.300 bis 
 
   // Mechanische Schäden kosten nach Preisliste, Außenschäden werden ohne Preis genannt
   const damaged = run(9000, "Kratzer an der Tür. Kupplung rutscht.");
-  assert.equal(damaged.prices.limit, Math.floor((sell - 2300 - 900) / 50) * 50);
+  // Mängel werden vorerst nur gezeigt, nicht vom Limit abgezogen.
+  assert.equal(damaged.prices.limit, limit);
+  assert.equal(damaged.prices.repairs, 900);
+  assert.equal(damaged.prices.costs, 0);
   assert.ok(damaged.costs.some((c) => c.id === "lack" && c.noPrice && c.amount === 0));
   // Motorschaden / nicht fahrbereit / Totalschaden: Finger weg, egal wie günstig
   assert.equal(run(3000, "Motorschaden, nicht fahrbereit").verdict.key, "FINGER_WEG");
@@ -499,4 +502,51 @@ test("Zahnriemen fällig: Warnung und Frage, aber keine Kosten", () => {
   assert.ok(!done.costs.some((c) => c.item === "zahnriemen"));
   assert.ok(!done.rulesFired.includes("zahnriemenFaellig"));
   assert.equal(due.prices.limit, done.prices.limit);
+});
+
+test("Vom Portal als zu teuer bewertete Angebote werden gezeigt, aber nicht gerechnet", () => {
+  const car = (id, price, rating) => ({ key: `M:${id}`, source: "MOBILE_DE", id, title: "Volkswagen Golf VII 1.0 TSI", make: "Volkswagen", model: "Golf", price, rating, mileageKm: 80000, regMonths: regMonths("03/2019"), powerPs: 115, fuel: "PETROL", gearbox: "MANUAL", sellerType: "DEALER" });
+  const fair = [car("1", 12000, 3), car("2", 12200, 2), car("3", 11900, 3), car("4", 12100, 1)];
+  const subject = golf({ title: "VW Golf VII 1.0 TSI" });
+  const base = marketValue(subject, fair, { step: 1 });
+  const withHigh = marketValue(subject, [...fair, car("5", 15900, 5), car("6", 15500, 4)], { step: 1 });
+  assert.equal(withHigh.value, base.value);
+  assert.equal(withHigh.n, base.n);
+  assert.deepEqual(withHigh.dealer.filter((c) => c.notCounted).map((c) => c.id).sort(), ["5", "6"]);
+  assert.equal(withHigh.excluded.length, 0);
+  const weightOf = (id) => withHigh.dealer.find((c) => c.id === id).weight;
+  const twin = marketValue(subject, [car("a", 12050, 2), { ...car("b", 12050, 3), mileageKm: 80001 }, ...fair], { step: 1 });
+  const w = (id) => twin.dealer.find((c) => c.id === id).weight;
+  assert.ok(w("b") < w("a"));
+  assert.ok(weightOf("1") > 0);
+});
+
+test("Ceed im Jahr des Modellwechsels: Leistung entscheidet die Generation", () => {
+  const entry = generationEntry("Kia", "Ceed");
+  assert.equal(generationOf(entry, { title: "Kia Ceed 1.4 T-GDI Spirit", regMonths: regMonths("07/2018"), powerPs: 140 }).name, "Ceed CD");
+  assert.equal(generationOf(entry, { title: "Kia Ceed SW 1.6 GDI", regMonths: regMonths("02/2018"), powerPs: 135 }).name, "Ceed JD");
+  assert.equal(generationOf(entry, { title: "Kia Ceed 1.0 T-GDI", regMonths: regMonths("06/2018"), powerPs: 120 }).name, null);
+});
+
+test("Parkkratzer ist ein Außenschaden, \"leider\" allein kein Hinweis", () => {
+  const description = "Ein kleiner optischer Mangel befindet sich vorne links in Form eines Parkkratzers. Wir geben das Auto schweren Herzens ab, da es leider zu klein geworden ist.";
+  const c = readCondition(golf({ description }), DEFAULT_SETTINGS.prices, { now: NOW });
+  assert.ok(c.costs.some((x) => x.id === "lack" && x.noPrice));
+  assert.equal(c.unknown.length, 0);
+});
+
+test("Dasselbe Auto zweimal auf einem Portal zählt einmal", () => {
+  const car = (id, location) => ({ key: `A:${id}`, source: "AUTOSCOUT24", id, title: "Volkswagen Golf VII 1.0 TSI", make: "Volkswagen", model: "Golf", price: 12000, rating: 2, mileageKm: 80000, regMonths: regMonths("03/2019"), powerPs: 115, fuel: "PETROL", gearbox: "MANUAL", sellerType: "DEALER", location });
+  const other = (id, price) => ({ ...car(id, "Bonn"), key: `A:${id}`, id, price, mileageKm: 81000 + Number(id) });
+  const m = marketValue(golf({ title: "VW Golf VII 1.0 TSI" }), [car("1", "Essen"), car("2", "Köln"), other("3", 12100), other("4", 11900)], { step: 1 });
+  assert.equal(m.dealer.filter((c) => c.price === 12000 && c.mileageKm === 80000).length, 1);
+});
+
+test("Jedes Modell: im Jahr des Modellwechsels entscheidet die gelernte Leistung", () => {
+  const car = (id, ez, ps, title = "Volkswagen Golf 1.5 TSI") => ({ key: `M:${id}`, source: "MOBILE_DE", id, title, make: "Volkswagen", model: "Golf", price: 15000 + Number(id), mileageKm: 50000 + Number(id), regMonths: regMonths(ez), powerPs: ps });
+  const items = [car("1", "03/2017", 150), car("2", "05/2017", 150), car("3", "03/2022", 130), car("4", "06/2022", 130), car("5", "06/2020", 130), car("6", "06/2020", 150), car("7", "06/2020", 110)];
+  const check = generationCheck({ make: "Volkswagen", model: "Golf", title: "VW Golf VII 1.5 TSI", regMonths: regMonths("05/2018"), powerPs: 150 }, items);
+  assert.equal(check.verdictFor(items[4]), "other"); // 130 PS gab es hier nur beim Golf 8
+  assert.equal(check.verdictFor(items[5]), "same"); // 150 PS nur beim Golf 7 gesehen
+  assert.equal(check.verdictFor(items[6]), "unsure"); // 110 PS: nichts gelernt
 });
