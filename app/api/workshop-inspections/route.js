@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import WorkshopInspection from "@/models/WorkshopInspection";
+import { staffUser } from "@/lib/kaufvertragServer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,6 +11,8 @@ function escapeRegex(value) {
 }
 
 export async function GET(request) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
 
@@ -88,6 +91,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
 

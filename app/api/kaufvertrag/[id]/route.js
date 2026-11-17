@@ -19,6 +19,8 @@ import {
 
 // 🔎 Get a single contract
 export async function GET(request, context) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const { id } = await context.params;
@@ -51,6 +53,8 @@ export async function GET(request, context) {
 
 // ✏️ Update contract (toggle star/ignore/archive or normal update)
 export async function PUT(request, context) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const { id } = await context.params;
@@ -122,6 +126,8 @@ export async function PUT(request, context) {
 
 // 🗑️ Delete contract  (?available=1 → the car is available again)
 export async function DELETE(request, context) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const { params } = context;

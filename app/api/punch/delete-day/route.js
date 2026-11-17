@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Admin from "@/models/Admin";
 import TimeRecord from "@/models/TimeRecord";
+import { adminUser } from "@/lib/kaufvertragServer";
 
 const startOfDay = (d) => {
   const x = new Date(d);
@@ -16,6 +17,8 @@ const endOfDay = (d) => {
 };
 
 export async function DELETE(request) {
+  // login required (security check)
+  if (!(await adminUser())) return Response.json({ error: "Nur für Admins." }, { status: 403 });
   try {
     await connectDB();
     const adminIdHeader = request.headers.get("x-admin-id");

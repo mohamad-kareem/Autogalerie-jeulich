@@ -1,7 +1,10 @@
 import { connectDB } from "@/lib/mongodb";
 import AdminData from "@/models/AdminData";
+import { staffUser } from "@/lib/kaufvertragServer";
 
 export async function GET(request) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
@@ -21,6 +24,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const { action, data } = await request.json();

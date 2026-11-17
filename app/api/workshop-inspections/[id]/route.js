@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { getWorkshopCloudinary } from "@/lib/workshopCloudinary";
 import WorkshopInspection from "@/models/WorkshopInspection";
+import { staffUser } from "@/lib/kaufvertragServer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -137,6 +138,8 @@ function calculateTotals(bodywork, mechanicalTasks) {
 }
 
 export async function GET(request, { params }) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
 
@@ -187,6 +190,8 @@ export async function GET(request, { params }) {
 }
 
 export async function PATCH(request, { params }) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
 
@@ -363,6 +368,8 @@ export async function PATCH(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
 

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Download, LoaderCircle, Plug, Puzzle, Settings, Stamp, User, UserPlus } from "lucide-react";
+import { CheckCircle2, Download, LoaderCircle, Plug, Puzzle, Settings, Stamp, Trash2, User, UserPlus } from "lucide-react";
 import { detectHelperExtension } from "@/lib/ankauf/helperExtension";
 import ProfileClient from "./ProfileClient";
 import RegisterForm from "./RegisterForm";
 import CompanyStampSettings from "./CompanyStampSettings";
+import DeleteAllData from "./DeleteAllData";
 
 function Block({ id, icon: Icon, title, children }) {
   return (
@@ -91,6 +92,12 @@ export default function EinstellungenClient({ isAdmin, user }) {
       {isAdmin ? (
         <Block id="benutzer" icon={UserPlus} title="Benutzer">
           <RegisterForm />
+        </Block>
+      ) : null}
+
+      {isAdmin ? (
+        <Block id="daten-loeschen" icon={Trash2} title="Daten löschen">
+          <DeleteAllData />
         </Block>
       ) : null}
     </div>

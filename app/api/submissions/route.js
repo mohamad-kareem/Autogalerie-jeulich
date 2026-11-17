@@ -2,6 +2,7 @@ import { connectDB } from "@/lib/mongodb";
 import ContactSubmission from "@/models/ContactSubmission";
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { staffUser } from "@/lib/kaufvertragServer";
 
 function formatGermanDateTime(dateString) {
   if (!dateString) return "Nicht angegeben";
@@ -146,6 +147,8 @@ export async function POST(request) {
 }
 
 export async function GET(request) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   await connectDB();
 
   try {
@@ -185,6 +188,8 @@ export async function GET(request) {
 }
 
 export async function PATCH(request) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   await connectDB();
 
   try {
@@ -239,6 +244,8 @@ export async function PATCH(request) {
 }
 
 export async function DELETE(request) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   await connectDB();
 
   try {

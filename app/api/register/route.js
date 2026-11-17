@@ -2,8 +2,11 @@ import { connectDB } from "@/lib/mongodb";
 import Admin from "@/models/Admin";
 import cloudinary from "@/app/utils/cloudinary";
 import { NextResponse } from "next/server";
+import { adminUser } from "@/lib/kaufvertragServer";
 
 export async function POST(req) {
+  // login required (security check)
+  if (!(await adminUser())) return Response.json({ error: "Nur für Admins." }, { status: 403 });
   await connectDB();
 
   try {

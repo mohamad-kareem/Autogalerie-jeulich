@@ -33,6 +33,8 @@ async function markWebsiteCarSold({ vin, carId }) {
    POST → Create Kaufvertrag
 ───────────────────────────────────────────── */
 export async function POST(req) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const data = await req.json();
@@ -136,6 +138,8 @@ export async function POST(req) {
    GET → List Kaufverträge (archived / active)
 ───────────────────────────────────────────── */
 export async function GET(req) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
 

@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import TimeRecord from "@/models/TimeRecord";
+import { adminUser } from "@/lib/kaufvertragServer";
 
 export async function PATCH(req, { params }) {
+  // login required (security check)
+  if (!(await adminUser())) return Response.json({ error: "Nur für Admins." }, { status: 403 });
   try {
     await connectDB();
     const adminId = req.headers.get("x-admin-id");
@@ -38,6 +41,8 @@ export async function PATCH(req, { params }) {
 
 // ✅ NEW DELETE endpoint
 export async function DELETE(req, { params }) {
+  // login required (security check)
+  if (!(await adminUser())) return Response.json({ error: "Nur für Admins." }, { status: 403 });
   try {
     await connectDB();
     const adminId = req.headers.get("x-admin-id");

@@ -6,6 +6,7 @@ import {
   workshopPhotoFolder,
 } from "@/lib/workshopCloudinary";
 import WorkshopInspection from "@/models/WorkshopInspection";
+import { staffUser } from "@/lib/kaufvertragServer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -162,6 +163,8 @@ async function getInspection(id) {
 }
 
 export async function POST(request, { params }) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   const uploadedPublicIds = [];
 
   try {
@@ -386,6 +389,8 @@ export async function POST(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const { id } = await params;

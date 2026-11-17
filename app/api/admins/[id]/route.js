@@ -4,8 +4,11 @@ export const dynamic = "force-dynamic";
 import { connectDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 import Admin from "@/models/Admin";
+import { staffUser } from "@/lib/kaufvertragServer";
 
 export async function GET(req, context) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     const id = context.params.id;
 
@@ -27,6 +30,11 @@ export async function GET(req, context) {
 }
 
 export async function PUT(request, { params }) {
+  // only the own profile – or any profile for admins
+  const me = await staffUser();
+  if (!me) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
+  const { id: target } = await params;
+  if (me.role !== "admin" && me.userId !== String(target)) return Response.json({ error: "Keine Berechtigung." }, { status: 403 });
   try {
     await connectDB();
     const { name, image } = await request.json();

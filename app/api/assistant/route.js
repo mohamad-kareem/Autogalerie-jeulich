@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { staffUser } from "@/lib/kaufvertragServer";
 
 export const runtime = "nodejs";
 
@@ -7,6 +8,8 @@ const client = new OpenAI({
 });
 
 export async function POST(request) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     const { germanText, englishText, history = [] } = await request.json();
 

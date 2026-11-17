@@ -1,6 +1,7 @@
 import ManualCar from "@/models/AddCar";
 import { connectDB } from "@/lib/mongodb";
 import { v2 as cloudinary } from "cloudinary";
+import { staffUser } from "@/lib/kaufvertragServer";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -10,6 +11,8 @@ cloudinary.config({
 });
 
 export async function POST(request) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
 

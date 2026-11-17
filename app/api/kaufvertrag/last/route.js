@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Kaufvertrag from "@/models/Kaufvertrag";
 import { nextNumber as computeNext } from "@/lib/kaufvertragServer";
+import { staffUser } from "@/lib/kaufvertragServer";
 
 export async function GET(req) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const { searchParams } = new URL(req.url);

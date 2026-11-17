@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import ScheduleEvent from "@/models/ScheduleEvent";
 import mongoose from "mongoose";
+import { staffUser } from "@/lib/kaufvertragServer";
 
 function bad(msg, status = 400) {
   return NextResponse.json({ ok: false, error: msg }, { status });
@@ -21,6 +22,8 @@ function normalizeVariant(v) {
 }
 
 export async function PUT(req, { params }) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const id = params?.id;
@@ -90,6 +93,8 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const id = params?.id;

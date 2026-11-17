@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Admin from "@/models/Admin";
+import { staffUser } from "@/lib/kaufvertragServer";
 
 export async function GET(req) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const { searchParams } = new URL(req.url);
@@ -31,6 +34,11 @@ export async function PUT(req) {
   try {
     await connectDB();
     const { id, name, image } = await req.json();
+
+    // only the own profile – or any profile for admins
+    const me = await staffUser();
+    if (!me) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
+    if (me.role !== "admin" && me.userId !== String(id)) return Response.json({ error: "Keine Berechtigung." }, { status: 403 });
 
     if (!id || !name) {
       return NextResponse.json(

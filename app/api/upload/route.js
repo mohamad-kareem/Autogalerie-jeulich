@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
+import { staffUser } from "@/lib/kaufvertragServer";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -12,6 +13,8 @@ export const dynamic = "force-dynamic";
 
 // POST /api/upload  (multipart/form-data, field: "file")
 export async function POST(req) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     const form = await req.formData();
     const file = form.get("file");

@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb"; // ✅ adjust if your file path differs
 import DashboardNote from "@/models/DashboardNote";
+import { staffUser } from "@/lib/kaufvertragServer";
 
 /* ---------------------------
    GET: list notes
    --------------------------- */
 export async function GET() {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
 
@@ -28,6 +31,8 @@ export async function GET() {
    body: { text, pinned?, createdBy? }
    --------------------------- */
 export async function POST(req) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const body = await req.json();
@@ -57,6 +62,8 @@ export async function POST(req) {
    body: { id, text?, pinned? }
    --------------------------- */
 export async function PUT(req) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const body = await req.json();
@@ -92,6 +99,8 @@ export async function PUT(req) {
    body: { id }
    --------------------------- */
 export async function DELETE(req) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const body = await req.json();

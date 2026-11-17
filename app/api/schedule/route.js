@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import ScheduleEvent from "@/models/ScheduleEvent";
+import { staffUser } from "@/lib/kaufvertragServer";
 
 function bad(msg, status = 400) {
   return NextResponse.json({ ok: false, error: msg }, { status });
@@ -22,6 +23,8 @@ function normalizeVariant(v) {
 }
 
 export async function GET() {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
 
@@ -37,6 +40,8 @@ export async function GET() {
 }
 
 export async function POST(req) {
+  // login required (security check)
+  if (!(await staffUser())) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
   try {
     await connectDB();
     const body = await req.json();
