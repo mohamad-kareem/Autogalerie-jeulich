@@ -263,7 +263,6 @@ export default function FahrzeugverwaltungClient() {
                 {soldTab ? (
                   <>
                     <th className="pr-3">Käufer</th>
-                    <th className="pr-3">Verkauft</th>
                     <th className="pr-3">Übergeben</th>
                     <th className="pr-3">Gewährleistung</th>
                     <th className="pr-4">Vertrag</th>
@@ -292,7 +291,6 @@ export default function FahrzeugverwaltungClient() {
                     {soldTab ? (
                       <>
                         <td className="max-w-[180px] truncate py-2.5 pr-3 text-[#1f252c]">{v.sale?.buyerName || "–"}</td>
-                        <td className="whitespace-nowrap py-2.5 pr-3 tabular-nums">{dateDE(v.sale?.soldAt) || "–"}</td>
                         <td className="whitespace-nowrap py-2.5 pr-3 tabular-nums">
                           {v.sale?.handedOverAt ? dateDE(v.sale.handedOverAt) : <Pill tone="amber">offen</Pill>}
                         </td>

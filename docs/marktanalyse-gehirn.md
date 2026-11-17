@@ -41,7 +41,8 @@ Vereinbart mit dem Auftraggeber:
 | `lib/marktanalyse/knowledge/defaults.js` | Preisliste (Startwerte), Gewinn, alle Stellschrauben (`TUNING`) |
 | `lib/marktanalyse/knowledge/dictionary.js` | Wörterbuch der Verkäufersprache (Schäden, Vorgeschichte, Pluspunkte) |
 | `lib/marktanalyse/knowledge/rules.js` | Regeln „wenn … dann …“ mit Klartext |
-| `lib/marktanalyse/knowledge/models.js` | Modellwissen: bekannte Schwachstellen (Hinweise, keine Diagnosen) |
+| `lib/marktanalyse/knowledge/models.js` | Modell-/Motor-/Getriebewissen mit Quellen, Prüfdatum und Geltungsbereich (Hinweise, keine Diagnosen) |
+| `lib/marktanalyse/modelKnowledge.js` | Zuordnung anhand Fahrzeugdaten und erforderlicher Motor-/Getriebekennung; Ausschluss anderer Varianten |
 | `lib/marktanalyse/knowledge/generations.js` | Modellgenerationen mit Bauzeit und Titelkennungen (Verbrenner, rund 130 Modelle) |
 | `lib/marktanalyse/generation.js` | Generation bestimmen: Titel → AutoScout24-Nummer (`as24Gen`) → Erstzulassung; andere Generation wird ausgeschlossen |
 | `lib/marktanalyse/search.js` | Suchfilter und Suchadressen der Portale, Link-Erkennung |
@@ -128,3 +129,34 @@ Die Erweiterung muss dann meist nicht geändert werden – nur der Leser:
 
 - Tabelle: `lib/marktanalyse/knowledge/timing.js` (Motorfamilie: Marken, Kraftstoff, ccm, EZ-Jahre, Antrieb, Intervall; `est` = Richtwert, `unsure` = Antrieb unsicher). Lesen: `lib/marktanalyse/timing.js` (`timingOf(subject)`).
 - Kosten (Preisliste `zahnriemen`) nur bei state "cost": Antrieb sicher, Intervall fest, Hubraum aus dem Portal, Wechsel nahe/überfällig (0,9–1,35 × Intervall bzw. nahe am nächsten Vielfachen), Anzeige nennt keinen Wechsel. Sonst Regel `zahnriemenFaellig` nur als Frage.
+
+## Quellengeprüftes Modellwissen (17.11.2026)
+
+- Jeder aktive Eintrag in `knowledge/models.js` enthält `sources` (Titel/Link),
+  `checkedAt` und `scopeNote`. Quellen sind Herstellerunterlagen, technische
+  Informationen der Teilehersteller oder eigene Fahrzeugberichte des ADAC.
+- `years` dient nur der Vorauswahl über die **Erstzulassung**. Produktionszeiträume,
+  Motorkennbuchstaben, Getriebeausführungen und regionale Grenzen einer Quelle
+  stehen im Geltungsbereich. Ein Treffer bestätigt weder einen Schaden noch einen
+  Rückruf-/Garantieanspruch für dieses Fahrzeug; dafür müssen FIN und Ausführung
+  geprüft werden.
+- `model` und `identity` sind optionale, erforderliche reguläre Ausdrücke auf
+  Modell, Variante und Titel. `exclude` sperrt ausdrücklich andere Ausführungen.
+  Die Beschreibung wird dafür nicht verwendet: sie kann Vergleichsmotoren nennen.
+  Benötigte Angaben zu Kraftstoff, Getriebe, Hubraum oder Leistung müssen bekannt
+  sein; fehlende Daten erfüllen eine Bedingung nicht.
+- Allgemeine Aussagen wie „alle kleinen Automatikmotoren haben DQ200“ sind keine
+  zulässige Zuordnung. Wenn die Ausführung nicht sicher genug einzugrenzen ist,
+  verlangt ein Eintrag die Kennung in der Fahrzeugbezeichnung.
+- Bericht und Wissensansicht zeigen Quelle, Prüfdatum und Geltungsbereich.
+  Modellhinweise erzeugen Fragen und Hinweise, keine zusätzlichen Reparaturkosten,
+  Preisabschläge oder schlechteren Kaufurteile allein aufgrund einer Motorfamilie.
+- Die Wartungstabelle enthält weiterhin Erfahrungswerte. Nicht durch einen passend
+  eingegrenzten Herstellerplan belegte Intervalle sind ausdrücklich `est: true`
+  (Richtwert). Ein passender modell-/motorspezifischer Eintrag geht einer allgemeinen
+  Familienzeile vor; der aktuelle Wartungsplan zur FIN bleibt maßgeblich.
+- Bei Erweiterungen immer einen passenden Fall **und** ähnliche, aber nicht
+  betroffene Motoren testen; insbesondere Modellwechsel, andere Hubräume,
+  fehlende Angaben und verschiedene Automatikbauarten.
+
+Prüfung: `node --experimental-default-type=module --test tests/marktanalyse.test.mjs tests/marktanalyse-knowledge.test.mjs tests/marktanalyse-timing-knowledge.test.mjs`

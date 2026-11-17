@@ -13,6 +13,7 @@ import { portalOf } from "@/lib/marktanalyse/search.js";
 import { euro, norm } from "@/lib/marktanalyse/text.js";
 import { inspectionExpiryFromText } from "@/lib/portals/utils.js";
 import Kurzfazit from "./Kurzfazit";
+import KnowledgeSources from "./KnowledgeSources";
 
 const TONE = {
   KAUFEN: "ma-tone-good",
@@ -165,9 +166,9 @@ function timingRow(fact) {
   if (!fact) return ["Zahnriemen / Kette", null];
   if (/^unklar/.test(fact)) return ["Zahnriemen / Kette", "unklar"];
   const unsure = / \(nicht sicher\)$/.test(fact);
-  const [name, info] = fact.replace(/ \(nicht sicher\)$/, "").split(" – Wechsel etwa ");
+  const [name, info] = fact.replace(/ \(nicht sicher\)$/, "").split(/ – (?:Wechsel etwa |(?:Wechsel|Richtwert): )/);
   const label = name === "Zahnriemen im Ölbad" ? "Zahnriemen (Ölbad)" : name;
-  if (info) return [label, (unsure ? "wohl " : "") + info.replace(" oder ", " / ").replace("Jahre", "J.")];
+  if (info) return [label, (/ – Richtwert:/.test(fact) ? "Richtwert: " : unsure ? "wohl " : "") + info.replace(" oder ", " / ").replace("Jahre", "J.")];
   return [label, unsure ? "vermutlich" : name === "Steuerkette" ? "kein fester Wechsel" : "Intervall unbekannt"];
 }
 
@@ -218,7 +219,10 @@ function VehicleCard({ subject, ask, facts }) {
           <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
         ))}
       </dl>
-
+      {!!facts?.timingSources?.length && <div className="px-4 pb-4 text-[12px] text-muted">
+        <KnowledgeSources sources={facts.timingSources} checkedAt={facts.timingCheckedAt} />
+        {facts.timingScopeNote && <p>{facts.timingScopeNote}</p>}
+      </div>}
     </section>
   );
 }
@@ -513,7 +517,7 @@ function Findings({ report }) {
                 return (
                   <li key={flag.id + "-" + index}>
                     <Icon className={tone} aria-hidden="true" />
-                    <span><span className="sr-only">{label}: </span>{flag.text}{flag.source && <small>Quelle: {flag.source}</small>}</span>
+                    <span><span className="sr-only">{label}: </span>{flag.text}{flag.scopeNote && <small>{flag.scopeNote}</small>}<KnowledgeSources {...flag} /></span>
                   </li>
                 );
               })}

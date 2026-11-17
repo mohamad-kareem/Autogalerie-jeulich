@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Download, LoaderCircle } from "lucide-react";
 import { PORTAL_LABEL } from "@/lib/marktanalyse/knowledge/defaults.js";
 import { portalOf } from "@/lib/marktanalyse/search.js";
+import KnowledgeSources from "./KnowledgeSources";
 
 const KIND = { body: "Karosserie", mech: "Technik", wear: "Verschleiß", vague: "Unklar", history: "Vorgeschichte", seller: "Verkäufer", positive: "Pluspunkt" };
 const SEVERITY = ["Plus", "Hinweis", "Kosten", "Ernst", "Ausschluss"];
@@ -104,16 +105,17 @@ export default function WissenView() {
         ) : null}
 
         {tab === "modelle" ? (
-          <Table head={["Marken", "Motor / Getriebe", "Baujahre", "Bekannte Schwachstelle", "Quelle", { label: "Treffer", right: true }]} min={980}>
+          <Table head={["Marken", "Motor / Getriebe", "EZ-Vorauswahl", "Prüfhinweis", "Quelle", { label: "Treffer", right: true }]} min={980}>
             {data.models.map((entry) => (
               <tr key={entry.id} className="ind-row align-top">
                 <td className="px-3 py-2 capitalize text-ink">{entry.makes.filter((make, index, all) => all.indexOf(make) === index && make !== "vw" && make !== "mercedes").join(", ")}</td>
                 <td className="px-3 py-2 text-muted">
+                  {entry.name && <strong className="block text-ink">{entry.name}</strong>}
                   {[FUEL[entry.fuel], GEAR[entry.gearbox], entry.ccm && `${entry.ccm[0]}–${entry.ccm[1]} cm³`, entry.ps && `${entry.ps[0]}–${entry.ps[1]} PS`].filter(Boolean).join(", ")}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 tabular-nums text-muted">{entry.years[0]}–{entry.years[1]}</td>
-                <td className="px-3 py-2 text-ink">{entry.text}<span className="block text-[12px] text-muted">Frage: {entry.ask}</span></td>
-                <td className="px-3 py-2 text-[12px] text-muted">{entry.source}</td>
+                <td className="px-3 py-2 text-ink">{entry.text}<span className="block text-[12px] text-muted">Frage: {entry.ask}</span>{entry.scopeNote && <span className="mt-1 block text-[12px] text-muted">Geltungsbereich: {entry.scopeNote}</span>}</td>
+                <td className="px-3 py-2 text-[12px] text-muted"><KnowledgeSources {...entry} /></td>
                 <td className="px-3 py-2 text-right tabular-nums text-muted">{entry.count}×</td>
               </tr>
             ))}
@@ -146,7 +148,7 @@ export default function WissenView() {
         ) : null}
 
         {tab === "steuertrieb" ? (
-          <Table head={["Marke", "Motor", "Kraftstoff", "Erstzulassung", "Antrieb", "Wechsel"]} min={900}>
+          <Table head={["Marke", "Motor", "Kraftstoff", "Erstzulassung", "Antrieb", "Wechsel", "Quelle"]} min={1060}>
             {(data.timing || []).map((entry, index) => (
               <tr key={index} className="ind-row align-top">
                 <td className="px-3 py-2 capitalize text-muted">{entry.makes.join(", ")}</td>
@@ -155,6 +157,7 @@ export default function WissenView() {
                 <td className="px-3 py-2 text-ink">{entry.years[0]}–{entry.years[1] >= 2026 ? "heute" : entry.years[1]}</td>
                 <td className="px-3 py-2 text-ink">{entry.drive}{entry.unsure ? " (nicht sicher)" : ""}</td>
                 <td className="px-3 py-2 text-ink">{[entry.km ? `${entry.km.toLocaleString("de-DE")} km` : null, entry.interval ? `${entry.interval} Jahre` : null].filter(Boolean).join(" / ") || "–"}{entry.est && (entry.km || entry.interval) ? " (Richtwert)" : ""}</td>
+                <td className="px-3 py-2 text-[12px] text-muted"><KnowledgeSources {...entry} />{!entry.sources?.length && "Erfahrungswert; Wartungsplan prüfen."}{entry.scopeNote && <span className="mt-1 block">{entry.scopeNote}</span>}</td>
               </tr>
             ))}
           </Table>
@@ -210,10 +213,10 @@ export default function WissenView() {
         {tab !== "regeln" && <p className="ma-table-note">
           {tab === "regeln" ? null
             : tab === "woerterbuch" ? "So versteht die Marktanalyse Anzeigentexte. Verneinungen („kein Rost“, „unfallfrei“) erkennt sie von selbst."
-              : tab === "modelle" ? "Hinweise, keine Diagnosen: Der Bericht fragt nach, er behauptet keinen Schaden."
+              : tab === "modelle" ? "Hinweise, keine Diagnosen. Erstzulassung ist nur eine Vorauswahl: Motor-/Getriebekennung, Produktionsdatum und FIN entscheiden, ob der Hinweis zutrifft. Quellen und Geltungsbereich stehen beim Eintrag."
                 : tab === "generationen" ? "Verglichen wird nur innerhalb einer Generation. Im Jahr des Modellwechsels entscheiden der Titel und die Generationsnummer von AutoScout24."
                 : tab === "linien" ? `Die Linie wird aus dem Titel gelesen. Basis gegen Top oder Sport wird nicht verglichen; eine Nachbarstufe wird umgerechnet (Mittel +${tuning?.trimValuePct?.mid ?? 4} %, Top +${tuning?.trimValuePct?.top ?? 8} %, Sport +${tuning?.trimValuePct?.sport ?? 10} % gegenüber Basis).`
-                : tab === "steuertrieb" ? "Der Motor wird über Marke, Kraftstoff, Hubraum, Leistung und Erstzulassung gefunden. Ist der Wechsel nahe oder überfällig und die Anzeige nennt keinen, warnt der Bericht und fragt nach. Kosten werden dafür nicht eingerechnet."
+                : tab === "steuertrieb" ? "Zuordnung über Fahrzeug- und Motorangaben. Richtwerte sind kein bestätigter Wartungsplan für dieses Fahrzeug; der Plan zur FIN hat Vorrang. Der Bericht fragt bei möglicher Fälligkeit nach einem Wechselnachweis. Kosten werden dafür nicht eingerechnet."
                 : tab === "markt" ? "Aus allen bisher gesehenen Händlerangeboten gelernt. Standzeit = Tage, bis ein Angebot aus der Suche verschwand (Zahl in Klammern: Anzahl)."
                   : tab === "unbekannt" ? "Sätze, die nach Mangel klingen, aber noch nicht im Wörterbuch stehen. „Export für Claude“ lädt sie als Datei herunter."
                     : "Was gelernt oder geändert wurde."}

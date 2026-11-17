@@ -1,0 +1,112 @@
+{
+  "entries": [
+    {
+      "id": "ford-ecoboost-10",
+      "name": "Ford 1.0 EcoBoost – Ölbadriemen",
+      "makes": ["ford"], "fuel": "PETROL", "years": [2012, 2019], "ccm": [998, 999],
+      "identity": "\\beco\\s*boost\\b", "exclude": "\\b(?:mhev|hybrid)\\b", "level": "warn",
+      "text": "Bei 1.0-EcoBoost-Ausführungen mit Ölbadriemen kann ungeeignetes Motoröl den Riemen schädigen. Abrieb kann die Ölversorgung behindern; die passende Ausführung und Wartung müssen geprüft werden.",
+      "ask": "Welche Motor- und Riemenausführung ist über die FIN bestätigt? Gibt es Rechnungen zu Riemenwechseln und zur verwendeten Ford-Ölfreigabe?",
+      "scopeNote": "INA 0202 beschreibt EcoBoost/EcoBlue mit Ölbadriemen und verweist für die konkrete Zuordnung auf den Teilekatalog. EZ 2012–2019 ist nur ein Suchbereich; bei Übergangsversionen sind Motorcode und FIN entscheidend. Keine Übertragung eines US-Rückrufs.",
+      "sources": [{"label": "Schaeffler INA 0202 – Ölbadriemen und ungeeignetes Motoröl", "url": "https://vehiclelifetimesolutions.schaeffler.de/medias/INA-0202-de.PDF?context=bWFzdGVyfGRvY3VtZW50c3wxNzkwODB8YXBwbGljYXRpb24vcGRmfGRvY3VtZW50cy9oZTUvaDhmLzkzMDQ3OTk0MTIyNTQucGRmfDk1MzYzNzZjMjMzMGUyNTkzZTJlNTg5NTQxNjAwMzI5M2E5MWM2YjAxNTJhNWZlNGFmZjNkMDU3MjMyNzFjNmE"}],
+      "checkedAt": "2026-11-17"
+    },
+    {
+      "id": "ford-powershift",
+      "name": "Ford DPS6 / 6DCT250 – Trockenkupplung",
+      "makes": ["ford"], "gearbox": "AUTOMATIC", "years": [2011, 2016],
+      "model": "\\b(?:fiesta|focus)\\b", "identity": "\\b(?:dps6|6dct250)\\b", "exclude": "\\b(?:6dct450|6dct470|8f24|8f35)\\b", "level": "info",
+      "text": "Ford dokumentiert beim DPS6 Kupplungsrupfen beim leichten Beschleunigen, unter anderem im Zusammenhang mit undichten Getriebeeingangsdichtungen. Das gilt nicht pauschal für jede Ford-Automatik.",
+      "ask": "Ist das DPS6/6DCT250 bestätigt? Ruckelt es beim Anfahren, und sind Kupplungs-, Dichtungs- oder Softwarearbeiten dokumentiert?",
+      "scopeNote": "Technische Ford-Unterlagen 14M01 und 19N08 für US-Fiesta/Focus; hier nur Bauteilwissen bei ausdrücklich erkanntem Getriebetyp. Sie belegen keinen deutschen Garantieanspruch und keinen Rückrufstatus dieses Autos. Die Quellen nennen Modelljahre, nicht Erstzulassung.",
+      "sources": [{"label": "Ford 14M01 – DPS6 Kupplung und Eingangsdichtungen", "url": "https://static.nhtsa.gov/odi/tsbs/2014/SB-10056931-1271.pdf"}, {"label": "Ford 19N08 – DPS6 Kupplungsrupfen", "url": "https://static.nhtsa.gov/odi/tsbs/2019/MC-10164603-0001.pdf"}],
+      "checkedAt": "2026-11-17"
+    },
+    {
+      "id": "psa-puretech-12",
+      "name": "PSA 1.2 PureTech / VTi – Zahnriemen",
+      "makes": ["peugeot", "citroen", "ds automobiles"], "fuel": "PETROL", "years": [2012, 2022], "ccm": [1199, 1199],
+      "identity": "\\b(?:pure\\s*tech|vti|eb2[a-z0-9]*)\\b", "exclude": "\\b(?:hybrid|mhev)\\b", "level": "warn",
+      "text": "Bei früheren 1.2-PureTech-Generationen ist vorzeitiger Zahnriemenverschleiß dokumentiert. Wartungsnachweise, Ölqualität und der tatsächlich verbaute Riemen sind beim Kauf besonders wichtig.",
+      "ask": "Wann und bei welchem Kilometerstand wurde der Zahnriemen geprüft oder erneuert? Liegen die Wartungsrechnungen und eine FIN-Prüfung beim Hersteller vor?",
+      "scopeNote": "Stellantis nennt Produktion 06/2012–06/2022 für Saugmotoren und 04/2014–06/2022 für Turbomotoren. EZ ist nicht das Produktionsdatum. Neue Hybridmotoren mit Kette sind nicht mitgemeint; Kulanz nur nach Herstellerprüfung.",
+      "sources": [{"label": "Stellantis – PureTech-Unterstützung", "url": "https://www.stellantis.com/en/contacts/puretech-compensation-platform"}, {"label": "Stellantis – betroffene Produktionszeiträume (2025)", "url": "https://www.citroen.it/content/dam/citroen/italy/b2c/maintain/recall-campaigns/Puretech-Message-V-2-2025.pdf"}, {"label": "NTN-SNR – technische Information 1.2 PureTech Sauger", "url": "https://www.ntn-snr.com/sites/default/files/2025-12/TECHinfo%201.2%20PureTech%20Atmo_DE.pdf"}],
+      "checkedAt": "2026-11-17"
+    },
+    {
+      "id": "opel-puretech-12",
+      "name": "Opel 1.2 PSA/EB2 – Zahnriemen",
+      "makes": ["opel"], "fuel": "PETROL", "years": [2017, 2022], "ccm": [1199, 1199],
+      "model": "\\b(?:crossland|grandland|corsa|mokka|astra\\s*l)\\b",
+      "identity": "\\b(?:1[.,]2|pure\\s*tech|eb2[a-z0-9]*)\\b", "exclude": "\\b(?:astra\\s*k|adam|corsa\\s*[de]|hybrid|mhev)\\b", "level": "warn",
+      "text": "Bei der PSA/EB2-Ausführung des 1.2-Motors ist vorzeitiger Zahnriemenverschleiß dokumentiert. Der Opel-Modellname allein reicht zur Motorzuordnung nicht aus.",
+      "ask": "Ist der PSA/EB2-Motor über die FIN bestätigt? Wann wurde sein Zahnriemen geprüft oder erneuert, und sind die Öl- und Wartungsrechnungen vorhanden?",
+      "scopeNote": "Nur 1199-ccm-Kandidaten ausgewählter PSA-basierter Opel-Modelle. Der Astra K 1.2 mit 1199? Achtung: genaue Hubraumangabe des Portals prüfen; Astra K wird ausdrücklich ausgeschlossen. Stellantis-Produktionsgrenzen wie PureTech, keine automatische Betroffenheits- oder Kulanzbestätigung.",
+      "sources": [{"label": "Stellantis – PureTech-Unterstützung", "url": "https://www.stellantis.com/en/contacts/puretech-compensation-platform"}, {"label": "Stellantis – betroffene Produktionszeiträume (2025)", "url": "https://www.citroen.it/content/dam/citroen/italy/b2c/maintain/recall-campaigns/Puretech-Message-V-2-2025.pdf"}],
+      "checkedAt": "2026-11-17"
+    },
+    {
+      "id": "psa-puretech-10",
+      "name": "PSA 1.0 VTi / PureTech – Zahnriemen",
+      "makes": ["peugeot", "citroen"], "fuel": "PETROL", "years": [2012, 2022], "ccm": [999, 999],
+      "model": "\\b(?:208|c3)\\b", "identity": "\\b(?:pure\\s*tech|vti|eb0[a-z0-9]*)\\b", "level": "warn",
+      "text": "Auch der frühere 1.0-PureTech-Saugmotor gehört zu den von Stellantis genannten Motoren mit möglichem vorzeitigem Zahnriemenverschleiß.",
+      "ask": "Sind Motortyp, Zahnriemenkontrollen und Wartung mit der vorgeschriebenen Ölfreigabe belegt?",
+      "scopeNote": "Die Herstellerunterlage nennt 1.0/1.2-Saugmotoren aus Produktion 06/2012–06/2022. Der 998-ccm-Toyota-Motor in C1/107/108 wird hier nicht zugeordnet.",
+      "sources": [{"label": "Stellantis – PureTech-Unterstützung", "url": "https://www.stellantis.com/en/contacts/puretech-compensation-platform"}, {"label": "Stellantis – betroffene Produktionszeiträume (2025)", "url": "https://www.citroen.it/content/dam/citroen/italy/b2c/maintain/recall-campaigns/Puretech-Message-V-2-2025.pdf"}],
+      "checkedAt": "2026-11-17"
+    },
+    {
+      "id": "psa-puretech-12-oel",
+      "name": "PSA 1.2 PureTech Turbo – Ölverbrauch",
+      "makes": ["peugeot", "citroen", "ds automobiles"], "fuel": "PETROL", "years": [2014, 2023], "ccm": [1199, 1199], "ps": [100, 155],
+      "identity": "\\b(?:pure\\s*tech|eb2[a-z0-9]*)\\b", "exclude": "\\b(?:hybrid|mhev)\\b", "level": "info",
+      "text": "Stellantis dokumentiert bei früheren 1.2-PureTech-Motoren erhöhten Ölverbrauch. Je nach Produktionszeitraum und Abgasversion betreffen die beschriebenen Fälle Kolbenringe oder den Ölabscheider.",
+      "ask": "Wie viel Öl wird zwischen den Wartungen nachgefüllt? Gibt es Ölverbrauchsmessungen oder Rechnungen zu Kolbenringen beziehungsweise Ölabscheider?",
+      "scopeNote": "Herstellerunterlage: Kolbenringfälle vor Euro 6.2 aus 04/2014–07/2018; Ölabscheiderfälle ab Euro 6.2 aus 02/2018–02/2023. Ohne Produktionsdatum und Abgasunterstufe wird keine konkrete Ursache behauptet.",
+      "sources": [{"label": "Stellantis – PureTech-Unterstützung", "url": "https://www.stellantis.com/en/contacts/puretech-compensation-platform"}, {"label": "Stellantis – Ölverbrauch und Produktionszeiträume (2025)", "url": "https://www.citroen.it/content/dam/citroen/italy/b2c/maintain/recall-campaigns/Puretech-Message-V-2-2025.pdf"}],
+      "checkedAt": "2026-11-17"
+    },
+    {
+      "id": "psa-bluehdi-15-kette",
+      "name": "1.5 BlueHDi / DV5 – Nockenwellenkette",
+      "makes": ["peugeot", "citroen", "ds automobiles", "opel"], "fuel": "DIESEL", "years": [2017, 2023], "ccm": [1499, 1499],
+      "identity": "\\b(?:blue\\s*hdi|dv5[a-z0-9]*)\\b", "exclude": "\\bastra\\s*k\\b", "level": "warn",
+      "text": "Bei bestimmten 1.5-BlueHDi-Motoren ist vorzeitiger Verschleiß der Kette zwischen den Nockenwellen dokumentiert. Ungewöhnliche Geräusche und in seltenen Fällen ein Kettenbruch sind möglich.",
+      "ask": "Ist die Herstelleraktion über die FIN geprüft und erledigt? Gibt es Nachweise zur Kettenprüfung oder zum Austausch sowie zur vorgeschriebenen Ölwartung?",
+      "scopeNote": "Stellantis nennt Motorproduktion 10/2017–01/2023. Die Nockenwellenkette ist nicht mit dem separaten Zahnriemen gleichzusetzen. EZ oder 1.5-Diesel-Schriftzug allein beweisen weder DV5 noch Rückrufbetroffenheit.",
+      "sources": [{"label": "Stellantis – 1.5 BlueHDi, Produktionszeitraum", "url": "https://www.media.stellantis.com/at-de/corporate/press/stellantis-erweitert-garantie-fuer-1-5-bluehdi-motoren-auf-zehn-jahre-oder-240-000-km-und-fuehrt-rueckwirkend-erstattung-fuer-fruehere-ausgaben-in-europa-ein-04072025"}, {"label": "Peugeot – 1.5 BlueHDi, technische Fragen und FIN-Prüfung", "url": "https://www.peugeot.co.uk/owners/Peugeot-1-5-blue-hdi-key-information.html"}],
+      "checkedAt": "2026-11-17"
+    },
+    {
+      "id": "psa-scr-adblue-tank",
+      "name": "Stellantis Euro-6-Diesel – SCR/AdBlue-Tank",
+      "makes": ["peugeot", "citroen", "ds automobiles", "opel"], "fuel": "DIESEL", "years": [2014, 2020],
+      "identity": "\\b(?:blue\\s*hdi|adblue|scr)\\b", "level": "info",
+      "text": "Stellantis beschreibt technische Probleme des AdBlue-Tanks bei bestimmten älteren Euro-6-Dieseln mit SCR. Warnmeldungen und bereits erfolgte Tankreparaturen sollten geprüft werden.",
+      "ask": "Gab es AdBlue-/Abgaswarnungen oder einen Startverhinderungs-Countdown? Wurde der Tank bereits repariert oder ersetzt, und gibt es eine Rechnung?",
+      "scopeNote": "Hersteller nennt Fahrzeugproduktion 01/2014–08/2020, Euro 6 und SCR. Der Eintrag setzt eine ausdrückliche SCR/AdBlue/BlueHDi-Kennung voraus; individuelle Betroffenheit und Unterstützung nur per FIN/Hersteller prüfen.",
+      "sources": [{"label": "Stellantis – Urea Tank / AdBlue", "url": "https://www.stellantis.com/en/contacts/urea-tank-compensation-platform"}, {"label": "Europäische Kommission – koordinierte Maßnahme zu AdBlue-Tanks", "url": "https://commission.europa.eu/topics/consumers/consumer-rights-and-complaints/enforcement-consumer-protection/coordinated-actions/sustainable-consumption-actions_en"}],
+      "checkedAt": "2026-11-17"
+    },
+    {
+      "id": "psa-dv6-turbo-oelversorgung",
+      "name": "PSA DV6 1.6 Diesel – Turbolader-Ölversorgung",
+      "makes": ["citroen", "fiat", "ford", "mazda", "mini", "peugeot", "volvo"], "fuel": "DIESEL", "years": [2004, 2015], "ccm": [1560, 1560],
+      "identity": "\\b(?:dv6[a-z0-9]*|hdi|tdci|jtd|mzr[ -]?cd|mz[ -]?cd|1[.,]6\\s*d)\\b", "level": "info",
+      "text": "Nissens beschreibt bei bestimmten DV6-Dieseln Turboladerschäden durch eingeschränkte Ölversorgung. Ein ersetzter Turbo allein belegt nicht, dass die Ursache im Ölkreislauf behoben wurde.",
+      "ask": "Falls der Turbo ersetzt wurde: Sind die Prüfung und Instandsetzung der Ölversorgung sowie die verwendeten Zusatzteile auf der Rechnung dokumentiert?",
+      "scopeNote": "Nissens-Bulletin gilt für die dort zugeordneten DV6-Ausführungen/Turbolader 93037 und 93061. Der EZ-Bereich ist eine konservative Vorauswahl; Motor- und Turboladernummer müssen bestätigt werden.",
+      "sources": [{"label": "Nissens – DV6, Ölversorgung des Turboladers", "url": "https://support.nissens.com/en/material/oil-degradation-oil-flow-restrictions"}, {"label": "Nissens – Einbauvorgaben für DV6-Turbolader", "url": "https://nissens.com/Files/Files/Auto/Technical%20Bulletins/Turbo/93037_%2093061%20PSA%20DV6_Specific%20Installation%20Guide.pdf"}],
+      "checkedAt": "2026-11-17"
+    }
+  ],
+  "researchNotes": [
+    "All dates in years are candidate EZ windows, not exact source production-date assertions. The scopeNote is essential in the UI.",
+    "Citroen PureTech PDF open returned an error, but the web search index returned the full German manufacturer criteria. The current Stellantis support page links to a newer 2026-05-11 policy. Use the 2025 document only as technical historical evidence, not current compensation entitlement.",
+    "Opel entry should be reviewed carefully before merge; I deliberately restricted the model set and excluded Astra K. Do not include all Opel 1.2 engines or use the uncertain phrase in this draft scopeNote verbatim.",
+    "Renault H5Ft direct investigation is available from UFC-Que Choisir: https://www.quechoisir.org/action-ufc-que-choisir-moteurs-renault-l-ufc-que-choisir-met-en-demeure-les-constructeurs-renault-dacia-nissan-et-mercedes-n67223/ . Their own 24 May 2019 investigation cites production 2012-10-01 through 2016-07-20, Euro 5 H5FT, excess oil consumption. This is consumer-organization investigation, not an accessible OEM bulletin, so omitted from this primary-manufacturer/supplier set.",
+    "Ford timing-belt intervals vary by model and market. No new numerical interval should be inferred from the Schaeffler belt-wear bulletin.",
+    "Do not infer generic PowerShift identity from AUTOMATIC alone. Ford North American warranty programs do not establish EU entitlement or affected VINs."
+  ]
+}
