@@ -7,7 +7,7 @@ import ContactCustomer from "@/models/ContactCustomer";
 import Car from "@/models/Car";
 import Pickup from "@/models/Pickup";
 import cloudinary from "@/app/utils/cloudinary";
-import { SaleError, errorResponse, isId, makeVehicleAvailable, markVehicleSold, staffUser, validContractOf } from "@/lib/kaufvertragServer";
+import { SaleError, applyContractSale, errorResponse, isId, makeVehicleAvailable, staffUser, validContractOf } from "@/lib/kaufvertragServer";
 import { STAGE_OF, loadVehicle, rotatedUrl } from "@/lib/fahrzeugakte";
 import { DAY_RE, berlinDay, normVin, parseEuro, parseMonth } from "@/lib/sales";
 
@@ -102,12 +102,13 @@ export async function PATCH(req, { params }) {
       x.markModified("stageMeta");
       await x.save();
 
-      // A contract for this FIN (e.g. made before the FIN was corrected here) marks the car as sold –
-      // but only a contract from after the car came into stock (a car bought back stays available).
-      if (x.stage !== "SOLD" && x.finNumber) {
+      // A contract for this FIN (e.g. made before the FIN was corrected here) marks the car as sold and
+      // brings buyer + handover tasks along – but only a contract from after the car came into stock
+      // (a car bought back stays available). A sold car without buyer gets the buyer filled in.
+      if (x.finNumber && (x.stage !== "SOLD" || !x.soldContactId)) {
         const contract = await validContractOf(x.finNumber);
         const since = x.boughtAt || x.createdAt;
-        if (contract && (!since || berlinDay(contract.at) >= berlinDay(since))) await markVehicleSold(x.finNumber, contract.at);
+        if (contract && (!since || berlinDay(contract.at) >= berlinDay(since))) await applyContractSale(x, contract);
       }
     } else if (action === "sold") {
       const buyerName = s(b.buyerName, 160);
