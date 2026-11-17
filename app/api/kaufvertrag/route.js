@@ -9,6 +9,7 @@ import mongoose from "mongoose";
 import ContactCustomer from "@/models/ContactCustomer";
 
 import { nextNumber, SaleError, staffUser } from "@/lib/kaufvertragServer";
+import { normVin, vinPattern } from "@/lib/sales";
 
 /** Never lets the contract fail: the contract matters more than the label. */
 async function markWebsiteCarSold({ vin, carId }) {
@@ -90,7 +91,8 @@ export async function POST(req) {
           .filter(Boolean);
       }
 
-      const existingSchein = await CarSchein.findOne({ finNumber: vin });
+      // FIN compared without spaces/case, so "TMB EA6NJ3 JZ077420" finds the car saved as "TMBEA6NJ3JZ077420"
+      const existingSchein = await CarSchein.findOne({ finNumber: vinPattern(vin) || vin });
 
       if (existingSchein) {
         const update = {
@@ -108,7 +110,7 @@ export async function POST(req) {
       } else {
         await CarSchein.create({
           carName: carType,
-          finNumber: vin,
+          finNumber: normVin(vin),
           notes: parsedNotes,
           assignedTo: "",
           owner: issuer === "karim" ? "Karim" : "Alawie",

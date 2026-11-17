@@ -118,7 +118,8 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [delAvailable, setDelAvailable] = useState(true);
   const [cancelReason, setCancelReason] = useState("");
-  const [makeAvailable, setMakeAvailable] = useState(true);
+  // Stornieren markiert nur den Vertrag als ungültig (wie Ignorieren) – das Fahrzeug bleibt, wie es ist.
+  const makeAvailable = false;
   const [paidAt, setPaidAt] = useState(berlinDay());
 
   const isDraft = false;
@@ -537,20 +538,6 @@ export default function ContractView({ contract: initial, doc: initialDoc, vehic
           onChange={(e) => setCancelReason(e.target.value)}
           placeholder="z. B. Kunde ist zurückgetreten"
         />
-        {vehicleSoldHere ? (
-          <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-lg border border-line p-3 text-[13px]">
-            <input
-              type="checkbox"
-              checked={makeAvailable}
-              onChange={(e) => setMakeAvailable(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-brand-600"
-            />
-            <span>
-              <span className="font-medium text-ink">Fahrzeug wieder verfügbar machen</span>
-              <span className="block text-[12px] text-muted">Fahrzeugakte und Website zeigen das Auto wieder als verfügbar.</span>
-            </span>
-          </label>
-        ) : null}
       </Modal>
 
       {/* Delete */}
