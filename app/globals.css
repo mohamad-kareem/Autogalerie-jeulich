@@ -1178,3 +1178,21 @@ input[type="number"] {
     max-width: none !important;
   }
 }
+
+/* ==========================================================
+   Phones and tablets (top bar instead of sidebar): every staff page
+   starts right under the bar with the same small, even margin –
+   no big grey gap above the title plate, no wide side margins.
+   (The page wrappers use different paddings; this evens them out.)
+   ========================================================== */
+@media (max-width: 1023.98px) {
+  .dash-shell main > :first-child {
+    padding-top: 10px;
+  }
+}
+@media (max-width: 639.98px) {
+  .dash-shell main > :first-child {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}

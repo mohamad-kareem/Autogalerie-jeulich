@@ -540,7 +540,7 @@ function Findings({ report }) {
             const total = costs.reduce((sum, cost) => sum + (cost.noPrice ? 0 : Number(cost.amount) || 0), 0);
             return (
               <>
-                <table className="ma-pb-grid">
+                <table className="ma-pb-grid ma-pb-costs">
                   <thead>
                     <tr><th scope="col">Position</th><th scope="col">Grundlage in der Anzeige</th><th scope="col" className="ma-number">Betrag</th></tr>
                   </thead>

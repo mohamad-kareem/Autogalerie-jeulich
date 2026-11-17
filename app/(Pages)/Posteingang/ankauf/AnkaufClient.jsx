@@ -206,7 +206,6 @@ export default function AnkaufClient({ canDelete = false }) {
       <div className="ind-plate flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="ind-title">Ankauf</h1>
-          <p className="text-sm text-muted">Fahrzeuge, die Kunden uns über „Auto verkaufen“ anbieten.</p>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/Posteingang/ankauf/bestaetigung" className="btn btn-primary shrink-0">

@@ -24,6 +24,7 @@ import {
   RotateCcw,
   RotateCw,
   Search,
+  Share2,
   Trash2,
   Truck,
   Wrench,
@@ -209,7 +210,6 @@ export default function FahrzeugverwaltungClient() {
         </button>
         <div className="mr-auto min-w-0">
           <h1 className="truncate text-[17px] font-semibold tracking-[0.01em] text-[#1f252c]">Fahrzeugverwaltung</h1>
-          <p className="hidden text-[11.5px] text-[#5d6671] sm:block">Fahrzeugakten – verbunden über die FIN.</p>
         </div>
         <div className="flex shrink-0 gap-2">
           <button type="button" onClick={() => setCreateOpen(true)} className="ind-btn ind-btn-dark">
@@ -262,7 +262,6 @@ export default function FahrzeugverwaltungClient() {
                 <th className={cx("px-3", !soldTab && "w-[22%] text-center")}>Phase</th>
                 {soldTab ? (
                   <>
-                    <th className="pr-3">Käufer</th>
                     <th className="pr-3">Übergeben</th>
                     <th className="pr-3">Gewährleistung</th>
                     <th className="pr-4">Vertrag</th>
@@ -290,7 +289,6 @@ export default function FahrzeugverwaltungClient() {
                     </td>
                     {soldTab ? (
                       <>
-                        <td className="max-w-[180px] truncate py-2.5 pr-3 text-[#1f252c]">{v.sale?.buyerName || "–"}</td>
                         <td className="whitespace-nowrap py-2.5 pr-3 tabular-nums">
                           {v.sale?.handedOverAt ? dateDE(v.sale.handedOverAt) : <Pill tone="amber">offen</Pill>}
                         </td>
@@ -345,7 +343,7 @@ export default function FahrzeugverwaltungClient() {
         ) : null}
       </div>
 
-      {scheinFor ? <ScheinViewer v={scheinFor} onRotated={reload} onClose={() => setScheinFor(null)} onPrint={() => printSheet(scheinFor)} printing={printing === scheinFor._id} /> : null}
+      {scheinFor ? <ScheinViewer v={scheinFor} onRotated={reload} onClose={() => setScheinFor(null)} /> : null}
 
       <VehicleDrawer id={selected} onClose={() => openVehicle("")} onChanged={reload} />
       <CreateModal
@@ -405,7 +403,7 @@ function KeyLine({ v }) {
 }
 
 /** Fahrzeugschein, fully visible, with rotate buttons (rotation is saved) */
-function ScheinViewer({ v, onClose, onPrint, printing, onRotated }) {
+function ScheinViewer({ v, onClose, onRotated }) {
   const [version, setVersion] = useState(v.updatedAt || "");
   const [url, setUrl] = useState(v.imageUrl || "");
   const [turning, setTurning] = useState(0);
@@ -431,6 +429,46 @@ function ScheinViewer({ v, onClose, onPrint, printing, onRotated }) {
   }
 
   const src = url;
+
+  /* WhatsApp: the Schein picture itself (sharper than a screenshot), turned as shown.
+     Phones (and Edge/Chrome on Windows) open the share menu → WhatsApp; otherwise the picture
+     is copied and WhatsApp Web opens, so it only has to be pasted. */
+  const [sharing, setSharing] = useState(false);
+  const [note, setNote] = useState("");
+  async function shareSchein() {
+    setSharing(true);
+    setErr("");
+    setNote("");
+    try {
+      const res = await fetch(src);
+      if (!res.ok) throw new Error("load");
+      const blob = await res.blob();
+      const type = blob.type || "image/jpeg";
+      const base = `Fahrzeugschein-${String(v.name || "Fahrzeug").replace(/[^\wäöüÄÖÜß-]+/g, "_")}`;
+      const file = new File([blob], `${base}.${type.includes("png") ? "png" : "jpg"}`, { type });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: `Fahrzeugschein ${v.name || ""}`.trim() });
+        return;
+      }
+      // copying pictures works with PNG only
+      let png = blob;
+      if (type !== "image/png") {
+        const bitmap = await createImageBitmap(blob);
+        const canvas = document.createElement("canvas");
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+        canvas.getContext("2d").drawImage(bitmap, 0, 0);
+        png = await new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("png"))), "image/png"));
+      }
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
+      setNote("Bild kopiert – in WhatsApp mit Strg + V einfügen.");
+      window.open("https://web.whatsapp.com/", "_blank", "noopener,noreferrer");
+    } catch (error) {
+      if (error?.name !== "AbortError") setErr("Das Bild konnte nicht geteilt werden. Bitte über „In neuem Tab öffnen“ speichern.");
+    } finally {
+      setSharing(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-6">
@@ -470,12 +508,18 @@ function ScheinViewer({ v, onClose, onPrint, printing, onRotated }) {
         </div>
 
         <div className="ind-toolbar flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-[#b9bfc7] px-3 py-2">
-          {err ? <p className="mr-auto text-[12.5px] font-medium text-rose-700">{err}</p> : <p className="mr-auto text-[11.5px] text-[#6b7480]">Gedrehte Ansicht wird gespeichert und so gedruckt.</p>}
-          <a href={src} target="_blank" rel="noreferrer" className="ind-btn">
+          {err ? (
+            <p className="w-full text-[12.5px] font-medium text-rose-700 sm:mr-auto sm:w-auto">{err}</p>
+          ) : note ? (
+            <p className="w-full text-[12.5px] font-medium text-emerald-700 sm:mr-auto sm:w-auto">{note}</p>
+          ) : (
+            <p className="w-full text-[11.5px] text-[#6b7480] sm:mr-auto sm:w-auto">Gedrehte Ansicht wird gespeichert und so gedruckt.</p>
+          )}
+          <a href={src} target="_blank" rel="noreferrer" className="ind-btn flex-1 justify-center sm:flex-none">
             In neuem Tab öffnen
           </a>
-          <button type="button" onClick={onPrint} disabled={printing} className="ind-btn ind-btn-dark">
-            {printing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />} Arbeitsauftrag drucken
+          <button type="button" onClick={shareSchein} disabled={sharing || !loaded} className="ind-btn ind-btn-dark flex-1 justify-center sm:flex-none">
+            {sharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />} Per WhatsApp senden
           </button>
         </div>
       </div>

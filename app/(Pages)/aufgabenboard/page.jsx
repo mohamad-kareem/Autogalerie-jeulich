@@ -395,7 +395,6 @@ export default function AufgabenboardPage() {
           <FiGrid className="h-4 w-4 text-[#3e454e]" />
           <div className="min-w-0">
             <h1 className="ind-title">Trello</h1>
-            <p className="text-[12.5px] text-muted">Aufgaben-Board – Karten per Drag &amp; Drop verschieben</p>
           </div>
         </header>
 

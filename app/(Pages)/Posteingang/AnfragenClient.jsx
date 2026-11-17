@@ -206,9 +206,6 @@ export default function AnfragenClient({ canDelete = false }) {
       <div className="ind-plate flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="ind-title">Anfragen</h1>
-          <p className="text-sm text-muted">
-            Alle Nachrichten aus dem Kontaktformular – zusätzlich zur E-Mail.
-          </p>
         </div>
 
         <div className="flex items-center gap-2">

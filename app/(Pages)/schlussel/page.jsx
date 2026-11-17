@@ -804,12 +804,7 @@ export default function KeysPage() {
       )}
     >
       <div className="mx-auto w-full max-w-[1200px] lg:max-w-[1400px]">
-        <header className="ind-plate mb-4 flex items-center gap-3 px-4 py-3">
-          <div className="min-w-0 flex-1">
-            <h1 className="ind-title">Schlüssel</h1>
-            <p className="text-[12px] text-muted">Schlüsselbrett und Fahrzeugzuordnung</p>
-          </div>
-        </header>
+        <h1 className="sr-only">Schlüssel</h1>
 
         {/* Brand filter */}
         <section className="mb-5 sm:mb-6">

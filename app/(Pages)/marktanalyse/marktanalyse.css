@@ -68,8 +68,9 @@
   padding: 10px 14px;
 }
 
+/* Link field grows with the screen: about half the width, between 460 and 820 px. */
 .ma-header-analysis {
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 420px);
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, clamp(460px, 50cqw, 820px));
 }
 
 .ma-header-description {
@@ -217,19 +218,20 @@
 }
 
 .ma-link-field .field {
-  height: 30px;
-  padding-inline-start: 29px;
+  height: 34px;
+  padding-inline-start: 31px;
+  font-size: 13.5px;
 }
 
 .ma-search .btn {
   flex: none;
-  height: 30px;
+  height: 34px;
 }
 
 .ma-helper {
   display: grid;
-  flex: 0 0 28px;
-  height: 28px;
+  flex: 0 0 34px;
+  height: 34px;
   place-items: center;
   border: 1px solid var(--ma-frame);
   border-radius: 3px;
@@ -927,7 +929,7 @@ details.ma-finding {
 
 @container (max-width: 930px) {
   .ma-header-analysis { grid-template-columns: minmax(0, 1fr) auto; }
-  .ma-search { grid-column: 1 / -1; width: min(100%, 420px); }
+  .ma-search { grid-column: 1 / -1; width: 100%; }
 }
 
 @container (max-width: 710px) {
@@ -1093,6 +1095,24 @@ details.ma-finding {
 .ma-pb-checklist li + li { border-top: 1px solid var(--ma-frame); }
 .ma-pb-checklist li::before { content: counter(frage) "."; flex: none; width: 18px; color: var(--color-muted); font-variant-numeric: tabular-nums; }
 .ma-pb-checklist li > span:last-child { flex: 1; color: var(--color-ink); }
+
+/* Phones: the cost table becomes stacked rows – position + amount on top, the quote below. */
+@media (max-width: 640px) {
+  .ma-pb-costs thead { display: none; }
+  .ma-pb-costs, .ma-pb-costs tbody, .ma-pb-costs tfoot { display: block; }
+  .ma-pb-costs tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    border-bottom: 1px solid var(--ma-frame);
+  }
+  .ma-pb-costs tbody tr:last-child { border-bottom: 0; }
+  .ma-pb-costs :is(td, th) { border: 0; padding: 7px 10px 0; }
+  .ma-pb-costs tbody td:nth-child(2) { grid-column: 1 / -1; grid-row: 2; padding-bottom: 8px; }
+  .ma-pb-costs tfoot tr { border-top: 1px solid var(--ma-frame); border-bottom: 0; }
+  .ma-pb-costs tfoot :is(th, td) { padding-bottom: 7px; }
+  .ma-pb-section-head h3 { letter-spacing: .03em; }
+  .ma-pb-grid thead th { letter-spacing: 0; }
+}
 
 @media (max-width: 560px) {
   .ma-pb-section { padding-inline: 12px; }

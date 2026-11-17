@@ -1449,157 +1449,94 @@ export default function CarLocationsPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-              {redCarsWithImages.map((car) => (
-                <div
-                  key={car.id}
-                  className={`rounded-lg border overflow-hidden ${
-                    darkMode
-                      ? "bg-slate-800 border-slate-700"
-                      : "bg-slate-50 border-slate-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-3 p-3">
+            <ul
+              className={`overflow-hidden rounded-lg border divide-y ${
+                darkMode
+                  ? "border-slate-700 divide-slate-700 bg-slate-800"
+                  : "border-slate-200 divide-slate-100 bg-white"
+              }`}
+            >
+              {redCarsWithImages.map((car) => {
+                const plates =
+                  car.rotPlateNumber === "BEIDE"
+                    ? ["DN-06919", "DN-06921"]
+                    : car.rotPlateNumber
+                      ? [car.rotPlateNumber]
+                      : [];
+                const muted = darkMode ? "text-slate-400" : "text-slate-500";
+                return (
+                  <li key={car.id} className="flex items-center gap-3 px-3 py-2">
                     <div
-                      className={`relative h-[82px] w-[116px] shrink-0 overflow-hidden rounded-xl border ${
-                        darkMode
-                          ? "border-slate-800 bg-slate-900"
-                          : "border-slate-200 bg-slate-100"
+                      className={`relative h-[44px] w-[62px] shrink-0 overflow-hidden rounded-md ${
+                        darkMode ? "bg-slate-900" : "bg-slate-100"
                       }`}
                     >
                       {car.imageUrl ? (
-                        <>
-                          <Image
-                            src={car.imageUrl}
-                            alt={car.carName || "Fahrzeug"}
-                            fill
-                            className={`object-cover ${
-                              car.isSold ? "grayscale-[45%] opacity-80" : ""
-                            }`}
-                            unoptimized
-                            sizes="116px"
-                          />
-
-                          {car.isSold && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/25">
-                              <span className="rotate-[-12deg] rounded-md border border-white/70 bg-white/90 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-900 shadow-sm">
-                                Verkauft
-                              </span>
-                            </div>
-                          )}
-                        </>
-                      ) : car.isSold ? (
-                        <div
-                          className={`flex h-full w-full flex-col items-center justify-center px-2 text-center ${
-                            darkMode ? "bg-slate-900" : "bg-slate-100"
-                          }`}
-                        >
-                          <div
-                            className={`rotate-[-10deg] rounded-md border px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] shadow-sm ${
-                              darkMode
-                                ? "border-slate-500 bg-slate-800 text-slate-200"
-                                : "border-slate-400 bg-white text-slate-800"
-                            }`}
-                          >
-                            Verkauft
-                          </div>
-
-                          {car.soldAt && (
-                            <div
-                              className={`mt-2 text-[10px] font-medium ${
-                                darkMode ? "text-slate-400" : "text-slate-500"
-                              }`}
-                            >
-                              {formatDate(car.soldAt)}
-                            </div>
-                          )}
-                        </div>
+                        <Image
+                          src={car.imageUrl}
+                          alt={car.carName || "Fahrzeug"}
+                          fill
+                          className={`object-cover ${car.isSold ? "grayscale opacity-70" : ""}`}
+                          unoptimized
+                          sizes="62px"
+                        />
                       ) : (
-                        <div
-                          className={`flex h-full w-full items-center justify-center ${
-                            darkMode ? "bg-slate-800" : "bg-slate-100"
-                          }`}
-                        >
-                          <FiBook
-                            className={`h-8 w-8 ${
-                              darkMode ? "text-slate-600" : "text-slate-400"
-                            }`}
-                          />
+                        <div className="flex h-full w-full items-center justify-center">
+                          <FiBook className={`h-5 w-5 ${darkMode ? "text-slate-600" : "text-slate-400"}`} />
                         </div>
                       )}
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <h3
-                        className={`text-sm font-semibold truncate ${
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`truncate text-[13px] font-semibold leading-5 ${
                           darkMode ? "text-white" : "text-slate-900"
                         }`}
                       >
                         {car.carName}
-                      </h3>
-
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${
-                            darkMode
-                              ? "bg-slate-700 text-slate-300"
-                              : "bg-slate-200 text-slate-700"
-                          }`}
-                        >
-                          FIN: {car.finNumber || "–"}
-                        </span>
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${
-                            darkMode
-                              ? "bg-slate-700 text-slate-300"
-                              : "bg-slate-200 text-slate-700"
-                          }`}
-                        >
-                          Ankaufdatum:{" "}
-                          {car.boughtAt
-                            ? new Date(car.boughtAt).toLocaleDateString("de-DE")
-                            : "–"}
-                        </span>
-                        {/* each plate once, with its Rotbuch number right beside it */}
-                        {(car.rotPlateNumber === "BEIDE"
-                          ? ["DN-06919", "DN-06921"]
-                          : car.rotPlateNumber
-                            ? [car.rotPlateNumber]
-                            : []
-                        ).map((plate) => (
-                          <RotPlate
-                            key={plate}
-                            plate={plate}
-                            number={
-                              plate === "DN-06919"
-                                ? car.rotbuchNumber19
-                                : plate === "DN-06921"
-                                  ? car.rotbuchNumber21
-                                  : null
-                            }
-                            darkMode={darkMode}
-                          />
-                        ))}
-                        {car.isSold && (
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              darkMode
-                                ? "bg-green-900/40 text-green-300 border border-green-700/60"
-                                : "bg-green-50 text-green-700 border border-green-200"
-                            }`}
-                          >
-                            Verkauft
-                            {car.soldAt
-                              ? ` am ${new Date(car.soldAt).toLocaleDateString("de-DE")}`
-                              : ""}
-                          </span>
-                        )}
-                      </div>
+                      </p>
+                      <p className={`truncate font-mono text-[11px] leading-4 ${muted}`}>
+                        {car.finNumber || "–"}
+                      </p>
+                      <p className={`text-[11px] leading-4 tabular-nums ${muted}`}>
+                        Ankauf{" "}
+                        {car.boughtAt
+                          ? new Date(car.boughtAt).toLocaleDateString("de-DE")
+                          : "–"}
+                      </p>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+
+                    {/* each plate once, with its Rotbuch number right beside it */}
+                    <div className="flex w-[150px] shrink-0 flex-col items-start gap-1">
+                      {plates.map((plate) => (
+                        <RotPlate
+                          key={plate}
+                          plate={plate}
+                          number={
+                            plate === "DN-06919"
+                              ? car.rotbuchNumber19
+                              : plate === "DN-06921"
+                                ? car.rotbuchNumber21
+                                : null
+                          }
+                          darkMode={darkMode}
+                        />
+                      ))}
+                      {car.isSold && (
+                        <span
+                          className={`whitespace-nowrap text-[11px] font-medium leading-4 ${
+                            darkMode ? "text-green-300" : "text-green-700"
+                          }`}
+                        >
+                          Verkauft
+                          {car.soldAt ? ` ${new Date(car.soldAt).toLocaleDateString("de-DE")}` : ""}
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
       </div>
@@ -1807,9 +1744,12 @@ export default function CarLocationsPage() {
       className={`relative min-h-screen ${bgClass} px-2 py-3 sm:px-4 lg:px-6`}
     >
       <div
-        className={`max-w-screen-2xl mx-auto ${
-          showRotbuch && !isMobile ? "pr-[380px] lg:pr-[420px]" : ""
-        }`}
+        className={
+          // Rotbuch open: use all the width left of the panel (no centred max width)
+          showRotbuch && !isMobile
+            ? "max-w-none pr-[380px] lg:pr-[420px]"
+            : "max-w-screen-2xl mx-auto"
+        }
       >
         <header className="ind-plate mb-4 flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center">
           <div className="flex min-w-0 items-center gap-3 sm:mr-auto">

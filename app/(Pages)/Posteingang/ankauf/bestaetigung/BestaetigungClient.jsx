@@ -273,13 +273,7 @@ export default function BestaetigungClient() {
 
   return (
     <div className="mx-auto max-w-[1280px]">
-      <div className="ind-plate mb-4 flex flex-wrap items-center gap-2 px-3 py-3">
-        <div className="mr-auto">
-          <h1 className="ind-title">Ankauf bestätigen</h1>
-        </div>
-      </div>
-
-
+      <h1 className="sr-only">Ankauf bestätigen</h1>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_clamp(320px,35vw,440px)]">
         <div className={cx("@container min-w-0 space-y-4", INPUT_STYLE)}>
           <FormCard title="Inserat" icon={Link2} main>
