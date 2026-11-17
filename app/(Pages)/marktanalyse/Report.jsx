@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { Modal } from "@/app/(components)/sales/ui";
 import {
   AlertOctagon, AlertTriangle, Ban, CarFront, Check, CheckCircle2, ChevronDown, ExternalLink,
-  HelpCircle, Info, ListChecks, Loader2, MapPin, MessageCircleQuestion, RefreshCw, ThumbsUp, Wrench,
+  Info, Loader2, RefreshCw, ThumbsUp,
 } from "lucide-react";
 import { durationDE, useTravel } from "@/app/(components)/TravelTime";
 import { PORTAL_LABEL } from "@/lib/marktanalyse/knowledge/defaults.js";
@@ -223,6 +223,19 @@ function VehicleCard({ subject, ask, facts }) {
   );
 }
 
+/** Ausstattung laut Anzeige, rechts unter der Fahrzeugkarte. */
+function SideEquipment({ items }) {
+  return (
+    <section className="ind-panel ma-panel ma-side-equipment" aria-labelledby="ma-side-equipment-title">
+      <header className="ma-panel-heading ma-vehicle-heading">
+        <h2 id="ma-side-equipment-title">Ausstattung</h2>
+        {items.length > 0 && <span className="ind-count">{items.length}</span>}
+      </header>
+      {items.length ? <EquipmentPreview items={items} /> : <p className="ma-equipment-empty">Die Anzeige nennt keine Ausstattung.</p>}
+    </section>
+  );
+}
+
 /**
  * "Gekauft": Der Händler meldet den Kauf mit Kaufpreis. Nur was er hier einträgt,
  * gilt als gekauft – es gibt keine automatische Zuordnung.
@@ -408,19 +421,21 @@ function Pricing({ prices }) {
   );
 }
 
-function Finding({ title, icon: Icon, count, open = false, children }) {
+/** Abschnitt im Prüfbericht: laufende Nummer (per CSS), Titel in Versalien, Status rechts. */
+function ReportSection({ title, status, tone = "neutral", children }) {
   return (
-    <details className="ma-inline-details ma-finding" open={open}>
-      <summary>
-        <Icon size={15} aria-hidden="true" />
-        <span className="flex-1">{title}</span>
-        <span className="ind-count">{count}</span>
-        <ChevronDown size={14} aria-hidden="true" />
-      </summary>
-      <div className="ma-finding-body">{children}</div>
-    </details>
+    <section className="ma-pb-section">
+      <header className="ma-pb-section-head">
+        <span className="ma-pb-no" aria-hidden="true" />
+        <h3>{title}</h3>
+        {status && <span className="ma-pb-status" data-tone={tone}>{status}</span>}
+      </header>
+      <div className="ma-pb-section-body">{children}</div>
+    </section>
   );
 }
+
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 /** Standort aus der Anzeige als Suchadresse: "68163 Baden-Württemberg - Mannheim" → "68163 Mannheim". */
 function travelAddress(location) {
@@ -436,29 +451,27 @@ function Distance({ location }) {
   const address = travelAddress(location);
   const { data, loading } = useTravel(address);
   if (!address) return null;
+  const km = data?.km != null ? `${String(data.km).replace(".", ",")} km` : null;
   return (
-    <section className="ma-finding" aria-labelledby="ma-distance-title">
-      <div className="ma-finding-head">
-        <MapPin size={15} aria-hidden="true" />
-        <h3 className="flex-1" id="ma-distance-title">Entfernung</h3>
-      </div>
-      <div className="ma-finding-body">
-        {loading ? (
-          <p className="inline-flex items-center gap-1.5 text-muted"><Loader2 size={14} className="motion-safe:animate-spin" aria-hidden="true" /> Fahrzeit wird berechnet …</p>
-        ) : data?.minutes ? (
-          <p>
-            <strong>ca. {durationDE(data.minutes)} Fahrt</strong>
-            <span className="text-muted"> · {String(data.km).replace(".", ",")} km ab Firma · {location}</span>
-          </p>
-        ) : (
-          <p className="text-muted">Fahrzeit nicht verfügbar · {location}</p>
-        )}
-      </div>
+    <section className="ind-panel ma-panel ma-vehicle" aria-labelledby="ma-distance-title">
+      <header className="ma-panel-heading ma-vehicle-heading">
+        <h2 id="ma-distance-title">Standort und Anfahrt</h2>
+      </header>
+      <dl className="ma-vehicle-specs">
+        <div>
+          <dt>Fahrzeit ab Firma</dt>
+          <dd>
+            {loading ? <span className="inline-flex items-center gap-1.5 text-muted"><Loader2 size={13} className="motion-safe:animate-spin" aria-hidden="true" /> wird berechnet …</span>
+              : data?.minutes ? <strong>ca. {durationDE(data.minutes)}</strong> : <span className="text-muted">nicht verfügbar</span>}
+          </dd>
+        </div>
+        {km && <div><dt>Strecke ab Firma</dt><dd>{km}</dd></div>}
+      </dl>
     </section>
   );
 }
 
-function Findings({ report, location, equipment = [] }) {
+function Findings({ report }) {
   const { costs, flags, positives, questions, unknown, prices } = report;
   const pluses = report.pluses || [];
   const detailedLabels = new Set(pluses.map(({ label }) => norm(label)));
@@ -509,38 +522,65 @@ function Findings({ report, location, equipment = [] }) {
           </div>
         </section>
       </div>
-      <div className="ma-finding-group">
-        <Distance location={location} />
-        <Finding title="Nötige Arbeiten" icon={Wrench} count={costs.length} open={costs.length > 0}>
-          {costs.length ? (
-            <div>
-              <ul className="ma-cost-list">
-                {costs.map((cost) => (
-                  <li key={cost.id}>
-                    <div>
-                      <span>{cost.label}{cost.qty > 1 ? " × " + cost.qty : ""}</span>
-                      {(cost.reason || cost.quote) && <small className="ma-cost-note">{cost.reason}{cost.reason && cost.quote ? ": " : ""}{cost.quote && <>„{cost.quote}“</>}</small>}
-                    </div>
-                    <strong className="ma-cost-amount">{cost.noPrice ? <span className="font-normal text-muted">nach Besichtigung</span> : euro(cost.amount)}</strong>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : <p className="text-muted">Die Anzeige nennt keinen Mangel, der nach der Preisliste Geld kostet.</p>}
-        </Finding>
-        <Finding title="Ausstattung" icon={ListChecks} count={equipment.length} open>
-          {equipment.length ? <EquipmentPreview items={equipment} /> : <p className="text-muted">Keine Ausstattung angegeben.</p>}
-        </Finding>
+      <div className="ma-pb">
+        <div className="ma-pb-band">
+          <span>Prüfbericht</span>
+          <span>Grundlage: Angaben und Text der Anzeige</span>
+        </div>
+        <ReportSection
+          title="Nötige Arbeiten"
+          status={costs.length ? plural(costs.length, "Position", "Positionen") : "Ohne Befund"}
+          tone={costs.length ? "warn" : "ok"}
+        >
+          {costs.length ? (() => {
+            const total = costs.reduce((sum, cost) => sum + (cost.noPrice ? 0 : Number(cost.amount) || 0), 0);
+            return (
+              <>
+                <table className="ma-pb-grid">
+                  <thead>
+                    <tr><th scope="col">Position</th><th scope="col">Grundlage in der Anzeige</th><th scope="col" className="ma-number">Betrag</th></tr>
+                  </thead>
+                  <tbody>
+                    {costs.map((cost) => (
+                      <tr key={cost.id}>
+                        <td className="font-medium">{cost.label}{cost.qty > 1 ? " × " + cost.qty : ""}</td>
+                        <td className="text-muted">{cost.quote ? <>„{cost.quote}“</> : cost.reason || "–"}</td>
+                        <td className="ma-number">{cost.noPrice ? <span className="text-muted">nach Besichtigung</span> : euro(cost.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  {total > 0 && (
+                    <tfoot>
+                      <tr><th scope="row" colSpan={2}>Summe{costs.some((cost) => cost.noPrice) ? " (ohne Positionen nach Besichtigung)" : ""}</th><td className="ma-number">{euro(total)}</td></tr>
+                    </tfoot>
+                  )}
+                </table>
+                {prices?.repairs > 0 && !prices?.costs && <p className="ma-pb-note">Hinweis: Die Beträge sind nicht im Einkaufslimit eingerechnet.</p>}
+              </>
+            );
+          })() : <p className="ma-pb-empty">Die Anzeige nennt keine Arbeiten oder Mängel mit Kosten.</p>}
+        </ReportSection>
         {unknown.length > 0 && (
-          <Finding title="Unbekannte Hinweise" icon={HelpCircle} count={unknown.length} open>
-            <p className="mb-2 text-violet-700">Mögliche Mängel aus dem Anzeigentext, die nicht in die Bewertung eingeflossen sind.</p>
-            <ul className="ma-bullet-list">{unknown.map((entry, index) => <li key={index}>„{entry.quote}“</li>)}</ul>
-          </Finding>
+          <ReportSection title="Unklare Angaben im Anzeigentext" status="Bei Besichtigung prüfen" tone="warn">
+            <table className="ma-pb-grid">
+              <thead><tr><th scope="col" className="ma-pb-nr">Nr.</th><th scope="col">Textstelle</th></tr></thead>
+              <tbody>
+                {unknown.map((entry, index) => (
+                  <tr key={index}><td className="ma-pb-nr">{index + 1}</td><td>„{entry.quote}“</td></tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="ma-pb-note">Diese Stellen sind nicht in die Bewertung eingeflossen.</p>
+          </ReportSection>
         )}
         {questions.length > 0 && (
-          <Finding title="Fragen an den Verkäufer" icon={MessageCircleQuestion} count={questions.length}>
-            <ul className="ma-bullet-list">{questions.map((question, index) => <li key={index}>{question}</li>)}</ul>
-          </Finding>
+          <ReportSection title="Fragen an den Verkäufer" status={plural(questions.length, "Frage", "Fragen")}>
+            <ol className="ma-pb-checklist">
+              {questions.map((question, index) => (
+                <li key={index}><span>{question}</span></li>
+              ))}
+            </ol>
+          </ReportSection>
         )}
       </div>
     </section>
@@ -659,9 +699,13 @@ export default function Report({ id, subject, report, feedback, onFeedback, onRe
         <div className="ma-report-main">
           <Assessment report={report} id={id} feedback={feedback} onFeedback={onFeedback} onReportChange={onReportChange} />
           <PurchaseNote feedback={feedback} prices={report.prices} settings={report.settings} />
-          <Findings report={report} location={subject.location} equipment={equipmentOf(subject)} />
+          <Findings report={report} />
         </div>
-        <VehicleCard subject={subject} ask={report.ask} facts={report.facts} />
+        <div className="ma-report-side">
+          <VehicleCard subject={subject} ask={report.ask} facts={report.facts} />
+          <SideEquipment items={equipmentOf(subject)} />
+          <Distance location={subject.location} />
+        </div>
       </div>
       <Comparables market={report.market} portals={report.portals} />
     </div>

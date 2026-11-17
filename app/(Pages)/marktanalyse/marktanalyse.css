@@ -826,12 +826,12 @@ details.ma-finding {
 }
 .ma-finding-head svg:first-child { flex: none; color: #375d88; }
 /* Ausstattung im gemeinsamen Kasten: drei Spalten, ohne eigenen Innenabstand. */
-.ma-finding-body .ma-equipment-list { padding: 0; container-type: inline-size; }
-.ma-finding-body > .ma-more-equipment > .ma-equipment-list { padding: 6px 0 0; }
-.ma-finding-body > .ma-more-equipment > summary { margin-top: 6px; padding: 3px 0; background: none; justify-content: flex-start; color: #375d88; }
-.ma-finding-body .ma-equipment-list li { min-inline-size: calc((100% - 20px) / 3); }
+:is(.ma-finding-body, .ma-pb-section-body) .ma-equipment-list { padding: 0; container-type: inline-size; }
+:is(.ma-finding-body, .ma-pb-section-body) > .ma-more-equipment > .ma-equipment-list { padding: 6px 0 0; }
+:is(.ma-finding-body, .ma-pb-section-body) > .ma-more-equipment > summary { margin-top: 6px; padding: 3px 0; background: none; justify-content: flex-start; color: #375d88; }
+:is(.ma-finding-body, .ma-pb-section-body) .ma-equipment-list li { min-inline-size: calc((100% - 20px) / 3); }
 @container (max-width: 420px) {
-  .ma-finding-body .ma-equipment-list li { min-inline-size: calc((100% - 10px) / 2); }
+  :is(.ma-finding-body, .ma-pb-section-body) .ma-equipment-list li { min-inline-size: calc((100% - 10px) / 2); }
 }
 
 .ma-finding > summary { padding: 6px 12px; background: #f2f6fc; }
@@ -994,3 +994,115 @@ details.ma-finding {
 .ma-rating-pill[data-level="3"] { color: #475569; background: #eef1f5; }
 .ma-rating-pill[data-level="4"] { color: #b45309; background: #fdf0dd; }
 .ma-rating-pill[data-level="5"] { color: #b91c1c; background: #fde4e4; }
+
+/* ---------- Prüfbericht unten: Standort, Arbeiten, Ausstattung, unklare Angaben, Fragen ----------
+   Aufbau wie ein Gutachten: Kopfband, nummerierte Abschnitte, Tabellen mit Rasterlinien. */
+.ma-pb {
+  overflow: hidden;
+  border: 1px solid var(--ma-frame);
+  border-radius: 6px;
+  background: #fff;
+  counter-reset: abschnitt;
+  font-size: 12.5px;
+}
+.ma-pb-band {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 9px 16px;
+  border-bottom: 2px solid #1f3a5f;
+  background: #f6f8fb;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+.ma-pb-band > span:first-child {
+  color: #1f3a5f;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.ma-pb-section { counter-increment: abschnitt; padding: 14px 16px 16px; }
+.ma-pb-section + .ma-pb-section { border-top: 1px solid var(--ma-frame); }
+.ma-pb-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid #1f3a5f;
+}
+.ma-pb-no::before {
+  content: counter(abschnitt);
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  background: #1f3a5f;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ma-pb-section-head h3 {
+  flex: 1;
+  margin: 0;
+  color: #1f3a5f;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.ma-pb-status {
+  flex: none;
+  padding: 2px 8px;
+  border: 1px solid var(--ma-frame);
+  border-radius: 3px;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ma-pb-status[data-tone="ok"] { border-color: #a7dfb9; background: #effaf2; color: #137a37; }
+.ma-pb-status[data-tone="warn"] { border-color: #d7c7fb; background: #f6f2ff; color: var(--ma-orange); }
+
+/* Zweispaltige Angabentabelle: Bezeichnung grau hinterlegt, Wert rechts daneben. */
+.ma-pb-table { display: grid; border: 1px solid var(--ma-frame); }
+.ma-pb-table > div { display: grid; grid-template-columns: minmax(150px, 34%) 1fr; }
+.ma-pb-table > div + div { border-top: 1px solid var(--ma-frame); }
+.ma-pb-table dt { padding: 6px 10px; border-right: 1px solid var(--ma-frame); background: #f6f8fb; color: var(--color-muted); }
+.ma-pb-table dd { margin: 0; padding: 6px 10px; color: var(--color-ink); }
+
+/* Rastertabelle für Positionen und Textstellen. */
+.ma-pb-grid { width: 100%; border: 1px solid var(--ma-frame); border-collapse: collapse; }
+.ma-pb-grid th,
+.ma-pb-grid td { padding: 6px 10px; border: 1px solid var(--ma-frame); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.ma-pb-grid thead th { background: #f6f8fb; color: var(--color-muted); font-size: 11px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
+.ma-pb-grid tfoot th,
+.ma-pb-grid tfoot td { background: #f6f8fb; color: var(--color-ink); font-weight: 700; }
+.ma-pb-grid .ma-number { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ma-pb-nr { width: 44px; text-align: center !important; color: var(--color-muted); font-variant-numeric: tabular-nums; }
+
+.ma-pb-note { margin-top: 7px; color: var(--color-muted); font-size: 11.5px; }
+.ma-pb-empty { padding: 8px 10px; border: 1px dashed var(--ma-frame); color: var(--color-muted); }
+
+/* Fragen als nummerierte Liste. */
+.ma-pb-checklist { display: grid; border: 1px solid var(--ma-frame); counter-reset: frage; }
+.ma-pb-checklist li { display: flex; align-items: start; gap: 10px; padding: 7px 10px; counter-increment: frage; }
+.ma-pb-checklist li + li { border-top: 1px solid var(--ma-frame); }
+.ma-pb-checklist li::before { content: counter(frage) "."; flex: none; width: 18px; color: var(--color-muted); font-variant-numeric: tabular-nums; }
+.ma-pb-checklist li > span:last-child { flex: 1; color: var(--color-ink); }
+
+@media (max-width: 560px) {
+  .ma-pb-section { padding-inline: 12px; }
+  .ma-pb-table > div { grid-template-columns: 1fr; }
+  .ma-pb-table dt { border-right: 0; border-bottom: 1px solid var(--ma-frame); }
+}
+
+/* Rechte Spalte: Fahrzeugkarte, darunter die Ausstattung (eine Spalte). */
+.ma-report-side { display: grid; min-width: 0; gap: 10px; }
+.ma-side-equipment .ma-panel-heading h2 { flex: 1; }
+.ma-side-equipment .ma-equipment-list { padding: 9px 12px; }
+.ma-side-equipment .ma-equipment-list li { min-inline-size: 100%; }
+.ma-side-equipment .ma-more-equipment > .ma-equipment-list { padding-top: 0; }

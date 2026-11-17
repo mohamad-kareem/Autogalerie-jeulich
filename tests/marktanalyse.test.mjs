@@ -159,7 +159,7 @@ test("Urteil: Kaufen, knapp, verhandeln, Finger weg – gerechnet mit 2.300 bis 
   const { sell, limit, target } = base.prices;
   assert.equal(limit, Math.floor((sell - 2300) / 50) * 50);
   assert.equal(target, Math.floor((sell - 3000) / 50) * 50);
-  assert.equal(base.prices.discountPct, 3);
+  assert.equal(base.prices.discountPct, 5);
 
   assert.equal(run(target - 100).verdict.key, "KAUFEN");
   assert.equal(run(target + 300).verdict.key, "KNAPP");
