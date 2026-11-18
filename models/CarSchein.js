@@ -25,6 +25,9 @@ const StageMetaSchema = new mongoose.Schema(
     },
     tuev: {
       passed: { type: Boolean, default: false },
+      // what was chosen in "TÜV-Status": "ok" (Gültig), "due" (Fällig), "failed"
+      // (Nicht bestanden) – "" = not chosen, worked out from the date
+      status: { type: String, default: "" },
 
       issues: {
         type: [String],
@@ -126,6 +129,7 @@ const CarScheinSchema = new mongoose.Schema(
 if (
   mongoose.models.CarSchein &&
   (!mongoose.models.CarSchein.schema.path("stageMeta")?.schema?.path("platz.tuevUntil") ||
+    !mongoose.models.CarSchein.schema.path("stageMeta")?.schema?.path("tuev.status") ||
     !mongoose.models.CarSchein.schema.path("vorbesitzer") ||
     !mongoose.models.CarSchein.schema.path("handedOverAt"))
 ) {

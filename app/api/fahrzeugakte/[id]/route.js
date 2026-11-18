@@ -97,7 +97,12 @@ export async function PATCH(req, { params }) {
       x.stageMeta = {
         werkstatt: { where: s(b.werkstattWhere ?? meta.werkstatt?.where, 160), what: s(b.werkstattWhat ?? meta.werkstatt?.what, 300) },
         platz: { note: s(meta.platz?.note), hasTuev: Boolean(until), tuevUntil: until },
-        tuev: { passed: b.tuevStatus === "ok", issues: b.tuevStatus === "failed" ? issues.slice(0, 30) : [] },
+        tuev: {
+          // keep what was chosen (before, only "passed yes/no" was kept, so "Fällig" got lost)
+          status: ["ok", "due", "failed"].includes(b.tuevStatus) ? b.tuevStatus : "",
+          passed: b.tuevStatus === "ok",
+          issues: b.tuevStatus === "failed" ? issues.slice(0, 30) : [],
+        },
       };
       x.markModified("stageMeta");
       await x.save();

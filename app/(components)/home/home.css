@@ -1,0 +1,78 @@
+/* Startseite – Motive: Straße, Kennzeichen, Tacho, Parkschein. Nur Weiß, Grau, Gelb. */
+.hp { --hp-yellow: #ffd000; --hp-ink: #14171b; --hp-gray: #eceef1; --hp-line: #e1e4e8; }
+
+/* yellow road marking: dashed centre line */
+.hp-road-line {
+  height: 6px;
+  background: repeating-linear-gradient(90deg, var(--hp-yellow) 0 44px, transparent 44px 72px);
+  border-radius: 3px;
+}
+.hp-road-line-v {
+  width: 6px;
+  background: repeating-linear-gradient(180deg, var(--hp-yellow) 0 36px, transparent 36px 60px);
+  border-radius: 3px;
+}
+/* hazard stripes */
+.hp-hazard { background: repeating-linear-gradient(-45deg, var(--hp-yellow) 0 18px, var(--hp-ink) 18px 36px); }
+.hp-hazard-soft { background: repeating-linear-gradient(-45deg, var(--hp-yellow) 0 22px, #ffe566 22px 44px); }
+
+/* German number plate */
+.hp-plate {
+  display: inline-flex; align-items: stretch; overflow: hidden;
+  border: 2px solid var(--hp-ink); border-radius: 6px; background: #fff;
+  box-shadow: 0 2px 0 rgba(20, 23, 27, .15);
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+}
+.hp-plate-eu { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 22px; padding-bottom: 3px; background: #1d4fbf; color: #fff; font: 700 10px/1 system-ui, sans-serif; }
+.hp-plate-text { padding: 3px 12px; font-size: 18px; font-weight: 800; letter-spacing: .12em; color: var(--hp-ink); }
+
+/* odometer digits */
+.hp-odo { display: inline-flex; gap: 3px; }
+.hp-odo span {
+  display: grid; place-items: center; width: 30px; height: 40px; border-radius: 4px;
+  background: linear-gradient(180deg, #fff 0%, #e9ebee 50%, #dfe2e6 51%, #f4f5f7 100%);
+  border: 1px solid #c9ced5; box-shadow: inset 0 1px 0 #fff;
+  font: 800 22px/1 ui-monospace, "SF Mono", Consolas, monospace; color: var(--hp-ink);
+}
+.hp-odo span.hp-odo-last { background: var(--hp-yellow); border-color: #e0b700; }
+
+/* windscreen price sticker */
+.hp-sticker {
+  position: absolute; transform: rotate(-6deg);
+  background: var(--hp-yellow); color: #111; border-radius: 6px;
+  box-shadow: 0 10px 24px rgba(20, 23, 27, .18);
+}
+
+/* make marquee */
+.hp-marquee { overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.hp-marquee-track { display: flex; width: max-content; animation: hp-marquee 38s linear infinite; }
+.hp-marquee:hover .hp-marquee-track { animation-play-state: paused; }
+@keyframes hp-marquee { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .hp-marquee-track { animation: none; } }
+
+/* parking ticket */
+.hp-ticket {
+  position: relative; background: #fff; border: 1px solid var(--hp-line); border-radius: 10px;
+  --notch: radial-gradient(circle at 0 50%, transparent 10px, #000 10.5px);
+}
+.hp-ticket::before, .hp-ticket::after {
+  content: ""; position: absolute; top: 74px; width: 20px; height: 20px; border-radius: 50%;
+  background: #f6f7f8; border: 1px solid var(--hp-line);
+}
+.hp-ticket::before { left: -11px; clip-path: inset(0 0 0 50%); }
+.hp-ticket::after { right: -11px; clip-path: inset(0 50% 0 0); }
+.hp-ticket-cut { border-top: 2px dashed #d4d8dd; }
+
+/* map look for the address card */
+.hp-map {
+  background-color: #f2f3f5;
+  background-image:
+    linear-gradient(90deg, transparent 47%, #fff 47%, #fff 53%, transparent 53%),
+    linear-gradient(0deg, transparent 62%, #fff 62%, #fff 68%, transparent 68%),
+    linear-gradient(35deg, transparent 30%, #fff 30%, #fff 34%, transparent 34%),
+    radial-gradient(#d9dde2 1px, transparent 1.2px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 14px 14px;
+}
+
+/* the road with three stops */
+.hp-asphalt { background: linear-gradient(180deg, #e3e6ea, #d9dde2); }
