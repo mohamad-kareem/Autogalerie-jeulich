@@ -376,7 +376,14 @@ function PhaseTag({ phase }) {
 /** key info under the vehicle name */
 function KeyLine({ v }) {
   const failed = v.tuevStatus === "failed";
-  const hasHu = failed || /^\d{4}-\d{2}$/.test(v.tuevUntil || "");
+  const due = v.tuevStatus === "due";
+  const hasDate = /^\d{4}-\d{2}$/.test(v.tuevUntil || "");
+  const hasHu = failed || due || hasDate;
+  const huTitle = failed
+    ? "HU nicht bestanden"
+    : hasDate
+      ? `HU / TÜV bis ${monthDE(v.tuevUntil)}${due || tuevExpired(v.tuevUntil) ? " – fällig" : ""}`
+      : "HU / TÜV fällig";
   if (!v.keyNumber && !v.inStockSince && !hasHu) return null;
   // feste Spalten: Datum | TÜV | Schlüssel – so steht alles untereinander, auch wenn etwas fehlt
   return (
@@ -389,8 +396,8 @@ function KeyLine({ v }) {
           </>
         ) : null}
       </span>
-      <span className="inline-flex w-[86px] shrink-0" title={hasHu ? (failed ? "HU nicht bestanden" : `HU / TÜV bis ${monthDE(v.tuevUntil)}${tuevExpired(v.tuevUntil) ? " – abgelaufen" : ""}`) : undefined}>
-        {hasHu ? <HuPill until={v.tuevUntil} failed={failed} expired={tuevExpired(v.tuevUntil)} /> : null}
+      <span className="inline-flex w-[86px] shrink-0" title={hasHu ? huTitle : undefined}>
+        {hasHu ? <HuPill until={v.tuevUntil} failed={failed} expired={due || tuevExpired(v.tuevUntil)} /> : null}
       </span>
       {v.keyNumber ? (
         <span className="inline-flex items-center gap-1" title="Schlüssel-Nr.">
@@ -565,7 +572,7 @@ function HuPill({ until, failed, expired }) {
       )}
       style={{ borderColor: bad ? "#c0392b" : colour }}
     >
-      {failed ? "HU ✕" : y ? monthDE(until) : "–"}
+      {failed ? "HU ✕" : y ? monthDE(until) : expired ? "HU fällig" : "–"}
     </span>
   );
 }
@@ -602,6 +609,7 @@ function FactText({ label, children }) {
 /** Read-only view of the car's data (drawer, before "Bearbeiten"): compact two-column list, FIN and Erstzulassung first */
 function ReadFacts({ v, redPlates }) {
   const failed = v.tuevStatus === "failed";
+  const due = v.tuevStatus === "due";
   const hasHu = /^\d{4}-\d{2}$/.test(v.tuevUntil || "");
   const tuevLabel = TUEV_STATUS.find((t) => t.key === v.tuevStatus)?.label;
   const row = "border-t border-[#e8ebee]";
@@ -621,8 +629,18 @@ function ReadFacts({ v, redPlates }) {
             <span className="font-normal text-muted">· {v.keyCount ?? 0} Stk.</span>
           </Fact>
           <Fact label="HU / TÜV" className={row}>
-            {hasHu || failed ? <HuBadge until={v.tuevUntil} bad={failed} size={18} /> : null}
-            {failed ? <span className="text-[#a12d22]">nicht bestanden</span> : hasHu ? monthDE(v.tuevUntil) : tuevLabel && tuevLabel !== "–" ? tuevLabel : dash}
+            {hasHu || failed || due ? <HuBadge until={v.tuevUntil} bad={failed || due} size={18} /> : null}
+            {failed ? (
+              <span className="text-[#a12d22]">nicht bestanden</span>
+            ) : due ? (
+              <span className="text-[#a12d22]">{hasHu ? `${monthDE(v.tuevUntil)} · fällig` : "Fällig"}</span>
+            ) : hasHu ? (
+              monthDE(v.tuevUntil)
+            ) : tuevLabel && tuevLabel !== "–" ? (
+              tuevLabel
+            ) : (
+              dash
+            )}
           </Fact>
           <Fact label="Rotes Kennzeichen" className={row}>
             {redPlates.length ? redPlates.map((r) => <PlateBadge key={r.plateId} number={r.number} size="xs" />) : dash}
